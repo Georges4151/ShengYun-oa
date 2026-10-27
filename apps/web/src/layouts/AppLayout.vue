@@ -29,7 +29,7 @@ function onSelect(path: string): void {
 
 function onCommand(command: unknown): void {
   if (command === 'logout') {
-    auth.logout()
+    void auth.logout()
     void router.push('/login')
   }
 }
@@ -48,8 +48,8 @@ function onCommand(command: unknown): void {
     <template #toolbar>
       <el-dropdown @command="onCommand">
         <span class="user-trigger">
-          <el-avatar :size="28">{{ (auth.username || '管').slice(0, 1) }}</el-avatar>
-          <span class="user-name">{{ auth.username || '管理员' }}</span>
+          <el-avatar :size="28">{{ (auth.name || auth.username || '管').slice(0, 1) }}</el-avatar>
+          <span class="user-name">{{ auth.name || auth.username || '管理员' }}</span>
         </span>
         <template #dropdown>
           <el-dropdown-menu>

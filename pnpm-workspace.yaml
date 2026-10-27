@@ -6,6 +6,9 @@ packages:
   - "packages/*"
 
 # 允许执行安装脚本的依赖（esbuild 需要 postinstall 落二进制，electron 下载运行时）
+allowBuilds:
+  esbuild: true
+
 onlyBuiltDependencies:
   - esbuild
   - core-js
