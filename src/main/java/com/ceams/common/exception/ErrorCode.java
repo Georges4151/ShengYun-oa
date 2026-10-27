@@ -1,0 +1,58 @@
+package com.ceams.common.exception;
+
+import lombok.Getter;
+import org.springframework.http.HttpStatus;
+
+/**
+ * RFC7807 错误码枚举。
+ *
+ * <p>业务码前缀：AUTH_（认证/授权）、VALID_（参数校验）、BIZ_（业务规则）、SIGN_（签名）。
+ * 数值 code 按 HTTP 语义分段：400xxx 校验、401/403xxx 认证授权、404/409/422xxx 业务、500xxx 系统。</p>
+ */
+@Getter
+public enum ErrorCode {
+
+    // ---------- AUTH 认证/授权 ----------
+    AUTH_INVALID_CREDENTIALS(401001, HttpStatus.UNAUTHORIZED, "账号或密码错误"),
+    AUTH_TOKEN_EXPIRED(401002, HttpStatus.UNAUTHORIZED, "access token 已过期或无效"),
+    AUTH_TOKEN_INVALID(401003, HttpStatus.UNAUTHORIZED, "无效令牌"),
+    AUTH_REFRESH_REVOKED(401004, HttpStatus.UNAUTHORIZED, "refresh token 已吊销"),
+    AUTH_ACCESS_DENIED(403001, HttpStatus.FORBIDDEN, "无权访问该资源"),
+
+    // ---------- VALID 参数校验 ----------
+    VALID_REQUIRED_FIELD(400001, HttpStatus.BAD_REQUEST, "缺少必填字段"),
+    VALID_ILLEGAL_ARGUMENT(400002, HttpStatus.BAD_REQUEST, "参数非法"),
+    VALID_MALFORMED_JSON(400003, HttpStatus.BAD_REQUEST, "请求体 JSON 格式错误"),
+    VALID_PAGE_BOUNDS(400004, HttpStatus.BAD_REQUEST, "分页参数越界"),
+
+    // ---------- BIZ 业务规则 ----------
+    BIZ_NOT_FOUND(404001, HttpStatus.NOT_FOUND, "资源不存在"),
+    BIZ_DUPLICATE_CODE(409001, HttpStatus.CONFLICT, "编码或名称已存在"),
+    BIZ_STATE_CONFLICT(409002, HttpStatus.CONFLICT, "当前状态不允许该操作"),
+    BIZ_REFERENCED(409003, HttpStatus.CONFLICT, "存在关联数据，无法删除"),
+    BIZ_UNPROCESSABLE(422001, HttpStatus.UNPROCESSABLE_ENTITY, "业务处理失败"),
+
+    // ---------- SIGN 签名 ----------
+    SIGN_TIMESTAMP_EXPIRED(400005, HttpStatus.BAD_REQUEST, "签名时间戳超出 ±5min 窗口"),
+    SIGN_NONCE_REPLAY(400006, HttpStatus.BAD_REQUEST, "nonce 重复（防重放拦截）"),
+    SIGN_INVALID(400007, HttpStatus.BAD_REQUEST, "HMAC 签名校验失败"),
+
+    // ---------- 系统 ----------
+    SYSTEM_INTERNAL_ERROR(500001, HttpStatus.INTERNAL_SERVER_ERROR, "系统内部错误"),
+    SYSTEM_RATE_LIMITED(429001, HttpStatus.TOO_MANY_REQUESTS, "请求过于频繁");
+
+    /** 数值业务码（响应体 code）。 */
+    private final int code;
+
+    /** RFC7807 对应 HTTP 状态码。 */
+    private final HttpStatus httpStatus;
+
+    /** 默认人类可读描述。 */
+    private final String description;
+
+    ErrorCode(int code, HttpStatus httpStatus, String description) {
+        this.code = code;
+        this.httpStatus = httpStatus;
+        this.description = description;
+    }
+}
