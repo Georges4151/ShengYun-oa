@@ -33,17 +33,19 @@ export interface HttpClientOptions {
   generateNonce?: () => string
   /** 刷新访问令牌；未设置则禁用刷新重试 */
   refreshAccessToken?: () => string | Promise<string>
-  /** 判定错误是否触发刷新重试，默认 code === AUTH_ACCESS_TOKEN_EXPIRED */
+  /** 判定错误是否触发刷新重试，默认 err.message === 'AUTH_TOKEN_EXPIRED' */
   shouldRefresh?: (error: ApiError<unknown>) => boolean
   /** 登出 / 清理回调 */
   onLogout?: () => void
 }
 
 const DEFAULT_TIMEOUT_MS = 15000
-const SUCCESS_CODE = '0'
-const ACCESS_TOKEN_EXPIRED = 'AUTH_ACCESS_TOKEN_EXPIRED'
-const NETWORK_TIMEOUT = 'NETWORK_TIMEOUT'
-const INVALID_RESPONSE = 'INVALID_RESPONSE'
+const SUCCESS_CODE = 0
+const ACCESS_TOKEN_EXPIRED = 'AUTH_TOKEN_EXPIRED'
+/** 传输层错误哨兵码：网络超时（负数，区分后端正数业务码） */
+const NETWORK_TIMEOUT = -1
+/** 传输层错误哨兵码：响应体非法（负数，区分后端正数业务码） */
+const INVALID_RESPONSE = -2
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -69,7 +71,7 @@ function buildQuery(url: string, query?: Record<string, QueryValue>): string {
 
 function isApiResponse(value: unknown): value is ApiResponse<unknown> {
   if (!isPlainObject(value)) return false
-  return typeof (value as { code?: unknown }).code === 'string' && 'message' in value && 'data' in value
+  return typeof (value as { code?: unknown }).code === 'number' && 'message' in value && 'data' in value
 }
 
 function defaultNonce(): string {
@@ -123,7 +125,7 @@ export class HttpClient {
           !refreshed &&
           this.options.refreshAccessToken !== undefined &&
           err instanceof ApiError &&
-          (this.options.shouldRefresh?.(err) ?? err.code === ACCESS_TOKEN_EXPIRED)
+          (this.options.shouldRefresh?.(err) ?? err.message === ACCESS_TOKEN_EXPIRED)
         if (!canRefresh) throw err
         refreshed = true
         await this.options.refreshAccessToken?.()

@@ -5,8 +5,8 @@ import type { ApiResponse } from '@ceams/types'
  */
 export class ApiError<T = unknown> extends Error {
   override readonly name = 'ApiError'
-  /** 业务码 / HTML 状态码前缀码 */
-  readonly code: string
+  /** 业务码（数值，与后端 ApiResponse.code 一致；传输层错误为负数哨兵值） */
+  readonly code: number
   /** HTTP 状态码；网络层错误为 -1 */
   readonly status: number
   readonly traceId: string | undefined
@@ -14,7 +14,7 @@ export class ApiError<T = unknown> extends Error {
   readonly timestamp: string | undefined
 
   constructor(init: {
-    code: string
+    code: number
     message: string
     status?: number
     traceId?: string

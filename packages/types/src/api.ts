@@ -7,8 +7,8 @@
  * 由后端全局响应包装器产出。
  */
 export interface ApiResponse<T = unknown> {
-  /** 业务码：成功码与错误码枚举见 ResultCode */
-  code: string
+  /** 业务码：整数，0 表示成功，非 0 为错误码（如 401001） */
+  code: number
   /** 人类可读的消息 */
   message: string
   /** 业务数据 */
