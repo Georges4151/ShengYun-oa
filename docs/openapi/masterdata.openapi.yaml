@@ -1,0 +1,736 @@
+openapi: 3.0.3
+info:
+  title: CEAMS Masterdata API
+  version: 1.0.0
+  description: |
+    CEAMS 主数据域（masterdata）契约。分类树 / 往来单位 / 材料库 / 设备台账 / 设备租赁。
+    全局规范与 iam 一致：ID=字符串、金额=字符串、时间=ISO8601、鉴权 Bearer。
+servers:
+  - url: https://api.ceams.local/api/v1
+    description: 生产
+  - url: http://localhost:8080/api/v1
+    description: 本地
+tags:
+  - name: categories
+  - name: contacts
+  - name: materials
+  - name: equipment
+  - name: equipment-leases
+paths:
+  /categories/tree:
+    get:
+      tags: [categories]
+      summary: 分类树查询
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: type
+          in: query
+          description: 分类业务类型（EXPENSE/MATERIAL/PROJECT/CONTACT 等）
+          schema: { $ref: '#/components/schemas/CategoryType' }
+      responses:
+        '200':
+          description: 分类树
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryTreeResponse'
+  /categories:
+    get:
+      tags: [categories]
+      summary: 分类分页查询
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+        - name: type
+          in: query
+          schema: { $ref: '#/components/schemas/CategoryType' }
+        - name: parentId
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: 分类分页
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryPageResponse'
+    post:
+      tags: [categories]
+      summary: 新建分类
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryCreateRequest'
+      responses:
+        '200':
+          description: 返回分类 ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdResponse'
+  /categories/{id}:
+    get:
+      tags: [categories]
+      summary: 分类详情
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      responses:
+        '200':
+          description: 分类详情
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryResponse'
+    put:
+      tags: [categories]
+      summary: 更新分类
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryUpdateRequest'
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+    delete:
+      tags: [categories]
+      summary: 删除分类
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+
+  /contacts:
+    get:
+      tags: [contacts]
+      summary: 往来单位分页查询
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+        - name: keyword
+          in: query
+          description: 名称/联系人/电话模糊匹配
+          schema: { type: string }
+        - name: type
+          in: query
+          schema: { $ref: '#/components/schemas/ContactType' }
+      responses:
+        '200':
+          description: 往来单位分页
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContactPageResponse'
+    post:
+      tags: [contacts]
+      summary: 新建往来单位
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContactCreateRequest'
+      responses:
+        '200':
+          description: 返回往来单位 ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdResponse'
+  /contacts/{id}:
+    get:
+      tags: [contacts]
+      summary: 往来单位详情
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      responses:
+        '200':
+          description: 详情
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContactResponse'
+    put:
+      tags: [contacts]
+      summary: 更新往来单位
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContactUpdateRequest'
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+    delete:
+      tags: [contacts]
+      summary: 删除往来单位
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+
+  /materials:
+    get:
+      tags: [materials]
+      summary: 材料库分页查询
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+        - name: keyword
+          in: query
+          description: 名称/编码/规格模糊匹配
+          schema: { type: string }
+        - name: categoryId
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: 材料分页
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaterialPageResponse'
+    post:
+      tags: [materials]
+      summary: 新建材料
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MaterialCreateRequest'
+      responses:
+        '200':
+          description: 返回材料 ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdResponse'
+  /materials/{id}:
+    get:
+      tags: [materials]
+      summary: 材料详情
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      responses:
+        '200':
+          description: 详情
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaterialResponse'
+    put:
+      tags: [materials]
+      summary: 更新材料
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MaterialUpdateRequest'
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+    delete:
+      tags: [materials]
+      summary: 删除材料
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+
+  /equipment:
+    get:
+      tags: [equipment]
+      summary: 设备台账分页查询
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+        - name: keyword
+          in: query
+          description: 名称/型号模糊匹配
+          schema: { type: string }
+        - name: status
+          in: query
+          schema: { $ref: '#/components/schemas/EquipmentStatus' }
+      responses:
+        '200':
+          description: 设备分页
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EquipmentPageResponse'
+    post:
+      tags: [equipment]
+      summary: 新建设备
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EquipmentCreateRequest'
+      responses:
+        '200':
+          description: 返回设备 ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdResponse'
+  /equipment/{id}:
+    get:
+      tags: [equipment]
+      summary: 设备详情
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      responses:
+        '200':
+          description: 详情
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EquipmentResponse'
+    put:
+      tags: [equipment]
+      summary: 更新设备
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EquipmentUpdateRequest'
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+    delete:
+      tags: [equipment]
+      summary: 删除设备
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+
+  /equipment-leases:
+    get:
+      tags: [equipment-leases]
+      summary: 设备租赁分页查询
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+        - name: equipmentId
+          in: query
+          schema: { type: string }
+        - name: projectId
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: 租赁分页
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EquipmentLeasePageResponse'
+    post:
+      tags: [equipment-leases]
+      summary: 新建设备租赁
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EquipmentLeaseCreateRequest'
+      responses:
+        '200':
+          description: 返回租赁 ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdResponse'
+  /equipment-leases/{id}:
+    get:
+      tags: [equipment-leases]
+      summary: 设备租赁详情
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      responses:
+        '200':
+          description: 详情
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EquipmentLeaseResponse'
+    put:
+      tags: [equipment-leases]
+      summary: 更新设备租赁
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EquipmentLeaseUpdateRequest'
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+    delete:
+      tags: [equipment-leases]
+      summary: 删除设备租赁
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    PageParam:
+      name: page
+      in: query
+      schema: { type: integer, format: int32, default: 1, minimum: 1 }
+    SizeParam:
+      name: size
+      in: query
+      schema: { type: integer, format: int32, default: 20, minimum: 1, maximum: 100 }
+    IdParam:
+      name: id
+      in: path
+      required: true
+      schema: { type: string }
+  responses:
+    Ok:
+      description: 成功
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiResponse' }
+  schemas:
+    ApiResponse:
+      type: object
+      required: [code, message, traceId, timestamp]
+      properties:
+        code: { type: integer, format: int32, example: 0 }
+        message: { type: string, example: success }
+        data: { nullable: true }
+        traceId: { type: string }
+        timestamp: { type: string, format: date-time }
+    PageResult:
+      type: object
+      required: [records, total, page, size]
+      properties:
+        records: { type: array, items: {} }
+        total: { type: integer, format: int64 }
+        page: { type: integer, format: int32 }
+        size: { type: integer, format: int32 }
+    IdResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data: { type: string, example: '1752560000000000001' }
+
+    CategoryType:
+      type: string
+      enum: [EXPENSE, MATERIAL, PROJECT, CONTACT, PAYMENT, OTHER]
+    CategoryVO:
+      type: object
+      required: [id, name, type]
+      properties:
+        id: { type: string }
+        name: { type: string, example: 建筑材料 }
+        type: { $ref: '#/components/schemas/CategoryType' }
+        code: { type: string, nullable: true, example: MAT_BUILD }
+        parentId: { type: string, nullable: true }
+        sort: { type: integer, format: int32 }
+        enabled: { type: boolean, example: true }
+        children:
+          type: array
+          items: { $ref: '#/components/schemas/CategoryVO' }
+        createTime: { type: string, format: date-time }
+    CategoryCreateRequest:
+      type: object
+      required: [name, type]
+      properties:
+        name: { type: string, maxLength: 100 }
+        type: { $ref: '#/components/schemas/CategoryType' }
+        code: { type: string, maxLength: 50, nullable: true }
+        parentId: { type: string, nullable: true }
+        sort: { type: integer, format: int32 }
+    CategoryUpdateRequest:
+      type: object
+      properties:
+        name: { type: string }
+        code: { type: string }
+        parentId: { type: string, nullable: true }
+        sort: { type: integer, format: int32 }
+        enabled: { type: boolean }
+    CategoryTreeResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              type: array
+              items: { $ref: '#/components/schemas/CategoryVO' }
+    CategoryResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data: { $ref: '#/components/schemas/CategoryVO' }
+    CategoryPageResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              allOf:
+                - $ref: '#/components/schemas/PageResult'
+                - type: object
+                  properties:
+                    records:
+                      type: array
+                      items: { $ref: '#/components/schemas/CategoryVO' }
+
+    ContactType:
+      type: string
+      enum: [SUPPLIER, CUSTOMER, SUBCONTRACTOR, OTHER]
+    ContactVO:
+      type: object
+      required: [id, name, type]
+      properties:
+        id: { type: string }
+        name: { type: string, example: 河北建设集团有限公司 }
+        type: { $ref: '#/components/schemas/ContactType' }
+        contactPerson: { type: string, nullable: true }
+        phone: { type: string, nullable: true, description: 手机号（加密） }
+        email: { type: string, nullable: true }
+        address: { type: string, nullable: true }
+        taxIdentificationNumber: { type: string, nullable: true, description: 税号（加密） }
+        bankAccount: { type: string, nullable: true, description: 银行账号（加密） }
+        createTime: { type: string, format: date-time }
+    ContactCreateRequest:
+      type: object
+      required: [name, type]
+      properties:
+        name: { type: string, maxLength: 200 }
+        type: { $ref: '#/components/schemas/ContactType' }
+        contactPerson: { type: string, maxLength: 50, nullable: true }
+        phone: { type: string, nullable: true }
+        email: { type: string, nullable: true }
+        address: { type: string, nullable: true }
+        taxIdentificationNumber: { type: string, nullable: true }
+        bankAccount: { type: string, nullable: true }
+    ContactUpdateRequest:
+      type: object
+      properties:
+        name: { type: string }
+        type: { $ref: '#/components/schemas/ContactType' }
+        contactPerson: { type: string }
+        phone: { type: string }
+        email: { type: string }
+        address: { type: string }
+        taxIdentificationNumber: { type: string }
+        bankAccount: { type: string }
+    ContactResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data: { $ref: '#/components/schemas/ContactVO' }
+    ContactPageResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              allOf:
+                - $ref: '#/components/schemas/PageResult'
+                - type: object
+                  properties:
+                    records:
+                      type: array
+                      items: { $ref: '#/components/schemas/ContactVO' }
+
+    MaterialVO:
+      type: object
+      required: [id, materialCode, materialName, unit]
+      properties:
+        id: { type: string }
+        materialCode: { type: string, example: MAT-001 }
+        materialName: { type: string, example: 42.5 水泥 }
+        specification: { type: string, nullable: true }
+        unit: { type: string, example: 吨 }
+        currentPrice: { type: string, example: '450.00' }
+        supplierId: { type: string, nullable: true }
+        categoryId: { type: string, nullable: true }
+        createTime: { type: string, format: date-time }
+    MaterialCreateRequest:
+      type: object
+      required: [materialCode, materialName, unit]
+      properties:
+        materialCode: { type: string, maxLength: 50 }
+        materialName: { type: string, maxLength: 200 }
+        specification: { type: string, maxLength: 200, nullable: true }
+        unit: { type: string, maxLength: 20 }
+        currentPrice: { type: string, example: '450.00' }
+        supplierId: { type: string, nullable: true }
+        categoryId: { type: string, nullable: true }
+    MaterialUpdateRequest:
+      type: object
+      properties:
+        materialName: { type: string }
+        specification: { type: string }
+        unit: { type: string }
+        currentPrice: { type: string }
+        supplierId: { type: string }
+        categoryId: { type: string }
+    MaterialResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data: { $ref: '#/components/schemas/MaterialVO' }
+    MaterialPageResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              allOf:
+                - $ref: '#/components/schemas/PageResult'
+                - type: object
+                  properties:
+                    records:
+                      type: array
+                      items: { $ref: '#/components/schemas/MaterialVO' }
+
+    EquipmentStatus:
+      type: string
+      enum: [IDLE, IN_USE, LEASED, MAINTENANCE, SCRAPPED]
+    EquipmentVO:
+      type: object
+      required: [id, name, type, status]
+      properties:
+        id: { type: string }
+        name: { type: string, example: 塔式起重机 QTZ80 }
+        type: { type: string, example: CRANE }
+        model: { type: string, nullable: true }
+        status: { $ref: '#/components/schemas/EquipmentStatus' }
+        purchaseDate: { type: string, format: date, nullable: true }
+        purchasePrice: { type: string, nullable: true, example: '1200000.00' }
+        createTime: { type: string, format: date-time }
+    EquipmentCreateRequest:
+      type: object
+      required: [name, type, status]
+      properties:
+        name: { type: string, maxLength: 200 }
+        type: { type: string, maxLength: 50 }
+        model: { type: string, maxLength: 100, nullable: true }
+        status: { $ref: '#/components/schemas/EquipmentStatus' }
+        purchaseDate: { type: string, format: date, nullable: true }
+        purchasePrice: { type: string, nullable: true }
+    EquipmentUpdateRequest:
+      type: object
+      properties:
+        name: { type: string }
+        type: { type: string }
+        model: { type: string }
+        status: { $ref: '#/components/schemas/EquipmentStatus' }
+        purchaseDate: { type: string, format: date }
+        purchasePrice: { type: string }
+    EquipmentResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data: { $ref: '#/components/schemas/EquipmentVO' }
+    EquipmentPageResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              allOf:
+                - $ref: '#/components/schemas/PageResult'
+                - type: object
+                  properties:
+                    records:
+                      type: array
+                      items: { $ref: '#/components/schemas/EquipmentVO' }
+
+    EquipmentLeaseVO:
+      type: object
+      required: [id, equipmentId, projectId]
+      properties:
+        id: { type: string }
+        equipmentId: { type: string }
+        projectId: { type: string }
+        lessorId: { type: string, nullable: true, description: 出租方（往来单位）ID }
+        leaseStartDate: { type: string, format: date }
+        leaseEndDate: { type: string, format: date }
+        dailyRent: { type: string, example: '800.00' }
+        totalRent: { type: string, example: '24000.00' }
+        paymentStatus:
+          type: string
+          enum: [UNPAID, PARTIAL, PAID]
+        createTime: { type: string, format: date-time }
+    EquipmentLeaseCreateRequest:
+      type: object
+      required: [equipmentId, projectId, leaseStartDate, leaseEndDate]
+      properties:
+        equipmentId: { type: string }
+        projectId: { type: string }
+        lessorId: { type: string, nullable: true }
+        leaseStartDate: { type: string, format: date }
+        leaseEndDate: { type: string, format: date }
+        dailyRent: { type: string }
+        totalRent: { type: string }
+        paymentStatus: { type: string, enum: [UNPAID, PARTIAL, PAID] }
+    EquipmentLeaseUpdateRequest:
+      type: object
+      properties:
+        projectId: { type: string }
+        lessorId: { type: string }
+        leaseStartDate: { type: string, format: date }
+        leaseEndDate: { type: string, format: date }
+        dailyRent: { type: string }
+        totalRent: { type: string }
+        paymentStatus: { type: string, enum: [UNPAID, PARTIAL, PAID] }
+    EquipmentLeaseResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data: { $ref: '#/components/schemas/EquipmentLeaseVO' }
+    EquipmentLeasePageResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              allOf:
+                - $ref: '#/components/schemas/PageResult'
+                - type: object
+                  properties:
+                    records:
+                      type: array
+                      items: { $ref: '#/components/schemas/EquipmentLeaseVO' }
