@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ceams.dao.SubcontractorMapper">
+
+    <resultMap id="SubcontractorResult" type="com.ceams.model.entity.Subcontractor">
+        <id property="id" column="id" />
+        <result property="name" column="name" />
+        <result property="contactPerson" column="contact_person" />
+        <result property="phone" column="phone" />
+        <result property="address" column="address" />
+        <result property="qualificationLevel" column="qualification_level" />
+        <result property="creditRating" column="credit_rating" />
+        <result property="businessScope" column="business_scope" />
+        <result property="taxIdentificationNumber" column="tax_identification_number" />
+        <result property="bankAccount" column="bank_account" />
+        <result property="description" column="description" />
+        <result property="createTime" column="create_time" />
+        <result property="updateTime" column="update_time" />
+    </resultMap>
+
+    <select id="selectById" resultMap="SubcontractorResult">
+        SELECT * FROM subcontractors WHERE id = #{id}
+    </select>
+
+    <select id="selectByQualification" resultMap="SubcontractorResult">
+        SELECT * FROM subcontractors WHERE qualification_level = #{qualificationLevel}
+    </select>
+
+    <select id="selectByCreditRating" resultMap="SubcontractorResult">
+        SELECT * FROM subcontractors WHERE credit_rating = #{creditRating}
+    </select>
+
+    <select id="selectByName" resultMap="SubcontractorResult">
+        SELECT * FROM subcontractors WHERE name LIKE CONCAT('%', #{name}, '%')
+    </select>
+
+    <select id="selectByConditions" resultMap="SubcontractorResult">
+        SELECT * FROM subcontractors
+        WHERE 1=1
+        <if test="name != null and name != ''">
+            AND name LIKE CONCAT('%', #{name}, '%')
+        </if>
+        <if test="contactPerson != null and contactPerson != ''">
+            AND contact_person LIKE CONCAT('%', #{contactPerson}, '%')
+        </if>
+        <if test="phone != null and phone != ''">
+            AND phone LIKE CONCAT('%', #{phone}, '%')
+        </if>
+    </select>
+
+    <insert id="insert" parameterType="com.ceams.model.entity.Subcontractor" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO subcontractors
+        (name, contact_person, phone, address, qualification_level, credit_rating, business_scope, tax_identification_number, bank_account, description, create_time, update_time)
+        VALUES
+        (#{name}, #{contactPerson}, #{phone}, #{address}, #{qualificationLevel}, #{creditRating}, #{businessScope}, #{taxIdentificationNumber}, #{bankAccount}, #{description}, NOW(), NOW())
+    </insert>
+
+    <update id="update" parameterType="com.ceams.model.entity.Subcontractor">
+        UPDATE subcontractors
+        SET name = #{name}, contact_person = #{contactPerson}, phone = #{phone}, address = #{address},
+            qualification_level = #{qualificationLevel}, credit_rating = #{creditRating}, business_scope = #{businessScope},
+            tax_identification_number = #{taxIdentificationNumber}, bank_account = #{bankAccount}, description = #{description},
+            update_time = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM subcontractors WHERE id = #{id}
+    </delete>
+
+    <select id="selectAll" resultMap="SubcontractorResult">
+        SELECT * FROM subcontractors
+    </select>
+
+    <!-- 多对多关系操作 -->
+    <insert id="addProjectRelation">
+        INSERT IGNORE INTO subcontractor_project (subcontractor_id, project_id, create_time, update_time)
+        VALUES (#{subcontractorId}, #{projectId}, NOW(), NOW())
+    </insert>
+
+    <delete id="removeProjectRelation">
+        DELETE FROM subcontractor_project
+        WHERE subcontractor_id = #{subcontractorId} AND project_id = #{projectId}
+    </delete>
+
+    <select id="selectProjectIdsBySubcontractorId" resultType="java.lang.Integer">
+        SELECT project_id FROM subcontractor_project
+        WHERE subcontractor_id = #{subcontractorId}
+    </select>
+
+    <!-- 合同管理操作 -->
+    <select id="selectContractCountBySubcontractorId" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM subcontractor_contracts
+        WHERE subcontractor_id = #{subcontractorId}
+    </select>
+
+    <!-- 删除分包商的所有项目关联 -->
+    <delete id="deleteProjectRelations">
+        DELETE FROM subcontractor_project
+        WHERE subcontractor_id = #{subcontractorId}
+    </delete>
+
+    <!-- 根据项目ID查询分包商 -->
+    <select id="selectByProjectId" resultMap="SubcontractorResult">
+        SELECT s.* FROM subcontractors s
+        JOIN subcontractor_project sp ON s.id = sp.subcontractor_id
+        WHERE sp.project_id = #{projectId}
+    </select>
+
+</mapper>

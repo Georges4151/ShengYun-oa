@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ceams.dao.SettlementProofMapper">
+
+    <resultMap id="SettlementProofResult" type="com.ceams.model.entity.SettlementProof">
+        <id property="id" column="id" />
+        <result property="contractId" column="contract_id" />
+        <result property="subcontractorId" column="subcontractor_id" />
+        <result property="proofName" column="proof_name" />
+        <result property="proofNumber" column="proof_number" />
+        <result property="proofDate" column="proof_date" />
+        <result property="settlementAmount" column="settlement_amount" />
+        <result property="filePath" column="file_path" />
+        <result property="fileName" column="file_name" />
+        <result property="description" column="description" />
+        <result property="createTime" column="create_time" />
+        <result property="updateTime" column="update_time" />
+        <result property="createdBy" column="created_by" />
+    </resultMap>
+
+    <select id="selectById" resultMap="SettlementProofResult">
+        SELECT * FROM settlement_proofs WHERE id = #{id}
+    </select>
+
+    <select id="selectByContractId" resultMap="SettlementProofResult">
+        SELECT * FROM settlement_proofs WHERE contract_id = #{contractId}
+    </select>
+
+    <select id="selectBySubcontractorId" resultMap="SettlementProofResult">
+        SELECT * FROM settlement_proofs WHERE subcontractor_id = #{subcontractorId}
+    </select>
+
+    <select id="selectAll" resultMap="SettlementProofResult">
+        SELECT * FROM settlement_proofs ORDER BY create_time DESC
+    </select>
+
+    <select id="existsByContractId" resultType="boolean">
+        SELECT COUNT(*) > 0 FROM settlement_proofs WHERE contract_id = #{contractId}
+    </select>
+
+    <insert id="insert" parameterType="com.ceams.model.entity.SettlementProof" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO settlement_proofs
+        (contract_id, subcontractor_id, proof_name, proof_number, proof_date, settlement_amount, 
+         file_path, file_name, description, created_by, create_time, update_time)
+        VALUES
+        (#{contractId}, #{subcontractorId}, #{proofName}, #{proofNumber}, #{proofDate}, #{settlementAmount},
+         #{filePath}, #{fileName}, #{description}, #{createdBy}, NOW(), NOW())
+    </insert>
+
+    <update id="update" parameterType="com.ceams.model.entity.SettlementProof">
+        UPDATE settlement_proofs
+        SET proof_name = #{proofName}, proof_number = #{proofNumber}, proof_date = #{proofDate},
+            settlement_amount = #{settlementAmount}, file_path = #{filePath}, file_name = #{fileName},
+            description = #{description}, update_time = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM settlement_proofs WHERE id = #{id}
+    </delete>
+
+    <delete id="deleteByContractId">
+        DELETE FROM settlement_proofs WHERE contract_id = #{contractId}
+    </delete>
+
+</mapper>

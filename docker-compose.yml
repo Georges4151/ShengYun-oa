@@ -1,0 +1,49 @@
+services:
+  # Redis 缓存服务（使用官方镜像）
+  redis:
+    image: redis:7-alpine
+    container_name: ceams-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - ceams-redis-data:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # 应用服务
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ceams-app
+    ports:
+      - "9095:9095"
+    environment:
+      # 使用本地 MySQL（host.docker.internal）
+      DB_HOST: host.docker.internal
+      DB_PORT: 3306
+      DB_NAME: ceams
+      DB_USER: root
+      DB_PASSWORD: "123456"
+      TZ: Asia/Shanghai
+      SPRING_PROFILES_ACTIVE: docker
+    depends_on:
+      redis:
+        condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ceams-logs:/app/logs
+      - ceams-backup:/app/backup
+      - ceams-receipts:/app/rephoto
+    restart: unless-stopped
+
+volumes:
+  ceams-redis-data:
+  ceams-logs:
+  ceams-backup:
+  ceams-receipts:

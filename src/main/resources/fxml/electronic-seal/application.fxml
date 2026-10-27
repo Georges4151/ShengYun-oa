@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.cell.PropertyValueFactory?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox alignment="TOP_LEFT" spacing="10.0" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.ceams.ui.controller.FXElectronicSealApplicationController">
+    <padding>
+        <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+    </padding>
+    
+    <Label text="电子章使用申请" style="-fx-font-size: 18px; -fx-font-weight: bold;" />
+    
+    <!-- 申请表单 -->
+    <GridPane hgap="10.0" vgap="10.0">
+        <Label text="选择电子章:" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+        <ComboBox fx:id="sealComboBox" prefWidth="200.0" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+        
+        <Label text="使用目的:" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+        <TextArea fx:id="purposeTextArea" prefHeight="100.0" prefWidth="300.0" promptText="请输入使用电子章的目的..." GridPane.columnIndex="1" GridPane.rowIndex="1" />
+    </GridPane>
+    
+    <HBox spacing="10.0">
+        <Button fx:id="submitButton" text="提交申请" style="-fx-background-color: #4CAF50; -fx-text-fill: white;" />
+        <Button fx:id="cancelButton" text="取消" />
+    </HBox>
+    
+    <Separator />
+    
+    <!-- 我的申请记录 -->
+    <Label text="📋 我的申请记录" style="-fx-font-size: 14px; -fx-font-weight: bold;" />
+    <TableView fx:id="applicationTable" prefHeight="300.0" prefWidth="500.0">
+        <columns>
+            <TableColumn fx:id="sealNameColumn" prefWidth="150.0" text="电子章名称" />
+            <TableColumn fx:id="purposeColumn" prefWidth="200.0" text="使用目的" />
+            <TableColumn fx:id="statusColumn" prefWidth="100.0" text="状态" />
+            <TableColumn fx:id="applyTimeColumn" prefWidth="150.0" text="申请时间" />
+        </columns>
+    </TableView>
+</VBox>

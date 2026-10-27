@@ -1,0 +1,247 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ceams.dao.ReceiptMapper">
+    <resultMap id="ReceiptResultMap" type="com.ceams.model.entity.Receipt">
+        <id column="id" property="id" />
+        <result column="receipt_number" property="receiptNumber" />
+        <result column="user_id" property="userId" />
+        <result column="reporter_id" property="reporterId" />
+        <result column="project_id" property="projectId" />
+        <result column="receipt_date" property="receiptDate" />
+        <result column="amount" property="amount" />
+        <result column="type" property="type" />
+        <result column="description" property="description" />
+        <result column="file_path" property="filePath" />
+        <result column="file_hash" property="fileHash" />
+        <result column="ocr_data" property="ocrData" />
+        <result column="verification_status" property="verificationStatus" />
+        <result column="verified_by" property="verifiedBy" />
+        <result column="verified_at" property="verifiedAt" />
+        <result column="payment_status" property="paymentStatus" />
+        <result column="paid_amount" property="paidAmount" />
+        <result column="paid_at" property="paidAt" />
+        <result column="paid_by" property="paidBy" />
+        <result column="payment_method" property="paymentMethod" />
+        <result column="create_time" property="createTime" />
+        <result column="update_time" property="updateTime" />
+        <result column="reporter_name" property="reporterName" />
+        <result column="project_name" property="projectName" />
+        <result column="finance_status" property="financeStatus" />
+        <result column="finance_verified_by" property="financeVerifiedBy" />
+        <result column="finance_verified_at" property="financeVerifiedAt" />
+        <result column="finance_comment" property="financeComment" />
+        <result column="project_manager_status" property="projectManagerStatus" />
+        <result column="project_manager_verified_by" property="projectManagerVerifiedBy" />
+        <result column="project_manager_verified_at" property="projectManagerVerifiedAt" />
+        <result column="project_manager_comment" property="projectManagerComment" />
+        <result column="manager_status" property="managerStatus" />
+        <result column="manager_verified_by" property="managerVerifiedBy" />
+        <result column="manager_verified_at" property="managerVerifiedAt" />
+        <result column="manager_comment" property="managerComment" />
+        <result column="current_approval_level" property="currentApprovalLevel" />
+    </resultMap>
+    
+    <select id="selectById" resultMap="ReceiptResultMap">
+        SELECT r.*, u.name as reporter_name, p.project_name
+        FROM receipts r
+        LEFT JOIN users u ON r.reporter_id = u.user_id
+        LEFT JOIN projects p ON r.project_id = p.id
+        WHERE r.id = #{id}
+    </select>
+
+    <select id="selectByIdForUpdate" resultMap="ReceiptResultMap">
+        SELECT r.*, u.name as reporter_name, p.project_name
+        FROM receipts r
+        LEFT JOIN users u ON r.reporter_id = u.user_id
+        LEFT JOIN projects p ON r.project_id = p.id
+        WHERE r.id = #{id}
+        FOR UPDATE
+    </select>
+    
+    <select id="selectAll" resultMap="ReceiptResultMap">
+        SELECT r.*, u.name as reporter_name, p.project_name
+        FROM receipts r
+        LEFT JOIN users u ON r.reporter_id = u.user_id
+        LEFT JOIN projects p ON r.project_id = p.id
+    </select>
+    
+    <select id="selectByVerificationStatus" resultMap="ReceiptResultMap">
+        SELECT r.*, u.name as reporter_name, p.project_name
+        FROM receipts r
+        LEFT JOIN users u ON r.reporter_id = u.user_id
+        LEFT JOIN projects p ON r.project_id = p.id
+        WHERE r.verification_status = #{status}
+    </select>
+    
+    <insert id="insert" parameterType="com.ceams.model.entity.Receipt">
+        INSERT INTO receipts (receipt_number, user_id, reporter_id, project_id, receipt_date, amount, type, description, file_path, file_hash, ocr_data, verification_status, verified_by, verified_at, reporter_name, payment_status, paid_amount, paid_at, paid_by, payment_method, finance_status, finance_verified_by, finance_verified_at, finance_comment, project_manager_status, project_manager_verified_by, project_manager_verified_at, project_manager_comment, manager_status, manager_verified_by, manager_verified_at, manager_comment, current_approval_level)
+        VALUES (#{receiptNumber}, #{userId}, #{reporterId}, #{projectId}, #{receiptDate}, #{amount}, #{type}, #{description}, #{filePath}, #{fileHash}, #{ocrData}, #{verificationStatus}, #{verifiedBy}, #{verifiedAt}, #{reporterName}, #{paymentStatus}, #{paidAmount}, #{paidAt}, #{paidBy}, #{paymentMethod}, #{financeStatus}, #{financeVerifiedBy}, #{financeVerifiedAt}, #{financeComment}, #{projectManagerStatus}, #{projectManagerVerifiedBy}, #{projectManagerVerifiedAt}, #{projectManagerComment}, #{managerStatus}, #{managerVerifiedBy}, #{managerVerifiedAt}, #{managerComment}, #{currentApprovalLevel})
+    </insert>
+    
+    <update id="update" parameterType="com.ceams.model.entity.Receipt">
+        UPDATE receipts
+        SET user_id = #{userId}, reporter_id = #{reporterId}, project_id = #{projectId}, receipt_date = #{receiptDate}, amount = #{amount}, type = #{type}, description = #{description}, file_path = #{filePath}, file_hash = #{fileHash}, ocr_data = #{ocrData}, verification_status = #{verificationStatus}, verified_by = #{verifiedBy}, verified_at = #{verifiedAt}, reporter_name = #{reporterName}, payment_status = #{paymentStatus}, paid_amount = #{paidAmount}, paid_at = #{paidAt}, paid_by = #{paidBy}, payment_method = #{paymentMethod}, finance_status = #{financeStatus}, finance_verified_by = #{financeVerifiedBy}, finance_verified_at = #{financeVerifiedAt}, finance_comment = #{financeComment}, project_manager_status = #{projectManagerStatus}, project_manager_verified_by = #{projectManagerVerifiedBy}, project_manager_verified_at = #{projectManagerVerifiedAt}, project_manager_comment = #{projectManagerComment}, manager_status = #{managerStatus}, manager_verified_by = #{managerVerifiedBy}, manager_verified_at = #{managerVerifiedAt}, manager_comment = #{managerComment}, current_approval_level = #{currentApprovalLevel}
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateApprovalStatus" parameterType="com.ceams.model.entity.Receipt">
+        UPDATE receipts
+        SET finance_status = #{financeStatus},
+            finance_verified_by = #{financeVerifiedBy},
+            finance_verified_at = #{financeVerifiedAt},
+            finance_comment = #{financeComment},
+            project_manager_status = #{projectManagerStatus},
+            project_manager_verified_by = #{projectManagerVerifiedBy},
+            project_manager_verified_at = #{projectManagerVerifiedAt},
+            project_manager_comment = #{projectManagerComment},
+            manager_status = #{managerStatus},
+            manager_verified_by = #{managerVerifiedBy},
+            manager_verified_at = #{managerVerifiedAt},
+            manager_comment = #{managerComment},
+            current_approval_level = #{currentApprovalLevel}
+        WHERE id = #{id}
+    </update>
+    
+    <update id="updatePaymentStatus" parameterType="com.ceams.model.entity.Receipt">
+        UPDATE receipts
+        SET payment_status = #{paymentStatus}, paid_amount = #{paidAmount}, paid_at = #{paidAt}, paid_by = #{paidBy}, payment_method = #{paymentMethod}
+        WHERE id = #{id}
+    </update>
+    
+    <delete id="deleteById" parameterType="java.lang.Integer">
+        DELETE FROM receipts WHERE id = #{id}
+    </delete>
+    
+    <!-- 分页查询方法 -->
+    <select id="selectAllWithPagination" resultMap="ReceiptResultMap">
+        SELECT r.*, u.name as reporter_name, p.project_name
+        FROM receipts r
+        LEFT JOIN users u ON r.reporter_id = u.user_id
+        LEFT JOIN projects p ON r.project_id = p.id
+        LIMIT #{pageSize} OFFSET #{offset}
+    </select>
+    
+    <select id="selectByConditionsWithPagination" resultMap="ReceiptResultMap">
+        SELECT r.*, u.name as reporter_name, p.project_name
+        FROM receipts r
+        LEFT JOIN users u ON r.reporter_id = u.user_id
+        LEFT JOIN projects p ON r.project_id = p.id
+        WHERE 1=1
+        LIMIT #{pageSize} OFFSET #{offset}
+    </select>
+    
+    <select id="countByConditions" resultType="java.lang.Integer">
+        SELECT COUNT(*)
+        FROM receipts r
+        LEFT JOIN users u ON r.reporter_id = u.user_id
+        LEFT JOIN projects p ON r.project_id = p.id
+        WHERE 1=1
+    </select>
+
+    <select id="count" resultType="java.lang.Long">
+        SELECT COUNT(*) FROM receipts
+    </select>
+
+    <select id="selectByFinanceStatus" resultMap="ReceiptResultMap">
+        SELECT r.*, u.name as reporter_name, p.project_name
+        FROM receipts r
+        LEFT JOIN users u ON r.reporter_id = u.user_id
+        LEFT JOIN projects p ON r.project_id = p.id
+        WHERE r.finance_status = #{status}
+    </select>
+
+    <select id="selectByProjectManagerStatus" resultMap="ReceiptResultMap">
+        SELECT r.*, u.name as reporter_name, p.project_name
+        FROM receipts r
+        LEFT JOIN users u ON r.reporter_id = u.user_id
+        LEFT JOIN projects p ON r.project_id = p.id
+        WHERE r.project_manager_status = #{status}
+    </select>
+
+    <select id="selectByManagerStatus" resultMap="ReceiptResultMap">
+        SELECT r.*, u.name as reporter_name, p.project_name
+        FROM receipts r
+        LEFT JOIN users u ON r.reporter_id = u.user_id
+        LEFT JOIN projects p ON r.project_id = p.id
+        WHERE r.manager_status = #{status}
+    </select>
+
+    <select id="selectPendingApprovals" resultMap="ReceiptResultMap">
+        SELECT r.*, u.name as reporter_name, p.project_name
+        FROM receipts r
+        LEFT JOIN users u ON r.reporter_id = u.user_id
+        LEFT JOIN projects p ON r.project_id = p.id
+        WHERE r.finance_status = 'pending' 
+           OR r.project_manager_status = 'pending' 
+           OR r.manager_status = 'pending'
+        ORDER BY r.create_time DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="countThisMonth" resultType="java.lang.Long">
+        SELECT COUNT(*) FROM receipts
+        WHERE YEAR(create_time) = YEAR(CURRENT_DATE)
+          AND MONTH(create_time) = MONTH(CURRENT_DATE)
+    </select>
+
+    <select id="selectPendingApprovalsByLevelWithPagination" resultMap="ReceiptResultMap">
+        SELECT r.*, u.name as reporter_name, p.project_name
+        FROM receipts r
+        LEFT JOIN users u ON r.reporter_id = u.user_id
+        LEFT JOIN projects p ON r.project_id = p.id
+        WHERE r.current_approval_level = #{approvalLevel}
+        ORDER BY r.create_time DESC
+        LIMIT #{pageSize} OFFSET #{offset}
+    </select>
+
+    <select id="countPendingApprovalsByLevel" resultType="java.lang.Integer">
+        SELECT COUNT(*)
+        FROM receipts
+        WHERE current_approval_level = #{approvalLevel}
+    </select>
+
+    <select id="selectPendingApprovalsForManagerWithPagination" resultMap="ReceiptResultMap">
+        SELECT r.*, u.name as reporter_name, p.project_name
+        FROM receipts r
+        LEFT JOIN users u ON r.reporter_id = u.user_id
+        LEFT JOIN projects p ON r.project_id = p.id
+        WHERE r.current_approval_level = 1
+          AND p.manager_id = #{managerId}
+        ORDER BY r.create_time DESC
+        LIMIT #{pageSize} OFFSET #{offset}
+    </select>
+
+    <select id="countPendingApprovalsForManager" resultType="java.lang.Integer">
+        SELECT COUNT(*)
+        FROM receipts r
+        LEFT JOIN projects p ON r.project_id = p.id
+        WHERE r.current_approval_level = 1
+          AND p.manager_id = #{managerId}
+    </select>
+
+    <select id="searchByKeyword" resultMap="ReceiptResultMap">
+        SELECT r.*, u.name as reporter_name, p.project_name
+        FROM receipts r
+        LEFT JOIN users u ON r.reporter_id = u.user_id
+        LEFT JOIN projects p ON r.project_id = p.id
+        WHERE r.type LIKE CONCAT('%', #{keyword}, '%')
+           OR u.name LIKE CONCAT('%', #{keyword}, '%')
+           OR p.project_name LIKE CONCAT('%', #{keyword}, '%')
+           OR r.ocr_data LIKE CONCAT('%', #{keyword}, '%')
+        ORDER BY r.create_time DESC
+    </select>
+
+    <select id="checkDuplicateByReceiptNumber" resultType="int">
+        SELECT COUNT(*) FROM receipts
+        WHERE receipt_number = #{receiptNumber}
+    </select>
+
+    <select id="selectByFileHash" resultMap="ReceiptResultMap">
+        SELECT r.*, u.name as reporter_name, p.project_name
+        FROM receipts r
+        LEFT JOIN users u ON r.reporter_id = u.user_id
+        LEFT JOIN projects p ON r.project_id = p.id
+        WHERE r.file_hash = #{fileHash}
+        LIMIT 1
+    </select>
+</mapper>

@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ceams.dao.ReceiptVerificationMapper">
+    <resultMap id="ReceiptVerificationResultMap" type="com.ceams.model.entity.ReceiptVerification">
+        <id column="id" property="id" />
+        <result column="receipt_id" property="receiptId" />
+        <result column="payment_account_id" property="paymentAccountId" />
+        <result column="amount" property="amount" />
+        <result column="payment_method" property="paymentMethod" />
+        <result column="verification_time" property="verificationTime" />
+        <result column="verified_by" property="verifiedBy" />
+        <result column="remark" property="remark" />
+        <result column="create_time" property="createTime" />
+        <result column="update_time" property="updateTime" />
+        <result column="receipt_number" property="receiptNumber" />
+        <result column="payment_account_name" property="paymentAccountName" />
+        <result column="verified_by_name" property="verifiedByName" />
+    </resultMap>
+    
+    <select id="selectById" resultMap="ReceiptVerificationResultMap">
+        SELECT rv.*, 
+               r.id AS receipt_number,
+               pa.name AS payment_account_name,
+               u.name AS verified_by_name
+        FROM receipt_verification rv
+        LEFT JOIN receipts r ON rv.receipt_id = r.id
+        LEFT JOIN payment_account pa ON rv.payment_account_id = pa.id
+        LEFT JOIN users u ON rv.verified_by = u.user_id
+        WHERE rv.id = #{id}
+    </select>
+    
+    <select id="selectByReceiptId" resultMap="ReceiptVerificationResultMap">
+        SELECT rv.*, 
+               r.id AS receipt_number,
+               pa.name AS payment_account_name,
+               u.name AS verified_by_name
+        FROM receipt_verification rv
+        LEFT JOIN receipts r ON rv.receipt_id = r.id
+        LEFT JOIN payment_account pa ON rv.payment_account_id = pa.id
+        LEFT JOIN users u ON rv.verified_by = u.user_id
+        WHERE rv.receipt_id = #{receiptId}
+        ORDER BY rv.verification_time DESC
+    </select>
+    
+    <select id="selectByDateRange" resultMap="ReceiptVerificationResultMap">
+        SELECT rv.*, 
+               r.id AS receipt_number,
+               pa.name AS payment_account_name,
+               u.name AS verified_by_name
+        FROM receipt_verification rv
+        LEFT JOIN receipts r ON rv.receipt_id = r.id
+        LEFT JOIN payment_account pa ON rv.payment_account_id = pa.id
+        LEFT JOIN users u ON rv.verified_by = u.user_id
+        WHERE rv.verification_time BETWEEN #{startDate} AND #{endDate}
+        ORDER BY rv.verification_time DESC
+    </select>
+    
+    <select id="selectByPaymentAccountId" resultMap="ReceiptVerificationResultMap">
+        SELECT rv.*, 
+               r.id AS receipt_number,
+               pa.name AS payment_account_name,
+               u.name AS verified_by_name
+        FROM receipt_verification rv
+        LEFT JOIN receipts r ON rv.receipt_id = r.id
+        LEFT JOIN payment_account pa ON rv.payment_account_id = pa.id
+        LEFT JOIN users u ON rv.verified_by = u.user_id
+        WHERE rv.payment_account_id = #{paymentAccountId}
+        ORDER BY rv.verification_time DESC
+    </select>
+    
+    <select id="selectAll" resultMap="ReceiptVerificationResultMap">
+        SELECT rv.*, 
+               r.id AS receipt_number,
+               pa.name AS payment_account_name,
+               u.name AS verified_by_name
+        FROM receipt_verification rv
+        LEFT JOIN receipts r ON rv.receipt_id = r.id
+        LEFT JOIN payment_account pa ON rv.payment_account_id = pa.id
+        LEFT JOIN users u ON rv.verified_by = u.user_id
+        ORDER BY rv.verification_time DESC
+    </select>
+    
+    <insert id="insert" parameterType="com.ceams.model.entity.ReceiptVerification">
+        INSERT INTO receipt_verification (receipt_id, payment_account_id, amount, payment_method, verification_time, verified_by, remark)
+        VALUES (#{receiptId}, #{paymentAccountId}, #{amount}, #{paymentMethod}, #{verificationTime}, #{verifiedBy}, #{remark})
+    </insert>
+    
+    <update id="update" parameterType="com.ceams.model.entity.ReceiptVerification">
+        UPDATE receipt_verification
+        SET receipt_id = #{receiptId}, payment_account_id = #{paymentAccountId}, amount = #{amount}, payment_method = #{paymentMethod}, verification_time = #{verificationTime}, verified_by = #{verifiedBy}, remark = #{remark}
+        WHERE id = #{id}
+    </update>
+    
+    <delete id="deleteById" parameterType="java.lang.Integer">
+        DELETE FROM receipt_verification WHERE id = #{id}
+    </delete>
+</mapper>

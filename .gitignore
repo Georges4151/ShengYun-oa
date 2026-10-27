@@ -1,0 +1,50 @@
+# Maven build output
+target/
+*.jar
+*.war
+*.ear
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+*.iml
+*.project
+*.classpath
+
+# Logs
+logs/
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+
+# Testing
+**/test-*.xml
+**/TEST-*.xml
+**/test/**/*.xml
+
+# ===== 构建产物 / 运行时分发 =====
+/app/
+
+# ===== 运行时业务数据（不纳入版本库，仅保留本地备份） =====
+/backup/
+/contracts/
+/stamped_contracts/
+/receipts/
+/rephoto/
+/data/
+/tessdata/
+/temp_previews/
+
+# ===== 网络密钥 =====
+*.ovpn
+
+# ===== 已归档的旧仓库 =====
+**/.git.archived/

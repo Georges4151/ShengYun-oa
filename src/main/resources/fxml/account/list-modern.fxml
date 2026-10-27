@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.control.cell.PropertyValueFactory?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" 
+      fx:controller="com.ceams.ui.controller.ModernAccountController" spacing="10" style="-fx-padding: 15;">
+    
+    <HBox spacing="10" alignment="CENTER_LEFT">
+        <Label text="💰" style="-fx-font-size: 18px;"/>
+        <Label text="账目管理" style="-fx-font-size: 18px; -fx-font-weight: bold;"/>
+        <Button text="🔄 刷新" onAction="#refresh"/>
+        <Button text="➕ 添加账目" onAction="#addAccount"/>
+        <Button text="✏️ 编辑" onAction="#editAccount"/>
+        <Button text="🗑️ 删除" onAction="#deleteAccount"/>
+    </HBox>
+    
+    <HBox spacing="10" alignment="CENTER_LEFT">
+        <TextField fx:id="projectIdField" promptText="项目ID" prefWidth="100"/>
+        <DatePicker fx:id="startDatePicker" promptText="开始日期" prefWidth="120"/>
+        <DatePicker fx:id="endDatePicker" promptText="结束日期" prefWidth="120"/>
+        <ComboBox fx:id="typeComboBox" promptText="类型" prefWidth="100"/>
+        <ComboBox fx:id="statusComboBox" promptText="状态" prefWidth="100"/>
+        <Button text="🔍 查询" onAction="#search"/>
+        <Button text="🔄 重置" onAction="#reset"/>
+    </HBox>
+    
+    <TableView fx:id="accountTable" VBox.vgrow="ALWAYS">
+        <columns>
+            <TableColumn fx:id="idColumn" text="ID" prefWidth="60">
+                <cellValueFactory><PropertyValueFactory property="id"/></cellValueFactory>
+            </TableColumn>
+            <TableColumn fx:id="projectIdColumn" text="项目ID" prefWidth="80">
+                <cellValueFactory><PropertyValueFactory property="projectId"/></cellValueFactory>
+            </TableColumn>
+            <TableColumn fx:id="projectNameColumn" text="项目名称" prefWidth="150">
+                <cellValueFactory><PropertyValueFactory property="projectName"/></cellValueFactory>
+            </TableColumn>
+            <TableColumn fx:id="typeColumn" text="类型" prefWidth="80">
+                <cellValueFactory><PropertyValueFactory property="type"/></cellValueFactory>
+            </TableColumn>
+            <TableColumn fx:id="amountColumn" text="金额" prefWidth="100">
+                <cellValueFactory><PropertyValueFactory property="amount"/></cellValueFactory>
+            </TableColumn>
+            <TableColumn fx:id="paymentAccountNameColumn" text="支付账户" prefWidth="120">
+                <cellValueFactory><PropertyValueFactory property="paymentAccountName"/></cellValueFactory>
+            </TableColumn>
+            <TableColumn fx:id="transactionDateColumn" text="交易日期" prefWidth="120">
+                <cellValueFactory><PropertyValueFactory property="transactionDate"/></cellValueFactory>
+            </TableColumn>
+            <TableColumn fx:id="descriptionColumn" text="描述" prefWidth="180">
+                <cellValueFactory><PropertyValueFactory property="description"/></cellValueFactory>
+            </TableColumn>
+            <TableColumn fx:id="statusColumn" text="状态" prefWidth="80">
+                <cellValueFactory><PropertyValueFactory property="status"/></cellValueFactory>
+            </TableColumn>
+            <TableColumn fx:id="createTimeColumn" text="创建时间" prefWidth="120">
+                <cellValueFactory><PropertyValueFactory property="createTime"/></cellValueFactory>
+            </TableColumn>
+        </columns>
+    </TableView>
+    
+    <HBox spacing="10" alignment="CENTER_RIGHT">
+        <Label text="共"/>
+        <Label fx:id="totalRecordsLabel" text="0"/>
+        <Label text="条记录"/>
+        <Button fx:id="firstPageButton" text="首页" onAction="#goToFirstPage"/>
+        <Button fx:id="prevPageButton" text="上一页" onAction="#goToPrevPage"/>
+        <Label fx:id="currentPageLabel" text="1"/>
+        <Label text="/"/>
+        <Label fx:id="totalPagesLabel" text="1"/>
+        <Button fx:id="nextPageButton" text="下一页" onAction="#goToNextPage"/>
+        <Button fx:id="lastPageButton" text="末页" onAction="#goToLastPage"/>
+        <Label text="每页显示"/>
+        <ComboBox fx:id="pageSizeComboBox" prefWidth="80"/>
+    </HBox>
+</VBox>

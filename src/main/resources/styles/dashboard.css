@@ -1,0 +1,585 @@
+/* 后端系统首页样式 - 现代化专业设计 */
+
+/* 全局变量 */
+.root {
+    -fx-font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+}
+
+/* 主容器样式 */
+.dashboard-container {
+    -fx-background-color: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -fx-padding: 0px;
+}
+
+.content-container {
+    -fx-background-color: transparent;
+}
+
+/* 欢迎区域样式 - 现代化设计 */
+.welcome-section {
+    -fx-background-color: rgba(255, 255, 255, 0.1);
+    -fx-background-radius: 24;
+    -fx-border: 1px solid rgba(255, 255, 255, 0.2);
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.1), 20, 0, 0, 0);
+    -fx-padding: 40px;
+    -fx-spacing: 16px;
+}
+
+.welcome-title {
+    -fx-font-size: 36px;
+    -fx-font-weight: 800;
+    -fx-text-fill: white;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.2), 4, 0, 0, 2);
+}
+
+.welcome-subtitle {
+    -fx-font-size: 18px;
+    -fx-text-fill: rgba(255, 255, 255, 0.95);
+    -fx-font-weight: 400;
+}
+
+.date-display {
+    -fx-font-size: 15px;
+    -fx-text-fill: rgba(255, 255, 255, 0.85);
+    -fx-font-weight: 500;
+    -fx-padding: 8px 16px;
+    -fx-background-color: rgba(255, 255, 255, 0.15);
+    -fx-background-radius: 20;
+}
+
+/* 快捷操作区域样式 - 现代化卡片设计 */
+.quick-actions-container {
+    -fx-spacing: 24px;
+    -fx-padding: 8px 0;
+}
+
+.quick-action-button {
+    -fx-background-color: white;
+    -fx-background-radius: 20;
+    -fx-border-radius: 20;
+    -fx-padding: 28px 24px;
+    -fx-cursor: hand;
+    -fx-alignment: center;
+    -fx-spacing: 16px;
+    -fx-pref-width: 220;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.08), 16, 0, 0, 8);
+    -fx-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.quick-action-button:hover {
+    -fx-background-color: #f8f9fa;
+    -fx-effect: dropshadow(gaussian, rgba(102, 126, 234, 0.3), 24, 0, 0, 12);
+    -fx-scale-x: 1.05;
+    -fx-scale-y: 1.05;
+}
+
+.quick-action-icon {
+    -fx-background-radius: 16;
+    -fx-pref-width: 56;
+    -fx-pref-height: 56;
+    -fx-alignment: center;
+    -fx-font-size: 28px;
+}
+
+.quick-action-icon-1 {
+    -fx-background-color: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -fx-effect: dropshadow(gaussian, rgba(102, 126, 234, 0.4), 12, 0, 0, 4);
+}
+
+.quick-action-icon-2 {
+    -fx-background-color: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    -fx-effect: dropshadow(gaussian, rgba(245, 87, 108, 0.4), 12, 0, 0, 4);
+}
+
+.quick-action-icon-3 {
+    -fx-background-color: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    -fx-effect: dropshadow(gaussian, rgba(79, 172, 254, 0.4), 12, 0, 0, 4);
+}
+
+.quick-action-icon-4 {
+    -fx-background-color: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+    -fx-effect: dropshadow(gaussian, rgba(67, 233, 123, 0.4), 12, 0, 0, 4);
+}
+
+.quick-action-text {
+    -fx-font-size: 16px;
+    -fx-font-weight: 600;
+    -fx-text-fill: #2d3748;
+}
+
+/* 统计卡片样式 - 现代化玻璃态设计 */
+.stats-grid {
+    -fx-spacing: 28px;
+    -fx-padding: 8px 0;
+}
+
+.stat-card {
+    -fx-background-color: white;
+    -fx-background-radius: 24;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.08), 20, 0, 0, 10);
+    -fx-padding: 32px;
+    -fx-spacing: 20px;
+    -fx-pref-width: 320;
+    -fx-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.stat-card:hover {
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.15), 28, 0, 0, 14);
+    -fx-scale-x: 1.03;
+    -fx-scale-y: 1.03;
+}
+
+.stat-card-primary {
+    -fx-border-color: transparent transparent transparent #667eea;
+    -fx-border-width: 0 0 0 6;
+    -fx-border-radius: 24 0 0 24;
+}
+
+.stat-card-success {
+    -fx-border-color: transparent transparent transparent #43e97b;
+    -fx-border-width: 0 0 0 6;
+    -fx-border-radius: 24 0 0 24;
+}
+
+.stat-card-warning {
+    -fx-border-color: transparent transparent transparent #f093fb;
+    -fx-border-width: 0 0 0 6;
+    -fx-border-radius: 24 0 0 24;
+}
+
+.stat-card-info {
+    -fx-border-color: transparent transparent transparent #4facfe;
+    -fx-border-width: 0 0 0 6;
+    -fx-border-radius: 24 0 0 24;
+}
+
+.stat-icon-container {
+    -fx-background-radius: 18;
+    -fx-pref-width: 68;
+    -fx-pref-height: 68;
+    -fx-alignment: center;
+}
+
+.stat-icon-container-primary {
+    -fx-background-color: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -fx-effect: dropshadow(gaussian, rgba(102, 126, 234, 0.4), 16, 0, 0, 6);
+}
+
+.stat-icon-container-success {
+    -fx-background-color: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+    -fx-effect: dropshadow(gaussian, rgba(67, 233, 123, 0.4), 16, 0, 0, 6);
+}
+
+.stat-icon-container-warning {
+    -fx-background-color: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    -fx-effect: dropshadow(gaussian, rgba(245, 87, 108, 0.4), 16, 0, 0, 6);
+}
+
+.stat-icon-container-info {
+    -fx-background-color: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    -fx-effect: dropshadow(gaussian, rgba(79, 172, 254, 0.4), 16, 0, 0, 6);
+}
+
+.stat-icon {
+    -fx-font-size: 32px;
+}
+
+.stat-label {
+    -fx-font-size: 15px;
+    -fx-text-fill: #718096;
+    -fx-font-weight: 500;
+}
+
+.stat-value {
+    -fx-font-size: 40px;
+    -fx-font-weight: 800;
+    -fx-text-fill: #2d3748;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.1), 2, 0, 0, 1);
+}
+
+.stat-trend {
+    -fx-font-size: 14px;
+    -fx-font-weight: 700;
+    -fx-padding: 6px 12px;
+    -fx-background-radius: 12;
+}
+
+.trend-up {
+    -fx-text-fill: #48bb78;
+    -fx-background-color: rgba(72, 187, 120, 0.1);
+}
+
+.trend-down {
+    -fx-text-fill: #f56565;
+    -fx-background-color: rgba(245, 101, 101, 0.1);
+}
+
+/* 内容卡片样式 - 现代化设计 */
+.content-card {
+    -fx-background-color: white;
+    -fx-background-radius: 24;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.08), 20, 0, 0, 10);
+    -fx-padding: 32px;
+    -fx-spacing: 24px;
+}
+
+.card-header {
+    -fx-alignment: center-left;
+    -fx-spacing: 20px;
+}
+
+.card-title {
+    -fx-font-size: 22px;
+    -fx-font-weight: 700;
+    -fx-text-fill: #2d3748;
+    -fx-letter-spacing: -0.5;
+}
+
+.card-action {
+    -fx-background-color: transparent;
+    -fx-text-fill: #667eea;
+    -fx-font-size: 14px;
+    -fx-font-weight: 600;
+    -fx-cursor: hand;
+    -fx-padding: 10px 18px;
+    -fx-background-radius: 10;
+    -fx-transition: all 0.2s ease;
+}
+
+.card-action:hover {
+    -fx-background-color: rgba(102, 126, 234, 0.08);
+    -fx-text-fill: #5a67d8;
+}
+
+/* 列表项样式 - 现代化设计 */
+.list-item {
+    -fx-background-color: #f7fafc;
+    -fx-background-radius: 16;
+    -fx-padding: 20px;
+    -fx-spacing: 16px;
+    -fx-alignment: center-left;
+    -fx-cursor: hand;
+    -fx-transition: all 0.2s ease;
+}
+
+.list-item:hover {
+    -fx-background-color: #edf2f7;
+    -fx-scale-x: 1.01;
+    -fx-scale-y: 1.01;
+}
+
+.list-item-icon {
+    -fx-background-radius: 12;
+    -fx-pref-width: 48;
+    -fx-pref-height: 48;
+    -fx-alignment: center;
+}
+
+.list-item-icon-green {
+    -fx-background-color: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+    -fx-effect: dropshadow(gaussian, rgba(67, 233, 123, 0.3), 10, 0, 0, 4);
+}
+
+.list-item-icon-blue {
+    -fx-background-color: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -fx-effect: dropshadow(gaussian, rgba(102, 126, 234, 0.3), 10, 0, 0, 4);
+}
+
+.list-item-icon-orange {
+    -fx-background-color: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    -fx-effect: dropshadow(gaussian, rgba(245, 87, 108, 0.3), 10, 0, 0, 4);
+}
+
+.list-item-icon-red {
+    -fx-background-color: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+    -fx-effect: dropshadow(gaussian, rgba(255, 107, 107, 0.3), 10, 0, 0, 4);
+}
+
+.list-item-content {
+    -fx-spacing: 8px;
+    -fx-hgrow: always;
+}
+
+.list-item-title {
+    -fx-font-size: 16px;
+    -fx-font-weight: 600;
+    -fx-text-fill: #2d3748;
+    -fx-letter-spacing: -0.3;
+}
+
+.list-item-subtitle {
+    -fx-font-size: 14px;
+    -fx-text-fill: #718096;
+    -fx-font-weight: 400;
+}
+
+/* 状态标签样式 - 现代化渐变设计 */
+.status-badge {
+    -fx-background-radius: 20;
+    -fx-padding: 10px 18px;
+    -fx-font-size: 13px;
+    -fx-font-weight: 700;
+    -fx-letter-spacing: 0.3;
+}
+
+.status-badge-primary {
+    -fx-background-color: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -fx-text-fill: white;
+    -fx-effect: dropshadow(gaussian, rgba(102, 126, 234, 0.4), 8, 0, 0, 3);
+}
+
+.status-badge-success {
+    -fx-background-color: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+    -fx-text-fill: white;
+    -fx-effect: dropshadow(gaussian, rgba(67, 233, 123, 0.4), 8, 0, 0, 3);
+}
+
+.status-badge-warning {
+    -fx-background-color: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    -fx-text-fill: white;
+    -fx-effect: dropshadow(gaussian, rgba(245, 87, 108, 0.4), 8, 0, 0, 3);
+}
+
+.status-badge-error {
+    -fx-background-color: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+    -fx-text-fill: white;
+    -fx-effect: dropshadow(gaussian, rgba(255, 107, 107, 0.4), 8, 0, 0, 3);
+}
+
+/* 按钮样式 - 现代化设计 */
+.button-primary {
+    -fx-background-color: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -fx-text-fill: white;
+    -fx-background-radius: 12;
+    -fx-padding: 14px 28px;
+    -fx-font-size: 15px;
+    -fx-font-weight: 600;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(102, 126, 234, 0.4), 12, 0, 0, 4);
+    -fx-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.button-primary:hover {
+    -fx-effect: dropshadow(gaussian, rgba(102, 126, 234, 0.6), 16, 0, 0, 6);
+    -fx-scale-x: 1.02;
+    -fx-scale-y: 1.02;
+}
+
+.button-secondary {
+    -fx-background-color: white;
+    -fx-text-fill: #667eea;
+    -fx-border-color: #667eea;
+    -fx-border-width: 2;
+    -fx-border-radius: 12;
+    -fx-padding: 14px 28px;
+    -fx-font-size: 15px;
+    -fx-font-weight: 600;
+    -fx-cursor: hand;
+    -fx-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.button-secondary:hover {
+    -fx-background-color: rgba(102, 126, 234, 0.08);
+    -fx-scale-x: 1.02;
+    -fx-scale-y: 1.02;
+}
+
+.button-sm {
+    -fx-padding: 10px 18px;
+    -fx-font-size: 14px;
+}
+
+/* 骨架屏样式 - 现代化设计 */
+.skeleton {
+    -fx-background-color: #e2e8f0;
+    -fx-background-radius: 12;
+}
+
+.skeleton-text {
+    -fx-background-color: #e2e8f0;
+    -fx-background-radius: 6;
+    -fx-pref-height: 18;
+}
+
+.skeleton-circle {
+    -fx-background-color: #e2e8f0;
+    -fx-background-radius: 24;
+    -fx-pref-width: 48;
+    -fx-pref-height: 48;
+}
+
+/* 分割线样式 */
+.separator-line {
+    -fx-background-color: #e2e8f0;
+    -fx-pref-height: 1;
+    -fx-background-radius: 1;
+}
+
+/* 滚动条样式 - 现代化设计 */
+.scroll-pane>.viewport {
+    -fx-background-color: transparent;
+}
+
+.scroll-pane {
+    -fx-background-color: transparent;
+}
+
+.scroll-bar {
+    -fx-background-color: transparent;
+    -fx-pref-width: 10;
+    -fx-background-radius: 5;
+}
+
+.scroll-bar .thumb {
+    -fx-background-color: #cbd5e0;
+    -fx-background-radius: 5;
+}
+
+.scroll-bar .thumb:hover {
+    -fx-background-color: #a0aec0;
+}
+
+.scroll-bar .increment-button,
+.scroll-bar .decrement-button {
+    -fx-background-color: transparent;
+}
+
+/* 动画效果 - 现代化缓动函数 */
+@keyframes fadeIn {
+    from {
+        -fx-opacity: 0;
+        -fx-translate-y: 20;
+    }
+
+    to {
+        -fx-opacity: 1;
+        -fx-translate-y: 0;
+    }
+}
+
+@keyframes slideInLeft {
+    from {
+        -fx-opacity: 0;
+        -fx-translate-x: -30;
+    }
+
+    to {
+        -fx-opacity: 1;
+        -fx-translate-x: 0;
+    }
+}
+
+@keyframes slideInRight {
+    from {
+        -fx-opacity: 0;
+        -fx-translate-x: 30;
+    }
+
+    to {
+        -fx-opacity: 1;
+        -fx-translate-x: 0;
+    }
+}
+
+@keyframes scaleIn {
+    from {
+        -fx-opacity: 0;
+        -fx-scale-x: 0.9;
+        -fx-scale-y: 0.9;
+    }
+
+    to {
+        -fx-opacity: 1;
+        -fx-scale-x: 1;
+        -fx-scale-y: 1;
+    }
+}
+
+.fade-in {
+    -fx-animation: fadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.slide-in-left {
+    -fx-animation: slideInLeft 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.slide-in-right {
+    -fx-animation: slideInRight 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.scale-in {
+    -fx-animation: scaleIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 响应式布局 */
+@media screen and (max-width: 1200px) {
+    .stats-grid {
+        -fx-spacing: 20px;
+    }
+
+    .stat-card {
+        -fx-pref-width: 280;
+    }
+
+    .quick-action-button {
+        -fx-pref-width: 200;
+    }
+}
+
+@media screen and (max-width: 900px) {
+    .quick-actions-container {
+        -fx-spacing: 16px;
+    }
+
+    .quick-action-button {
+        -fx-pref-width: 180;
+        -fx-padding: 24px 20px;
+    }
+
+    .stat-card {
+        -fx-pref-width: 260;
+        -fx-padding: 28px;
+    }
+}
+
+/* 现代化阴影效果 */
+.shadow-sm {
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.05), 4, 0, 0, 2);
+}
+
+.shadow-md {
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.08), 12, 0, 0, 6);
+}
+
+.shadow-lg {
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.1), 20, 0, 0, 10);
+}
+
+.shadow-xl {
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.12), 28, 0, 0, 14);
+}
+
+/* 毛玻璃效果 */
+.glass-effect {
+    -fx-background-color: rgba(255, 255, 255, 0.1);
+    -fx-background-radius: 16;
+    -fx-border: 1px solid rgba(255, 255, 255, 0.2);
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.1), 10, 0, 0, 0);
+}
+
+/* 渐变文字效果 */
+.gradient-text-primary {
+    -fx-text-fill: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.gradient-text-success {
+    -fx-text-fill: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+}
+
+.gradient-text-warning {
+    -fx-text-fill: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.gradient-text-info {
+    -fx-text-fill: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}

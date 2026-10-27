@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Primary Colors - 建筑企业主色调 -->
+    <color name="primary">#1565C0</color>
+    <color name="primary_dark">#0D47A1</color>
+    <color name="primary_light">#42A5F5</color>
+    <color name="primary_variant">#1976D2</color>
+    
+    <!-- Secondary Colors - 强调色 -->
+    <color name="secondary">#FF6F00</color>
+    <color name="secondary_dark">#E65100</color>
+    <color name="secondary_light">#FFA726</color>
+    
+    <!-- Accent Colors - 点缀色 -->
+    <color name="accent">#FF9800</color>
+    <color name="accent_dark">#F57C00</color>
+    
+    <!-- Background Colors - 背景色 -->
+    <color name="background">#F5F5F5</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="surface_variant">#F8F9FA</color>
+    
+    <!-- Text Colors - 文字色 -->
+    <color name="text_primary">#212121</color>
+    <color name="text_secondary">#757575</color>
+    <color name="text_hint">#9E9E9E</color>
+    <color name="text_light">#FFFFFF</color>
+    <color name="text_dark">#212121</color>
+    
+    <!-- Status Colors - 状态色 -->
+    <color name="success">#2E7D32</color>
+    <color name="success_light">#4CAF50</color>
+    <color name="warning">#F57C00</color>
+    <color name="warning_light">#FF9800</color>
+    <color name="error">#C62828</color>
+    <color name="error_light">#EF5350</color>
+    <color name="info">#1976D2</color>
+    <color name="info_light">#42A5F5</color>
+    
+    <!-- Divider & Border -->
+    <color name="divider">#E0E0E0</color>
+    <color name="border">#DDDDDD</color>
+    <color name="border_light">#EEEEEE</color>
+    
+    <!-- Card Colors -->
+    <color name="card_bg">#FFFFFF</color>
+    <color name="card_shadow">#1A000000</color>
+    
+    <!-- Button Colors -->
+    <color name="button_primary">#1565C0</color>
+    <color name="button_secondary">#FF6F00</color>
+    <color name="button_success">#2E7D32</color>
+    <color name="button_danger">#C62828</color>
+    <color name="button_disabled">#BDBDBD</color>
+    
+    <!-- Icon Colors -->
+    <color name="icon_primary">#424242</color>
+    <color name="icon_secondary">#757575</color>
+    <color name="icon_light">#FFFFFF</color>
+    
+    <!-- Legacy Colors -->
+    <color name="purple_200">#FFBB86FC</color>
+    <color name="purple_500">#FF6200EE</color>
+    <color name="purple_700">#FF3700B3</color>
+    <color name="teal_200">#FF03DAC5</color>
+    <color name="teal_700">#FF018786</color>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+</resources>

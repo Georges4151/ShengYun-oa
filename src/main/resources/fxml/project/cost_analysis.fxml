@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.cell.PropertyValueFactory?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox spacing="10.0" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.ceams.ui.controller.FXProjectCostAnalysisController">
+   <padding>
+      <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+   </padding>
+   <Label text="项目成本分析" style="-fx-font-family: System; -fx-font-weight: bold; -fx-font-size: 16px;" />
+   <TableView fx:id="analysisTable" prefHeight="400.0" prefWidth="1000.0">
+      <columns>
+         <TableColumn fx:id="projectIdColumn" prefWidth="80.0" text="项目ID">
+            <cellValueFactory>
+               <PropertyValueFactory property="project_id" />
+            </cellValueFactory>
+         </TableColumn>
+         <TableColumn fx:id="projectNameColumn" prefWidth="200.0" text="项目名称">
+            <cellValueFactory>
+               <PropertyValueFactory property="project_name" />
+            </cellValueFactory>
+         </TableColumn>
+         <TableColumn fx:id="contractAmountColumn" prefWidth="120.0" text="合同金额">
+            <cellValueFactory>
+               <PropertyValueFactory property="contract_amount" />
+            </cellValueFactory>
+         </TableColumn>
+         <TableColumn fx:id="budgetAmountColumn" prefWidth="120.0" text="预算金额">
+            <cellValueFactory>
+               <PropertyValueFactory property="budget_amount" />
+            </cellValueFactory>
+         </TableColumn>
+         <TableColumn fx:id="actualAmountColumn" prefWidth="120.0" text="实际金额">
+            <cellValueFactory>
+               <PropertyValueFactory property="actual_amount" />
+            </cellValueFactory>
+         </TableColumn>
+         <TableColumn fx:id="budgetSurplusColumn" prefWidth="120.0" text="预算结余">
+            <cellValueFactory>
+               <PropertyValueFactory property="budget_surplus" />
+            </cellValueFactory>
+         </TableColumn>
+         <TableColumn fx:id="costOverrunRateColumn" prefWidth="120.0" text="成本超支率">
+            <cellValueFactory>
+               <PropertyValueFactory property="cost_overrun_rate" />
+            </cellValueFactory>
+         </TableColumn>
+      </columns>
+   </TableView>
+   <HBox alignment="CENTER_RIGHT" spacing="10.0">
+      <children>
+         <Button fx:id="exportPdfButton" mnemonicParsing="false" onAction="#exportPDF" text="导出PDF" />
+         <Button fx:id="exportExcelButton" mnemonicParsing="false" onAction="#exportExcel" text="导出Excel" />
+         <Button fx:id="refreshButton" mnemonicParsing="false" onAction="#refresh" text="刷新" />
+      </children>
+   </HBox>
+</VBox>

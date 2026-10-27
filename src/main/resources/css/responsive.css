@@ -1,0 +1,1031 @@
+/* 响应式设计和交互动画 */
+
+/* ==================== 响应式断点系统 ==================== */
+
+/* 超大屏幕 (≥1400px) */
+@media (min-width: 1400px) {
+    .root {
+        -fx-font-size: var(--text-base);
+    }
+
+    .container {
+        -fx-padding: var(--space-10);
+        -fx-spacing: var(--space-6);
+    }
+
+    .card {
+        -fx-padding: var(--space-8);
+    }
+
+    .sidebar {
+        -fx-pref-width: 280px;
+    }
+
+    .content-container {
+        -fx-padding: 32px;
+    }
+
+    .stats-grid {
+        -fx-spacing: 24px;
+    }
+
+    .info-card {
+        -fx-padding: 24px;
+    }
+
+    .list-item {
+        -fx-padding: 20px;
+    }
+
+    .table-view {
+        -fx-font-size: var(--text-sm);
+    }
+
+    .table-view .column-header {
+        -fx-padding: 16px;
+    }
+
+    .table-view .table-cell {
+        -fx-padding: 16px;
+    }
+}
+
+/* 大屏幕 (1024px - 1399px) */
+@media (max-width: 1399px) and (min-width: 1024px) {
+    .root {
+        -fx-font-size: var(--text-sm);
+    }
+
+    .container {
+        -fx-padding: var(--space-6);
+        -fx-spacing: var(--space-4);
+    }
+
+    .card {
+        -fx-padding: var(--space-6);
+    }
+
+    .sidebar {
+        -fx-pref-width: 260px;
+    }
+
+    .content-container {
+        -fx-padding: 24px;
+    }
+
+    .stats-grid {
+        -fx-spacing: 20px;
+    }
+
+    .info-card {
+        -fx-padding: 20px;
+    }
+
+    .list-item {
+        -fx-padding: 16px;
+    }
+}
+
+/* 中等屏幕 (768px - 1023px) */
+@media (max-width: 1023px) and (min-width: 768px) {
+    .root {
+        -fx-font-size: var(--text-sm);
+    }
+
+    .h1 {
+        -fx-font-size: var(--text-5xl);
+    }
+
+    .h2 {
+        -fx-font-size: var(--text-4xl);
+    }
+
+    .h3 {
+        -fx-font-size: var(--text-3xl);
+    }
+
+    .h4 {
+        -fx-font-size: var(--text-2xl);
+    }
+
+    .container {
+        -fx-padding: var(--space-5);
+        -fx-spacing: var(--space-4);
+    }
+
+    .card {
+        -fx-padding: var(--space-5);
+    }
+
+    .sidebar {
+        -fx-pref-width: 240px;
+    }
+
+    .content-container {
+        -fx-padding: 20px;
+    }
+
+    .stats-grid {
+        -fx-spacing: 16px;
+    }
+
+    .info-card {
+        -fx-padding: 20px;
+    }
+
+    .list-item {
+        -fx-padding: 16px;
+    }
+
+    .tool-bar {
+        -fx-padding: var(--space-2) var(--space-3);
+        -fx-spacing: var(--space-2);
+    }
+
+    .button {
+        -fx-font-size: var(--text-xs);
+        -fx-padding: var(--space-2) var(--space-3);
+        -fx-min-height: 36px;
+    }
+
+    .table-view .column-header {
+        -fx-font-size: 12px;
+        -fx-padding: 12px;
+    }
+
+    .table-view .table-cell {
+        -fx-font-size: var(--text-xs);
+        -fx-padding: 12px;
+    }
+
+    .filter-bar {
+        -fx-padding: 16px;
+    }
+
+    .filter-group {
+        -fx-spacing: 6px;
+    }
+
+    .filter-bar .text-field,
+    .filter-bar .date-picker,
+    .filter-bar .combo-box {
+        -fx-pref-width: 150px;
+    }
+}
+
+/* 小屏幕 (480px - 767px) */
+@media (max-width: 767px) and (min-width: 480px) {
+    .root {
+        -fx-font-size: var(--text-xs);
+    }
+
+    .h1 {
+        -fx-font-size: var(--text-4xl);
+    }
+
+    .h2 {
+        -fx-font-size: var(--text-3xl);
+    }
+
+    .h3 {
+        -fx-font-size: var(--text-2xl);
+    }
+
+    .h4 {
+        -fx-font-size: var(--text-xl);
+    }
+
+    .container {
+        -fx-padding: var(--space-4);
+        -fx-spacing: var(--space-3);
+    }
+
+    .card {
+        -fx-padding: var(--space-4);
+    }
+
+    .sidebar {
+        -fx-pref-width: 200px;
+    }
+
+    .content-container {
+        -fx-padding: 16px;
+    }
+
+    .stats-grid {
+        -fx-spacing: 12px;
+    }
+
+    .info-card {
+        -fx-padding: 16px;
+    }
+
+    .list-item {
+        -fx-padding: 12px;
+    }
+
+    .tool-bar {
+        -fx-padding: var(--space-2);
+        -fx-spacing: var(--space-2);
+    }
+
+    .button {
+        -fx-font-size: var(--text-xs);
+        -fx-padding: var(--space-2) var(--space-3);
+        -fx-min-height: 36px;
+    }
+
+    .table-view .column-header {
+        -fx-font-size: 11px;
+        -fx-padding: 8px;
+    }
+
+    .table-view .table-cell {
+        -fx-font-size: var(--text-xs);
+        -fx-padding: 8px;
+    }
+
+    .filter-bar {
+        -fx-padding: 16px;
+    }
+
+    .filter-group {
+        -fx-spacing: 6px;
+    }
+
+    .filter-bar .text-field,
+    .filter-bar .date-picker,
+    .filter-bar .combo-box {
+        -fx-pref-width: 120px;
+    }
+
+    .top-bar {
+        -fx-padding: 12px 16px;
+    }
+
+    .search-box {
+        -fx-pref-width: 200px;
+    }
+}
+
+/* 超小屏幕 (<480px) */
+@media (max-width: 479px) {
+    .root {
+        -fx-font-size: 11px;
+    }
+
+    .h1 {
+        -fx-font-size: var(--text-3xl);
+    }
+
+    .h2 {
+        -fx-font-size: var(--text-2xl);
+    }
+
+    .h3 {
+        -fx-font-size: var(--text-xl);
+    }
+
+    .h4 {
+        -fx-font-size: var(--text-lg);
+    }
+
+    .container {
+        -fx-padding: var(--space-3);
+        -fx-spacing: var(--space-2);
+    }
+
+    .card {
+        -fx-padding: var(--space-3);
+    }
+
+    .sidebar {
+        -fx-pref-width: 180px;
+    }
+
+    .content-container {
+        -fx-padding: 12px;
+    }
+
+    .stats-grid {
+        -fx-spacing: 8px;
+    }
+
+    .info-card {
+        -fx-padding: 12px;
+    }
+
+    .list-item {
+        -fx-padding: 10px;
+    }
+
+    .tool-bar {
+        -fx-padding: 8px;
+        -fx-spacing: 8px;
+    }
+
+    .button {
+        -fx-font-size: 11px;
+        -fx-padding: 4px 8px;
+        -fx-min-height: 32px;
+    }
+
+    .table-view .column-header {
+        -fx-font-size: 10px;
+        -fx-padding: 6px;
+    }
+
+    .table-view .table-cell {
+        -fx-font-size: 11px;
+        -fx-padding: 6px;
+    }
+
+    .filter-bar {
+        -fx-padding: 12px;
+    }
+
+    .filter-group {
+        -fx-spacing: 4px;
+    }
+
+    .filter-bar .text-field,
+    .filter-bar .date-picker,
+    .filter-bar .combo-box {
+        -fx-pref-width: 100px;
+    }
+
+    .top-bar {
+        -fx-padding: 8px 12px;
+    }
+
+    .search-box {
+        -fx-pref-width: 150px;
+    }
+
+    .menu-item {
+        -fx-padding: 8px 12px;
+    }
+}
+
+/* ==================== 响应式网格系统 ==================== */
+
+.grid-container {
+    -fx-fill-width: true;
+    -fx-spacing: var(--space-4);
+}
+
+.grid-item {
+    -fx-fill-width: true;
+    -fx-alignment: top-left;
+}
+
+/* 1列布局 */
+.grid-cols-1 {
+    -fx-hgap: var(--space-4);
+    -fx-vgap: var(--space-4);
+}
+
+@media (min-width: 768px) {
+    .grid-cols-1 {
+        -fx-hgap: var(--space-6);
+        -fx-vgap: var(--space-6);
+    }
+}
+
+/* 2列布局 */
+.grid-cols-2 {
+    -fx-hgap: var(--space-4);
+    -fx-vgap: var(--space-4);
+}
+
+@media (min-width: 768px) {
+    .grid-cols-2 {
+        -fx-hgap: var(--space-6);
+        -fx-vgap: var(--space-6);
+    }
+}
+
+/* 3列布局 */
+.grid-cols-3 {
+    -fx-hgap: var(--space-4);
+    -fx-vgap: var(--space-4);
+}
+
+@media (min-width: 1024px) {
+    .grid-cols-3 {
+        -fx-hgap: var(--space-6);
+        -fx-vgap: var(--space-6);
+    }
+}
+
+/* 4列布局 */
+.grid-cols-4 {
+    -fx-hgap: var(--space-4);
+    -fx-vgap: var(--space-4);
+}
+
+@media (min-width: 1024px) {
+    .grid-cols-4 {
+        -fx-hgap: var(--space-6);
+        -fx-vgap: var(--space-6);
+    }
+}
+
+@media (min-width: 1400px) {
+    .grid-cols-4 {
+        -fx-hgap: var(--space-8);
+        -fx-vgap: var(--space-8);
+    }
+}
+
+/* ==================== 动画效果 ==================== */
+
+/* 淡入动画 */
+.fade-in {
+    -fx-opacity: 0;
+    -fx-transition: opacity var(--transition-slow) ease-in-out;
+}
+
+.fade-in:visible {
+    -fx-opacity: 1;
+}
+
+.fade-in-up {
+    -fx-opacity: 0;
+    -fx-translate-y: 20px;
+    -fx-transition: all var(--transition-slow) ease-out;
+}
+
+.fade-in-up:visible {
+    -fx-opacity: 1;
+    -fx-translate-y: 0;
+}
+
+.fade-in-down {
+    -fx-opacity: 0;
+    -fx-translate-y: -20px;
+    -fx-transition: all var(--transition-slow) ease-out;
+}
+
+.fade-in-down:visible {
+    -fx-opacity: 1;
+    -fx-translate-y: 0;
+}
+
+.fade-in-left {
+    -fx-opacity: 0;
+    -fx-translate-x: -20px;
+    -fx-transition: all var(--transition-slow) ease-out;
+}
+
+.fade-in-left:visible {
+    -fx-opacity: 1;
+    -fx-translate-x: 0;
+}
+
+.fade-in-right {
+    -fx-opacity: 0;
+    -fx-translate-x: 20px;
+    -fx-transition: all var(--transition-slow) ease-out;
+}
+
+.fade-in-right:visible {
+    -fx-opacity: 1;
+    -fx-translate-x: 0;
+}
+
+/* 滑动动画 */
+.slide-up {
+    -fx-translate-y: 100%;
+    -fx-transition: transform var(--transition-slow) ease-out;
+}
+
+.slide-up:visible {
+    -fx-translate-y: 0;
+}
+
+.slide-down {
+    -fx-translate-y: -100%;
+    -fx-transition: transform var(--transition-slow) ease-out;
+}
+
+.slide-down:visible {
+    -fx-translate-y: 0;
+}
+
+.slide-left {
+    -fx-translate-x: 100%;
+    -fx-transition: transform var(--transition-slow) ease-out;
+}
+
+.slide-left:visible {
+    -fx-translate-x: 0;
+}
+
+.slide-right {
+    -fx-translate-x: -100%;
+    -fx-transition: transform var(--transition-slow) ease-out;
+}
+
+.slide-right:visible {
+    -fx-translate-x: 0;
+}
+
+/* 缩放动画 */
+.scale-in {
+    -fx-scale-x: 0.9;
+    -fx-scale-y: 0.9;
+    -fx-opacity: 0;
+    -fx-transition: all var(--transition-base) ease-out;
+}
+
+.scale-in:visible {
+    -fx-scale-x: 1;
+    -fx-scale-y: 1;
+    -fx-opacity: 1;
+}
+
+.scale-out {
+    -fx-scale-x: 1;
+    -fx-scale-y: 1;
+    -fx-opacity: 1;
+    -fx-transition: all var(--transition-base) ease-in;
+}
+
+.scale-out:visible {
+    -fx-scale-x: 0.9;
+    -fx-scale-y: 0.9;
+    -fx-opacity: 0;
+}
+
+/* 旋转动画 */
+.rotate-in {
+    -fx-rotate: -180deg;
+    -fx-opacity: 0;
+    -fx-transition: all var(--transition-slow) ease-out;
+}
+
+.rotate-in:visible {
+    -fx-rotate: 0deg;
+    -fx-opacity: 1;
+}
+
+/* 弹跳动画 */
+.bounce-in {
+    -fx-scale-x: 0.3;
+    -fx-scale-y: 0.3;
+    -fx-opacity: 0;
+    -fx-transition: all var(--transition-slow) cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.bounce-in:visible {
+    -fx-scale-x: 1;
+    -fx-scale-y: 1;
+    -fx-opacity: 1;
+}
+
+/* 脉冲动画 */
+.pulse {
+    -fx-animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        -fx-opacity: 1;
+        -fx-scale-x: 1;
+        -fx-scale-y: 1;
+    }
+
+    50% {
+        -fx-opacity: 0.7;
+        -fx-scale-x: 1.05;
+        -fx-scale-y: 1.05;
+    }
+}
+
+/* 呼吸动画 */
+.breathing {
+    -fx-animation: breathing 3s ease-in-out infinite;
+}
+
+@keyframes breathing {
+
+    0%,
+    100% {
+        -fx-scale-x: 1;
+        -fx-scale-y: 1;
+    }
+
+    50% {
+        -fx-scale-x: 1.02;
+        -fx-scale-y: 1.02;
+    }
+}
+
+/* 摇晃动画 */
+.shake {
+    -fx-animation: shake 0.5s ease-in-out;
+}
+
+@keyframes shake {
+
+    0%,
+    100% {
+        -fx-translate-x: 0;
+    }
+
+    10%,
+    30%,
+    50%,
+    70%,
+    90% {
+        -fx-translate-x: -5px;
+    }
+
+    20%,
+    40%,
+    60%,
+    80% {
+        -fx-translate-x: 5px;
+    }
+}
+
+/* 旋转动画 */
+.spin {
+    -fx-animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        -fx-rotate: 0deg;
+    }
+
+    to {
+        -fx-rotate: 360deg;
+    }
+}
+
+/* ==================== 交互动画 ==================== */
+
+/* 按钮悬停效果 */
+.button {
+    -fx-transition: all var(--transition-fast) ease-in-out;
+}
+
+.button:hover {
+    -fx-transform: translateY(-1px);
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.15), 0, 4px, 0, 4);
+}
+
+.button:pressed {
+    -fx-transform: translateY(0);
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.1), 0, 0, 0, 1);
+}
+
+/* 卡片悬停效果 */
+.card {
+    -fx-transition: all var(--transition-base) ease-in-out;
+}
+
+.card:hover {
+    -fx-transform: translateY(-2px);
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.1), 0, 4px, 0, 8);
+}
+
+/* 列表项悬停效果 */
+.list-item {
+    -fx-transition: all var(--transition-fast) ease-in-out;
+}
+
+.list-item:hover {
+    -fx-transform: translateX(4px);
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.05), 0, 2px, 0, 4);
+}
+
+/* 表格行悬停效果 */
+.table-view .table-row-cell {
+    -fx-transition: background-color var(--transition-fast) ease-in-out;
+}
+
+/* 输入框聚焦效果 */
+.text-field,
+.text-area,
+.password-field,
+.date-picker>.text-field,
+.combo-box {
+    -fx-transition: all var(--transition-fast) ease-in-out;
+}
+
+/* 菜单项悬停效果 */
+.menu-item {
+    -fx-transition: all var(--transition-fast) ease-in-out;
+}
+
+.menu-item:hover {
+    -fx-transform: translateX(4px);
+}
+
+/* ==================== 加载动画 ==================== */
+
+.loading-spinner {
+    -fx-animation: spin 1s linear infinite;
+}
+
+.loading-dots {
+    -fx-animation: loading-dots 1.4s ease-in-out infinite;
+}
+
+@keyframes loading-dots {
+
+    0%,
+    80%,
+    100% {
+        -fx-opacity: 0.3;
+    }
+
+    40% {
+        -fx-opacity: 1;
+    }
+}
+
+.loading-bar {
+    -fx-animation: loading-bar 2s ease-in-out infinite;
+}
+
+@keyframes loading-bar {
+    0% {
+        -fx-width: 0%;
+    }
+
+    50% {
+        -fx-width: 70%;
+    }
+
+    100% {
+        -fx-width: 100%;
+    }
+}
+
+/* ==================== 页面过渡动画 ==================== */
+
+.page-enter {
+    -fx-animation: page-enter 0.4s ease-out;
+}
+
+@keyframes page-enter {
+    0% {
+        -fx-opacity: 0;
+        -fx-transform: translateX(20px);
+    }
+
+    100% {
+        -fx-opacity: 1;
+        -fx-transform: translateX(0);
+    }
+}
+
+.page-exit {
+    -fx-animation: page-exit 0.3s ease-in;
+}
+
+@keyframes page-exit {
+    0% {
+        -fx-opacity: 1;
+        -fx-transform: translateX(0);
+    }
+
+    100% {
+        -fx-opacity: 0;
+        -fx-transform: translateX(-20px);
+    }
+}
+
+/* ==================== 模态框动画 ==================== */
+
+.modal-enter {
+    -fx-animation: modal-enter 0.3s ease-out;
+}
+
+@keyframes modal-enter {
+    0% {
+        -fx-opacity: 0;
+        -fx-scale-x: 0.9;
+        -fx-scale-y: 0.9;
+    }
+
+    100% {
+        -fx-opacity: 1;
+        -fx-scale-x: 1;
+        -fx-scale-y: 1;
+    }
+}
+
+.modal-exit {
+    -fx-animation: modal-exit 0.2s ease-in;
+}
+
+@keyframes modal-exit {
+    0% {
+        -fx-opacity: 1;
+        -fx-scale-x: 1;
+        -fx-scale-y: 1;
+    }
+
+    100% {
+        -fx-opacity: 0;
+        -fx-scale-x: 0.9;
+        -fx-scale-y: 0.9;
+    }
+}
+
+/* ==================== 侧边栏动画 ==================== */
+
+.sidebar-enter {
+    -fx-animation: sidebar-enter 0.3s ease-out;
+}
+
+@keyframes sidebar-enter {
+    0% {
+        -fx-transform: translateX(-100%);
+    }
+
+    100% {
+        -fx-transform: translateX(0);
+    }
+}
+
+.sidebar-exit {
+    -fx-animation: sidebar-exit 0.3s ease-in;
+}
+
+@keyframes sidebar-exit {
+    0% {
+        -fx-transform: translateX(0);
+    }
+
+    100% {
+        -fx-transform: translateX(-100%);
+    }
+}
+
+/* ==================== 工具提示动画 ==================== */
+
+.tooltip-enter {
+    -fx-animation: tooltip-enter 0.2s ease-out;
+}
+
+@keyframes tooltip-enter {
+    0% {
+        -fx-opacity: 0;
+        -fx-transform: translateY(4px);
+    }
+
+    100% {
+        -fx-opacity: 1;
+        -fx-transform: translateY(0);
+    }
+}
+
+.tooltip-exit {
+    -fx-animation: tooltip-exit 0.15s ease-in;
+}
+
+@keyframes tooltip-exit {
+    0% {
+        -fx-opacity: 1;
+        -fx-transform: translateY(0);
+    }
+
+    100% {
+        -fx-opacity: 0;
+        -fx-transform: translateY(4px);
+    }
+}
+
+/* ==================== 可访问性：减少动画 ==================== */
+
+@media (prefers-reduced-motion: reduce) {
+
+    *,
+    *::before,
+    *::after {
+        -fx-animation-duration: 0.01ms !important;
+        -fx-animation-iteration-count: 1 !important;
+        -fx-transition-duration: 0.01ms !important;
+    }
+
+    .fade-in,
+    .fade-in-up,
+    .fade-in-down,
+    .fade-in-left,
+    .fade-in-right,
+    .slide-up,
+    .slide-down,
+    .slide-left,
+    .slide-right,
+    .scale-in,
+    .scale-out,
+    .rotate-in,
+    .bounce-in {
+        -fx-opacity: 1;
+        -fx-transform: none;
+    }
+}
+
+/* ==================== 性能优化 ==================== */
+
+/* 使用硬件加速 */
+.gpu-accelerated {
+    -fx-cache: true;
+    -fx-cache-hint: speed;
+}
+
+/* 减少重绘 */
+.will-change-transform {
+    -fx-will-change: transform;
+}
+
+.will-change-opacity {
+    -fx-will-change: opacity;
+}
+
+/* 优化滚动性能 */
+.smooth-scroll {
+    -fx-scroll-smooth: true;
+}
+
+/* ==================== 响应式图片 ==================== */
+
+.responsive-image {
+    -fx-fit-width: true;
+    -fx-fit-height: true;
+    -fx-preserve-ratio: true;
+}
+
+@media (max-width: 767px) {
+    .responsive-image {
+        -fx-max-width: 100%;
+    }
+}
+
+/* ==================== 响应式表格 ==================== */
+
+.responsive-table {
+    -fx-fill-width: true;
+}
+
+@media (max-width: 767px) {
+    .responsive-table {
+        -fx-font-size: var(--text-xs);
+    }
+
+    .responsive-table .column-header {
+        -fx-padding: 8px;
+    }
+
+    .responsive-table .table-cell {
+        -fx-padding: 8px;
+    }
+
+    .responsive-table .table-row-cell {
+        -fx-min-height: 48px;
+    }
+}
+
+/* ==================== 响应式表单 ==================== */
+
+.responsive-form {
+    -fx-fill-width: true;
+    -fx-spacing: var(--space-3);
+}
+
+@media (max-width: 767px) {
+    .responsive-form {
+        -fx-spacing: var(--space-2);
+    }
+
+    .responsive-form .text-field,
+    .responsive-form .date-picker,
+    .responsive-form .combo-box {
+        -fx-pref-width: 100%;
+    }
+}
+
+/* ==================== 响应式按钮组 ==================== */
+
+.button-group {
+    -fx-spacing: var(--space-2);
+    -fx-wrap-text: true;
+}
+
+@media (max-width: 767px) {
+    .button-group {
+        -fx-spacing: var(--space-1);
+    }
+
+    .button-group .button {
+        -fx-flex-grow: 1;
+    }
+}

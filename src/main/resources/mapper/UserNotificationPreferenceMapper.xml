@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ceams.dao.UserNotificationPreferenceMapper">
+
+    <resultMap id="BaseResultMap" type="com.ceams.model.entity.UserNotificationPreference">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+        <result column="user_id" property="userId" jdbcType="INTEGER"/>
+        <result column="notification_type" property="notificationType" jdbcType="VARCHAR"/>
+        <result column="receive_system" property="receiveSystem" jdbcType="BIT"/>
+        <result column="receive_email" property="receiveEmail" jdbcType="BIT"/>
+        <result column="receive_sms" property="receiveSms" jdbcType="BIT"/>
+        <result column="quiet_mode" property="quietMode" jdbcType="BIT"/>
+        <result column="quiet_start_time" property="quietStartTime" jdbcType="TIME"/>
+        <result column="quiet_end_time" property="quietEndTime" jdbcType="TIME"/>
+        <result column="priority_threshold" property="priorityThreshold" jdbcType="VARCHAR"/>
+        <result column="created_at" property="createdAt" jdbcType="TIMESTAMP"/>
+        <result column="updated_at" property="updatedAt" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, user_id, notification_type, receive_system, receive_email, receive_sms,
+        quiet_mode, quiet_start_time, quiet_end_time, priority_threshold,
+        created_at, updated_at
+    </sql>
+
+    <insert id="insert" parameterType="com.ceams.model.entity.UserNotificationPreference" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO user_notification_preference (
+            user_id, notification_type, receive_system, receive_email, receive_sms,
+            quiet_mode, quiet_start_time, quiet_end_time, priority_threshold
+        ) VALUES (
+            #{userId}, #{notificationType}, #{receiveSystem}, #{receiveEmail}, #{receiveSms},
+            #{quietMode}, #{quietStartTime}, #{quietEndTime}, #{priorityThreshold}
+        )
+    </insert>
+
+    <insert id="batchInsert" parameterType="java.util.List">
+        INSERT INTO user_notification_preference (
+            user_id, notification_type, receive_system, receive_email, receive_sms,
+            quiet_mode, quiet_start_time, quiet_end_time, priority_threshold
+        ) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.userId}, #{item.notificationType}, #{item.receiveSystem}, #{item.receiveEmail}, #{item.receiveSms},
+            #{item.quietMode}, #{item.quietStartTime}, #{item.quietEndTime}, #{item.priorityThreshold})
+        </foreach>
+    </insert>
+
+    <update id="update" parameterType="com.ceams.model.entity.UserNotificationPreference">
+        UPDATE user_notification_preference
+        <set>
+            <if test="receiveSystem != null">receive_system = #{receiveSystem},</if>
+            <if test="receiveEmail != null">receive_email = #{receiveEmail},</if>
+            <if test="receiveSms != null">receive_sms = #{receiveSms},</if>
+            <if test="quietMode != null">quiet_mode = #{quietMode},</if>
+            <if test="quietStartTime != null">quiet_start_time = #{quietStartTime},</if>
+            <if test="quietEndTime != null">quiet_end_time = #{quietEndTime},</if>
+            <if test="priorityThreshold != null">priority_threshold = #{priorityThreshold},</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById" parameterType="java.lang.Integer">
+        DELETE FROM user_notification_preference WHERE id = #{id}
+    </delete>
+
+    <select id="selectById" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM user_notification_preference
+        WHERE id = #{id}
+    </select>
+
+    <select id="selectByUserIdAndType" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM user_notification_preference
+        WHERE user_id = #{userId} AND notification_type = #{notificationType}
+    </select>
+
+    <select id="selectByUserId" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM user_notification_preference
+        WHERE user_id = #{userId}
+    </select>
+
+    <delete id="deleteByUserId" parameterType="java.lang.Integer">
+        DELETE FROM user_notification_preference WHERE user_id = #{userId}
+    </delete>
+
+</mapper>

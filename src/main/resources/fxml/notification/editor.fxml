@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import java.net.URL?>
+
+<BorderPane prefHeight="700.0" prefWidth="900.0" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.ceams.ui.controller.NotificationEditorController">
+    <stylesheets>
+        <URL value="@../css/modern-theme.css" />
+    </stylesheets>
+    
+    <top>
+        <VBox spacing="0" style="-fx-background-color: linear-gradient(to bottom, #667eea 0%, #764ba2 100%);">
+            <HBox alignment="CENTER_LEFT" spacing="16" style="-fx-padding: 20 32;">
+                <StackPane style="-fx-pref-width: 40px; -fx-pref-height: 40px; -fx-background-color: rgba(255,255,255,0.2); -fx-background-radius: 10px;">
+                    <Label text="✏️" style="-fx-font-size: 20px;"/>
+                </StackPane>
+                <VBox spacing="2">
+                    <Label text="通知编辑器" style="-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: white;"/>
+                    <Label text="创建或编辑通知内容" style="-fx-font-size: 12px; -fx-text-fill: rgba(255,255,255,0.8);"/>
+                </VBox>
+            </HBox>
+        </VBox>
+    </top>
+    
+    <center>
+        <ScrollPane fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" style="-fx-background-color: #F7FAFC;">
+            <VBox spacing="24" style="-fx-padding: 32;">
+                <VBox spacing="16" style="-fx-background-color: white; -fx-padding: 24; -fx-background-radius: 16px; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 12, 0, 0, 2);">
+                    <HBox spacing="8" alignment="CENTER_LEFT">
+                        <Label text="📝" style="-fx-font-size: 18px;"/>
+                        <Label text="基本信息" style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #2D3748;"/>
+                    </HBox>
+                    
+                    <GridPane hgap="20" vgap="16">
+                        <Label text="通知标题 *" style="-fx-font-size: 14px; -fx-text-fill: #4A5568; -fx-font-weight: 500;" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+                        <TextField fx:id="titleField" promptText="请输入通知标题" style="-fx-background-radius: 8px; -fx-padding: 12 16; -fx-font-size: 14px; -fx-pref-width: 500px; -fx-border-color: #E2E8F0; -fx-border-radius: 8px;" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+                        
+                        <Label text="通知类型 *" style="-fx-font-size: 14px; -fx-text-fill: #4A5568; -fx-font-weight: 500;" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
+                        <HBox spacing="12" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                            <ComboBox fx:id="typeComboBox" promptText="选择类型" style="-fx-pref-width: 180px; -fx-background-radius: 8px; -fx-font-size: 14px;"/>
+                            <ComboBox fx:id="priorityComboBox" promptText="选择优先级" style="-fx-pref-width: 180px; -fx-background-radius: 8px; -fx-font-size: 14px;"/>
+                            <ComboBox fx:id="contentTypeComboBox" promptText="内容格式" style="-fx-pref-width: 180px; -fx-background-radius: 8px; -fx-font-size: 14px;"/>
+                        </HBox>
+                    </GridPane>
+                </VBox>
+                
+                <VBox spacing="16" style="-fx-background-color: white; -fx-padding: 24; -fx-background-radius: 16px; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 12, 0, 0, 2);">
+                    <HBox spacing="8" alignment="CENTER_LEFT">
+                        <Label text="📄" style="-fx-font-size: 18px;"/>
+                        <Label text="通知内容" style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #2D3748;"/>
+                    </HBox>
+                    <TextArea fx:id="contentArea" promptText="请输入通知内容..." style="-fx-background-radius: 8px; -fx-padding: 16; -fx-font-size: 14px; -fx-pref-height: 200px; -fx-border-color: #E2E8F0; -fx-border-radius: 8px; -fx-wrap-text: true;"/>
+                </VBox>
+                
+                <VBox spacing="16" style="-fx-background-color: white; -fx-padding: 24; -fx-background-radius: 16px; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 12, 0, 0, 2);">
+                    <HBox spacing="8" alignment="CENTER_LEFT">
+                        <Label text="⚙️" style="-fx-font-size: 18px;"/>
+                        <Label text="高级设置" style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #2D3748;"/>
+                    </HBox>
+                    
+                    <GridPane hgap="20" vgap="16">
+                        <Label text="链接地址" style="-fx-font-size: 14px; -fx-text-fill: #4A5568; -fx-font-weight: 500;" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+                        <TextField fx:id="linkUrlField" promptText="可选：添加相关链接地址" style="-fx-background-radius: 8px; -fx-padding: 12 16; -fx-font-size: 14px; -fx-pref-width: 500px; -fx-border-color: #E2E8F0; -fx-border-radius: 8px;" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+                        
+                        <Label text="有效期开始" style="-fx-font-size: 14px; -fx-text-fill: #4A5568; -fx-font-weight: 500;" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
+                        <HBox spacing="12" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                            <DatePicker fx:id="validStartDatePicker" promptText="选择日期" style="-fx-pref-width: 150px; -fx-background-radius: 8px;"/>
+                            <ComboBox fx:id="validStartTimeCombo" promptText="时间" style="-fx-pref-width: 100px; -fx-background-radius: 8px; -fx-font-size: 14px;"/>
+                        </HBox>
+                        
+                        <Label text="有效期结束" style="-fx-font-size: 14px; -fx-text-fill: #4A5568; -fx-font-weight: 500;" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
+                        <HBox spacing="12" GridPane.columnIndex="1" GridPane.rowIndex="2">
+                            <DatePicker fx:id="validEndDatePicker" promptText="选择日期" style="-fx-pref-width: 150px; -fx-background-radius: 8px;"/>
+                            <ComboBox fx:id="validEndTimeCombo" promptText="时间" style="-fx-pref-width: 100px; -fx-background-radius: 8px; -fx-font-size: 14px;"/>
+                        </HBox>
+                    </GridPane>
+                </VBox>
+            </VBox>
+        </ScrollPane>
+    </center>
+    
+    <bottom>
+        <HBox alignment="CENTER_RIGHT" spacing="16" style="-fx-padding: 20 32; -fx-background-color: white; -fx-border-width: 1 0 0 0; -fx-border-color: #E2E8F0;">
+            <Button text="取消" onAction="#cancel" style="-fx-background-color: #EDF2F7; -fx-text-fill: #4A5568; -fx-font-size: 14px; -fx-padding: 12 32; -fx-background-radius: 8px; -fx-cursor: hand;"/>
+            <Button text="💾 保存通知" onAction="#save" style="-fx-background-color: linear-gradient(to right, #667eea 0%, #764ba2 100%); -fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: bold; -fx-padding: 12 32; -fx-background-radius: 8px; -fx-cursor: hand; -fx-effect: dropshadow(gaussian, rgba(102,126,234,0.4), 8, 0, 0, 4);"/>
+        </HBox>
+    </bottom>
+</BorderPane>

@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ceams.dao.SubcontractorContractMapper">
+
+    <resultMap id="SubcontractorContractResult" type="com.ceams.model.entity.SubcontractorContract">
+        <id property="id" column="id" />
+        <result property="subcontractorId" column="subcontractor_id" />
+        <result property="projectId" column="project_id" />
+        <result property="contractName" column="contract_name" />
+        <result property="contractNumber" column="contract_number" />
+        <result property="contractAmount" column="contract_amount" />
+        <result property="paidAmount" column="paid_amount" />
+        <result property="startDate" column="start_date" />
+        <result property="endDate" column="end_date" />
+        <result property="status" column="status" />
+        <result property="description" column="description" />
+        <result property="filePath" column="file_path" />
+        <result property="fileName" column="file_name" />
+        <result property="createTime" column="create_time" />
+        <result property="updateTime" column="update_time" />
+    </resultMap>
+
+    <select id="selectById" resultMap="SubcontractorContractResult">
+        SELECT * FROM subcontractor_contracts WHERE id = #{id}
+    </select>
+
+    <select id="selectBySubcontractorId" resultMap="SubcontractorContractResult">
+        SELECT * FROM subcontractor_contracts WHERE subcontractor_id = #{subcontractorId}
+    </select>
+
+    <select id="selectByProjectId" resultMap="SubcontractorContractResult">
+        SELECT * FROM subcontractor_contracts WHERE project_id = #{projectId}
+    </select>
+
+    <select id="selectByStatus" resultMap="SubcontractorContractResult">
+        SELECT * FROM subcontractor_contracts WHERE status = #{status}
+    </select>
+
+    <insert id="insert" parameterType="com.ceams.model.entity.SubcontractorContract">
+        INSERT INTO subcontractor_contracts
+        (subcontractor_id, project_id, contract_name, contract_number, contract_amount, paid_amount, start_date, end_date, status, description, file_path, file_name, create_time, update_time)
+        VALUES
+        (#{subcontractorId}, #{projectId}, #{contractName}, #{contractNumber}, #{contractAmount}, #{paidAmount}, #{startDate}, #{endDate}, #{status}, #{description}, #{filePath}, #{fileName}, NOW(), NOW())
+    </insert>
+
+    <update id="update" parameterType="com.ceams.model.entity.SubcontractorContract">
+        UPDATE subcontractor_contracts
+        SET subcontractor_id = #{subcontractorId}, project_id = #{projectId}, contract_name = #{contractName},
+            contract_number = #{contractNumber}, contract_amount = #{contractAmount}, paid_amount = #{paidAmount}, start_date = #{startDate},
+            end_date = #{endDate}, status = #{status}, description = #{description}, 
+            file_path = #{filePath}, file_name = #{fileName}, update_time = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM subcontractor_contracts WHERE id = #{id}
+    </delete>
+
+    <select id="selectAll" resultMap="SubcontractorContractResult">
+        SELECT * FROM subcontractor_contracts
+    </select>
+
+</mapper>

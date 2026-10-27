@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ceams.dao.UserNotificationMapper">
+
+    <resultMap id="BaseResultMap" type="com.ceams.model.entity.UserNotification">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+        <result column="notification_id" property="notificationId" jdbcType="INTEGER"/>
+        <result column="user_id" property="userId" jdbcType="INTEGER"/>
+        <result column="is_read" property="isRead" jdbcType="BIT"/>
+        <result column="read_time" property="readTime" jdbcType="TIMESTAMP"/>
+        <result column="is_deleted" property="isDeleted" jdbcType="BIT"/>
+        <result column="channel" property="channel" jdbcType="VARCHAR"/>
+        <result column="push_status" property="pushStatus" jdbcType="VARCHAR"/>
+        <result column="push_time" property="pushTime" jdbcType="TIMESTAMP"/>
+        <result column="created_at" property="createdAt" jdbcType="TIMESTAMP"/>
+        <result column="updated_at" property="updatedAt" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <resultMap id="WithNotificationResultMap" type="com.ceams.model.entity.UserNotification" extends="BaseResultMap">
+        <association property="notification" javaType="com.ceams.model.entity.Notification">
+            <id column="n_id" property="id" jdbcType="INTEGER"/>
+            <result column="n_title" property="title" jdbcType="VARCHAR"/>
+            <result column="n_content_type" property="contentType" jdbcType="VARCHAR"/>
+            <result column="n_content" property="content" jdbcType="LONGVARCHAR"/>
+            <result column="n_link_url" property="linkUrl" jdbcType="VARCHAR"/>
+            <result column="n_priority" property="priority" jdbcType="VARCHAR"/>
+            <result column="n_notification_type" property="notificationType" jdbcType="VARCHAR"/>
+            <result column="n_sender_id" property="senderId" jdbcType="INTEGER"/>
+            <result column="n_sender_name" property="senderName" jdbcType="VARCHAR"/>
+            <result column="n_valid_start_time" property="validStartTime" jdbcType="TIMESTAMP"/>
+            <result column="n_valid_end_time" property="validEndTime" jdbcType="TIMESTAMP"/>
+            <result column="n_status" property="status" jdbcType="VARCHAR"/>
+            <result column="n_publish_time" property="publishTime" jdbcType="TIMESTAMP"/>
+            <result column="n_created_at" property="createdAt" jdbcType="TIMESTAMP"/>
+        </association>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, notification_id, user_id, is_read, read_time, is_deleted,
+        channel, push_status, push_time, created_at, updated_at
+    </sql>
+
+    <sql id="With_Notification_Column_List">
+        un.id, un.notification_id, un.user_id, un.is_read, un.read_time, un.is_deleted,
+        un.channel, un.push_status, un.push_time, un.created_at, un.updated_at,
+        n.id as n_id, n.title as n_title, n.content_type as n_content_type,
+        n.content as n_content, n.link_url as n_link_url, n.priority as n_priority,
+        n.notification_type as n_notification_type, n.sender_id as n_sender_id,
+        n.sender_name as n_sender_name, n.valid_start_time as n_valid_start_time,
+        n.valid_end_time as n_valid_end_time, n.status as n_status,
+        n.publish_time as n_publish_time, n.created_at as n_created_at
+    </sql>
+
+    <insert id="insert" parameterType="com.ceams.model.entity.UserNotification" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO user_notification (
+            notification_id, user_id, is_read, is_deleted, channel, push_status
+        ) VALUES (
+            #{notificationId}, #{userId}, #{isRead}, #{isDeleted}, #{channel}, #{pushStatus}
+        )
+    </insert>
+
+    <insert id="batchInsert" parameterType="java.util.List">
+        INSERT INTO user_notification (
+            notification_id, user_id, is_read, is_deleted, channel, push_status
+        ) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.notificationId}, #{item.userId}, #{item.isRead}, #{item.isDeleted}, #{item.channel}, #{item.pushStatus})
+        </foreach>
+    </insert>
+
+    <update id="update" parameterType="com.ceams.model.entity.UserNotification">
+        UPDATE user_notification
+        <set>
+            <if test="isRead != null">is_read = #{isRead},</if>
+            <if test="readTime != null">read_time = #{readTime},</if>
+            <if test="isDeleted != null">is_deleted = #{isDeleted},</if>
+            <if test="channel != null">channel = #{channel},</if>
+            <if test="pushStatus != null">push_status = #{pushStatus},</if>
+            <if test="pushTime != null">push_time = #{pushTime},</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById" parameterType="java.lang.Integer">
+        DELETE FROM user_notification WHERE id = #{id}
+    </delete>
+
+    <select id="selectById" parameterType="java.lang.Integer" resultMap="WithNotificationResultMap">
+        SELECT <include refid="With_Notification_Column_List"/>
+        FROM user_notification un
+        LEFT JOIN notification n ON un.notification_id = n.id
+        WHERE un.id = #{id}
+    </select>
+
+    <select id="selectByUserIdAndNotificationId" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM user_notification
+        WHERE user_id = #{userId} AND notification_id = #{notificationId}
+    </select>
+
+    <select id="selectByUserId" parameterType="java.lang.Integer" resultMap="WithNotificationResultMap">
+        SELECT <include refid="With_Notification_Column_List"/>
+        FROM user_notification un
+        LEFT JOIN notification n ON un.notification_id = n.id
+        WHERE un.user_id = #{userId} AND un.is_deleted = 0
+        ORDER BY n.publish_time DESC
+    </select>
+
+    <select id="selectUnreadByUserId" parameterType="java.lang.Integer" resultMap="WithNotificationResultMap">
+        SELECT <include refid="With_Notification_Column_List"/>
+        FROM user_notification un
+        LEFT JOIN notification n ON un.notification_id = n.id
+        WHERE un.user_id = #{userId} AND un.is_read = 0 AND un.is_deleted = 0
+        ORDER BY n.publish_time DESC
+    </select>
+
+    <select id="selectWithNotification" resultMap="WithNotificationResultMap">
+        SELECT <include refid="With_Notification_Column_List"/>
+        FROM user_notification un
+        LEFT JOIN notification n ON un.notification_id = n.id
+        <where>
+            <if test="userId != null">
+                AND un.user_id = #{userId}
+            </if>
+            <if test="isRead != null">
+                AND un.is_read = #{isRead}
+            </if>
+            <if test="isDeleted != null">
+                AND un.is_deleted = #{isDeleted}
+            </if>
+        </where>
+        ORDER BY n.publish_time DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="count" resultType="java.lang.Integer">
+        SELECT COUNT(*)
+        FROM user_notification
+        <where>
+            <if test="userId != null">
+                AND user_id = #{userId}
+            </if>
+            <if test="isRead != null">
+                AND is_read = #{isRead}
+            </if>
+            <if test="isDeleted != null">
+                AND is_deleted = #{isDeleted}
+            </if>
+        </where>
+    </select>
+
+    <select id="countUnread" parameterType="java.lang.Integer" resultType="java.lang.Integer">
+        SELECT COUNT(*)
+        FROM user_notification
+        WHERE user_id = #{userId} AND is_read = 0 AND is_deleted = 0
+    </select>
+
+    <update id="markAsRead">
+        UPDATE user_notification
+        SET is_read = 1, read_time = NOW()
+        WHERE user_id = #{userId} AND notification_id = #{notificationId}
+    </update>
+
+    <update id="markAllAsRead" parameterType="java.lang.Integer">
+        UPDATE user_notification
+        SET is_read = 1, read_time = NOW()
+        WHERE user_id = #{userId} AND is_read = 0
+    </update>
+
+    <update id="markAsDeleted">
+        UPDATE user_notification
+        SET is_deleted = 1
+        WHERE user_id = #{userId} AND notification_id = #{notificationId}
+    </update>
+
+    <update id="batchMarkAsRead">
+        UPDATE user_notification
+        SET is_read = 1, read_time = NOW()
+        WHERE user_id = #{userId}
+        AND notification_id IN
+        <foreach collection="notificationIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <update id="batchDelete">
+        UPDATE user_notification
+        SET is_deleted = 1
+        WHERE user_id = #{userId}
+        AND notification_id IN
+        <foreach collection="notificationIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <update id="updatePushStatus">
+        UPDATE user_notification
+        SET push_status = #{pushStatus}, channel = #{channel}, push_time = NOW()
+        WHERE id = #{id}
+    </update>
+
+</mapper>

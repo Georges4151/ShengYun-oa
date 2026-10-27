@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.RowConstraints?>
+<?import javafx.scene.layout.VBox?>
+
+<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/11.0.2" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.ceams.ui.controller.FXPaymentAddController">
+   <children>
+      <VBox alignment="CENTER" prefHeight="400.0" prefWidth="600.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+         <children>
+            <Label text="账户信息" style="-fx-font-size: 18px; -fx-font-weight: bold;" />
+            <GridPane hgap="10.0" vgap="15.0" prefWidth="550.0">
+              <columnConstraints>
+                <ColumnConstraints prefWidth="100.0" />
+                <ColumnConstraints prefWidth="450.0" />
+              </columnConstraints>
+              <rowConstraints>
+                <RowConstraints prefHeight="30.0" />
+                <RowConstraints prefHeight="30.0" />
+                <RowConstraints prefHeight="30.0" />
+                <RowConstraints prefHeight="100.0" />
+              </rowConstraints>
+              
+              <Label text="账户名称:" GridPane.rowIndex="0" GridPane.columnIndex="0" />
+              <TextField fx:id="nameField" GridPane.rowIndex="0" GridPane.columnIndex="1" prefWidth="400.0" />
+              
+              <Label text="账户类型:" GridPane.rowIndex="1" GridPane.columnIndex="0" />
+              <ComboBox fx:id="typeComboBox" GridPane.rowIndex="1" GridPane.columnIndex="1" prefWidth="400.0" />
+              
+              <Label text="初始余额:" GridPane.rowIndex="2" GridPane.columnIndex="0" />
+              <TextField fx:id="balanceField" GridPane.rowIndex="2" GridPane.columnIndex="1" prefWidth="400.0" />
+              
+              <Label text="账户描述:" GridPane.rowIndex="3" GridPane.columnIndex="0" />
+              <TextArea fx:id="descriptionArea" GridPane.rowIndex="3" GridPane.columnIndex="1" prefHeight="80.0" prefWidth="400.0" />
+            </GridPane>
+            <HBox alignment="CENTER" spacing="20.0" prefHeight="50.0" prefWidth="600.0">
+               <children>
+                  <Button fx:id="saveButton" mnemonicParsing="false" text="保存" prefWidth="100.0" />
+                  <Button fx:id="cancelButton" mnemonicParsing="false" text="取消" prefWidth="100.0" />
+               </children>
+            </HBox>
+         </children>
+      </VBox>
+   </children>
+</AnchorPane>

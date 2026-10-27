@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ceams.dao.UserMapper">
+    <select id="selectById" resultType="com.ceams.model.entity.User">
+        SELECT 
+            user_id as userId,
+            username,
+            password_hash as password,
+            name,
+            role,
+            'ACTIVE' as status,
+            created_at as createTime,
+            updated_at as updateTime
+        FROM users WHERE user_id = #{id}
+    </select>
+    
+    <select id="selectByUsername" resultType="com.ceams.model.entity.User">
+        SELECT 
+            user_id as userId,
+            username,
+            password_hash as password,
+            name,
+            role,
+            'ACTIVE' as status,
+            created_at as createTime,
+            updated_at as updateTime
+        FROM users WHERE username = #{username}
+    </select>
+    
+    <insert id="insert" parameterType="com.ceams.model.entity.User">
+        INSERT INTO users (username, password_hash, name, role, created_at, updated_at)
+        VALUES (#{username}, #{password}, #{name}, #{role}, NOW(), NOW())
+    </insert>
+    
+    <update id="update" parameterType="com.ceams.model.entity.User">
+        UPDATE users SET
+        username = #{username},
+        password_hash = #{password},
+        name = #{name},
+        role = #{role},
+        updated_at = NOW()
+        WHERE user_id = #{userId}
+    </update>
+    
+    <delete id="deleteById" parameterType="java.lang.Integer">
+        DELETE FROM users WHERE user_id = #{id}
+    </delete>
+    
+    <select id="selectAll" resultType="com.ceams.model.entity.User">
+        SELECT 
+            user_id as userId,
+            username,
+            password_hash as password,
+            name,
+            role,
+            'ACTIVE' as status,
+            created_at as createTime,
+            updated_at as updateTime
+        FROM users
+    </select>
+    
+    <select id="selectByName" resultType="com.ceams.model.entity.User">
+        SELECT 
+            user_id as userId,
+            username,
+            password_hash as password,
+            name,
+            role,
+            'ACTIVE' as status,
+            created_at as createTime,
+            updated_at as updateTime
+        FROM users WHERE name = #{name}
+    </select>
+    
+    <select id="selectByPage" resultType="com.ceams.model.entity.User">
+        SELECT 
+            user_id as userId,
+            username,
+            password_hash as password,
+            name,
+            role,
+            'ACTIVE' as status,
+            created_at as createTime,
+            updated_at as updateTime
+        FROM users
+        LIMIT #{pageSize} OFFSET #{offset}
+    </select>
+    
+    <select id="count" resultType="java.lang.Long">
+        SELECT COUNT(*) FROM users
+    </select>
+    
+    <select id="searchByPage" resultType="com.ceams.model.entity.User">
+        SELECT 
+            user_id as userId,
+            username,
+            password_hash as password,
+            name,
+            role,
+            'ACTIVE' as status,
+            created_at as createTime,
+            updated_at as updateTime
+        FROM users
+        WHERE username LIKE CONCAT('%', #{keyword}, '%')
+        OR name LIKE CONCAT('%', #{keyword}, '%')
+        LIMIT #{pageSize} OFFSET #{offset}
+    </select>
+    
+    <select id="countByKeyword" resultType="java.lang.Long">
+        SELECT COUNT(*) FROM users
+        WHERE username LIKE CONCAT('%', #{keyword}, '%')
+        OR name LIKE CONCAT('%', #{keyword}, '%')
+    </select>
+
+    <select id="selectByRole" resultType="com.ceams.model.entity.User">
+        SELECT 
+            user_id as userId,
+            username,
+            password_hash as password,
+            name,
+            role,
+            'ACTIVE' as status,
+            created_at as createTime,
+            updated_at as updateTime
+        FROM users WHERE role = #{role}
+    </select>
+</mapper>

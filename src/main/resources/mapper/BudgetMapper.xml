@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ceams.dao.BudgetMapper">
+    <resultMap id="BudgetResultMap" type="com.ceams.model.entity.Budget">
+        <id column="id" property="id" />
+        <result column="budget_name" property="budgetName" />
+        <result column="amount" property="amount" />
+        <result column="project_id" property="projectId" />
+        <result column="contract_id" property="contractId" />
+        <result column="start_date" property="startDate" />
+        <result column="end_date" property="endDate" />
+        <result column="status" property="status" />
+        <result column="created_at" property="createTime" />
+        <result column="updated_at" property="updateTime" />
+        <result column="project_name" property="projectName" />
+        <result column="contract_name" property="contractName" />
+    </resultMap>
+
+    <select id="selectById" resultMap="BudgetResultMap">
+        SELECT b.*, p.project_name, sc.contract_name
+        FROM budgets b
+        LEFT JOIN projects p ON b.project_id = p.id
+        LEFT JOIN subcontractor_contracts sc ON b.contract_id = sc.id
+        WHERE b.id = #{id}
+    </select>
+
+    <select id="selectAll" resultMap="BudgetResultMap">
+        SELECT b.*, p.project_name, sc.contract_name
+        FROM budgets b
+        LEFT JOIN projects p ON b.project_id = p.id
+        LEFT JOIN subcontractor_contracts sc ON b.contract_id = sc.id
+    </select>
+
+    <select id="selectByProjectId" resultMap="BudgetResultMap">
+        SELECT b.*, p.project_name, sc.contract_name
+        FROM budgets b
+        LEFT JOIN projects p ON b.project_id = p.id
+        LEFT JOIN subcontractor_contracts sc ON b.contract_id = sc.id
+        WHERE b.project_id = #{projectId}
+    </select>
+
+    <select id="selectByContractId" resultMap="BudgetResultMap">
+        SELECT b.*, p.project_name, sc.contract_name
+        FROM budgets b
+        LEFT JOIN projects p ON b.project_id = p.id
+        LEFT JOIN subcontractor_contracts sc ON b.contract_id = sc.id
+        WHERE b.contract_id = #{contractId}
+    </select>
+
+    <select id="selectAllWithPagination" resultMap="BudgetResultMap">
+        SELECT b.*, p.project_name, sc.contract_name
+        FROM budgets b
+        LEFT JOIN projects p ON b.project_id = p.id
+        LEFT JOIN subcontractor_contracts sc ON b.contract_id = sc.id
+        LIMIT #{pageSize} OFFSET #{offset}
+    </select>
+
+    <select id="selectByConditionsWithPagination" resultMap="BudgetResultMap">
+        SELECT b.*, p.project_name, sc.contract_name
+        FROM budgets b
+        LEFT JOIN projects p ON b.project_id = p.id
+        LEFT JOIN subcontractor_contracts sc ON b.contract_id = sc.id
+        WHERE 1=1
+        <if test="projectId != null">
+            AND b.project_id = #{projectId}
+        </if>
+        <if test="contractId != null">
+            AND b.contract_id = #{contractId}
+        </if>
+        <if test="status != null and status != ''">
+            AND b.status = #{status}
+        </if>
+        LIMIT #{pageSize} OFFSET #{offset}
+    </select>
+
+    <select id="getBudgetExecution" resultType="java.util.Map">
+        SELECT 
+            b.amount AS budget_amount,
+            COALESCE(SUM(a.amount), 0) AS used_amount,
+            b.amount - COALESCE(SUM(a.amount), 0) AS remaining_amount,
+            CASE 
+                WHEN b.amount > 0 THEN (COALESCE(SUM(a.amount), 0) / b.amount) * 100 
+                ELSE 0 
+            END AS usage_rate
+        FROM budgets b
+        LEFT JOIN accounts a ON 
+            (b.project_id IS NOT NULL AND a.project_id = b.project_id) OR
+            (b.contract_id IS NOT NULL AND a.contract_id = b.contract_id)
+        WHERE b.id = #{budgetId}
+        AND a.type = 'expense'
+        AND a.status = 'completed'
+        GROUP BY b.id, b.amount
+    </select>
+
+    <insert id="insert" parameterType="com.ceams.model.entity.Budget">
+        INSERT INTO budgets (budget_name, amount, project_id, contract_id, start_date, end_date, status, created_at, updated_at)
+        VALUES (#{budgetName}, #{amount}, #{projectId}, #{contractId}, #{startDate}, #{endDate}, #{status}, NOW(), NOW())
+    </insert>
+
+    <update id="update" parameterType="com.ceams.model.entity.Budget">
+        UPDATE budgets SET
+            budget_name = #{budgetName},
+            amount = #{amount},
+            project_id = #{projectId},
+            contract_id = #{contractId},
+            start_date = #{startDate},
+            end_date = #{endDate},
+            status = #{status},
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById" parameterType="java.lang.Integer">
+        DELETE FROM budgets WHERE id = #{id}
+    </delete>
+
+    <select id="count" resultType="java.lang.Long">
+        SELECT COUNT(*) FROM budgets
+    </select>
+
+    <select id="countByConditions" resultType="java.lang.Integer">
+        SELECT COUNT(*)
+        FROM budgets b
+        WHERE 1=1
+        <if test="projectId != null">
+            AND b.project_id = #{projectId}
+        </if>
+        <if test="contractId != null">
+            AND b.contract_id = #{contractId}
+        </if>
+        <if test="status != null and status != ''">
+            AND b.status = #{status}
+        </if>
+    </select>
+</mapper>

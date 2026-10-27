@@ -1,0 +1,321 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.text.Font?>
+<?import javafx.scene.paint.Color?>
+<?import javafx.scene.shape.Circle?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.effect.DropShadow?>
+<?import java.net.URL?>
+
+<BorderPane prefHeight="800.0" prefWidth="1400.0" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.ceams.ui.controller.ModernMainController">
+    <!-- 全局样式 -->
+    <stylesheets>
+        <URL value="@modern-ui.css" />
+    </stylesheets>
+
+    <left>
+        <VBox styleClass="sidebar" prefWidth="260.0" spacing="0.0" style="-fx-background-color: #2D3748; -fx-border-width: 0 1 0 0; -fx-border-color: #E2E8F0;">
+            <!-- 侧边栏头部 -->
+            <VBox alignment="CENTER" spacing="12.0" styleClass="sidebar-header" style="-fx-padding: 24px; -fx-background-color: #232F3E;">
+                <Label text="盛韵建筑" styleClass="h4">
+                    <font>
+                        <Font name="Microsoft YaHei Bold" size="22.0" />
+                    </font>
+                    <textFill>WHITE</textFill>
+                </Label>
+                <Label text="账目管理系统" styleClass="text-secondary" style="-fx-text-fill: #A0AEC0; -fx-font-size: 13px;" />
+            </VBox>
+
+            <!-- 侧边栏菜单滚动区域 -->
+            <ScrollPane fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" styleClass="sidebar-scroll" style="-fx-background-color: transparent; -fx-padding: 0;">
+                <VBox spacing="4.0" style="-fx-padding: 8px; -fx-background-color: #2D3748;">
+
+                    <!-- 主要功能区 -->
+                    <VBox spacing="8.0" styleClass="menu-section">
+                        <Label text="主要功能" styleClass="menu-section-title" style="-fx-text-fill: #718096; -fx-font-size: 11px; -fx-font-weight: bold; -fx-padding: 8px 12px 4px 12px;" />
+                        <Button text="首页" onAction="#showDashboard" styleClass="menu-item menu-item-active" style="-fx-background-color: transparent; -fx-text-fill: #F7FAFC; -fx-font-size: 14px; -fx-padding: 12px 16px; -fx-alignment: CENTER_LEFT; -fx-background-radius: 8px; -fx-border-radius: 8px;" />
+                        <Button text="项目管理" onAction="#projectList" styleClass="menu-item" style="-fx-background-color: transparent; -fx-text-fill: #E2E8F0; -fx-font-size: 14px; -fx-padding: 12px 16px; -fx-alignment: CENTER_LEFT; -fx-background-radius: 8px; -fx-border-radius: 8px;" />
+                        <Button text="添加项目" onAction="#addProject" styleClass="menu-item" style="-fx-background-color: transparent; -fx-text-fill: #E2E8F0; -fx-font-size: 14px; -fx-padding: 12px 16px; -fx-alignment: CENTER_LEFT; -fx-background-radius: 8px; -fx-border-radius: 8px;" />
+                        <Button text="账目管理" onAction="#accountList" styleClass="menu-item" style="-fx-background-color: transparent; -fx-text-fill: #E2E8F0; -fx-font-size: 14px; -fx-padding: 12px 16px; -fx-alignment: CENTER_LEFT; -fx-background-radius: 8px; -fx-border-radius: 8px;" />
+                        <Button text="添加账目" onAction="#addAccount" styleClass="menu-item" style="-fx-background-color: transparent; -fx-text-fill: #E2E8F0; -fx-font-size: 14px; -fx-padding: 12px 16px; -fx-alignment: CENTER_LEFT; -fx-background-radius: 8px; -fx-border-radius: 8px;" />
+                        <Button text="票据管理" onAction="#receiptList" styleClass="menu-item" style="-fx-background-color: transparent; -fx-text-fill: #E2E8F0; -fx-font-size: 14px; -fx-padding: 12px 16px; -fx-alignment: CENTER_LEFT; -fx-background-radius: 8px; -fx-border-radius: 8px;" />
+                        <Button text="票据验证" onAction="#verifyReceipt" visible="false" managed="false" styleClass="menu-item" style="-fx-background-color: transparent; -fx-text-fill: #E2E8F0; -fx-font-size: 14px; -fx-padding: 12px 16px; -fx-alignment: CENTER_LEFT; -fx-background-radius: 8px; -fx-border-radius: 8px;" />
+                        <Button text="审核流程" onAction="#approvalFlow" styleClass="menu-item" style="-fx-background-color: transparent; -fx-text-fill: #E2E8F0; -fx-font-size: 14px; -fx-padding: 12px 16px; -fx-alignment: CENTER_LEFT; -fx-background-radius: 8px; -fx-border-radius: 8px;" />
+                    </VBox>
+
+                    <Separator styleClass="menu-separator" style="-fx-background-color: #4A5568; -fx-padding: 0 16px;" />
+
+                    <!-- 资源管理区 -->
+                    <VBox spacing="8.0" styleClass="menu-section">
+                        <Label text="资源管理" styleClass="menu-section-title" style="-fx-text-fill: #718096; -fx-font-size: 11px; -fx-font-weight: bold; -fx-padding: 8px 12px 4px 12px;" />
+                        <Button text="材料管理" onAction="#materialList" styleClass="menu-item" style="-fx-background-color: transparent; -fx-text-fill: #E2E8F0; -fx-font-size: 14px; -fx-padding: 12px 16px; -fx-alignment: CENTER_LEFT; -fx-background-radius: 8px; -fx-border-radius: 8px;" />
+                        <Button text="添加材料" onAction="#addMaterial" styleClass="menu-item" style="-fx-background-color: transparent; -fx-text-fill: #E2E8F0; -fx-font-size: 14px; -fx-padding: 12px 16px; -fx-alignment: CENTER_LEFT; -fx-background-radius: 8px; -fx-border-radius: 8px;" />
+                        <Button text="分包管理" onAction="#subcontractorList" styleClass="menu-item" style="-fx-background-color: transparent; -fx-text-fill: #E2E8F0; -fx-font-size: 14px; -fx-padding: 12px 16px; -fx-alignment: CENTER_LEFT; -fx-background-radius: 8px; -fx-border-radius: 8px;" />
+                        <Button text="添加分包" onAction="#addSubcontractor" styleClass="menu-item" style="-fx-background-color: transparent; -fx-text-fill: #E2E8F0; -fx-font-size: 14px; -fx-padding: 12px 16px; -fx-alignment: CENTER_LEFT; -fx-background-radius: 8px; -fx-border-radius: 8px;" />
+                        <Button text="支付管理" onAction="#paymentList" styleClass="menu-item" style="-fx-background-color: transparent; -fx-text-fill: #E2E8F0; -fx-font-size: 14px; -fx-padding: 12px 16px; -fx-alignment: CENTER_LEFT; -fx-background-radius: 8px; -fx-border-radius: 8px;" />
+                        <Button text="收支查询" onAction="#transactionQuery" styleClass="menu-item" style="-fx-background-color: transparent; -fx-text-fill: #E2E8F0; -fx-font-size: 14px; -fx-padding: 12px 16px; -fx-alignment: CENTER_LEFT; -fx-background-radius: 8px; -fx-border-radius: 8px;" />
+                    </VBox>
+
+                    <Separator styleClass="menu-separator" style="-fx-background-color: #4A5568; -fx-padding: 0 16px;" />
+
+                    <!-- 电子章管理区 -->
+                    <VBox spacing="8.0" styleClass="menu-section">
+                        <Label text="电子章管理" styleClass="menu-section-title" style="-fx-text-fill: #718096; -fx-font-size: 11px; -fx-font-weight: bold; -fx-padding: 8px 12px 4px 12px;" />
+                        <Button text="🔐 U盘印章管理" onAction="#usbSealManagement" styleClass="menu-item" style="-fx-background-color: transparent; -fx-text-fill: #E2E8F0; -fx-font-size: 14px; -fx-padding: 12px 16px; -fx-alignment: CENTER_LEFT; -fx-background-radius: 8px; -fx-border-radius: 8px;" />
+                        <Button text="电子章申请" onAction="#electronicSealApplication" styleClass="menu-item" style="-fx-background-color: transparent; -fx-text-fill: #E2E8F0; -fx-font-size: 14px; -fx-padding: 12px 16px; -fx-alignment: CENTER_LEFT; -fx-background-radius: 8px; -fx-border-radius: 8px;" />
+                        <Button text="电子章审批" onAction="#electronicSealApproval" styleClass="menu-item" style="-fx-background-color: transparent; -fx-text-fill: #E2E8F0; -fx-font-size: 14px; -fx-padding: 12px 16px; -fx-alignment: CENTER_LEFT; -fx-background-radius: 8px; -fx-border-radius: 8px;" />
+                        <Button text="电子盖章" onAction="#electronicSealStamp" styleClass="menu-item" style="-fx-background-color: transparent; -fx-text-fill: #E2E8F0; -fx-font-size: 14px; -fx-padding: 12px 16px; -fx-alignment: CENTER_LEFT; -fx-background-radius: 8px; -fx-border-radius: 8px;" />
+                        <Button text="盖章审批管理" onAction="#stampApprovalManagement" styleClass="menu-item" style="-fx-background-color: transparent; -fx-text-fill: #E2E8F0; -fx-font-size: 14px; -fx-padding: 12px 16px; -fx-alignment: CENTER_LEFT; -fx-background-radius: 8px; -fx-border-radius: 8px;" />
+                        <Button text="我的盖章审批" onAction="#myStampApproval" styleClass="menu-item" style="-fx-background-color: transparent; -fx-text-fill: #E2E8F0; -fx-font-size: 14px; -fx-padding: 12px 16px; -fx-alignment: CENTER_LEFT; -fx-background-radius: 8px; -fx-border-radius: 8px;" />
+                        <Button text="电子章导入" onAction="#electronicSealImport" styleClass="menu-item" style="-fx-background-color: transparent; -fx-text-fill: #E2E8F0; -fx-font-size: 14px; -fx-padding: 12px 16px; -fx-alignment: CENTER_LEFT; -fx-background-radius: 8px; -fx-border-radius: 8px;" />
+                        <Button text="电子章管理" onAction="#electronicSealManagement" styleClass="menu-item" style="-fx-background-color: transparent; -fx-text-fill: #E2E8F0; -fx-font-size: 14px; -fx-padding: 12px 16px; -fx-alignment: CENTER_LEFT; -fx-background-radius: 8px; -fx-border-radius: 8px;" />
+                    </VBox>
+
+                    <Separator styleClass="menu-separator" style="-fx-background-color: #4A5568; -fx-padding: 0 16px;" />
+
+                    <!-- 报表中心 -->
+                    <VBox spacing="8.0" styleClass="menu-section">
+                        <Label text="报表中心" styleClass="menu-section-title" style="-fx-text-fill: #718096; -fx-font-size: 11px; -fx-font-weight: bold; -fx-padding: 8px 12px 4px 12px;" />
+                        <Button text="📊 账目流水可视化" onAction="#accountVisualization" styleClass="menu-item" style="-fx-background-color: transparent; -fx-text-fill: #E2E8F0; -fx-font-size: 14px; -fx-padding: 12px 16px; -fx-alignment: CENTER_LEFT; -fx-background-radius: 8px; -fx-border-radius: 8px;" />
+                        <Button text="财务报表" onAction="#financialReport" styleClass="menu-item" style="-fx-background-color: transparent; -fx-text-fill: #E2E8F0; -fx-font-size: 14px; -fx-padding: 12px 16px; -fx-alignment: CENTER_LEFT; -fx-background-radius: 8px; -fx-border-radius: 8px;" />
+                        <Button text="项目成本报表" onAction="#projectCostReport" styleClass="menu-item" style="-fx-background-color: transparent; -fx-text-fill: #E2E8F0; -fx-font-size: 14px; -fx-padding: 12px 16px; -fx-alignment: CENTER_LEFT; -fx-background-radius: 8px; -fx-border-radius: 8px;" />
+                        <Button text="材料报表" onAction="#materialReport" styleClass="menu-item" style="-fx-background-color: transparent; -fx-text-fill: #E2E8F0; -fx-font-size: 14px; -fx-padding: 12px 16px; -fx-alignment: CENTER_LEFT; -fx-background-radius: 8px; -fx-border-radius: 8px;" />
+                    </VBox>
+
+                    <Separator styleClass="menu-separator" style="-fx-background-color: #4A5568; -fx-padding: 0 16px;" />
+
+                    <!-- 通知管理 -->
+                    <VBox spacing="8.0" styleClass="menu-section">
+                        <Label text="通知管理" styleClass="menu-section-title" style="-fx-text-fill: #718096; -fx-font-size: 11px; -fx-font-weight: bold; -fx-padding: 8px 12px 4px 12px;" />
+                        <Button text="通知管理" onAction="#notificationManagement" styleClass="menu-item" style="-fx-background-color: transparent; -fx-text-fill: #E2E8F0; -fx-font-size: 14px; -fx-padding: 12px 16px; -fx-alignment: CENTER_LEFT; -fx-background-radius: 8px; -fx-border-radius: 8px;" />
+                    </VBox>
+
+                    <Separator styleClass="menu-separator" style="-fx-background-color: #4A5568; -fx-padding: 0 16px;" />
+
+                    <!-- 系统设置 -->
+                    <VBox spacing="8.0" styleClass="menu-section">
+                        <Label text="系统设置" styleClass="menu-section-title" style="-fx-text-fill: #718096; -fx-font-size: 11px; -fx-font-weight: bold; -fx-padding: 8px 12px 4px 12px;" />
+                        <Button text="用户管理" onAction="#userManagement" styleClass="menu-item" style="-fx-background-color: transparent; -fx-text-fill: #E2E8F0; -fx-font-size: 14px; -fx-padding: 12px 16px; -fx-alignment: CENTER_LEFT; -fx-background-radius: 8px; -fx-border-radius: 8px;" />
+                        <Button text="系统设置" onAction="#systemSettings" styleClass="menu-item" style="-fx-background-color: transparent; -fx-text-fill: #E2E8F0; -fx-font-size: 14px; -fx-padding: 12px 16px; -fx-alignment: CENTER_LEFT; -fx-background-radius: 8px; -fx-border-radius: 8px;" />
+                        <Button text="备份管理" onAction="#createBackup" styleClass="menu-item" style="-fx-background-color: transparent; -fx-text-fill: #E2E8F0; -fx-font-size: 14px; -fx-padding: 12px 16px; -fx-alignment: CENTER_LEFT; -fx-background-radius: 8px; -fx-border-radius: 8px;" />
+                        <Button text="恢复数据" onAction="#restoreBackup" styleClass="menu-item" style="-fx-background-color: transparent; -fx-text-fill: #E2E8F0; -fx-font-size: 14px; -fx-padding: 12px 16px; -fx-alignment: CENTER_LEFT; -fx-background-radius: 8px; -fx-border-radius: 8px;" />
+                        <Button text="关于" onAction="#about" styleClass="menu-item" style="-fx-background-color: transparent; -fx-text-fill: #E2E8F0; -fx-font-size: 14px; -fx-padding: 12px 16px; -fx-alignment: CENTER_LEFT; -fx-background-radius: 8px; -fx-border-radius: 8px;" />
+                    </VBox>
+
+                </VBox>
+            </ScrollPane>
+
+            <!-- 侧边栏底部 -->
+            <VBox spacing="12.0" styleClass="sidebar-footer" style="-fx-padding: 20px; -fx-background-color: #232F3E;">
+                <Button text="退出登录" onAction="#exit" styleClass="button-danger button-block" style="-fx-background-color: #E53E3E; -fx-text-fill: white; -fx-padding: 12px; -fx-font-size: 14px; -fx-background-radius: 8px; -fx-border-radius: 8px; -fx-cursor: hand;" />
+            </VBox>
+        </VBox>
+    </left>
+
+    <center>
+        <BorderPane style="-fx-background-color: #F7FAFC;">
+            <top>
+                <VBox spacing="0.0" style="-fx-background-color: white; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 10, 0, 0, 2);">
+                    <!-- 顶部导航栏 -->
+                    <HBox alignment="CENTER_LEFT" spacing="16.0" styleClass="top-bar" style="-fx-padding: 16px 24px; -fx-background-color: white;">
+                        <!-- 搜索框 -->
+                        <HBox spacing="12.0" styleClass="search-box" style="-fx-background-color: #F7FAFC; -fx-padding: 8px 16px; -fx-background-radius: 8px; -fx-alignment: center-left;">
+                            <Label text="🔍" styleClass="search-icon" style="-fx-font-size: 14px; -fx-text-fill: #718096;" />
+                            <TextField fx:id="searchField" promptText="搜索项目、账目、票据..." styleClass="search-input" prefWidth="300.0" onAction="#performSearch" style="-fx-background-color: transparent; -fx-border-width: 0; -fx-font-size: 14px; -fx-text-fill: #2D3748; -fx-prompt-text-fill: #A0AEC0;" />
+                            <Button text="搜索" onAction="#performSearch" style="-fx-background-color: #4299E1; -fx-text-fill: white; -fx-padding: 4px 12px; -fx-font-size: 13px; -fx-background-radius: 4px; -fx-cursor: hand;" />
+                        </HBox>
+
+                        <!-- 右侧操作区 -->
+                        <HBox alignment="CENTER_RIGHT" spacing="16.0" styleClass="flex-grow" HBox.hgrow="ALWAYS">
+                            <Button text="新建账目" onAction="#newAccount" styleClass="button button-primary" style="-fx-background-color: #4299E1; -fx-text-fill: white; -fx-padding: 8px 16px; -fx-font-size: 14px; -fx-background-radius: 6px; -fx-border-radius: 6px; -fx-cursor: hand;" />
+                            <Button text="上传票据" onAction="#uploadReceipt" styleClass="button button-secondary" style="-fx-background-color: #48BB78; -fx-text-fill: white; -fx-padding: 8px 16px; -fx-font-size: 14px; -fx-background-radius: 6px; -fx-border-radius: 6px; -fx-cursor: hand;" />
+
+                            <Separator orientation="VERTICAL" styleClass="toolbar-separator" style="-fx-background-color: #E2E8F0; -fx-pref-height: 24px;" />
+
+                            <!-- 图标按钮 -->
+                            <StackPane style="-fx-alignment: center;">
+                                <Button text="🔔" onAction="#openNotificationCenter" styleClass="icon-button" style="-fx-background-color: transparent; -fx-text-fill: #4A5568; -fx-font-size: 18px; -fx-padding: 8px; -fx-background-radius: 50%; -fx-cursor: hand;" />
+                                <Label fx:id="notificationBadgeLabel" text="" style="-fx-background-color: #E53E3E; -fx-text-fill: white; -fx-font-size: 10px; -fx-padding: 2 4; -fx-background-radius: 8px; -fx-translate-x: 10; -fx-translate-y: -10; -fx-font-weight: bold;" />
+                            </StackPane>
+                            <Button text="⚙️" onAction="#openPreferences" styleClass="icon-button" style="-fx-background-color: transparent; -fx-text-fill: #4A5568; -fx-font-size: 18px; -fx-padding: 8px; -fx-background-radius: 50%; -fx-cursor: hand;" />
+
+                            <!-- 用户信息 -->
+                            <HBox spacing="8.0" styleClass="user-info" style="-fx-alignment: center; -fx-cursor: hand;">
+                                <!-- 圆形头像 -->
+                                <StackPane style="-fx-pref-width: 36px; -fx-pref-height: 36px;">
+                                    <Circle fill="#4299E1" radius="18" />
+                                    <Label fx:id="userAvatarLabel" text="管" styleClass="avatar-text" style="-fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: bold;" />
+                                </StackPane>
+                                <VBox spacing="2.0" style="-fx-alignment: center-left;">
+                                    <Label fx:id="userNameLabel" text="管理员" styleClass="user-name" style="-fx-text-fill: #2D3748; -fx-font-size: 14px; -fx-font-weight: bold;" />
+                                    <Label fx:id="userEmailLabel" text="admin@ceams.com" styleClass="user-email" style="-fx-text-fill: #718096; -fx-font-size: 12px;" />
+                                </VBox>
+                            </HBox>
+                        </HBox>
+                    </HBox>
+
+                    <Separator styleClass="top-bar-separator" style="-fx-background-color: #E2E8F0; -fx-padding: 0;" />
+                </VBox>
+            </top>
+
+            <center>
+                <ScrollPane fitToWidth="true" fitToHeight="true" hbarPolicy="AS_NEEDED" vbarPolicy="AS_NEEDED" styleClass="content-scroll" style="-fx-background-color: transparent; -fx-padding: 0;">
+                    <VBox spacing="32.0" styleClass="content-container" style="-fx-padding: 32px; -fx-background-color: #F7FAFC;">
+
+                        <!-- 欢迎区域 -->
+                        <VBox spacing="16.0" styleClass="welcome-section">
+                            <HBox alignment="CENTER_LEFT" spacing="16.0">
+                                <VBox spacing="8.0" HBox.hgrow="ALWAYS">
+                                    <Label text="首页" styleClass="welcome-title" style="-fx-text-fill: #2D3748; -fx-font-size: 28px; -fx-font-weight: bold; -fx-font-family: 'Microsoft YaHei Bold';" />
+                                    <Label fx:id="welcomeUserLabel" text="欢迎回来，管理员" styleClass="welcome-subtitle" style="-fx-text-fill: #4A5568; -fx-font-size: 16px;" />
+                                </VBox>
+                                <Label fx:id="currentDateLabel" text="2024 年 3 月 16 日" styleClass="date-display" style="-fx-text-fill: #718096; -fx-font-size: 14px;" />
+                            </HBox>
+                        </VBox>
+
+                        <!-- 快捷操作区域 -->
+                        <HBox spacing="20.0" styleClass="quick-actions-container" alignment="CENTER">
+                            <!-- 快捷按钮1 -->
+                            <VBox styleClass="quick-action-button" onMouseClicked="#newAccount" style="-fx-background-color: white; -fx-padding: 20px; -fx-background-radius: 12px; -fx-alignment: center; -fx-spacing: 12px; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 10, 0, 0, 2); -fx-cursor: hand;">
+                                <VBox styleClass="quick-action-icon quick-action-icon-1" style="-fx-background-color: #E8F4F8; -fx-padding: 16px; -fx-background-radius: 50%; -fx-alignment: center;">
+                                    <Label text="📝" style="-fx-font-size: 24px;"/>
+                                </VBox>
+                                <Label text="新建账目" styleClass="quick-action-text" style="-fx-text-fill: #2D3748; -fx-font-size: 14px; -fx-font-weight: 500;" />
+                            </VBox>
+
+                            <!-- 快捷按钮2 -->
+                            <VBox styleClass="quick-action-button" onMouseClicked="#uploadReceipt" style="-fx-background-color: white; -fx-padding: 20px; -fx-background-radius: 12px; -fx-alignment: center; -fx-spacing: 12px; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 10, 0, 0, 2); -fx-cursor: hand;">
+                                <VBox styleClass="quick-action-icon quick-action-icon-2" style="-fx-background-color: #E6FFFA; -fx-padding: 16px; -fx-background-radius: 50%; -fx-alignment: center;">
+                                    <Label text="📤" style="-fx-font-size: 24px;"/>
+                                </VBox>
+                                <Label text="上传票据" styleClass="quick-action-text" style="-fx-text-fill: #2D3748; -fx-font-size: 14px; -fx-font-weight: 500;" />
+                            </VBox>
+
+                            <!-- 快捷按钮3 -->
+                            <VBox styleClass="quick-action-button" onMouseClicked="#financialReport" style="-fx-background-color: white; -fx-padding: 20px; -fx-background-radius: 12px; -fx-alignment: center; -fx-spacing: 12px; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 10, 0, 0, 2); -fx-cursor: hand;">
+                                <VBox styleClass="quick-action-icon quick-action-icon-3" style="-fx-background-color: #F0F8FB; -fx-padding: 16px; -fx-background-radius: 50%; -fx-alignment: center;">
+                                    <Label text="📊" style="-fx-font-size: 24px;"/>
+                                </VBox>
+                                <Label text="查看报表" styleClass="quick-action-text" style="-fx-text-fill: #2D3748; -fx-font-size: 14px; -fx-font-weight: 500;" />
+                            </VBox>
+
+                            <!-- 快捷按钮4 -->
+                            <VBox styleClass="quick-action-button" onMouseClicked="#approvalFlow" style="-fx-background-color: white; -fx-padding: 20px; -fx-background-radius: 12px; -fx-alignment: center; -fx-spacing: 12px; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 10, 0, 0, 2); -fx-cursor: hand;">
+                                <VBox styleClass="quick-action-icon quick-action-icon-4" style="-fx-background-color: #F5Fafe; -fx-padding: 16px; -fx-background-radius: 50%; -fx-alignment: center;">
+                                    <Label text="✅" style="-fx-font-size: 24px;"/>
+                                </VBox>
+                                <Label text="审核待办" styleClass="quick-action-text" style="-fx-text-fill: #2D3748; -fx-font-size: 14px; -fx-font-weight: 500;" />
+                            </VBox>
+                        </HBox>
+
+                        <!-- 统计卡片区域 -->
+                        <HBox spacing="24.0" styleClass="stats-grid" alignment="CENTER">
+                            <!-- 项目总数卡片 -->
+                            <VBox spacing="16.0" styleClass="stat-card stat-card-primary" HBox.hgrow="ALWAYS" style="-fx-background-color: white; -fx-padding: 20px; -fx-background-radius: 12px; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 10, 0, 0, 2);">
+                                <HBox spacing="16.0" alignment="CENTER_LEFT">
+                                    <VBox styleClass="stat-icon-container stat-icon-container-primary" style="-fx-background-color: #E8F4F8; -fx-padding: 12px; -fx-background-radius: 8px; -fx-alignment: center;">
+                                        <Label text="📊" styleClass="stat-icon" style="-fx-font-size: 20px;" />
+                                    </VBox>
+                                    <VBox spacing="4.0">
+                                        <Label text="项目总数" styleClass="stat-label" style="-fx-text-fill: #718096; -fx-font-size: 14px;" />
+                                        <Label fx:id="projectCountLabel" text="0" styleClass="stat-value" style="-fx-text-fill: #2D3748; -fx-font-size: 24px; -fx-font-weight: bold;" />
+                                    </VBox>
+                                </HBox>
+                                <Label fx:id="monthlyProjectsLabel" text="+0" styleClass="stat-trend trend-up" style="-fx-text-fill: #48BB78; -fx-font-size: 13px;" />
+                            </VBox>
+
+                            <!-- 账目总数卡片 -->
+                            <VBox spacing="16.0" styleClass="stat-card stat-card-success" HBox.hgrow="ALWAYS" style="-fx-background-color: white; -fx-padding: 20px; -fx-background-radius: 12px; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 10, 0, 0, 2);">
+                                <HBox spacing="16.0" alignment="CENTER_LEFT">
+                                    <VBox styleClass="stat-icon-container stat-icon-container-success" style="-fx-background-color: #E6FFFA; -fx-padding: 12px; -fx-background-radius: 8px; -fx-alignment: center;">
+                                        <Label text="💰" styleClass="stat-icon" style="-fx-font-size: 20px;" />
+                                    </VBox>
+                                    <VBox spacing="4.0">
+                                        <Label text="账目总数" styleClass="stat-label" style="-fx-text-fill: #718096; -fx-font-size: 14px;" />
+                                        <Label fx:id="accountCountLabel" text="0" styleClass="stat-value" style="-fx-text-fill: #2D3748; -fx-font-size: 24px; -fx-font-weight: bold;" />
+                                    </VBox>
+                                </HBox>
+                                <Label text="实时数据" styleClass="stat-trend trend-up" style="-fx-text-fill: #48BB78; -fx-font-size: 13px;" />
+                            </VBox>
+
+                            <!-- 票据总数卡片 -->
+                            <VBox spacing="16.0" styleClass="stat-card stat-card-warning" HBox.hgrow="ALWAYS" style="-fx-background-color: white; -fx-padding: 20px; -fx-background-radius: 12px; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 10, 0, 0, 2);">
+                                <HBox spacing="16.0" alignment="CENTER_LEFT">
+                                    <VBox styleClass="stat-icon-container stat-icon-container-warning" style="-fx-background-color: #FEF7FB; -fx-padding: 12px; -fx-background-radius: 8px; -fx-alignment: center;">
+                                        <Label text="📄" styleClass="stat-icon" style="-fx-font-size: 20px;" />
+                                    </VBox>
+                                    <VBox spacing="4.0">
+                                        <Label text="票据总数" styleClass="stat-label" style="-fx-text-fill: #718096; -fx-font-size: 14px;" />
+                                        <Label fx:id="receiptCountLabel" text="0" styleClass="stat-value" style="-fx-text-fill: #2D3748; -fx-font-size: 24px; -fx-font-weight: bold;" />
+                                    </VBox>
+                                </HBox>
+                                <Label fx:id="monthlyReceiptsLabel" text="+0" styleClass="stat-trend trend-up" style="-fx-text-fill: #48BB78; -fx-font-size: 13px;" />
+                            </VBox>
+
+                            <!-- 材料总数卡片 -->
+                            <VBox spacing="16.0" styleClass="stat-card stat-card-info" HBox.hgrow="ALWAYS" style="-fx-background-color: white; -fx-padding: 20px; -fx-background-radius: 12px; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 10, 0, 0, 2);">
+                                <HBox spacing="16.0" alignment="CENTER_LEFT">
+                                    <VBox styleClass="stat-icon-container stat-icon-container-info" style="-fx-background-color: #F0F8FB; -fx-padding: 12px; -fx-background-radius: 8px; -fx-alignment: center;">
+                                        <Label text="🧱" styleClass="stat-icon" style="-fx-font-size: 20px;" />
+                                    </VBox>
+                                    <VBox spacing="4.0">
+                                        <Label text="材料总数" styleClass="stat-label" style="-fx-text-fill: #718096; -fx-font-size: 14px;" />
+                                        <Label fx:id="materialCountLabel" text="0" styleClass="stat-value" style="-fx-text-fill: #2D3748; -fx-font-size: 24px; -fx-font-weight: bold;" />
+                                    </VBox>
+                                </HBox>
+                                <Label text="实时数据" styleClass="stat-trend trend-up" style="-fx-text-fill: #48BB78; -fx-font-size: 13px;" />
+                            </VBox>
+                        </HBox>
+
+                        <!-- 内容区域：最近项目和待处理事项 -->
+                        <HBox spacing="24.0">
+                            <!-- 最近项目卡片 -->
+                            <VBox spacing="16.0" styleClass="card card-elevated" HBox.hgrow="ALWAYS" style="-fx-background-color: white; -fx-padding: 24px; -fx-background-radius: 12px; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 10, 0, 0, 2);">
+                                <HBox alignment="CENTER_LEFT" spacing="12.0">
+                                    <Label text="最近项目" styleClass="card-title" style="-fx-text-fill: #2D3748; -fx-font-size: 18px; -fx-font-weight: bold;" />
+                                    <HBox alignment="CENTER_RIGHT" styleClass="flex-grow" HBox.hgrow="ALWAYS">
+                                        <Button text="查看全部" onAction="#projectList" styleClass="button-ghost button-sm" style="-fx-background-color: transparent; -fx-text-fill: #4299E1; -fx-font-size: 13px; -fx-padding: 4px 8px; -fx-cursor: hand;" />
+                                    </HBox>
+                                </HBox>
+
+                                <VBox fx:id="recentProjectsContainer" spacing="12.0" styleClass="project-list" style="-fx-padding: 8px 0;">
+                                    <Label text="加载中..." style="-fx-text-fill: #999; -fx-font-size: 12px; -fx-padding: 16px 0;" />
+                                </VBox>
+                            </VBox>
+
+                            <!-- 待处理事项卡片 -->
+                            <VBox spacing="16.0" styleClass="card card-elevated" HBox.hgrow="ALWAYS" style="-fx-background-color: white; -fx-padding: 24px; -fx-background-radius: 12px; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 10, 0, 0, 2);">
+                                <HBox alignment="CENTER_LEFT" spacing="12.0">
+                                    <Label text="待处理事项" styleClass="card-title" style="-fx-text-fill: #2D3748; -fx-font-size: 18px; -fx-font-weight: bold;" />
+                                    <HBox alignment="CENTER_RIGHT" styleClass="flex-grow" HBox.hgrow="ALWAYS">
+                                        <Button text="查看全部" onAction="#approvalFlow" styleClass="button-ghost button-sm" style="-fx-background-color: transparent; -fx-text-fill: #4299E1; -fx-font-size: 13px; -fx-padding: 4px 8px; -fx-cursor: hand;" />
+                                    </HBox>
+                                </HBox>
+
+                                <VBox fx:id="pendingTasksContainer" spacing="12.0" styleClass="task-list" style="-fx-padding: 8px 0;">
+                                    <Label text="加载中..." style="-fx-text-fill: #999; -fx-font-size: 12px; -fx-padding: 16px 0;" />
+                                </VBox>
+                            </VBox>
+                        </HBox>
+
+                    </VBox>
+                </ScrollPane>
+            </center>
+
+            <bottom>
+                <HBox alignment="CENTER" styleClass="footer-bar" style="-fx-padding: 12px 24px; -fx-background-color: white; -fx-border-width: 1 0 0 0; -fx-border-color: #E2E8F0;">
+                    <Label text="盛韵建筑账目管理系统 v1.0.1 | © 2024 盛韵建筑. 保留所有权利." styleClass="text-muted" style="-fx-text-fill: #718096; -fx-font-size: 13px;" />
+                </HBox>
+            </bottom>
+        </BorderPane>
+    </center>
+</BorderPane>

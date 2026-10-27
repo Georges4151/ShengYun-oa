@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<VBox alignment="TOP_LEFT" spacing="10.0" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.ceams.ui.controller.FXStampApprovalController">
+    <padding>
+        <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+    </padding>
+
+    <Label text="盖章审批管理" style="-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;">
+        <font>
+            <Font name="Microsoft YaHei" size="20.0" />
+        </font>
+    </Label>
+
+    <Separator style="-fx-background-color: #ecf0f1;" />
+
+    <!-- 待审批列表 -->
+    <Label text="待审批列表" style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #34495e;" />
+
+    <TableView fx:id="approvalTable" prefHeight="300.0" style="-fx-border-color: #bdc3c7; -fx-border-radius: 5; -fx-background-radius: 5;">
+        <columns>
+            <TableColumn fx:id="contractNameColumn" prefWidth="150.0" text="合同名称" />
+            <TableColumn fx:id="sealNameColumn" prefWidth="120.0" text="电子章名称" />
+            <TableColumn fx:id="sealCodeColumn" prefWidth="100.0" text="电子章编号" />
+            <TableColumn fx:id="projectNameColumn" prefWidth="150.0" text="项目名称" />
+            <TableColumn fx:id="applicantNameColumn" prefWidth="100.0" text="申请人" />
+            <TableColumn fx:id="applyTimeColumn" prefWidth="150.0" text="申请时间" />
+            <TableColumn fx:id="statusColumn" prefWidth="80.0" text="状态" />
+        </columns>
+    </TableView>
+
+    <HBox spacing="10.0" alignment="CENTER_LEFT">
+        <Label fx:id="totalCountLabel" text="共 0 条待审批记录" style="-fx-text-fill: #7f8c8d;" />
+    </HBox>
+
+    <Separator style="-fx-background-color: #ecf0f1;" />
+
+    <!-- 审批详情 -->
+    <Label text="审批详情" style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #34495e;" />
+
+    <VBox spacing="10.0" style="-fx-border-color: #bdc3c7; -fx-border-radius: 5; -fx-background-radius: 5; -fx-padding: 10; -fx-background-color: #f8f9fa;">
+        <HBox spacing="10.0">
+            <Label text="合同名称:" style="-fx-font-weight: bold;" prefWidth="100.0" />
+            <Label fx:id="detailContractName" text="-" style="-fx-text-fill: #2c3e50;" />
+        </HBox>
+
+        <HBox spacing="10.0">
+            <Label text="电子章:" style="-fx-font-weight: bold;" prefWidth="100.0" />
+            <Label fx:id="detailSealName" text="-" style="-fx-text-fill: #2c3e50;" />
+        </HBox>
+
+        <HBox spacing="10.0">
+            <Label text="电子章编号:" style="-fx-font-weight: bold;" prefWidth="100.0" />
+            <Label fx:id="detailSealCode" text="-" style="-fx-text-fill: #2c3e50;" />
+        </HBox>
+
+        <HBox spacing="10.0">
+            <Label text="使用权限:" style="-fx-font-weight: bold;" prefWidth="100.0" />
+            <Label fx:id="detailSealPermission" text="-" style="-fx-text-fill: #2c3e50;" wrapText="true" />
+        </HBox>
+
+        <HBox spacing="10.0">
+            <Label text="项目名称:" style="-fx-font-weight: bold;" prefWidth="100.0" />
+            <Label fx:id="detailProjectName" text="-" style="-fx-text-fill: #2c3e50;" />
+        </HBox>
+
+        <HBox spacing="10.0">
+            <Label text="申请人:" style="-fx-font-weight: bold;" prefWidth="100.0" />
+            <Label fx:id="detailApplicantName" text="-" style="-fx-text-fill: #2c3e50;" />
+        </HBox>
+
+        <HBox spacing="10.0">
+            <Label text="申请时间:" style="-fx-font-weight: bold;" prefWidth="100.0" />
+            <Label fx:id="detailApplyTime" text="-" style="-fx-text-fill: #2c3e50;" />
+        </HBox>
+    </VBox>
+
+    <!-- 操作按钮 -->
+    <HBox spacing="15.0" alignment="CENTER">
+        <Button fx:id="previewButton" text="📄 预览合同" onAction="#previewContract"
+                style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-padding: 10 20; -fx-font-size: 14px; -fx-font-weight: bold; -fx-border-radius: 5; -fx-background-radius: 5;" />
+
+        <Button fx:id="approveButton" text="✅ 通过" onAction="#approveStamp"
+                style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-padding: 10 20; -fx-font-size: 14px; -fx-font-weight: bold; -fx-border-radius: 5; -fx-background-radius: 5;" />
+
+        <Button fx:id="rejectButton" text="❌ 驳回" onAction="#rejectStamp"
+                style="-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-padding: 10 20; -fx-font-size: 14px; -fx-font-weight: bold; -fx-border-radius: 5; -fx-background-radius: 5;" />
+
+        <Button fx:id="closeButton" text="关闭" onAction="#close"
+                style="-fx-background-color: #95a5a6; -fx-text-fill: white; -fx-padding: 10 20; -fx-font-size: 14px; -fx-border-radius: 5; -fx-background-radius: 5;" />
+    </HBox>
+
+    <!-- 驳回原因输入 -->
+    <VBox spacing="5.0" fx:id="rejectReasonBox" visible="false" managed="false">
+        <Label text="驳回原因:" style="-fx-font-weight: bold;" />
+        <TextArea fx:id="rejectReasonTextArea" prefHeight="80.0" promptText="请输入驳回原因..." />
+        <HBox spacing="10.0" alignment="CENTER">
+            <Button text="确认驳回" onAction="#confirmReject"
+                    style="-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-padding: 8 15; -fx-font-size: 12px; -fx-border-radius: 3; -fx-background-radius: 3;" />
+            <Button text="取消" onAction="#cancelReject"
+                    style="-fx-background-color: #95a5a6; -fx-text-fill: white; -fx-padding: 8 15; -fx-font-size: 12px; -fx-border-radius: 3; -fx-background-radius: 3;" />
+        </HBox>
+    </VBox>
+</VBox>

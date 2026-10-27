@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ceams.dao.BankStatementMapper">
+    <resultMap id="BankStatementResultMap" type="com.ceams.model.entity.BankStatement">
+        <id column="id" property="id" />
+        <result column="account_id" property="accountId" />
+        <result column="transaction_date" property="transactionDate" />
+        <result column="amount" property="amount" />
+        <result column="type" property="type" />
+        <result column="description" property="description" />
+        <result column="counterparty" property="counterparty" />
+        <result column="bank_reference" property="bankReference" />
+        <result column="balance" property="balance" />
+        <result column="status" property="status" />
+        <result column="create_time" property="createTime" />
+        <result column="update_time" property="updateTime" />
+        
+        <!-- 关联字段，用于界面显示 -->
+        <result column="account_name" property="accountName" />
+        <result column="transaction_type_name" property="transactionTypeName" />
+    </resultMap>
+
+    <select id="selectById" resultMap="BankStatementResultMap">
+        SELECT bs.*, pa.name as account_name
+        FROM bank_statements bs
+        LEFT JOIN payment_account pa ON bs.account_id = pa.id
+        WHERE bs.id = #{id}
+    </select>
+
+    <select id="selectByAccountId" resultMap="BankStatementResultMap">
+        SELECT bs.*, pa.name as account_name
+        FROM bank_statements bs
+        LEFT JOIN payment_account pa ON bs.account_id = pa.id
+        WHERE bs.account_id = #{accountId}
+        ORDER BY bs.transaction_date DESC
+    </select>
+
+    <select id="selectByDateRange" resultMap="BankStatementResultMap">
+        SELECT bs.*, pa.name as account_name
+        FROM bank_statements bs
+        LEFT JOIN payment_account pa ON bs.account_id = pa.id
+        WHERE bs.transaction_date BETWEEN #{startDate} AND #{endDate}
+        ORDER BY bs.transaction_date DESC
+    </select>
+
+    <select id="selectByAccountIdAndDateRange" resultMap="BankStatementResultMap">
+        SELECT bs.*, pa.name as account_name
+        FROM bank_statements bs
+        LEFT JOIN payment_account pa ON bs.account_id = pa.id
+        WHERE bs.account_id = #{accountId}
+        AND bs.transaction_date BETWEEN #{startDate} AND #{endDate}
+        ORDER BY bs.transaction_date DESC
+    </select>
+
+    <select id="selectByConditions" resultMap="BankStatementResultMap">
+        SELECT bs.*, pa.name as account_name
+        FROM bank_statements bs
+        LEFT JOIN payment_account pa ON bs.account_id = pa.id
+        WHERE 1=1
+        <if test="accountId != null">
+            AND bs.account_id = #{accountId}
+        </if>
+        <if test="type != null and type != ''">
+            AND bs.type = #{type}
+        </if>
+        <if test="startDate != null">
+            AND bs.transaction_date >= #{startDate}
+        </if>
+        <if test="endDate != null">
+            AND bs.transaction_date &lt;= #{endDate}
+        </if>
+        <if test="description != null and description != ''">
+            AND bs.description LIKE CONCAT('%', #{description}, '%')
+        </if>
+        ORDER BY bs.transaction_date DESC
+    </select>
+
+    <select id="getStatementSummary" resultType="java.util.Map">
+        SELECT 
+            COUNT(*) AS total_count,
+            SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) AS total_income,
+            SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) AS total_expense,
+            SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) - SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) AS net_amount
+        FROM bank_statements
+        WHERE 1=1
+        <if test="accountId != null">
+            AND account_id = #{accountId}
+        </if>
+        <if test="startDate != null">
+            AND transaction_date >= #{startDate}
+        </if>
+        <if test="endDate != null">
+            AND transaction_date &lt;= #{endDate}
+        </if>
+    </select>
+
+    <insert id="insert" parameterType="com.ceams.model.entity.BankStatement">
+        INSERT INTO bank_statements (
+            account_id, transaction_date, amount, type, description, 
+            counterparty, bank_reference, balance, status, 
+            create_time, update_time
+        ) VALUES (
+            #{accountId}, #{transactionDate}, #{amount}, #{type}, #{description}, 
+            #{counterparty}, #{bankReference}, #{balance}, #{status}, 
+            NOW(), NOW()
+        )
+    </insert>
+
+    <insert id="batchInsert" parameterType="java.util.List">
+        INSERT INTO bank_statements (
+            account_id, transaction_date, amount, type, description, 
+            counterparty, bank_reference, balance, status, 
+            create_time, update_time
+        ) VALUES
+        <foreach collection="statements" item="statement" separator=",">
+            (
+                #{statement.accountId}, #{statement.transactionDate}, #{statement.amount}, #{statement.type}, #{statement.description}, 
+                #{statement.counterparty}, #{statement.bankReference}, #{statement.balance}, #{statement.status}, 
+                NOW(), NOW()
+            )
+        </foreach>
+    </insert>
+
+    <update id="update" parameterType="com.ceams.model.entity.BankStatement">
+        UPDATE bank_statements SET
+            account_id = #{accountId},
+            transaction_date = #{transactionDate},
+            amount = #{amount},
+            type = #{type},
+            description = #{description},
+            counterparty = #{counterparty},
+            bank_reference = #{bankReference},
+            balance = #{balance},
+            status = #{status},
+            update_time = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateStatus">
+        UPDATE bank_statements SET
+            status = #{status},
+            update_time = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById" parameterType="java.lang.Integer">
+        DELETE FROM bank_statements WHERE id = #{id}
+    </delete>
+
+    <delete id="deleteByAccountId">
+        DELETE FROM bank_statements WHERE account_id = #{accountId}
+    </delete>
+
+    <select id="selectAll" resultMap="BankStatementResultMap">
+        SELECT bs.*, pa.name as account_name
+        FROM bank_statements bs
+        LEFT JOIN payment_account pa ON bs.account_id = pa.id
+        ORDER BY bs.transaction_date DESC
+    </select>
+
+    <select id="selectAllWithPagination" resultMap="BankStatementResultMap">
+        SELECT bs.*, pa.name as account_name
+        FROM bank_statements bs
+        LEFT JOIN payment_account pa ON bs.account_id = pa.id
+        ORDER BY bs.transaction_date DESC
+        LIMIT #{pageSize} OFFSET #{offset}
+    </select>
+
+    <select id="selectByConditionsWithPagination" resultMap="BankStatementResultMap">
+        SELECT bs.*, pa.name as account_name
+        FROM bank_statements bs
+        LEFT JOIN payment_account pa ON bs.account_id = pa.id
+        WHERE 1=1
+        <if test="accountId != null">
+            AND bs.account_id = #{accountId}
+        </if>
+        <if test="type != null and type != ''">
+            AND bs.type = #{type}
+        </if>
+        <if test="startDate != null">
+            AND bs.transaction_date >= #{startDate}
+        </if>
+        <if test="endDate != null">
+            AND bs.transaction_date &lt;= #{endDate}
+        </if>
+        <if test="description != null and description != ''">
+            AND bs.description LIKE CONCAT('%', #{description}, '%')
+        </if>
+        ORDER BY bs.transaction_date DESC
+        LIMIT #{pageSize} OFFSET #{offset}
+    </select>
+
+    <select id="countByConditions" resultType="java.lang.Integer">
+        SELECT COUNT(*)
+        FROM bank_statements
+        WHERE 1=1
+        <if test="accountId != null">
+            AND account_id = #{accountId}
+        </if>
+        <if test="type != null and type != ''">
+            AND type = #{type}
+        </if>
+        <if test="startDate != null">
+            AND transaction_date >= #{startDate}
+        </if>
+        <if test="endDate != null">
+            AND transaction_date &lt;= #{endDate}
+        </if>
+        <if test="description != null and description != ''">
+            AND description LIKE CONCAT('%', #{description}, '%')
+        </if>
+    </select>
+</mapper>

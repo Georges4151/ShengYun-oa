@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ceams.dao.GeneralLedgerMapper">
+    <resultMap id="GeneralLedgerResultMap" type="com.ceams.model.entity.GeneralLedger">
+        <id column="id" property="id" />
+        <result column="account_name" property="accountName" />
+        <result column="account_number" property="accountNumber" />
+        <result column="bank_name" property="bankName" />
+        <result column="balance" property="balance" />
+        <result column="account_type" property="accountType" />
+        <result column="summary" property="summary" />
+        <result column="transaction_time" property="transactionTime" />
+        <result column="transaction_type" property="transactionType" />
+        <result column="amount" property="amount" />
+        <result column="status" property="status" />
+        <result column="create_time" property="createTime" />
+        <result column="update_time" property="updateTime" />
+    </resultMap>
+
+    <select id="selectAll" resultMap="GeneralLedgerResultMap">
+        SELECT id, account_name, account_number, bank_name, balance, account_type,
+               summary, transaction_time, transaction_type, amount, status,
+               create_time, update_time
+        FROM general_ledger
+        ORDER BY transaction_time DESC
+    </select>
+
+    <select id="selectById" resultMap="GeneralLedgerResultMap" parameterType="java.lang.Long">
+        SELECT id, account_name, account_number, bank_name, balance, account_type,
+               summary, transaction_time, transaction_type, amount, status,
+               create_time, update_time
+        FROM general_ledger
+        WHERE id = #{id}
+    </select>
+
+    <select id="selectByAccountName" resultMap="GeneralLedgerResultMap">
+        SELECT id, account_name, account_number, bank_name, balance, account_type,
+               summary, transaction_time, transaction_type, amount, status,
+               create_time, update_time
+        FROM general_ledger
+        WHERE account_name LIKE CONCAT('%', #{accountName}, '%')
+        ORDER BY transaction_time DESC
+    </select>
+
+    <select id="selectByDateRange" resultMap="GeneralLedgerResultMap">
+        SELECT id, account_name, account_number, bank_name, balance, account_type,
+               summary, transaction_time, transaction_type, amount, status,
+               create_time, update_time
+        FROM general_ledger
+        WHERE transaction_time BETWEEN #{startDate} AND #{endDate}
+        ORDER BY transaction_time DESC
+    </select>
+
+    <select id="selectByStatus" resultMap="GeneralLedgerResultMap">
+        SELECT id, account_name, account_number, bank_name, balance, account_type,
+               summary, transaction_time, transaction_type, amount, status,
+               create_time, update_time
+        FROM general_ledger
+        WHERE status = #{status}
+        ORDER BY transaction_time DESC
+    </select>
+
+    <select id="selectByPage" resultMap="GeneralLedgerResultMap">
+        SELECT id, account_name, account_number, bank_name, balance, account_type,
+               summary, transaction_time, transaction_type, amount, status,
+               create_time, update_time
+        FROM general_ledger
+        ORDER BY transaction_time DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="count" resultType="java.lang.Long">
+        SELECT COUNT(*) FROM general_ledger
+    </select>
+
+    <insert id="insert" parameterType="com.ceams.model.entity.GeneralLedger" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO general_ledger (account_name, account_number, bank_name, balance, account_type,
+                                    summary, transaction_time, transaction_type, amount, status,
+                                    create_time, update_time)
+        VALUES (#{accountName}, #{accountNumber}, #{bankName}, #{balance}, #{accountType},
+                #{summary}, #{transactionTime}, #{transactionType}, #{amount}, #{status},
+                NOW(), NOW())
+    </insert>
+
+    <update id="update" parameterType="com.ceams.model.entity.GeneralLedger">
+        UPDATE general_ledger SET
+            account_name = #{accountName},
+            account_number = #{accountNumber},
+            bank_name = #{bankName},
+            balance = #{balance},
+            account_type = #{accountType},
+            summary = #{summary},
+            transaction_time = #{transactionTime},
+            transaction_type = #{transactionType},
+            amount = #{amount},
+            status = #{status},
+            update_time = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById" parameterType="java.lang.Long">
+        DELETE FROM general_ledger WHERE id = #{id}
+    </delete>
+</mapper>

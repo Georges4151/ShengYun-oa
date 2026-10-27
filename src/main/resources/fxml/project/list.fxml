@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Pagination?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.cell.PropertyValueFactory?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox spacing="10.0" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.ceams.ui.controller.FXProjectController">
+   <padding>
+      <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+   </padding>
+   <HBox alignment="CENTER_LEFT" spacing="10.0">
+      <children>
+         <Label text="📋" style="-fx-font-family: System; -fx-font-weight: bold; -fx-font-size: 16px;" />
+         <Label text="项目列表" style="-fx-font-family: System; -fx-font-weight: bold; -fx-font-size: 16px;" />
+         <TextField fx:id="searchField" promptText="搜索项目" prefWidth="300.0" />
+         <Button fx:id="searchButton" mnemonicParsing="false" onAction="#search" text="🔍 搜索" />
+         <Button fx:id="addButton" mnemonicParsing="false" onAction="#addProject" text="➕ 添加项目" />
+         <Button fx:id="editButton" mnemonicParsing="false" onAction="#edit" text="✏️ 编辑" />
+         <Button fx:id="deleteButton" mnemonicParsing="false" onAction="#delete" text="🗑️ 删除" />
+         <Button fx:id="refreshButton" mnemonicParsing="false" onAction="#refresh" text="🔄 刷新" />
+      </children>
+   </HBox>
+   <TableView fx:id="projectTable" prefHeight="350.0" prefWidth="1000.0">
+      <columns>
+         <TableColumn fx:id="idColumn" prefWidth="80.0" text="项目ID">
+            <cellValueFactory>
+               <PropertyValueFactory property="id" />
+            </cellValueFactory>
+         </TableColumn>
+         <TableColumn fx:id="projectNameColumn" prefWidth="200.0" text="项目名称">
+            <cellValueFactory>
+               <PropertyValueFactory property="projectName" />
+            </cellValueFactory>
+         </TableColumn>
+         <TableColumn fx:id="clientNameColumn" prefWidth="150.0" text="客户名称">
+            <cellValueFactory>
+               <PropertyValueFactory property="clientName" />
+            </cellValueFactory>
+         </TableColumn>
+         <TableColumn fx:id="projectTypeColumn" prefWidth="120.0" text="项目类型">
+            <cellValueFactory>
+               <PropertyValueFactory property="projectType" />
+            </cellValueFactory>
+         </TableColumn>
+         <TableColumn fx:id="contractAmountColumn" prefWidth="120.0" text="合同金额">
+            <cellValueFactory>
+               <PropertyValueFactory property="contractAmount" />
+            </cellValueFactory>
+         </TableColumn>
+         <TableColumn fx:id="budgetAmountColumn" prefWidth="100.0" text="预算金额">
+            <cellValueFactory>
+               <PropertyValueFactory property="budgetAmount" />
+            </cellValueFactory>
+         </TableColumn>
+         <TableColumn fx:id="actualAmountColumn" prefWidth="100.0" text="实际金额">
+            <cellValueFactory>
+               <PropertyValueFactory property="actualAmount" />
+            </cellValueFactory>
+         </TableColumn>
+         <TableColumn fx:id="statusColumn" prefWidth="100.0" text="状态">
+            <cellValueFactory>
+               <PropertyValueFactory property="status" />
+            </cellValueFactory>
+         </TableColumn>
+         <TableColumn fx:id="managerNameColumn" prefWidth="120.0" text="项目经理">
+            <cellValueFactory>
+               <PropertyValueFactory property="managerName" />
+            </cellValueFactory>
+         </TableColumn>
+      </columns>
+   </TableView>
+   <Pagination fx:id="pagination" pageCount="1" style="-fx-padding: 10;" />
+   <HBox alignment="CENTER_RIGHT" spacing="10.0">
+      <children>
+         <Button fx:id="costAnalysisButton" mnemonicParsing="false" onAction="#projectCostAnalysis" text="项目成本分析" />
+      </children>
+   </HBox>
+</VBox>

@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ceams.dao.ProjectMapper">
+    <select id="selectById" resultType="com.ceams.model.entity.Project">
+        SELECT * FROM projects WHERE id = #{id}
+    </select>
+    
+    <select id="selectByStatus" resultType="com.ceams.model.entity.Project">
+        SELECT * FROM projects WHERE status = #{status}
+    </select>
+    
+    <select id="selectByClient" resultType="com.ceams.model.entity.Project">
+        SELECT * FROM projects WHERE client_name LIKE CONCAT('%', #{clientName}, '%')
+    </select>
+    
+    <select id="selectAll" resultType="com.ceams.model.entity.Project">
+        SELECT * FROM projects
+    </select>
+    
+    <select id="selectByKeyword" resultType="com.ceams.model.entity.Project">
+        SELECT * FROM projects
+        WHERE project_name LIKE CONCAT('%', #{keyword}, '%')
+        OR client_name LIKE CONCAT('%', #{keyword}, '%')
+        OR project_address LIKE CONCAT('%', #{keyword}, '%')
+        OR project_type LIKE CONCAT('%', #{keyword}, '%')
+    </select>
+    
+    <select id="getProjectStatistics" resultType="java.util.Map">
+        SELECT 
+            COUNT(*) AS total_projects,
+            COUNT(CASE WHEN status = '规划中' THEN 1 END) AS planning_count,
+            COUNT(CASE WHEN status = '施工中' THEN 1 END) AS under_construction_count,
+            COUNT(CASE WHEN status = '已完成' THEN 1 END) AS completed_count,
+            COUNT(CASE WHEN status = '已结算' THEN 1 END) AS settled_count,
+            SUM(contract_amount) AS total_contract_amount,
+            SUM(budget_amount) AS total_budget_amount,
+            SUM(actual_amount) AS total_actual_amount
+        FROM projects
+    </select>
+    
+    <select id="getProjectCostAnalysis" resultType="java.util.Map">
+        SELECT 
+            p.id AS project_id,
+            p.project_name,
+            p.contract_amount,
+            p.budget_amount,
+            p.actual_amount,
+            (p.budget_amount - p.actual_amount) AS budget_surplus,
+            ((p.actual_amount / p.budget_amount) * 100) AS cost_overrun_rate
+        FROM projects p
+    </select>
+    
+    <insert id="insert" parameterType="com.ceams.model.entity.Project">
+        INSERT INTO projects (
+            project_name, client_name, project_address, project_type,
+            start_date, end_date, contract_amount, budget_amount, actual_amount,
+            status, description, manager_id, manager_name, create_time, update_time
+        ) VALUES (
+            #{projectName}, #{clientName}, #{projectAddress}, #{projectType},
+            #{startDate}, #{endDate}, #{contractAmount}, #{budgetAmount}, #{actualAmount},
+            #{status}, #{description}, #{managerId}, #{managerName}, NOW(), NOW()
+        )
+    </insert>
+    
+    <update id="update" parameterType="com.ceams.model.entity.Project">
+        UPDATE projects SET
+            project_name = #{projectName},
+            client_name = #{clientName},
+            project_address = #{projectAddress},
+            project_type = #{projectType},
+            start_date = #{startDate},
+            end_date = #{endDate},
+            contract_amount = #{contractAmount},
+            budget_amount = #{budgetAmount},
+            actual_amount = #{actualAmount},
+            status = #{status},
+            description = #{description},
+            manager_id = #{managerId},
+            manager_name = #{managerName},
+            update_time = NOW()
+        WHERE id = #{id}
+    </update>
+    
+    <delete id="deleteById" parameterType="java.lang.Integer">
+        DELETE FROM projects WHERE id = #{id}
+    </delete>
+    
+    <select id="selectByPage" resultType="com.ceams.model.entity.Project">
+        SELECT * FROM projects
+        LIMIT #{pagination.pageSize} OFFSET #{pagination.offset}
+    </select>
+    
+    <select id="count" resultType="java.lang.Long">
+        SELECT COUNT(*) FROM projects
+    </select>
+    
+    <select id="selectByKeywordAndPage" resultType="com.ceams.model.entity.Project">
+        SELECT * FROM projects
+        WHERE project_name LIKE CONCAT('%', #{pagination.keyword}, '%')
+        OR client_name LIKE CONCAT('%', #{pagination.keyword}, '%')
+        OR project_address LIKE CONCAT('%', #{pagination.keyword}, '%')
+        OR project_type LIKE CONCAT('%', #{pagination.keyword}, '%')
+        LIMIT #{pagination.pageSize} OFFSET #{pagination.offset}
+    </select>
+    
+    <select id="countByKeyword" resultType="java.lang.Long">
+        SELECT COUNT(*) FROM projects
+        WHERE project_name LIKE CONCAT('%', #{keyword}, '%')
+        OR client_name LIKE CONCAT('%', #{keyword}, '%')
+        OR project_address LIKE CONCAT('%', #{keyword}, '%')
+        OR project_type LIKE CONCAT('%', #{keyword}, '%')
+    </select>
+
+    <select id="selectRecentProjects" resultType="com.ceams.model.entity.Project">
+        SELECT * FROM projects
+        ORDER BY create_time DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="countThisMonth" resultType="java.lang.Long">
+        SELECT COUNT(*) FROM projects
+        WHERE YEAR(create_time) = YEAR(CURRENT_DATE)
+          AND MONTH(create_time) = MONTH(CURRENT_DATE)
+    </select>
+
+    <select id="selectByManagerId" resultType="com.ceams.model.entity.Project">
+        SELECT * FROM projects WHERE manager_id = #{managerId}
+    </select>
+
+    <update id="updateManager">
+        UPDATE projects SET
+            manager_id = #{managerId},
+            manager_name = #{managerName},
+            update_time = NOW()
+        WHERE id = #{projectId}
+    </update>
+</mapper>
