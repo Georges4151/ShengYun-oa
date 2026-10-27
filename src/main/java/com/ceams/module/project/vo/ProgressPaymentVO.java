@@ -1,0 +1,47 @@
+package com.ceams.module.project.vo;
+
+import com.ceams.module.project.enums.ApprovalStatus;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
+import lombok.Data;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
+/**
+ * 进度款视图对象。
+ */
+@Data
+public class ProgressPaymentVO {
+
+    @JsonSerialize(using = ToStringSerializer.class)
+    private Long id;
+
+    @JsonSerialize(using = ToStringSerializer.class)
+    private Long projectId;
+
+    private String paymentPeriod;
+
+    private BigDecimal applicationAmount;
+
+    private BigDecimal approvedAmount;
+
+    private BigDecimal paymentAmount;
+
+    private LocalDate applicationDate;
+
+    private LocalDate approvalDate;
+
+    private LocalDate paymentDate;
+
+    private ApprovalStatus status;
+
+    @JsonSerialize(using = ToStringSerializer.class)
+    private Long applicationBy;
+
+    @JsonSerialize(using = ToStringSerializer.class)
+    private Long approvedBy;
+
+    private LocalDateTime createTime;
+}
