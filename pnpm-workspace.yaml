@@ -1,0 +1,13 @@
+# CEAMS 三端 pnpm monorepo 工作区声明
+# 三端：apps/web | apps/desktop | apps/miniprogram
+# 共享包：packages/api-client | types | ui-web | utils
+packages:
+  - "apps/*"
+  - "packages/*"
+
+# 允许执行安装脚本的依赖（esbuild 需要 postinstall 落二进制，electron 下载运行时）
+onlyBuiltDependencies:
+  - esbuild
+  - core-js
+  - core-js-pure
+  - electron
