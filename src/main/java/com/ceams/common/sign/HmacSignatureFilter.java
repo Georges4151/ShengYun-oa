@@ -10,9 +10,9 @@ import jakarta.servlet.ServletInputStream;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -47,13 +47,23 @@ import java.nio.charset.StandardCharsets;
  */
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class HmacSignatureFilter extends OncePerRequestFilter {
 
     private final RequestMappingHandlerMapping handlerMapping;
     private final SignSecretResolver secretResolver;
     private final NonceStore nonceStore;
     private final ObjectMapper objectMapper;
+
+    public HmacSignatureFilter(
+            @Qualifier("requestMappingHandlerMapping") RequestMappingHandlerMapping handlerMapping,
+            SignSecretResolver secretResolver,
+            NonceStore nonceStore,
+            ObjectMapper objectMapper) {
+        this.handlerMapping = handlerMapping;
+        this.secretResolver = secretResolver;
+        this.nonceStore = nonceStore;
+        this.objectMapper = objectMapper;
+    }
 
     /** 签名时间戳允许偏差（毫秒），默认 ±5 分钟。 */
     @Value("${ceams.sign.window-millis:300000}")
