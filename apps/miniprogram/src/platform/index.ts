@@ -1,2 +1,7 @@
 export * from './request'
+export * from './upload'
+export * from './download'
+export * from './storage'
+export * from './auth'
+export * from './config'
 export * from './http'

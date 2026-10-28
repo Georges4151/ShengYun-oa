@@ -9,10 +9,16 @@ export const uniRequestAdapter: RequestAdapter = {
     return new Promise((resolve, reject) => {
       let data: unknown
       if (request.body) {
-        try {
-          data = JSON.parse(request.body)
-        } catch {
-          data = request.body
+        if (typeof request.body === 'string') {
+          try {
+            data = JSON.parse(request.body)
+          } catch {
+            data = request.body
+          }
+        } else {
+          // uni.request 不支持 multipart FormData 请求体，请改用 platform/upload 的 uploadFile
+          reject(new Error('uni.request 不支持 FormData 请求体，请使用 uploadFile'))
+          return
         }
       }
 
@@ -35,29 +41,4 @@ export const uniRequestAdapter: RequestAdapter = {
       })
     })
   }
-}
-
-/** 上传附件（票据拍照等）；占位实现 */
-export function uploadFile(url: string, filePath: string): Promise<unknown> {
-  return new Promise((resolve, reject) => {
-    uni.uploadFile({
-      url,
-      filePath,
-      name: 'file',
-      success: (res) => resolve(res.data),
-      fail: (err) => reject(new Error(err.errMsg ?? '上传失败'))
-    })
-  })
-}
-
-/** PDF 预览：服务端生成 -> 下载 -> openDocument */
-export function previewPdf(url: string): void {
-  uni.downloadFile({
-    url,
-    success: (res) => {
-      if (res.statusCode === 200) {
-        uni.openDocument({ filePath: res.tempFilePath, showMenu: true })
-      }
-    }
-  })
 }

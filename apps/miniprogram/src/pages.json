@@ -3,7 +3,49 @@
     {
       "path": "pages/index/index",
       "style": {
-        "navigationBarTitleText": "CEAMS 登录"
+        "navigationBarTitleText": "CEAMS 首页"
+      }
+    },
+    {
+      "path": "pages/login/login",
+      "style": {
+        "navigationBarTitleText": "登录"
+      }
+    },
+    {
+      "path": "pages/project/list",
+      "style": {
+        "navigationBarTitleText": "项目"
+      }
+    },
+    {
+      "path": "pages/project/detail",
+      "style": {
+        "navigationBarTitleText": "项目详情"
+      }
+    },
+    {
+      "path": "pages/expense/pending",
+      "style": {
+        "navigationBarTitleText": "报销待办"
+      }
+    },
+    {
+      "path": "pages/expense/detail",
+      "style": {
+        "navigationBarTitleText": "报销详情"
+      }
+    },
+    {
+      "path": "pages/payment/list",
+      "style": {
+        "navigationBarTitleText": "只读账目"
+      }
+    },
+    {
+      "path": "pages/notification/list",
+      "style": {
+        "navigationBarTitleText": "通知"
       }
     }
   ],
