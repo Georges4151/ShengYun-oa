@@ -34,7 +34,7 @@ export interface IamApi {
   login(body: LoginRequest): Promise<LoginData>
   refresh(body: RefreshRequest): Promise<LoginData>
   logout(): Promise<void>
-  signSecret(): Promise<SignSecretData>
+  signSecret(deviceId: string): Promise<SignSecretData>
   sessionPage(query?: { page?: number; size?: number }): Promise<PageResult<UserSessionVO>>
   sessionRevoke(sessionId: string): Promise<void>
 
@@ -74,8 +74,8 @@ export function createIamApi(client: HttpClient): IamApi {
     async logout() {
       return client.post<void>('/api/v1/auth/logout')
     },
-    async signSecret() {
-      return client.get<SignSecretData>('/api/v1/auth/sign-secret')
+    async signSecret(deviceId) {
+      return client.get<SignSecretData>('/api/v1/auth/sign-secret', { query: { deviceId } })
     },
     async sessionPage(query = {}) {
       return client.get<PageResult<UserSessionVO>>('/api/v1/auth/sessions', {

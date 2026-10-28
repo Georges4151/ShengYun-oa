@@ -22,7 +22,13 @@ async function handleLogin(): Promise<void> {
 
   loading.value = true
   try {
-    const body: LoginRequest = { username: username.value, password: password.value }
+    const body: LoginRequest = {
+      username: username.value,
+      password: password.value,
+      deviceId: getOrCreateDeviceId(),
+      deviceName: '微信小程序',
+      platform: 'MINIPROGRAM'
+    }
     const data = await apiClient.iam.login(body)
     setSession(data)
 

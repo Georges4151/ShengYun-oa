@@ -6,6 +6,7 @@ import type { FormInstance, FormRules } from 'element-plus'
 import type { LoginRequest } from '@ceams/types'
 import { useAuthStore } from '@/stores/auth'
 import { apiErrorMessage } from '@/utils/error'
+import { getOrCreateDeviceId } from '@/utils/device'
 
 defineOptions({ name: 'LoginView' })
 
@@ -29,7 +30,13 @@ async function handleLogin(): Promise<void> {
 
   loading.value = true
   try {
-    await auth.login({ username: form.username, password: form.password })
+    await auth.login({
+      username: form.username,
+      password: form.password,
+      deviceId: getOrCreateDeviceId(),
+      deviceName: 'Web 浏览器',
+      platform: 'WEB'
+    })
     ElMessage.success('登录成功')
     const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/'
     await router.push(redirect)

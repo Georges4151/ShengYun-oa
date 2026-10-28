@@ -9,6 +9,7 @@ import {
   setSession,
   setSignSecretCache
 } from './auth'
+import { getOrCreateDeviceId } from './storage'
 
 /**
  * 统一请求客户端：业务代码只经这里访问接口，组件内禁止 uni.request / fetch / axios。
@@ -35,7 +36,7 @@ async function getSignSecret(): Promise<string | null> {
     return cached.secret
   }
   try {
-    const data = await apiClient.iam.signSecret()
+    const data = await apiClient.iam.signSecret(getOrCreateDeviceId())
     setSignSecretCache(data.secret, data.expiresAt)
     return data.secret
   } catch {
@@ -49,7 +50,8 @@ apiClient = createCeamsApiClient({
   timeoutMs: 15000,
   getAccessToken: () => getAccessToken(),
   refreshAccessToken,
-  getSignSecret
+  getSignSecret,
+  getDeviceId: () => getOrCreateDeviceId()
 })
 
 export { apiClient }

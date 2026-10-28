@@ -2,6 +2,7 @@ import { createCeamsApiClient } from '@ceams/api-client'
 import type { CeamsApiClient } from '@ceams/api-client'
 import { pinia } from '@/stores'
 import { useAuthStore } from '@/stores/auth'
+import { getOrCreateDeviceId } from '@/utils/device'
 
 /**
  * 统一请求客户端：业务代码只经这里访问接口，组件内禁止直接 axios/fetch。
@@ -39,7 +40,7 @@ async function getSignSecret(): Promise<string | null> {
     return cachedSignSecret
   }
   try {
-    const data = await apiClient.iam.signSecret()
+    const data = await apiClient.iam.signSecret(getOrCreateDeviceId())
     cachedSignSecret = data.secret
     cachedSignSecretExpiresAt = data.expiresAt
     return cachedSignSecret
@@ -55,6 +56,8 @@ apiClient = createCeamsApiClient({
   refreshAccessToken,
   // 高风险接口签名密钥（客户端不落 AppSecret，需后端安全下发）
   getSignSecret,
+  // 设备指纹（签名请求携带 X-Device-Id 头）
+  getDeviceId: () => getOrCreateDeviceId(),
   headers: {
     'X-Requested-With': 'XMLHttpRequest'
   }

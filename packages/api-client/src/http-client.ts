@@ -27,6 +27,8 @@ export interface HttpClientOptions {
   getAccessToken?: () => string | null | undefined | Promise<string | null | undefined>
   /** 获取签名密钥（Secret）的钩子；设置后可为 signed 请求自动生成签名头 */
   getSignSecret?: () => string | null | undefined | Promise<string | null | undefined>
+  /** 获取设备指纹（Device Id）的钩子；签名请求会同时携带 X-Device-Id 头 */
+  getDeviceId?: () => string | null | undefined | Promise<string | null | undefined>
   /** 判定请求是否签名，默认读 request.signed */
   shouldSign?: (request: HttpRequest) => boolean
   /** nonce 生成器 */
@@ -176,6 +178,8 @@ export class HttpClient {
       request.headers['X-Sign'] = await hmacSha256Hex(secret, buildSignPayload(timestamp, nonce, bodyHash))
       request.headers['X-Timestamp'] = timestamp
       request.headers['X-Nonce'] = nonce
+      const deviceId = this.options.getDeviceId ? await this.options.getDeviceId() : null
+      if (deviceId) request.headers['X-Device-Id'] = deviceId
     }
 
     let response = await this.transport(request)
