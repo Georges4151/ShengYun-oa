@@ -1,0 +1,717 @@
+openapi: 3.0.3
+info:
+  title: CEAMS Seal API
+  version: 1.0.0
+  description: |
+    CEAMS 电子印章域（seal）契约。印章 / 用印申请 / 用印审批 / 盖章 / 盖章记录 / 使用审计。
+    全局规范与 payment/bank 一致：ID=字符串、金额=字符串、时间=ISO8601、鉴权 Bearer。
+    seals/stamp 为高危接口，需 HMAC 签名（X-Sign / X-Timestamp / X-Nonce），请求体为 JSON。
+servers:
+  - url: https://api.ceams.local/api/v1
+    description: 生产
+  - url: http://localhost:8080/api/v1
+    description: 本地
+tags:
+  - name: seal
+paths:
+  /seals:
+    get:
+      tags: [seal]
+      summary: 电子印章分页查询
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+        - name: name
+          in: query
+          description: 印章名（模糊匹配）
+          schema: { type: string }
+        - name: status
+          in: query
+          schema: { $ref: '#/components/schemas/SealStatus' }
+        - name: storageType
+          in: query
+          schema: { $ref: '#/components/schemas/StorageType' }
+      responses:
+        '200':
+          description: 印章分页
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ElectronicSealPageResponse' }
+    post:
+      tags: [seal]
+      summary: 新建电子印章（状态固定 ACTIVE）
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ElectronicSealCreateRequest' }
+      responses:
+        '200':
+          description: 返回印章 ID
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/IdResponse' }
+  /seals/stamp:
+    post:
+      tags: [seal]
+      summary: 盖章（HMAC 高危接口）
+      description: |
+        高危接口，HMAC 签名（X-Sign / X-Timestamp / X-Nonce）。请求体为 JSON。
+        校验印章 ACTIVE -> 校验申请 APPROVED -> 解码 base64 -> 盖章 -> 落盘 PDF ->
+        写盖章记录 -> 写使用审计 -> 更新印章使用次数。返回盖章记录 ID 与下载路径。
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SealStampRequest' }
+      responses:
+        '200':
+          description: 盖章结果
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SealStampResultResponse' }
+  /seals/{id}:
+    get:
+      tags: [seal]
+      summary: 电子印章详情
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      responses:
+        '200':
+          description: 详情
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ElectronicSealResponse' }
+    put:
+      tags: [seal]
+      summary: 更新电子印章
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ElectronicSealUpdateRequest' }
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+    delete:
+      tags: [seal]
+      summary: 删除电子印章（存在用印申请时禁止删除）
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+  /seal/applications:
+    get:
+      tags: [seal]
+      summary: 用印申请分页查询
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+        - name: sealId
+          in: query
+          description: 印章 ID
+          schema: { type: string }
+        - name: status
+          in: query
+          schema: { $ref: '#/components/schemas/ApplicationStatus' }
+        - name: applicantId
+          in: query
+          description: 申请人 ID
+          schema: { type: string }
+      responses:
+        '200':
+          description: 用印申请分页
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ElectronicSealApplicationPageResponse' }
+    post:
+      tags: [seal]
+      summary: 新建用印申请（状态固定 PENDING）
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ElectronicSealApplicationCreateRequest' }
+      responses:
+        '200':
+          description: 返回申请 ID
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/IdResponse' }
+  /seal/applications/{id}:
+    get:
+      tags: [seal]
+      summary: 用印申请详情
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      responses:
+        '200':
+          description: 详情
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ElectronicSealApplicationResponse' }
+    put:
+      tags: [seal]
+      summary: 更新用印申请（仅 PENDING 可编辑）
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ElectronicSealApplicationUpdateRequest' }
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+    delete:
+      tags: [seal]
+      summary: 删除用印申请（存在审批记录时禁止删除）
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+  /seal/applications/{id}/cancel:
+    post:
+      tags: [seal]
+      summary: 取消用印申请（PENDING -> CANCELLED）
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+  /seal/approvals:
+    get:
+      tags: [seal]
+      summary: 用印审批分页查询
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+        - name: stampId
+          in: query
+          description: 用印申请 ID
+          schema: { type: string }
+        - name: sealId
+          in: query
+          description: 印章 ID
+          schema: { type: string }
+        - name: status
+          in: query
+          schema: { $ref: '#/components/schemas/ApprovalStatus' }
+      responses:
+        '200':
+          description: 用印审批分页
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/StampApprovalPageResponse' }
+    post:
+      tags: [seal]
+      summary: 新建用印审批（状态固定 PENDING）
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/StampApprovalCreateRequest' }
+      responses:
+        '200':
+          description: 返回审批 ID
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/IdResponse' }
+  /seal/approvals/{id}:
+    get:
+      tags: [seal]
+      summary: 用印审批详情
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      responses:
+        '200':
+          description: 详情
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/StampApprovalResponse' }
+    put:
+      tags: [seal]
+      summary: 更新用印审批（仅 PENDING 可编辑）
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/StampApprovalUpdateRequest' }
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+    delete:
+      tags: [seal]
+      summary: 删除用印审批
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+  /seal/approvals/{id}/approve:
+    post:
+      tags: [seal]
+      summary: 审批通过（PENDING -> APPROVED，联动申请 APPROVED）
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/StampApprovalApproveRequest' }
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+  /seal/approvals/{id}/reject:
+    post:
+      tags: [seal]
+      summary: 审批驳回（PENDING -> REJECTED，联动申请 REJECTED）
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/StampApprovalRejectRequest' }
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+  /seal/stamps:
+    get:
+      tags: [seal]
+      summary: 盖章记录分页查询
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+        - name: sealId
+          in: query
+          description: 印章 ID
+          schema: { type: string }
+        - name: projectId
+          in: query
+          description: 项目 ID
+          schema: { type: string }
+      responses:
+        '200':
+          description: 盖章记录分页
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ElectronicSealStampPageResponse' }
+  /seal/stamps/{id}:
+    get:
+      tags: [seal]
+      summary: 盖章记录详情
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      responses:
+        '200':
+          description: 详情
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ElectronicSealStampResponse' }
+  /seal/stamps/{id}/download:
+    get:
+      tags: [seal]
+      summary: 下载盖章 PDF（application/pdf 附件）
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      responses:
+        '200':
+          description: PDF 文件流
+          content:
+            application/pdf:
+              schema: { type: string, format: binary }
+  /seal/usages:
+    get:
+      tags: [seal]
+      summary: 印章使用审计分页查询
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+        - name: sealId
+          in: query
+          description: 印章 ID
+          schema: { type: string }
+        - name: userId
+          in: query
+          description: 使用人 ID
+          schema: { type: string }
+      responses:
+        '200':
+          description: 使用审计分页
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ElectronicSealUsagePageResponse' }
+  /seal/usages/{id}:
+    get:
+      tags: [seal]
+      summary: 印章使用审计详情
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      responses:
+        '200':
+          description: 详情
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ElectronicSealUsageResponse' }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    PageParam:
+      name: page
+      in: query
+      schema: { type: integer, format: int32, default: 1, minimum: 1 }
+    SizeParam:
+      name: size
+      in: query
+      schema: { type: integer, format: int32, default: 20, minimum: 1, maximum: 100 }
+    IdParam:
+      name: id
+      in: path
+      required: true
+      schema: { type: string }
+  responses:
+    Ok:
+      description: 成功
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiResponse' }
+  schemas:
+    ApiResponse:
+      type: object
+      required: [code, message, traceId, timestamp]
+      properties:
+        code: { type: integer, format: int32, example: 0 }
+        message: { type: string, example: success }
+        data: { nullable: true }
+        traceId: { type: string }
+        timestamp: { type: string, format: date-time }
+    PageResult:
+      type: object
+      required: [records, total, page, size]
+      properties:
+        records: { type: array, items: {} }
+        total: { type: integer, format: int64 }
+        page: { type: integer, format: int32 }
+        size: { type: integer, format: int32 }
+    IdResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data: { type: string, example: '1752560000000000001' }
+
+    SealStatus:
+      type: string
+      enum: [ACTIVE, DISABLED, ARCHIVED]
+    StorageType:
+      type: string
+      enum: [FILE, USB_DRIVE, CLOUD]
+    ApplicationStatus:
+      type: string
+      enum: [PENDING, APPROVED, REJECTED, CANCELLED]
+    ApprovalStatus:
+      type: string
+      enum: [PENDING, APPROVED, REJECTED]
+
+    ElectronicSealVO:
+      type: object
+      required: [id, sealName, sealType, status]
+      properties:
+        id: { type: string }
+        sealName: { type: string, example: 公章 }
+        sealType: { type: string, description: 印章类型（代码值，如 公章/合同章/财务章） }
+        sealCode: { type: string, nullable: true }
+        description: { type: string, nullable: true }
+        status: { $ref: '#/components/schemas/SealStatus' }
+        sealImage: { type: string, nullable: true, description: 印章图片路径 }
+        storageType: { $ref: '#/components/schemas/StorageType' }
+        sealFileId: { type: string, nullable: true }
+        usbDriveId: { type: string, nullable: true }
+        passwordProtected: { type: boolean, nullable: true }
+        lastUsedTime: { type: string, format: date-time, nullable: true }
+        usageCount: { type: integer, format: int32, nullable: true }
+        createTime: { type: string, format: date-time }
+        updateTime: { type: string, format: date-time }
+    ElectronicSealCreateRequest:
+      type: object
+      required: [sealName, sealType]
+      properties:
+        sealName: { type: string, maxLength: 200 }
+        sealType: { type: string, maxLength: 50, description: 印章类型（代码值） }
+        sealCode: { type: string, maxLength: 100, nullable: true }
+        description: { type: string, nullable: true }
+        sealImage: { type: string, maxLength: 1000, nullable: true }
+        storageType: { $ref: '#/components/schemas/StorageType' }
+        sealFileId: { type: string, maxLength: 255, nullable: true }
+        usbDriveId: { type: string, maxLength: 255, nullable: true }
+        passwordProtected: { type: boolean, nullable: true }
+    ElectronicSealUpdateRequest:
+      type: object
+      properties:
+        sealName: { type: string, maxLength: 200, nullable: true }
+        sealType: { type: string, maxLength: 50, nullable: true }
+        sealCode: { type: string, maxLength: 100, nullable: true }
+        description: { type: string, nullable: true }
+        status: { $ref: '#/components/schemas/SealStatus' }
+        sealImage: { type: string, maxLength: 1000, nullable: true }
+        storageType: { $ref: '#/components/schemas/StorageType' }
+        sealFileId: { type: string, maxLength: 255, nullable: true }
+        usbDriveId: { type: string, maxLength: 255, nullable: true }
+        passwordProtected: { type: boolean, nullable: true }
+
+    ElectronicSealApplicationVO:
+      type: object
+      required: [id, sealId, applicantId, status]
+      properties:
+        id: { type: string }
+        sealId: { type: string }
+        sealName: { type: string, nullable: true }
+        applicantId: { type: string }
+        applicantName: { type: string, nullable: true }
+        purpose: { type: string, nullable: true }
+        status: { $ref: '#/components/schemas/ApplicationStatus' }
+        projectId: { type: string, nullable: true }
+        projectName: { type: string, nullable: true }
+        contractName: { type: string, nullable: true }
+        contractPath: { type: string, nullable: true }
+        stampPosition: { type: string, nullable: true }
+        approverId: { type: string, nullable: true }
+        approverName: { type: string, nullable: true }
+        approvalComment: { type: string, nullable: true }
+        applyTime: { type: string, format: date-time, nullable: true }
+        approvalTime: { type: string, format: date-time, nullable: true }
+        createTime: { type: string, format: date-time }
+    ElectronicSealApplicationCreateRequest:
+      type: object
+      required: [sealId]
+      properties:
+        sealId: { type: string }
+        purpose: { type: string, nullable: true, description: 用印事由 }
+        projectId: { type: string, nullable: true }
+        projectName: { type: string, nullable: true }
+        contractName: { type: string, nullable: true }
+        contractPath: { type: string, nullable: true }
+        stampPosition: { type: string, nullable: true }
+        applicantName: { type: string, nullable: true }
+    ElectronicSealApplicationUpdateRequest:
+      type: object
+      properties:
+        purpose: { type: string, nullable: true }
+        projectId: { type: string, nullable: true }
+        projectName: { type: string, nullable: true }
+        contractName: { type: string, nullable: true }
+        contractPath: { type: string, nullable: true }
+        stampPosition: { type: string, nullable: true }
+
+    StampApprovalVO:
+      type: object
+      required: [id, stampId, status]
+      properties:
+        id: { type: string }
+        stampId: { type: string }
+        sealId: { type: string, nullable: true }
+        sealName: { type: string, nullable: true }
+        sealCode: { type: string, nullable: true }
+        sealPermission: { type: string, nullable: true }
+        projectId: { type: string, nullable: true }
+        projectName: { type: string, nullable: true }
+        contractName: { type: string, nullable: true }
+        contractPath: { type: string, nullable: true }
+        originalContractPath: { type: string, nullable: true }
+        stampPositions: { type: string, nullable: true }
+        applicantId: { type: string, nullable: true }
+        applicantName: { type: string, nullable: true }
+        approverId: { type: string, nullable: true }
+        approverName: { type: string, nullable: true }
+        status: { $ref: '#/components/schemas/ApprovalStatus' }
+        rejectReason: { type: string, nullable: true }
+        applyTime: { type: string, format: date-time, nullable: true }
+        approvalTime: { type: string, format: date-time, nullable: true }
+        createTime: { type: string, format: date-time }
+    StampApprovalCreateRequest:
+      type: object
+      required: [stampId]
+      properties:
+        stampId: { type: string, description: 用印申请 ID（逻辑引用 biz_electronic_seal_application.id） }
+        sealPermission: { type: string, nullable: true }
+        stampPositions: { type: string, nullable: true }
+        originalContractPath: { type: string, nullable: true }
+    StampApprovalUpdateRequest:
+      type: object
+      properties:
+        sealPermission: { type: string, nullable: true }
+        stampPositions: { type: string, nullable: true }
+        originalContractPath: { type: string, nullable: true }
+    StampApprovalApproveRequest:
+      type: object
+      properties:
+        approvalComment: { type: string, maxLength: 500, nullable: true }
+    StampApprovalRejectRequest:
+      type: object
+      required: [rejectReason]
+      properties:
+        rejectReason: { type: string, maxLength: 500 }
+
+    SealStampRequest:
+      type: object
+      required: [sealId, applicationId, sourcePdfBase64, sealImageBase64]
+      properties:
+        sealId: { type: string }
+        applicationId: { type: string }
+        sourcePdfBase64: { type: string, description: 源 PDF 的 base64 }
+        sealImageBase64: { type: string, description: 印章图片 PNG/JPEG 的 base64 }
+        stampPosition: { type: string, nullable: true, description: 盖章位置 x,y（如 100,200） }
+    SealStampResultVO:
+      type: object
+      required: [stampId, downloadPath]
+      properties:
+        stampId: { type: string }
+        downloadPath: { type: string, example: /api/v1/seal/stamps/1752560000000000001/download }
+
+    ElectronicSealStampVO:
+      type: object
+      required: [id, sealId]
+      properties:
+        id: { type: string }
+        sealId: { type: string }
+        sealName: { type: string, nullable: true }
+        projectId: { type: string, nullable: true }
+        projectName: { type: string, nullable: true }
+        contractName: { type: string, nullable: true }
+        contractPath: { type: string, nullable: true }
+        stampPosition: { type: string, nullable: true }
+        stampImage: { type: string, nullable: true }
+        stampTime: { type: string, format: date-time, nullable: true }
+        userId: { type: string, nullable: true }
+        userName: { type: string, nullable: true }
+        ipAddress: { type: string, nullable: true }
+        createTime: { type: string, format: date-time }
+
+    ElectronicSealUsageVO:
+      type: object
+      required: [id, sealId]
+      properties:
+        id: { type: string }
+        sealId: { type: string }
+        sealName: { type: string, nullable: true }
+        userId: { type: string, nullable: true }
+        userName: { type: string, nullable: true }
+        purpose: { type: string, nullable: true }
+        documentType: { type: string, nullable: true, description: 文档类型（代码值） }
+        documentPath: { type: string, nullable: true }
+        usageTime: { type: string, format: date-time, nullable: true }
+        ipAddress: { type: string, nullable: true }
+        createTime: { type: string, format: date-time }
+
+    ElectronicSealResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data: { $ref: '#/components/schemas/ElectronicSealVO' }
+    ElectronicSealPageResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              allOf:
+                - $ref: '#/components/schemas/PageResult'
+                - type: object
+                  properties:
+                    records:
+                      type: array
+                      items: { $ref: '#/components/schemas/ElectronicSealVO' }
+    SealStampResultResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data: { $ref: '#/components/schemas/SealStampResultVO' }
+    ElectronicSealApplicationResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data: { $ref: '#/components/schemas/ElectronicSealApplicationVO' }
+    ElectronicSealApplicationPageResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              allOf:
+                - $ref: '#/components/schemas/PageResult'
+                - type: object
+                  properties:
+                    records:
+                      type: array
+                      items: { $ref: '#/components/schemas/ElectronicSealApplicationVO' }
+    StampApprovalResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data: { $ref: '#/components/schemas/StampApprovalVO' }
+    StampApprovalPageResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              allOf:
+                - $ref: '#/components/schemas/PageResult'
+                - type: object
+                  properties:
+                    records:
+                      type: array
+                      items: { $ref: '#/components/schemas/StampApprovalVO' }
+    ElectronicSealStampResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data: { $ref: '#/components/schemas/ElectronicSealStampVO' }
+    ElectronicSealStampPageResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              allOf:
+                - $ref: '#/components/schemas/PageResult'
+                - type: object
+                  properties:
+                    records:
+                      type: array
+                      items: { $ref: '#/components/schemas/ElectronicSealStampVO' }
+    ElectronicSealUsageResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data: { $ref: '#/components/schemas/ElectronicSealUsageVO' }
+    ElectronicSealUsagePageResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              allOf:
+                - $ref: '#/components/schemas/PageResult'
+                - type: object
+                  properties:
+                    records:
+                      type: array
+                      items: { $ref: '#/components/schemas/ElectronicSealUsageVO' }
