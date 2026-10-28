@@ -31,6 +31,14 @@
         <jjwt.version>0.12.5</jjwt.version>
         <bouncycastle.version>1.78.1</bouncycastle.version>
         <pdfbox.version>3.0.4</pdfbox.version>
+
+        <!-- ===== CI 静态检查插件版本 ===== -->
+        <checkstyle.version>10.18.0</checkstyle.version>
+        <maven-checkstyle-plugin.version>3.4.0</maven-checkstyle-plugin.version>
+        <spotless-maven-plugin.version>2.43.0</spotless-maven-plugin.version>
+        <google-java-format.version>1.22.0</google-java-format.version>
+        <maven-pmd-plugin.version>3.22.0</maven-pmd-plugin.version>
+        <jacoco-maven-plugin.version>0.8.12</jacoco-maven-plugin.version>
     </properties>
 
     <dependencies>
@@ -206,6 +214,123 @@
                         </path>
                     </annotationProcessorPaths>
                 </configuration>
+            </plugin>
+
+            <!-- ===== Checkstyle：代码风格检查（非阻断，仅报告 + 告警） ===== -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <version>${maven-checkstyle-plugin.version}</version>
+                <dependencies>
+                    <dependency>
+                        <groupId>com.puppycrawl.tools</groupId>
+                        <artifactId>checkstyle</artifactId>
+                        <version>${checkstyle.version}</version>
+                    </dependency>
+                </dependencies>
+                <configuration>
+                    <configLocation>${project.basedir}/config/checkstyle/checkstyle.xml</configLocation>
+                    <sourceDirectories>
+                        <sourceDirectory>${project.build.sourceDirectory}</sourceDirectory>
+                    </sourceDirectories>
+                    <consoleOutput>true</consoleOutput>
+                    <failsOnError>false</failsOnError>
+                    <failOnViolation>false</failOnViolation>
+                    <includeTestSourceDirectory>false</includeTestSourceDirectory>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>checkstyle-verify</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- ===== Spotless：google-java-format（AOSP 风格，仅配置不绑定，避免全量格式化） ===== -->
+            <plugin>
+                <groupId>com.diffplug.spotless</groupId>
+                <artifactId>spotless-maven-plugin</artifactId>
+                <version>${spotless-maven-plugin.version}</version>
+                <configuration>
+                    <java>
+                        <googleJavaFormat>
+                            <version>${google-java-format.version}</version>
+                            <style>AOSP</style>
+                        </googleJavaFormat>
+                    </java>
+                </configuration>
+            </plugin>
+
+            <!-- ===== PMD：静态分析（非阻断，仅报告 + 告警） ===== -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-pmd-plugin</artifactId>
+                <version>${maven-pmd-plugin.version}</version>
+                <configuration>
+                    <rulesets>
+                        <ruleset>${project.basedir}/config/pmd/ruleset.xml</ruleset>
+                    </rulesets>
+                    <linkXRef>false</linkXRef>
+                    <targetJdk>${java.version}</targetJdk>
+                    <failOnViolation>false</failOnViolation>
+                    <includeTests>false</includeTests>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>pmd-verify</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- ===== JaCoCo：测试覆盖率报告（门槛设 0 仅验证规则可跑通，非阻断） ===== -->
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>${jacoco-maven-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>jacoco-prepare-agent</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>jacoco-report</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>jacoco-check</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <configuration>
+                            <haltOnFailure>false</haltOnFailure>
+                            <rules>
+                                <rule>
+                                    <element>BUNDLE</element>
+                                    <limits>
+                                        <limit>
+                                            <counter>LINE</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>0.00</minimum>
+                                        </limit>
+                                    </limits>
+                                </rule>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

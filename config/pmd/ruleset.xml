@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<ruleset name="CEAMS PMD Ruleset"
+         xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.sourceforge.io/ruleset_2_0_0.xsd">
+    <description>
+        CEAMS 项目 PMD 规则集：bestpractices + codestyle 的稳定子集。
+        排除与 Lombok/MapStruct 注解处理器、分层架构及既有代码风格明显冲突的规则，
+        避免过度告警。配合 maven-pmd-plugin 的 failOnViolation=false 非阻断。
+    </description>
+
+    <!-- 最佳实践：排除 Lombok 未生成可见 getter/setter 导致的误报，以及过度告警规则 -->
+    <rule ref="category/java/bestpractices.xml">
+        <exclude name="GuardLogStatement"/>
+        <exclude name="LooseCoupling"/>
+        <exclude name="UnusedPrivateField"/>
+        <exclude name="UnusedPrivateMethod"/>
+        <exclude name="UnusedFormalParameter"/>
+        <exclude name="JUnitTestContainsTooManyAsserts"/>
+    </rule>
+
+    <!-- 代码风格：排除命名类（易产生大量风格化告警）与 Lombok 构造函数冲突 -->
+    <rule ref="category/java/codestyle.xml">
+        <exclude name="AtLeastOneConstructor"/>
+        <exclude name="CommentDefaultAccessModifier"/>
+        <exclude name="OnlyOneReturn"/>
+        <exclude name="ShortVariable"/>
+        <exclude name="ShortMethodName"/>
+        <exclude name="ShortClassName"/>
+        <exclude name="LongVariable"/>
+        <exclude name="LocalVariableCouldBeFinal"/>
+        <exclude name="MethodArgumentCouldBeFinal"/>
+        <exclude name="PrematureDeclaration"/>
+        <exclude name="LinguisticNaming"/>
+    </rule>
+</ruleset>
