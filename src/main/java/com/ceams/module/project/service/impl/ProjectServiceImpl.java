@@ -22,7 +22,6 @@ import com.ceams.module.project.mapper.ProjectMapper;
 import com.ceams.module.project.mapper.SubcontractorContractMapper;
 import com.ceams.module.project.service.ProjectService;
 import com.ceams.module.project.util.PageUtil;
-import com.ceams.module.project.vo.IdResponse;
 import com.ceams.module.project.vo.ProjectVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -72,7 +71,7 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public IdResponse create(ProjectCreateRequest request) {
+    public String create(ProjectCreateRequest request) {
         Project project = new Project();
         project.setProjectName(request.getProjectName());
         project.setClientName(request.getClientName());
@@ -86,7 +85,7 @@ public class ProjectServiceImpl implements ProjectService {
         project.setDescription(request.getDescription());
         project.setManagerId(request.getManagerId());
         projectMapper.insert(project);
-        return IdResponse.of(project.getId());
+        return String.valueOf(project.getId());
     }
 
     @Override

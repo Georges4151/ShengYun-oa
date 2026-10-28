@@ -2,7 +2,6 @@ package com.ceams.module.iam.service;
 
 import com.ceams.common.response.PageResult;
 import com.ceams.module.iam.dto.device.DeviceBindRequest;
-import com.ceams.module.iam.vo.IdResponse;
 import com.ceams.module.iam.vo.UserDeviceVO;
 
 /**
@@ -12,7 +11,7 @@ public interface DeviceService {
 
     PageResult<UserDeviceVO> page(long page, long size);
 
-    IdResponse bind(DeviceBindRequest request);
+    String bind(DeviceBindRequest request);
 
     void unbind(Long id);
 }

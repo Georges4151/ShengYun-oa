@@ -18,7 +18,6 @@ import com.ceams.module.project.mapper.SubcontractorContractMapper;
 import com.ceams.module.project.service.BudgetService;
 import com.ceams.module.project.util.PageUtil;
 import com.ceams.module.project.vo.BudgetVO;
-import com.ceams.module.project.vo.IdResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -62,7 +61,7 @@ public class BudgetServiceImpl implements BudgetService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public IdResponse create(BudgetCreateRequest request) {
+    public String create(BudgetCreateRequest request) {
         if (request.getProjectId() != null) {
             requireProject(request.getProjectId());
         }
@@ -80,7 +79,7 @@ public class BudgetServiceImpl implements BudgetService {
         budget.setUsedAmount(BigDecimal.ZERO);
         budget.setRemainingAmount(request.getAmount());
         budgetMapper.insert(budget);
-        return IdResponse.of(budget.getId());
+        return String.valueOf(budget.getId());
     }
 
     @Override

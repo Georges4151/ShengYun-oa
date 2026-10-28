@@ -26,6 +26,7 @@ public interface ChangeRequestConverter {
         vo.setRequestedBy(request.getRequestedBy());
         vo.setApprovedBy(request.getApprovedBy());
         vo.setApprovedAt(request.getApprovedAt());
+        vo.setApprovalComment(request.getApprovalComment());
         vo.setCreateTime(request.getCreateTime());
         return vo;
     }

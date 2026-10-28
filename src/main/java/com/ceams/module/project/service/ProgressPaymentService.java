@@ -4,7 +4,6 @@ import com.ceams.common.response.PageResult;
 import com.ceams.module.project.dto.progresspayment.ProgressPaymentCreateRequest;
 import com.ceams.module.project.dto.progresspayment.ProgressPaymentUpdateRequest;
 import com.ceams.module.project.enums.ApprovalStatus;
-import com.ceams.module.project.vo.IdResponse;
 import com.ceams.module.project.vo.ProgressPaymentVO;
 
 /**
@@ -16,7 +15,7 @@ public interface ProgressPaymentService {
 
     ProgressPaymentVO detail(Long id);
 
-    IdResponse create(ProgressPaymentCreateRequest request);
+    String create(ProgressPaymentCreateRequest request);
 
     void update(Long id, ProgressPaymentUpdateRequest request);
 

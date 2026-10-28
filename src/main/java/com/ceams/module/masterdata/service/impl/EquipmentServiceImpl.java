@@ -17,7 +17,6 @@ import com.ceams.module.masterdata.mapper.EquipmentMapper;
 import com.ceams.module.masterdata.service.EquipmentService;
 import com.ceams.module.masterdata.util.PageUtil;
 import com.ceams.module.masterdata.vo.EquipmentVO;
-import com.ceams.module.masterdata.vo.IdResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -60,7 +59,7 @@ public class EquipmentServiceImpl implements EquipmentService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public IdResponse create(EquipmentCreateRequest request) {
+    public String create(EquipmentCreateRequest request) {
         Equipment equipment = new Equipment();
         equipment.setName(request.getName());
         equipment.setType(request.getType());
@@ -70,7 +69,7 @@ public class EquipmentServiceImpl implements EquipmentService {
                 ? null : request.getPurchaseDate().atStartOfDay());
         equipment.setPurchasePrice(request.getPurchasePrice());
         equipmentMapper.insert(equipment);
-        return IdResponse.of(equipment.getId());
+        return String.valueOf(equipment.getId());
     }
 
     @Override

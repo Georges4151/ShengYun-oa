@@ -7,7 +7,6 @@ import com.ceams.module.masterdata.dto.contact.ContactUpdateRequest;
 import com.ceams.module.masterdata.enums.ContactType;
 import com.ceams.module.masterdata.service.ContactService;
 import com.ceams.module.masterdata.vo.ContactVO;
-import com.ceams.module.masterdata.vo.IdResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -42,7 +41,7 @@ public class ContactController {
 
     @PostMapping
     @PreAuthorize("hasRole('SYS_ADMIN')")
-    public ApiResponse<IdResponse> create(@Valid @RequestBody ContactCreateRequest request) {
+    public ApiResponse<String> create(@Valid @RequestBody ContactCreateRequest request) {
         return ApiResponse.success(contactService.create(request));
     }
 

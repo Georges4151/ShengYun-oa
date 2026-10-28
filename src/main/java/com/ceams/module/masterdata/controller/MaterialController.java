@@ -5,7 +5,6 @@ import com.ceams.common.response.PageResult;
 import com.ceams.module.masterdata.dto.material.MaterialCreateRequest;
 import com.ceams.module.masterdata.dto.material.MaterialUpdateRequest;
 import com.ceams.module.masterdata.service.MaterialService;
-import com.ceams.module.masterdata.vo.IdResponse;
 import com.ceams.module.masterdata.vo.MaterialVO;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -41,7 +40,7 @@ public class MaterialController {
 
     @PostMapping
     @PreAuthorize("hasRole('SYS_ADMIN')")
-    public ApiResponse<IdResponse> create(@Valid @RequestBody MaterialCreateRequest request) {
+    public ApiResponse<String> create(@Valid @RequestBody MaterialCreateRequest request) {
         return ApiResponse.success(materialService.create(request));
     }
 

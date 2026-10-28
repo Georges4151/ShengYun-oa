@@ -5,7 +5,6 @@ import com.ceams.module.masterdata.dto.category.CategoryCreateRequest;
 import com.ceams.module.masterdata.dto.category.CategoryUpdateRequest;
 import com.ceams.module.masterdata.enums.CategoryType;
 import com.ceams.module.masterdata.vo.CategoryVO;
-import com.ceams.module.masterdata.vo.IdResponse;
 
 import java.util.List;
 
@@ -20,7 +19,7 @@ public interface CategoryService {
 
     CategoryVO detail(Long id);
 
-    IdResponse create(CategoryCreateRequest request);
+    String create(CategoryCreateRequest request);
 
     void update(Long id, CategoryUpdateRequest request);
 

@@ -4,7 +4,6 @@ import com.ceams.common.response.PageResult;
 import com.ceams.module.project.dto.project.ProjectCreateRequest;
 import com.ceams.module.project.dto.project.ProjectUpdateRequest;
 import com.ceams.module.project.enums.ProjectStatus;
-import com.ceams.module.project.vo.IdResponse;
 import com.ceams.module.project.vo.ProjectVO;
 
 /**
@@ -16,7 +15,7 @@ public interface ProjectService {
 
     ProjectVO detail(Long id);
 
-    IdResponse create(ProjectCreateRequest request);
+    String create(ProjectCreateRequest request);
 
     void update(Long id, ProjectUpdateRequest request);
 

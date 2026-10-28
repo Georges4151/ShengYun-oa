@@ -6,7 +6,6 @@ import com.ceams.module.project.dto.progresspayment.ProgressPaymentCreateRequest
 import com.ceams.module.project.dto.progresspayment.ProgressPaymentUpdateRequest;
 import com.ceams.module.project.enums.ApprovalStatus;
 import com.ceams.module.project.service.ProgressPaymentService;
-import com.ceams.module.project.vo.IdResponse;
 import com.ceams.module.project.vo.ProgressPaymentVO;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -42,7 +41,7 @@ public class ProgressPaymentController {
 
     @PostMapping
     @PreAuthorize("hasAnyRole('SYS_ADMIN','FINANCE')")
-    public ApiResponse<IdResponse> create(@Valid @RequestBody ProgressPaymentCreateRequest request) {
+    public ApiResponse<String> create(@Valid @RequestBody ProgressPaymentCreateRequest request) {
         return ApiResponse.success(progressPaymentService.create(request));
     }
 

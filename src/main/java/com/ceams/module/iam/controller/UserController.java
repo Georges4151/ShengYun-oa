@@ -7,7 +7,6 @@ import com.ceams.module.iam.dto.user.ResetPasswordRequest;
 import com.ceams.module.iam.dto.user.UserCreateRequest;
 import com.ceams.module.iam.dto.user.UserUpdateRequest;
 import com.ceams.module.iam.service.UserService;
-import com.ceams.module.iam.vo.IdResponse;
 import com.ceams.module.iam.vo.UserVO;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -42,7 +41,7 @@ public class UserController {
     }
 
     @PostMapping
-    public ApiResponse<IdResponse> create(@Valid @RequestBody UserCreateRequest request) {
+    public ApiResponse<String> create(@Valid @RequestBody UserCreateRequest request) {
         return ApiResponse.success(userService.create(request));
     }
 

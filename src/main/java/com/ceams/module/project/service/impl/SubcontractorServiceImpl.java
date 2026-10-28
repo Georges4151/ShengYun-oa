@@ -15,7 +15,6 @@ import com.ceams.module.project.mapper.SubcontractorContractMapper;
 import com.ceams.module.project.mapper.SubcontractorMapper;
 import com.ceams.module.project.service.SubcontractorService;
 import com.ceams.module.project.util.PageUtil;
-import com.ceams.module.project.vo.IdResponse;
 import com.ceams.module.project.vo.SubcontractorVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -56,7 +55,7 @@ public class SubcontractorServiceImpl implements SubcontractorService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public IdResponse create(SubcontractorCreateRequest request) {
+    public String create(SubcontractorCreateRequest request) {
         Subcontractor subcontractor = new Subcontractor();
         subcontractor.setName(request.getName());
         subcontractor.setContactPerson(request.getContactPerson());
@@ -69,7 +68,7 @@ public class SubcontractorServiceImpl implements SubcontractorService {
         subcontractor.setBankAccount(request.getBankAccount());
         subcontractor.setDescription(request.getDescription());
         subcontractorMapper.insert(subcontractor);
-        return IdResponse.of(subcontractor.getId());
+        return String.valueOf(subcontractor.getId());
     }
 
     @Override

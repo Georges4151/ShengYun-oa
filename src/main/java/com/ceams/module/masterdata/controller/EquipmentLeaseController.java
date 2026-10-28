@@ -6,7 +6,6 @@ import com.ceams.module.masterdata.dto.lease.EquipmentLeaseCreateRequest;
 import com.ceams.module.masterdata.dto.lease.EquipmentLeaseUpdateRequest;
 import com.ceams.module.masterdata.service.EquipmentLeaseService;
 import com.ceams.module.masterdata.vo.EquipmentLeaseVO;
-import com.ceams.module.masterdata.vo.IdResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -41,7 +40,7 @@ public class EquipmentLeaseController {
 
     @PostMapping
     @PreAuthorize("hasRole('SYS_ADMIN')")
-    public ApiResponse<IdResponse> create(@Valid @RequestBody EquipmentLeaseCreateRequest request) {
+    public ApiResponse<String> create(@Valid @RequestBody EquipmentLeaseCreateRequest request) {
         return ApiResponse.success(equipmentLeaseService.create(request));
     }
 

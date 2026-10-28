@@ -4,7 +4,6 @@ import com.ceams.common.response.PageResult;
 import com.ceams.module.iam.dto.user.ResetPasswordRequest;
 import com.ceams.module.iam.dto.user.UserCreateRequest;
 import com.ceams.module.iam.dto.user.UserUpdateRequest;
-import com.ceams.module.iam.vo.IdResponse;
 import com.ceams.module.iam.vo.RoleVO;
 import com.ceams.module.iam.vo.UserVO;
 
@@ -19,7 +18,7 @@ public interface UserService {
 
     UserVO detail(Long id);
 
-    IdResponse create(UserCreateRequest request);
+    String create(UserCreateRequest request);
 
     void update(Long id, UserUpdateRequest request);
 

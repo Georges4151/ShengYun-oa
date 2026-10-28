@@ -18,7 +18,6 @@ import com.ceams.module.iam.mapper.RolePermissionMapper;
 import com.ceams.module.iam.mapper.UserRoleMapper;
 import com.ceams.module.iam.service.RoleService;
 import com.ceams.module.iam.util.PageUtil;
-import com.ceams.module.iam.vo.IdResponse;
 import com.ceams.module.iam.vo.RoleVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -63,7 +62,7 @@ public class RoleServiceImpl implements RoleService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public IdResponse create(RoleCreateRequest request) {
+    public String create(RoleCreateRequest request) {
         Long count = roleMapper.selectCount(new LambdaQueryWrapper<SysRole>().eq(SysRole::getCode, request.getCode()));
         if (count != null && count > 0) {
             throw BusinessException.of(ErrorCode.BIZ_DUPLICATE_CODE, "角色编码已存在");
@@ -74,7 +73,7 @@ public class RoleServiceImpl implements RoleService {
         role.setDescription(request.getDescription());
         role.setStatus(RoleStatus.ACTIVE);
         roleMapper.insert(role);
-        return IdResponse.of(role.getId());
+        return String.valueOf(role.getId());
     }
 
     @Override

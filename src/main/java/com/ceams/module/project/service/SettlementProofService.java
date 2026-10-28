@@ -3,7 +3,6 @@ package com.ceams.module.project.service;
 import com.ceams.common.response.PageResult;
 import com.ceams.module.project.dto.settlementproof.SettlementProofCreateRequest;
 import com.ceams.module.project.dto.settlementproof.SettlementProofUpdateRequest;
-import com.ceams.module.project.vo.IdResponse;
 import com.ceams.module.project.vo.SettlementProofVO;
 
 /**
@@ -15,7 +14,7 @@ public interface SettlementProofService {
 
     SettlementProofVO detail(Long id);
 
-    IdResponse create(SettlementProofCreateRequest request);
+    String create(SettlementProofCreateRequest request);
 
     void update(Long id, SettlementProofUpdateRequest request);
 

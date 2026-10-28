@@ -63,6 +63,11 @@ async function load(): Promise<void> {
   }
 }
 
+function onSearch(): void {
+  resetPage()
+  void load()
+}
+
 function openCreate(): void {
   Object.assign(form, { deviceId: '', deviceName: '', platform: undefined })
   dialogVisible.value = true
@@ -147,7 +152,7 @@ onMounted(load)
       :page-sizes="[10, 20, 50, 100]"
       layout="total, sizes, prev, pager, next, jumper"
       class="pagination"
-      @size-change="resetPage"
+      @size-change="onSearch"
       @current-change="load"
     />
 

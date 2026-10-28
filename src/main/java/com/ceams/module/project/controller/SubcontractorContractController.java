@@ -5,7 +5,6 @@ import com.ceams.common.response.PageResult;
 import com.ceams.module.project.dto.subcontractorcontract.SubcontractorContractCreateRequest;
 import com.ceams.module.project.dto.subcontractorcontract.SubcontractorContractUpdateRequest;
 import com.ceams.module.project.service.SubcontractorContractService;
-import com.ceams.module.project.vo.IdResponse;
 import com.ceams.module.project.vo.SubcontractorContractVO;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -41,7 +40,7 @@ public class SubcontractorContractController {
 
     @PostMapping
     @PreAuthorize("hasRole('SYS_ADMIN')")
-    public ApiResponse<IdResponse> create(@Valid @RequestBody SubcontractorContractCreateRequest request) {
+    public ApiResponse<String> create(@Valid @RequestBody SubcontractorContractCreateRequest request) {
         return ApiResponse.success(subcontractorContractService.create(request));
     }
 

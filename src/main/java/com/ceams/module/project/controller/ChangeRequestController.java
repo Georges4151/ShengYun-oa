@@ -8,7 +8,6 @@ import com.ceams.module.project.dto.changerequest.ChangeRequestUpdateRequest;
 import com.ceams.module.project.enums.ApprovalStatus;
 import com.ceams.module.project.service.ChangeRequestService;
 import com.ceams.module.project.vo.ChangeRequestVO;
-import com.ceams.module.project.vo.IdResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -43,7 +42,7 @@ public class ChangeRequestController {
 
     @PostMapping
     @PreAuthorize("hasAnyRole('SYS_ADMIN','FINANCE')")
-    public ApiResponse<IdResponse> create(@Valid @RequestBody ChangeRequestCreateRequest request) {
+    public ApiResponse<String> create(@Valid @RequestBody ChangeRequestCreateRequest request) {
         return ApiResponse.success(changeRequestService.create(request));
     }
 

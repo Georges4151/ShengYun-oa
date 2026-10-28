@@ -7,7 +7,6 @@ import com.ceams.module.masterdata.dto.equipment.EquipmentUpdateRequest;
 import com.ceams.module.masterdata.enums.EquipmentStatus;
 import com.ceams.module.masterdata.service.EquipmentService;
 import com.ceams.module.masterdata.vo.EquipmentVO;
-import com.ceams.module.masterdata.vo.IdResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -42,7 +41,7 @@ public class EquipmentController {
 
     @PostMapping
     @PreAuthorize("hasRole('SYS_ADMIN')")
-    public ApiResponse<IdResponse> create(@Valid @RequestBody EquipmentCreateRequest request) {
+    public ApiResponse<String> create(@Valid @RequestBody EquipmentCreateRequest request) {
         return ApiResponse.success(equipmentService.create(request));
     }
 

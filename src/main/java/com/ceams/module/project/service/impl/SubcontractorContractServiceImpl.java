@@ -21,7 +21,6 @@ import com.ceams.module.project.mapper.SubcontractorContractMapper;
 import com.ceams.module.project.mapper.SubcontractorMapper;
 import com.ceams.module.project.service.SubcontractorContractService;
 import com.ceams.module.project.util.PageUtil;
-import com.ceams.module.project.vo.IdResponse;
 import com.ceams.module.project.vo.SubcontractorContractVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -70,7 +69,7 @@ public class SubcontractorContractServiceImpl implements SubcontractorContractSe
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public IdResponse create(SubcontractorContractCreateRequest request) {
+    public String create(SubcontractorContractCreateRequest request) {
         requireSubcontractor(request.getSubcontractorId());
         if (request.getProjectId() != null) {
             requireProject(request.getProjectId());
@@ -87,7 +86,7 @@ public class SubcontractorContractServiceImpl implements SubcontractorContractSe
         contract.setStatus(request.getStatus());
         contract.setDescription(request.getDescription());
         subcontractorContractMapper.insert(contract);
-        return IdResponse.of(contract.getId());
+        return String.valueOf(contract.getId());
     }
 
     @Override

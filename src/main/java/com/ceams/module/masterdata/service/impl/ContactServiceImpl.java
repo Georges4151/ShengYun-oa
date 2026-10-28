@@ -19,7 +19,6 @@ import com.ceams.module.masterdata.mapper.MaterialMapper;
 import com.ceams.module.masterdata.service.ContactService;
 import com.ceams.module.masterdata.util.PageUtil;
 import com.ceams.module.masterdata.vo.ContactVO;
-import com.ceams.module.masterdata.vo.IdResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -64,7 +63,7 @@ public class ContactServiceImpl implements ContactService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public IdResponse create(ContactCreateRequest request) {
+    public String create(ContactCreateRequest request) {
         Contact contact = new Contact();
         contact.setName(request.getName());
         contact.setType(request.getType());
@@ -75,7 +74,7 @@ public class ContactServiceImpl implements ContactService {
         contact.setTaxIdentificationNumber(request.getTaxIdentificationNumber());
         contact.setBankAccount(request.getBankAccount());
         contactMapper.insert(contact);
-        return IdResponse.of(contact.getId());
+        return String.valueOf(contact.getId());
     }
 
     @Override

@@ -6,7 +6,6 @@ import com.ceams.module.iam.dto.role.AssignPermissionsRequest;
 import com.ceams.module.iam.dto.role.RoleCreateRequest;
 import com.ceams.module.iam.dto.role.RoleUpdateRequest;
 import com.ceams.module.iam.service.RoleService;
-import com.ceams.module.iam.vo.IdResponse;
 import com.ceams.module.iam.vo.RoleVO;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -40,7 +39,7 @@ public class RoleController {
     }
 
     @PostMapping
-    public ApiResponse<IdResponse> create(@Valid @RequestBody RoleCreateRequest request) {
+    public ApiResponse<String> create(@Valid @RequestBody RoleCreateRequest request) {
         return ApiResponse.success(roleService.create(request));
     }
 

@@ -6,7 +6,6 @@ import com.ceams.module.project.dto.budget.BudgetCreateRequest;
 import com.ceams.module.project.dto.budget.BudgetUpdateRequest;
 import com.ceams.module.project.service.BudgetService;
 import com.ceams.module.project.vo.BudgetVO;
-import com.ceams.module.project.vo.IdResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -40,7 +39,7 @@ public class BudgetController {
 
     @PostMapping
     @PreAuthorize("hasAnyRole('SYS_ADMIN','FINANCE')")
-    public ApiResponse<IdResponse> create(@Valid @RequestBody BudgetCreateRequest request) {
+    public ApiResponse<String> create(@Valid @RequestBody BudgetCreateRequest request) {
         return ApiResponse.success(budgetService.create(request));
     }
 

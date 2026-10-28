@@ -36,5 +36,7 @@ public class ChangeRequestVO {
 
     private LocalDateTime approvedAt;
 
+    private String approvalComment;
+
     private LocalDateTime createTime;
 }

@@ -3,7 +3,6 @@ package com.ceams.module.project.service;
 import com.ceams.common.response.PageResult;
 import com.ceams.module.project.dto.subcontractor.SubcontractorCreateRequest;
 import com.ceams.module.project.dto.subcontractor.SubcontractorUpdateRequest;
-import com.ceams.module.project.vo.IdResponse;
 import com.ceams.module.project.vo.SubcontractorVO;
 
 /**
@@ -15,7 +14,7 @@ public interface SubcontractorService {
 
     SubcontractorVO detail(Long id);
 
-    IdResponse create(SubcontractorCreateRequest request);
+    String create(SubcontractorCreateRequest request);
 
     void update(Long id, SubcontractorUpdateRequest request);
 

@@ -6,7 +6,6 @@ import com.ceams.module.project.dto.project.ProjectCreateRequest;
 import com.ceams.module.project.dto.project.ProjectUpdateRequest;
 import com.ceams.module.project.enums.ProjectStatus;
 import com.ceams.module.project.service.ProjectService;
-import com.ceams.module.project.vo.IdResponse;
 import com.ceams.module.project.vo.ProjectVO;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -42,7 +41,7 @@ public class ProjectController {
 
     @PostMapping
     @PreAuthorize("hasRole('SYS_ADMIN')")
-    public ApiResponse<IdResponse> create(@Valid @RequestBody ProjectCreateRequest request) {
+    public ApiResponse<String> create(@Valid @RequestBody ProjectCreateRequest request) {
         return ApiResponse.success(projectService.create(request));
     }
 

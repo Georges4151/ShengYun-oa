@@ -15,7 +15,6 @@ import com.ceams.module.masterdata.mapper.EquipmentMapper;
 import com.ceams.module.masterdata.service.EquipmentLeaseService;
 import com.ceams.module.masterdata.util.PageUtil;
 import com.ceams.module.masterdata.vo.EquipmentLeaseVO;
-import com.ceams.module.masterdata.vo.IdResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -56,7 +55,7 @@ public class EquipmentLeaseServiceImpl implements EquipmentLeaseService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public IdResponse create(EquipmentLeaseCreateRequest request) {
+    public String create(EquipmentLeaseCreateRequest request) {
         if (equipmentMapper.selectById(request.getEquipmentId()) == null) {
             throw BusinessException.of(ErrorCode.BIZ_NOT_FOUND, "设备不存在");
         }
@@ -73,7 +72,7 @@ public class EquipmentLeaseServiceImpl implements EquipmentLeaseService {
         lease.setTotalRent(request.getTotalRent());
         lease.setPaymentStatus(request.getPaymentStatus());
         equipmentLeaseMapper.insert(lease);
-        return IdResponse.of(lease.getId());
+        return String.valueOf(lease.getId());
     }
 
     @Override

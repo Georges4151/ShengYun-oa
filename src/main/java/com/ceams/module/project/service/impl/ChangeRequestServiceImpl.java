@@ -19,7 +19,6 @@ import com.ceams.module.project.mapper.ProjectMapper;
 import com.ceams.module.project.service.ChangeRequestService;
 import com.ceams.module.project.util.PageUtil;
 import com.ceams.module.project.vo.ChangeRequestVO;
-import com.ceams.module.project.vo.IdResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -63,17 +62,17 @@ public class ChangeRequestServiceImpl implements ChangeRequestService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public IdResponse create(ChangeRequestCreateRequest request) {
+    public String create(ChangeRequestCreateRequest request) {
         requireProject(request.getProjectId());
         ChangeRequest changeRequest = new ChangeRequest();
         changeRequest.setProjectId(request.getProjectId());
         changeRequest.setRequestType(request.getRequestType());
         changeRequest.setDescription(request.getDescription());
         changeRequest.setEstimatedCost(request.getEstimatedCost());
-        changeRequest.setStatus(ApprovalStatus.PENDING);
+        changeRequest.setStatus(request.getStatus() == null ? ApprovalStatus.PENDING : request.getStatus());
         changeRequest.setRequestedBy(SecurityUtils.getCurrentUserId());
         changeRequestMapper.insert(changeRequest);
-        return IdResponse.of(changeRequest.getId());
+        return String.valueOf(changeRequest.getId());
     }
 
     @Override
@@ -116,6 +115,7 @@ public class ChangeRequestServiceImpl implements ChangeRequestService {
         changeRequest.setStatus(ApprovalStatus.APPROVED);
         changeRequest.setApprovedBy(SecurityUtils.getCurrentUserId());
         changeRequest.setApprovedAt(LocalDateTime.now());
+        changeRequest.setApprovalComment(request == null ? null : request.getComment());
         changeRequestMapper.updateById(changeRequest);
         log.info("变更请求 {} 已审批通过，意见：{}", id, request == null ? null : request.getComment());
     }
@@ -130,6 +130,7 @@ public class ChangeRequestServiceImpl implements ChangeRequestService {
         changeRequest.setStatus(ApprovalStatus.REJECTED);
         changeRequest.setApprovedBy(SecurityUtils.getCurrentUserId());
         changeRequest.setApprovedAt(LocalDateTime.now());
+        changeRequest.setApprovalComment(request == null ? null : request.getComment());
         changeRequestMapper.updateById(changeRequest);
         log.info("变更请求 {} 已驳回，意见：{}", id, request == null ? null : request.getComment());
     }

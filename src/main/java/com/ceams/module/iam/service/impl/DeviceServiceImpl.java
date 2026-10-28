@@ -14,7 +14,6 @@ import com.ceams.module.iam.enums.DeviceStatus;
 import com.ceams.module.iam.mapper.UserDeviceMapper;
 import com.ceams.module.iam.service.DeviceService;
 import com.ceams.module.iam.util.PageUtil;
-import com.ceams.module.iam.vo.IdResponse;
 import com.ceams.module.iam.vo.UserDeviceVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -48,7 +47,7 @@ public class DeviceServiceImpl implements DeviceService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public IdResponse bind(DeviceBindRequest request) {
+    public String bind(DeviceBindRequest request) {
         Long userId = SecurityUtils.getCurrentUserIdOrDefault();
         LocalDateTime now = LocalDateTime.now();
         SysUserDevice device = userDeviceMapper.selectOne(
@@ -72,7 +71,7 @@ public class DeviceServiceImpl implements DeviceService {
         } else {
             userDeviceMapper.updateById(device);
         }
-        return IdResponse.of(device.getId());
+        return String.valueOf(device.getId());
     }
 
     @Override

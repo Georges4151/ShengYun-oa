@@ -17,7 +17,6 @@ import com.ceams.module.project.mapper.ProgressPaymentMapper;
 import com.ceams.module.project.mapper.ProjectMapper;
 import com.ceams.module.project.service.ProgressPaymentService;
 import com.ceams.module.project.util.PageUtil;
-import com.ceams.module.project.vo.IdResponse;
 import com.ceams.module.project.vo.ProgressPaymentVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -63,7 +62,7 @@ public class ProgressPaymentServiceImpl implements ProgressPaymentService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public IdResponse create(ProgressPaymentCreateRequest request) {
+    public String create(ProgressPaymentCreateRequest request) {
         requireProject(request.getProjectId());
         ProgressPayment payment = new ProgressPayment();
         payment.setProjectId(request.getProjectId());
@@ -73,7 +72,7 @@ public class ProgressPaymentServiceImpl implements ProgressPaymentService {
         payment.setStatus(ApprovalStatus.PENDING);
         payment.setApplicationBy(SecurityUtils.getCurrentUserId());
         progressPaymentMapper.insert(payment);
-        return IdResponse.of(payment.getId());
+        return String.valueOf(payment.getId());
     }
 
     @Override

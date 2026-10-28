@@ -3,7 +3,6 @@ package com.ceams.module.masterdata.service;
 import com.ceams.common.response.PageResult;
 import com.ceams.module.masterdata.dto.material.MaterialCreateRequest;
 import com.ceams.module.masterdata.dto.material.MaterialUpdateRequest;
-import com.ceams.module.masterdata.vo.IdResponse;
 import com.ceams.module.masterdata.vo.MaterialVO;
 
 /**
@@ -15,7 +14,7 @@ public interface MaterialService {
 
     MaterialVO detail(Long id);
 
-    IdResponse create(MaterialCreateRequest request);
+    String create(MaterialCreateRequest request);
 
     void update(Long id, MaterialUpdateRequest request);
 

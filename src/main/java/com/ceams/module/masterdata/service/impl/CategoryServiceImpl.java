@@ -17,7 +17,6 @@ import com.ceams.module.masterdata.mapper.MaterialMapper;
 import com.ceams.module.masterdata.service.CategoryService;
 import com.ceams.module.masterdata.util.PageUtil;
 import com.ceams.module.masterdata.vo.CategoryVO;
-import com.ceams.module.masterdata.vo.IdResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -75,16 +74,26 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public IdResponse create(CategoryCreateRequest request) {
+    public String create(CategoryCreateRequest request) {
+        Long parentId = request.getParentId();
+        if (parentId != null) {
+            Category parent = categoryMapper.selectById(parentId);
+            if (parent == null) {
+                throw BusinessException.of(ErrorCode.BIZ_NOT_FOUND, "父分类不存在");
+            }
+            if (parent.getType() != request.getType()) {
+                throw BusinessException.of(ErrorCode.BIZ_UNPROCESSABLE, "父分类类型不一致");
+            }
+        }
         Category category = new Category();
         category.setName(request.getName());
         category.setType(request.getType());
         category.setCode(request.getCode());
-        category.setParentId(request.getParentId());
+        category.setParentId(parentId);
         category.setSortOrder(request.getSort() == null ? 0 : request.getSort());
         category.setEnabled(Boolean.TRUE);
         categoryMapper.insert(category);
-        return IdResponse.of(category.getId());
+        return String.valueOf(category.getId());
     }
 
     @Override
@@ -101,6 +110,7 @@ public class CategoryServiceImpl implements CategoryService {
             if (request.getParentId().equals(id)) {
                 throw BusinessException.of(ErrorCode.BIZ_STATE_CONFLICT, "父分类不能是自身");
             }
+            assertNotDescendant(id, request.getParentId());
             category.setParentId(request.getParentId());
         }
         if (request.getSort() != null) {
@@ -135,6 +145,20 @@ public class CategoryServiceImpl implements CategoryService {
             throw BusinessException.of(ErrorCode.BIZ_NOT_FOUND, "分类不存在");
         }
         return category;
+    }
+
+    private void assertNotDescendant(Long id, Long parentId) {
+        Long current = parentId;
+        while (current != null) {
+            if (current.equals(id)) {
+                throw BusinessException.of(ErrorCode.BIZ_STATE_CONFLICT, "父分类不能是自身的子孙分类");
+            }
+            Category node = categoryMapper.selectById(current);
+            if (node == null) {
+                break;
+            }
+            current = node.getParentId();
+        }
     }
 
     private List<CategoryVO> buildTree(List<CategoryVO> all) {

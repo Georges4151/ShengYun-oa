@@ -6,7 +6,6 @@ import com.ceams.module.project.dto.changerequest.ChangeRequestCreateRequest;
 import com.ceams.module.project.dto.changerequest.ChangeRequestUpdateRequest;
 import com.ceams.module.project.enums.ApprovalStatus;
 import com.ceams.module.project.vo.ChangeRequestVO;
-import com.ceams.module.project.vo.IdResponse;
 
 /**
  * 变更请求服务。
@@ -17,7 +16,7 @@ public interface ChangeRequestService {
 
     ChangeRequestVO detail(Long id);
 
-    IdResponse create(ChangeRequestCreateRequest request);
+    String create(ChangeRequestCreateRequest request);
 
     void update(Long id, ChangeRequestUpdateRequest request);
 

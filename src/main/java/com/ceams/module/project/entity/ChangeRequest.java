@@ -40,4 +40,7 @@ public class ChangeRequest extends BaseEntity {
 
     /** 审批时间。 */
     private LocalDateTime approvedAt;
+
+    /** 审批意见。 */
+    private String approvalComment;
 }

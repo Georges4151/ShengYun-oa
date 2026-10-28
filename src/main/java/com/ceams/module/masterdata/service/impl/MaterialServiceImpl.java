@@ -13,11 +13,11 @@ import com.ceams.module.masterdata.entity.Material;
 import com.ceams.module.masterdata.mapper.MaterialMapper;
 import com.ceams.module.masterdata.service.MaterialService;
 import com.ceams.module.masterdata.util.PageUtil;
-import com.ceams.module.masterdata.vo.IdResponse;
 import com.ceams.module.masterdata.vo.MaterialVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -57,7 +57,7 @@ public class MaterialServiceImpl implements MaterialService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public IdResponse create(MaterialCreateRequest request) {
+    public String create(MaterialCreateRequest request) {
         Long count = materialMapper.selectCount(new LambdaQueryWrapper<Material>()
                 .eq(Material::getMaterialCode, request.getMaterialCode()));
         if (count != null && count > 0) {
@@ -71,8 +71,12 @@ public class MaterialServiceImpl implements MaterialService {
         material.setCurrentPrice(request.getCurrentPrice());
         material.setSupplierId(request.getSupplierId());
         material.setCategoryId(request.getCategoryId());
-        materialMapper.insert(material);
-        return IdResponse.of(material.getId());
+        try {
+            materialMapper.insert(material);
+        } catch (DuplicateKeyException e) {
+            throw BusinessException.of(ErrorCode.BIZ_DUPLICATE_CODE, "材料编码已存在");
+        }
+        return String.valueOf(material.getId());
     }
 
     @Override

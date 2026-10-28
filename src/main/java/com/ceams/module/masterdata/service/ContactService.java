@@ -5,7 +5,6 @@ import com.ceams.module.masterdata.dto.contact.ContactCreateRequest;
 import com.ceams.module.masterdata.dto.contact.ContactUpdateRequest;
 import com.ceams.module.masterdata.enums.ContactType;
 import com.ceams.module.masterdata.vo.ContactVO;
-import com.ceams.module.masterdata.vo.IdResponse;
 
 /**
  * 往来单位服务。
@@ -16,7 +15,7 @@ public interface ContactService {
 
     ContactVO detail(Long id);
 
-    IdResponse create(ContactCreateRequest request);
+    String create(ContactCreateRequest request);
 
     void update(Long id, ContactUpdateRequest request);
 

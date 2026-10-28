@@ -7,7 +7,6 @@ import com.ceams.module.masterdata.dto.category.CategoryUpdateRequest;
 import com.ceams.module.masterdata.enums.CategoryType;
 import com.ceams.module.masterdata.service.CategoryService;
 import com.ceams.module.masterdata.vo.CategoryVO;
-import com.ceams.module.masterdata.vo.IdResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -50,7 +49,7 @@ public class CategoryController {
 
     @PostMapping
     @PreAuthorize("hasRole('SYS_ADMIN')")
-    public ApiResponse<IdResponse> create(@Valid @RequestBody CategoryCreateRequest request) {
+    public ApiResponse<String> create(@Valid @RequestBody CategoryCreateRequest request) {
         return ApiResponse.success(categoryService.create(request));
     }
 

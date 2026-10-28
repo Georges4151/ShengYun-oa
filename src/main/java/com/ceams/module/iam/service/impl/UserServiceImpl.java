@@ -20,7 +20,6 @@ import com.ceams.module.iam.mapper.UserMapper;
 import com.ceams.module.iam.mapper.UserRoleMapper;
 import com.ceams.module.iam.service.UserService;
 import com.ceams.module.iam.util.PageUtil;
-import com.ceams.module.iam.vo.IdResponse;
 import com.ceams.module.iam.vo.RoleVO;
 import com.ceams.module.iam.vo.UserVO;
 import lombok.RequiredArgsConstructor;
@@ -89,7 +88,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public IdResponse create(UserCreateRequest request) {
+    public String create(UserCreateRequest request) {
         Long count = userMapper.selectCount(new LambdaQueryWrapper<SysUser>().eq(SysUser::getUsername, request.getUsername()));
         if (count != null && count > 0) {
             throw BusinessException.of(ErrorCode.BIZ_DUPLICATE_CODE, "用户名已存在");
@@ -106,7 +105,7 @@ public class UserServiceImpl implements UserService {
         userMapper.insert(user);
 
         saveUserRoles(user.getId(), request.getRoleIds());
-        return IdResponse.of(user.getId());
+        return String.valueOf(user.getId());
     }
 
     @Override

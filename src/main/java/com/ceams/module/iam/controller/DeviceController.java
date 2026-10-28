@@ -4,7 +4,6 @@ import com.ceams.common.response.ApiResponse;
 import com.ceams.common.response.PageResult;
 import com.ceams.module.iam.dto.device.DeviceBindRequest;
 import com.ceams.module.iam.service.DeviceService;
-import com.ceams.module.iam.vo.IdResponse;
 import com.ceams.module.iam.vo.UserDeviceVO;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -36,7 +35,7 @@ public class DeviceController {
     }
 
     @PostMapping
-    public ApiResponse<IdResponse> bind(@Valid @RequestBody DeviceBindRequest request) {
+    public ApiResponse<String> bind(@Valid @RequestBody DeviceBindRequest request) {
         return ApiResponse.success(deviceService.bind(request));
     }
 

@@ -15,7 +15,6 @@ import com.ceams.module.project.mapper.SettlementProofMapper;
 import com.ceams.module.project.mapper.SubcontractorContractMapper;
 import com.ceams.module.project.service.SettlementProofService;
 import com.ceams.module.project.util.PageUtil;
-import com.ceams.module.project.vo.IdResponse;
 import com.ceams.module.project.vo.SettlementProofVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -58,7 +57,7 @@ public class SettlementProofServiceImpl implements SettlementProofService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public IdResponse create(SettlementProofCreateRequest request) {
+    public String create(SettlementProofCreateRequest request) {
         requireContract(request.getContractId());
         checkNumberUnique(request.getProofNumber(), null);
         SettlementProof proof = new SettlementProof();
@@ -70,7 +69,7 @@ public class SettlementProofServiceImpl implements SettlementProofService {
         proof.setSettlementAmount(request.getSettlementAmount());
         proof.setDescription(request.getDescription());
         settlementProofMapper.insert(proof);
-        return IdResponse.of(proof.getId());
+        return String.valueOf(proof.getId());
     }
 
     @Override

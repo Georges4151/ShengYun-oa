@@ -5,7 +5,6 @@ import com.ceams.common.response.PageResult;
 import com.ceams.module.project.dto.settlementproof.SettlementProofCreateRequest;
 import com.ceams.module.project.dto.settlementproof.SettlementProofUpdateRequest;
 import com.ceams.module.project.service.SettlementProofService;
-import com.ceams.module.project.vo.IdResponse;
 import com.ceams.module.project.vo.SettlementProofVO;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -40,7 +39,7 @@ public class SettlementProofController {
 
     @PostMapping
     @PreAuthorize("hasAnyRole('SYS_ADMIN','FINANCE')")
-    public ApiResponse<IdResponse> create(@Valid @RequestBody SettlementProofCreateRequest request) {
+    public ApiResponse<String> create(@Valid @RequestBody SettlementProofCreateRequest request) {
         return ApiResponse.success(settlementProofService.create(request));
     }
 
