@@ -31,10 +31,10 @@ export const routes: RouteRecordRaw[] = [
         component: () => import('@/views/project/ProjectView.vue'),
         meta: { title: '项目合同' }
       },
-      { path: 'expense', name: 'expense', component: ModulePlaceholder, meta: { title: '报销' } },
-      { path: 'payment', name: 'payment', component: ModulePlaceholder, meta: { title: '资金' } },
-      { path: 'bank', name: 'bank', component: ModulePlaceholder, meta: { title: '对账' } },
-      { path: 'seal', name: 'seal', component: ModulePlaceholder, meta: { title: '印章' } },
+      { path: 'expense', name: 'expense', component: () => import('@/views/expense/ExpenseView.vue'), meta: { title: '报销' } },
+      { path: 'payment', name: 'payment', component: () => import('@/views/payment/PaymentView.vue'), meta: { title: '资金' } },
+      { path: 'bank', name: 'bank', component: () => import('@/views/bank/BankView.vue'), meta: { title: '对账' } },
+      { path: 'seal', name: 'seal', component: () => import('@/views/seal/SealView.vue'), meta: { title: '印章' } },
       { path: 'notification', name: 'notification', component: ModulePlaceholder, meta: { title: '通知' } },
       {
         path: 'account',

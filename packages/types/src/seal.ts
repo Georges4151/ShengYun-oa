@@ -14,7 +14,7 @@ import type { DateTime, Id } from './common'
 export type SealStatus = 'ACTIVE' | 'DISABLED' | 'ARCHIVED'
 export type StorageType = 'FILE' | 'USB_DRIVE' | 'CLOUD'
 export type ApplicationStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED'
-export type ApprovalStatus = 'PENDING' | 'APPROVED' | 'REJECTED'
+export type SealApprovalStatus = 'PENDING' | 'APPROVED' | 'REJECTED'
 
 // ---------- 电子印章 ----------
 export interface ElectronicSealVO {
@@ -108,7 +108,7 @@ export interface ElectronicSealApplicationUpdateRequest {
 export interface StampApprovalVO {
   id: Id
   stampId: Id
-  status: ApprovalStatus
+  status: SealApprovalStatus
   sealId?: Id | null
   sealName?: string | null
   sealCode?: string | null
@@ -220,7 +220,7 @@ export interface StampApprovalPageQuery {
   size?: number
   stampId?: Id
   sealId?: Id
-  status?: ApprovalStatus
+  status?: SealApprovalStatus
 }
 
 export interface ElectronicSealStampPageQuery {

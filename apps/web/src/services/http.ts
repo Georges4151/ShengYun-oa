@@ -60,5 +60,5 @@ apiClient = createCeamsApiClient({
   }
 })
 
-/** 统一 CEAMS API 客户端（iam / masterdata / project 三域类型化工厂）。 */
+/** 统一 CEAMS API 客户端（iam / masterdata / project / expense / payment / bank / seal 六域类型化工厂）。 */
 export const ceamsApi = apiClient
