@@ -1,7 +1,9 @@
 package com.ceams.module.payment.entity;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.ceams.common.base.BaseEntity;
+import com.ceams.common.crypto.SensitiveTypeHandler;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -14,7 +16,7 @@ import java.math.BigDecimal;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("biz_payment_account")
+@TableName(value = "biz_payment_account", autoResultMap = true)
 public class PaymentAccount extends BaseEntity {
 
     /** 账户名。 */
@@ -27,6 +29,7 @@ public class PaymentAccount extends BaseEntity {
     private BigDecimal balance;
 
     /** 账号【需加密（阶段4）】。 */
+    @TableField(typeHandler = SensitiveTypeHandler.class)
     private String accountNumber;
 
     /** 描述。 */

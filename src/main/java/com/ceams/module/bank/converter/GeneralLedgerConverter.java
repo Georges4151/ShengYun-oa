@@ -1,5 +1,6 @@
 package com.ceams.module.bank.converter;
 
+import com.ceams.common.mask.SensitiveMaskUtil;
 import com.ceams.module.bank.entity.GeneralLedger;
 import com.ceams.module.bank.vo.GeneralLedgerVO;
 import org.mapstruct.Mapper;
@@ -19,7 +20,7 @@ public interface GeneralLedgerConverter {
         GeneralLedgerVO vo = new GeneralLedgerVO();
         vo.setId(entity.getId());
         vo.setAccountName(entity.getAccountName());
-        vo.setAccountNumber(entity.getAccountNumber());
+        vo.setAccountNumber(SensitiveMaskUtil.maskBankAccount(entity.getAccountNumber()));
         vo.setBankName(entity.getBankName());
         vo.setBalance(entity.getBalance());
         vo.setAccountType(entity.getAccountType());

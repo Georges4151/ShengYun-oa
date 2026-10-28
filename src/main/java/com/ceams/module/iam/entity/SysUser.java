@@ -1,7 +1,9 @@
 package com.ceams.module.iam.entity;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.ceams.common.base.BaseEntity;
+import com.ceams.common.crypto.SensitiveTypeHandler;
 import com.ceams.module.iam.enums.UserStatus;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -13,7 +15,7 @@ import java.time.LocalDateTime;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("sys_user")
+@TableName(value = "sys_user", autoResultMap = true)
 public class SysUser extends BaseEntity {
 
     /** 登录账号。 */
@@ -29,6 +31,7 @@ public class SysUser extends BaseEntity {
     private String email;
 
     /** 手机号（库内加密，接口脱敏）。 */
+    @TableField(typeHandler = SensitiveTypeHandler.class)
     private String phone;
 
     /** 状态。 */

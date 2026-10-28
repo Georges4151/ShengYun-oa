@@ -1,7 +1,9 @@
 package com.ceams.module.bank.entity;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.ceams.common.base.BaseEntity;
+import com.ceams.common.crypto.SensitiveTypeHandler;
 import com.ceams.module.bank.enums.TransactionType;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -14,13 +16,14 @@ import java.time.LocalDateTime;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("biz_general_ledger")
+@TableName(value = "biz_general_ledger", autoResultMap = true)
 public class GeneralLedger extends BaseEntity {
 
     /** 账户名。 */
     private String accountName;
 
     /** 账号【需加密（阶段4）】。 */
+    @TableField(typeHandler = SensitiveTypeHandler.class)
     private String accountNumber;
 
     /** 开户行。 */

@@ -1,7 +1,7 @@
 package com.ceams.module.masterdata.converter;
 
 import com.ceams.module.masterdata.entity.Contact;
-import com.ceams.module.masterdata.util.SensitiveMaskUtil;
+import com.ceams.common.mask.SensitiveMaskUtil;
 import com.ceams.module.masterdata.vo.ContactVO;
 import org.mapstruct.Mapper;
 

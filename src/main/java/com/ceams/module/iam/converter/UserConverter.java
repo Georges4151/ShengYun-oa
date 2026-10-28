@@ -1,7 +1,7 @@
 package com.ceams.module.iam.converter;
 
 import com.ceams.module.iam.entity.SysUser;
-import com.ceams.module.iam.util.SensitiveMaskUtil;
+import com.ceams.common.mask.SensitiveMaskUtil;
 import com.ceams.module.iam.vo.UserVO;
 import org.mapstruct.AfterMapping;
 import org.mapstruct.Mapper;

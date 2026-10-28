@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  日志配置：在默认控制台输出基础上，通过自定义 conversionRule 对消息做脱敏。
+  - 替换 %m / %msg 为 MaskingMessageConverter，敏感字段（手机号/账号/税号）明文不出现在日志。
+  - 级别与 application.yml 的 logging.level 保持一致（root=INFO、com.ceams=INFO、
+    org.flywaydb=INFO、org.springframework.security=WARN）。Spring Boot 的 logging.level
+    仍会作为 logger 覆盖生效，二者等价不冲突。
+-->
+<configuration>
+    <!-- 消息脱敏转换器：替换默认 %m / %msg -->
+    <conversionRule conversionWord="msg"
+                    converterClass="com.ceams.common.mask.MaskingMessageConverter"/>
+    <conversionRule conversionWord="m"
+                    converterClass="com.ceams.common.mask.MaskingMessageConverter"/>
+
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <charset>UTF-8</charset>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] %logger{36} - %m%n%ex</pattern>
+        </encoder>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+
+    <logger name="com.ceams" level="INFO"/>
+    <logger name="org.flywaydb" level="INFO"/>
+    <logger name="org.springframework.security" level="WARN"/>
+</configuration>

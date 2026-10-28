@@ -1,7 +1,7 @@
 package com.ceams.module.project.converter;
 
 import com.ceams.module.project.entity.Subcontractor;
-import com.ceams.module.project.util.SensitiveMaskUtil;
+import com.ceams.common.mask.SensitiveMaskUtil;
 import com.ceams.module.project.vo.SubcontractorVO;
 import org.mapstruct.Mapper;
 

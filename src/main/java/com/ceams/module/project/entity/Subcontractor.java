@@ -1,7 +1,9 @@
 package com.ceams.module.project.entity;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.ceams.common.base.BaseEntity;
+import com.ceams.common.crypto.SensitiveTypeHandler;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -12,7 +14,7 @@ import lombok.EqualsAndHashCode;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("biz_subcontractor")
+@TableName(value = "biz_subcontractor", autoResultMap = true)
 public class Subcontractor extends BaseEntity {
 
     /** 分包商名。 */
@@ -22,6 +24,7 @@ public class Subcontractor extends BaseEntity {
     private String contactPerson;
 
     /** 手机号（敏感，需加密）。 */
+    @TableField(typeHandler = SensitiveTypeHandler.class)
     private String phone;
 
     /** 地址。 */
@@ -37,9 +40,11 @@ public class Subcontractor extends BaseEntity {
     private String businessScope;
 
     /** 税号（敏感，需加密）。 */
+    @TableField(typeHandler = SensitiveTypeHandler.class)
     private String taxIdentificationNumber;
 
     /** 银行账号（敏感，需加密）。 */
+    @TableField(typeHandler = SensitiveTypeHandler.class)
     private String bankAccount;
 
     /** 备注。 */

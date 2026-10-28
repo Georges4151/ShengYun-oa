@@ -44,8 +44,7 @@ public class ContactServiceImpl implements ContactService {
         LambdaQueryWrapper<Contact> wrapper = new LambdaQueryWrapper<>();
         if (StringUtils.isNotBlank(keyword)) {
             wrapper.and(w -> w.like(Contact::getName, keyword)
-                    .or().like(Contact::getContactPerson, keyword)
-                    .or().like(Contact::getPhone, keyword));
+                    .or().like(Contact::getContactPerson, keyword));
         }
         if (type != null) {
             wrapper.eq(Contact::getType, type);
