@@ -1,7 +1,9 @@
 package com.ceams.module.iam.entity;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.ceams.common.base.BaseEntity;
+import com.ceams.common.crypto.SensitiveTypeHandler;
 import com.ceams.module.iam.enums.DeviceStatus;
 import com.ceams.module.iam.enums.Platform;
 import lombok.Data;
@@ -14,7 +16,7 @@ import java.time.LocalDateTime;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("sys_user_device")
+@TableName(value = "sys_user_device", autoResultMap = true)
 public class SysUserDevice extends BaseEntity {
 
     /** 用户 ID。 */
@@ -40,4 +42,8 @@ public class SysUserDevice extends BaseEntity {
 
     /** 最后登录时间。 */
     private LocalDateTime lastLoginTime;
+
+    /** 设备签名密钥（AppSecret，库内加密）。 */
+    @TableField(typeHandler = SensitiveTypeHandler.class)
+    private String appSecret;
 }

@@ -58,14 +58,24 @@ ceams:
     access-ttl-seconds: 900
     refresh-ttl-seconds: 604800
   sign:
-    # 高危接口 HMAC 签名共享密钥（生产环境务必通过 SIGN_SECRET 环境变量覆盖）
-    secret: ${SIGN_SECRET:ceams-sign-secret-2026-change-me-in-production-9876543210fedcbaFEDCBA}
+    # 请求签名校验已切换为「按设备 AppSecret」校验（见 DeviceAppSecretResolver），
+    # 全局共享密钥 ceams.sign.secret 已废弃移除，不再参与任何签名校验。
     # 签名时间戳允许偏差（毫秒），默认 ±5 分钟
     window-millis: ${SIGN_WINDOW_MILLIS:300000}
   sensitive:
     # 敏感字段 AES-256-GCM 加密密钥（Base64 编码的 32 字节）。
     # 生产环境务必通过 CEAMS_SENSITIVE_KEY 环境变量覆盖，仓库内仅保留 dev 占位默认值。
     secret: ${CEAMS_SENSITIVE_KEY:Y2VhbXMtc2Vuc2l0aXZlLWRldi1rZXktMjAyNi0wMTI=}
+  export:
+    # 导出/下载签名 URL 专用密钥（仅服务端生成与校验下载链接，与请求 HMAC 的 AppSecret 无关）。
+    # 生产环境务必通过 EXPORT_SECRET 环境变量覆盖，仓库内仅保留 dev 占位默认值。
+    secret: ${EXPORT_SECRET:ceams-export-secret-2026-change-me-in-production-abcdef0123456789ABCDEF}
+    # 下载签名 URL 有效期（毫秒），默认 5 分钟
+    url-ttl-millis: ${EXPORT_URL_TTL_MILLIS:300000}
+
+  # 备份加密说明（占位）：
+  #   数据库备份必须在运维层加密，例如 mysqldump 管道加密（openssl/gpg）或使用托管数据库的自动备份加密；
+  #   应用内不落地任何备份功能，亦不生成备份文件或备份代码。
 
 springdoc:
   api-docs:

@@ -3,7 +3,9 @@ package com.ceams.module.seal.controller;
 import com.ceams.common.response.ApiResponse;
 import com.ceams.common.response.PageResult;
 import com.ceams.module.seal.service.ElectronicSealStampService;
+import com.ceams.module.seal.vo.DownloadUrlVO;
 import com.ceams.module.seal.vo.ElectronicSealStampVO;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -41,10 +43,19 @@ public class ElectronicSealStampController {
         return ApiResponse.success(electronicSealStampService.detail(id));
     }
 
+    @GetMapping("/{id}/download-url")
+    @PreAuthorize("isAuthenticated()")
+    public ApiResponse<DownloadUrlVO> downloadUrl(@PathVariable Long id) {
+        return ApiResponse.success(electronicSealStampService.downloadUrl(id));
+    }
+
     @GetMapping("/{id}/download")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<byte[]> download(@PathVariable Long id) {
-        byte[] bytes = electronicSealStampService.download(id);
+    public ResponseEntity<byte[]> download(@PathVariable Long id,
+                                           @RequestParam(value = "expires", required = false) Long expires,
+                                           @RequestParam(value = "sign", required = false) String sign,
+                                           HttpServletRequest request) {
+        byte[] bytes = electronicSealStampService.download(id, expires, sign, request);
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_PDF);
         headers.setContentDispositionFormData("attachment", id + ".pdf");

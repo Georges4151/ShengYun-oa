@@ -50,8 +50,8 @@ public class AuthController {
 
     @GetMapping("/sign-secret")
     @PreAuthorize("isAuthenticated()")
-    public ApiResponse<SignSecretVO> signSecret() {
-        return ApiResponse.success(authService.signSecret());
+    public ApiResponse<SignSecretVO> signSecret(@RequestParam("deviceId") String deviceId) {
+        return ApiResponse.success(authService.signSecret(deviceId));
     }
 
     @GetMapping("/sessions")

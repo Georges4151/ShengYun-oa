@@ -23,6 +23,6 @@ public interface AuthService {
 
     void revokeSession(String sessionId);
 
-    /** 下发高危接口 HMAC 签名共享密钥（当前登录用户）。 */
-    SignSecretVO signSecret();
+    /** 下发指定设备的高危接口 HMAC 签名密钥（AppSecret，当前登录用户）。 */
+    SignSecretVO signSecret(String deviceId);
 }

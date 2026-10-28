@@ -117,7 +117,18 @@ public class HmacSignatureFilter extends OncePerRequestFilter {
             return;
         }
 
-        String expected = HmacSignUtil.sign(timestamp, nonce, bodyHash, secretResolver.resolve());
+        // 解析设备 AppSecret（按 X-Device-Id）。过滤器内异常无法被全局异常处理器捕获，
+        // 这里兜底捕获并返回统一错误响应，避免冒泡到容器。
+        String secret;
+        try {
+            secret = secretResolver.resolve(request);
+        } catch (Exception ex) {
+            log.warn("解析设备 AppSecret 失败，拒绝签名请求: {}", ex.getMessage());
+            writeError(response, ErrorCode.SIGN_INVALID);
+            return;
+        }
+
+        String expected = HmacSignUtil.sign(timestamp, nonce, bodyHash, secret);
         if (!HmacSignUtil.constantTimeEquals(expected, sign)) {
             writeError(response, ErrorCode.SIGN_INVALID);
             return;

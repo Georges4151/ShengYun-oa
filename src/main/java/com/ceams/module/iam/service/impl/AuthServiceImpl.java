@@ -9,7 +9,6 @@ import com.ceams.common.exception.ErrorCode;
 import com.ceams.common.response.PageResult;
 import com.ceams.common.security.JwtUtil;
 import com.ceams.common.security.SecurityUtils;
-import com.ceams.common.sign.SignSecretResolver;
 import com.ceams.module.iam.converter.UserConverter;
 import com.ceams.module.iam.dto.auth.LoginRequest;
 import com.ceams.module.iam.dto.auth.RefreshRequest;
@@ -52,8 +51,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.HexFormat;
 import java.util.List;
@@ -72,6 +73,9 @@ public class AuthServiceImpl implements AuthService {
 
     private static final String SYSTEM_ADMIN = "SYS_ADMIN";
 
+    /** AppSecret 生成用安全随机源（线程安全）。 */
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+
     private final UserMapper userMapper;
     private final UserRoleMapper userRoleMapper;
     private final RoleMapper roleMapper;
@@ -82,7 +86,6 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final UserConverter userConverter;
     private final UserService userService;
-    private final SignSecretResolver signSecretResolver;
 
     @Value("${ceams.jwt.access-ttl-seconds:900}")
     private long accessTtlSeconds;
@@ -234,10 +237,24 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public SignSecretVO signSecret() {
-        // 密钥为配置共享值，缓存过期时间对齐 access token 生命周期，客户端据此定时刷新
+    public SignSecretVO signSecret(String deviceId) {
+        Long userId = SecurityUtils.getCurrentUserId();
+        if (userId == null) {
+            throw BusinessException.of(ErrorCode.AUTH_ACCESS_DENIED, "未登录");
+        }
+        if (StringUtils.isBlank(deviceId)) {
+            throw BusinessException.of(ErrorCode.VALID_REQUIRED_FIELD, "缺少设备标识 deviceId");
+        }
+        SysUserDevice device = userDeviceMapper.selectOne(new LambdaQueryWrapper<SysUserDevice>()
+                .eq(SysUserDevice::getUserId, userId)
+                .eq(SysUserDevice::getDeviceId, deviceId)
+                .last("LIMIT 1"));
+        if (device == null || StringUtils.isBlank(device.getAppSecret())) {
+            throw BusinessException.of(ErrorCode.BIZ_NOT_FOUND, "设备未绑定");
+        }
+        // 缓存过期时间对齐 access token 生命周期，客户端据此定时刷新
         long expiresAt = System.currentTimeMillis() + accessTtlSeconds * 1000L;
-        return new SignSecretVO(signSecretResolver.resolve(), expiresAt);
+        return new SignSecretVO(device.getAppSecret(), expiresAt);
     }
 
     // ==================== 内部辅助 ====================
@@ -267,6 +284,13 @@ public class AuthServiceImpl implements AuthService {
         return UUID.randomUUID().toString().replace("-", "");
     }
 
+    /** 生成 32 字节随机 AppSecret（Base64 URL-safe，无填充）。 */
+    private String newAppSecret() {
+        byte[] bytes = new byte[32];
+        SECURE_RANDOM.nextBytes(bytes);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+    }
+
     private void bindDevice(Long userId, String deviceId, String deviceName,
                             com.ceams.module.iam.enums.Platform platform, String ip, LocalDateTime now) {
         SysUserDevice device = userDeviceMapper.selectOne(new LambdaQueryWrapper<SysUserDevice>()
@@ -284,8 +308,12 @@ public class AuthServiceImpl implements AuthService {
             device.setLastLoginTime(now);
             device.setDeviceName(deviceName);
             device.setPlatform(platform);
+            // 首次绑定时生成独立 AppSecret（库内经 SensitiveTypeHandler 加密落库）
+            device.setAppSecret(newAppSecret());
             userDeviceMapper.insert(device);
         } else {
+            // 再次登录命中已有设备：保留原 AppSecret 不重新生成，避免客户端存量密钥失效。
+            // 密钥轮换通过「解绑后重新绑定」自然触发。
             device.setStatus(DeviceStatus.ACTIVE);
             device.setLastLoginIp(ip);
             device.setLastLoginTime(now);
