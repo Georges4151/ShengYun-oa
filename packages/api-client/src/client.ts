@@ -12,11 +12,14 @@ import { createMasterdataApi } from './domains/masterdata'
 import type { MasterdataApi } from './domains/masterdata'
 import { createProjectApi } from './domains/project'
 import type { ProjectApi } from './domains/project'
+import { createExpenseApi } from './domains/expense'
+import type { ExpenseApi } from './domains/expense'
 
 export interface CeamsApiClient {
   iam: IamApi
   masterdata: MasterdataApi
   project: ProjectApi
+  expense: ExpenseApi
 }
 
 export function createCeamsApiClient(options: HttpClientOptions): CeamsApiClient {
@@ -24,6 +27,7 @@ export function createCeamsApiClient(options: HttpClientOptions): CeamsApiClient
   return {
     iam: createIamApi(client),
     masterdata: createMasterdataApi(client),
-    project: createProjectApi(client)
+    project: createProjectApi(client),
+    expense: createExpenseApi(client)
   }
 }
