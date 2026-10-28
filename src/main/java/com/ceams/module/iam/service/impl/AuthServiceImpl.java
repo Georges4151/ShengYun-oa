@@ -9,6 +9,7 @@ import com.ceams.common.exception.ErrorCode;
 import com.ceams.common.response.PageResult;
 import com.ceams.common.security.JwtUtil;
 import com.ceams.common.security.SecurityUtils;
+import com.ceams.common.sign.SignSecretResolver;
 import com.ceams.module.iam.converter.UserConverter;
 import com.ceams.module.iam.dto.auth.LoginRequest;
 import com.ceams.module.iam.dto.auth.RefreshRequest;
@@ -32,6 +33,7 @@ import com.ceams.module.iam.service.UserService;
 import com.ceams.module.iam.util.PageUtil;
 import com.ceams.module.iam.vo.LoginResponse;
 import com.ceams.module.iam.vo.RoleVO;
+import com.ceams.module.iam.vo.SignSecretVO;
 import com.ceams.module.iam.vo.TokenPair;
 import com.ceams.module.iam.vo.UserSessionVO;
 import com.ceams.module.iam.vo.UserVO;
@@ -80,6 +82,7 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final UserConverter userConverter;
     private final UserService userService;
+    private final SignSecretResolver signSecretResolver;
 
     @Value("${ceams.jwt.access-ttl-seconds:900}")
     private long accessTtlSeconds;
@@ -228,6 +231,13 @@ public class AuthServiceImpl implements AuthService {
         token.setRevoked(1);
         token.setRevokedAt(LocalDateTime.now());
         refreshTokenMapper.updateById(token);
+    }
+
+    @Override
+    public SignSecretVO signSecret() {
+        // 密钥为配置共享值，缓存过期时间对齐 access token 生命周期，客户端据此定时刷新
+        long expiresAt = System.currentTimeMillis() + accessTtlSeconds * 1000L;
+        return new SignSecretVO(signSecretResolver.resolve(), expiresAt);
     }
 
     // ==================== 内部辅助 ====================

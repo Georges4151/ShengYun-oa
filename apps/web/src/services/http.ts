@@ -25,13 +25,36 @@ function refreshAccessToken(): Promise<string> {
   })
 }
 
+// 签名密钥缓存：后端短期下发，带过期刷新；客户端不落 AppSecret
+let cachedSignSecret: string | null = null
+let cachedSignSecretExpiresAt = 0
+
+/**
+ * 获取高危接口 HMAC 签名密钥：命中缓存直接返回，临近过期（提前 60s）时向后端重新获取。
+ * 获取失败返回 null，本次请求将不携带签名头（服务端会拒绝高危接口，避免越权执行）。
+ */
+async function getSignSecret(): Promise<string | null> {
+  const now = Date.now()
+  if (cachedSignSecret && now < cachedSignSecretExpiresAt - 60000) {
+    return cachedSignSecret
+  }
+  try {
+    const data = await apiClient.iam.signSecret()
+    cachedSignSecret = data.secret
+    cachedSignSecretExpiresAt = data.expiresAt
+    return cachedSignSecret
+  } catch {
+    return null
+  }
+}
+
 apiClient = createCeamsApiClient({
   baseUrl: import.meta.env.VITE_API_BASE_URL ?? 'https://api.example.com',
   timeoutMs: 15000,
   getAccessToken: () => useAuthStore(pinia).token,
   refreshAccessToken,
   // 高风险接口签名密钥（客户端不落 AppSecret，需后端安全下发）
-  getSignSecret: () => undefined,
+  getSignSecret,
   headers: {
     'X-Requested-With': 'XMLHttpRequest'
   }

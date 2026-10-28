@@ -2,7 +2,9 @@ package com.ceams.common.security;
 
 import com.ceams.common.response.ApiResponse;
 import com.ceams.common.exception.ErrorCode;
+import com.ceams.common.sign.HmacSignatureFilter;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.MediaType;
@@ -48,9 +50,22 @@ public class SecurityConfig {
         return new JwtAuthenticationFilter(jwtUtil);
     }
 
+    /**
+     * 禁止 HmacSignatureFilter 被 Spring Boot 作为全局 Servlet 过滤器重复注册：
+     * 该过滤器仅在 Security 过滤器链内通过 {@code addFilterAfter} 执行，
+     * 若同时被全局注册会二次消费 nonce，导致合法请求被误判为重放。
+     */
+    @Bean
+    public FilterRegistrationBean<HmacSignatureFilter> hmacSignatureFilterRegistration(HmacSignatureFilter filter) {
+        FilterRegistrationBean<HmacSignatureFilter> registration = new FilterRegistrationBean<>(filter);
+        registration.setEnabled(false);
+        return registration;
+    }
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http,
                                                    JwtAuthenticationFilter jwtAuthenticationFilter,
+                                                   HmacSignatureFilter hmacSignatureFilter,
                                                    ObjectMapper objectMapper) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
@@ -68,7 +83,8 @@ public class SecurityConfig {
                         .accessDeniedHandler((request, response, ex) ->
                                 writeError(response, objectMapper, ErrorCode.AUTH_ACCESS_DENIED,
                                         org.springframework.http.HttpStatus.FORBIDDEN.value())))
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(hmacSignatureFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 

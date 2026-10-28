@@ -30,6 +30,7 @@
         <springdoc.version>2.5.0</springdoc.version>
         <jjwt.version>0.12.5</jjwt.version>
         <bouncycastle.version>1.78.1</bouncycastle.version>
+        <pdfbox.version>3.0.4</pdfbox.version>
     </properties>
 
     <dependencies>
@@ -130,6 +131,13 @@
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcpkix-jdk18on</artifactId>
             <version>${bouncycastle.version}</version>
+        </dependency>
+
+        <!-- ===== PDF 处理：Apache PDFBox（电子盖章叠加） ===== -->
+        <dependency>
+            <groupId>org.apache.pdfbox</groupId>
+            <artifactId>pdfbox</artifactId>
+            <version>${pdfbox.version}</version>
         </dependency>
 
         <!-- ===== Lombok ===== -->

@@ -56,6 +56,14 @@ export interface LoginData {
   user: UserVO
 }
 
+/** 高危接口 HMAC 签名密钥下发负载 */
+export interface SignSecretData {
+  /** HMAC 共享密钥 */
+  secret: string
+  /** 密钥缓存过期时间（epoch 毫秒） */
+  expiresAt: number
+}
+
 // ---------- 用户 ----------
 export interface UserVO {
   id: Id

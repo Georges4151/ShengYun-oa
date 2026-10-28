@@ -58,8 +58,10 @@ ceams:
     access-ttl-seconds: 900
     refresh-ttl-seconds: 604800
   sign:
-    # 高危接口 HMAC 签名共享密钥（预留，后续阶段启用）
+    # 高危接口 HMAC 签名共享密钥（生产环境务必通过 SIGN_SECRET 环境变量覆盖）
     secret: ${SIGN_SECRET:ceams-sign-secret-2026-change-me-in-production-9876543210fedcbaFEDCBA}
+    # 签名时间戳允许偏差（毫秒），默认 ±5 分钟
+    window-millis: ${SIGN_WINDOW_MILLIS:300000}
 
 springdoc:
   api-docs:

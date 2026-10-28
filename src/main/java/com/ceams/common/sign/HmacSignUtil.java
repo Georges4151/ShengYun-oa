@@ -16,11 +16,14 @@ import java.util.HexFormat;
  *
  * <p>服务端校验步骤：
  * <ol>
- *   <li>校验 {@code X-Timestamp} 与服务器时间差在 ±5min 窗口内。</li>
- *   <li>校验 {@code X-Nonce} 未重复出现（防重放，配合 Redis SETNX 实现，见 TODO）。</li>
+ *   <li>校验 {@code X-Timestamp} 与服务器时间差在允许窗口内。</li>
+ *   <li>校验 {@code X-Nonce} 未重复出现（防重放，由 {@link NonceStore} 实现）。</li>
  *   <li>以共享 secret 重算签名并做常量时间比较。</li>
  * </ol>
  * </p>
+ *
+ * <p>本类保持纯函数职责：签名计算、时间窗判断、常量时间比较；nonce 防重放编排逻辑在
+ * {@link HmacSignatureFilter} 中完成。</p>
  */
 public final class HmacSignUtil {
 
@@ -67,15 +70,5 @@ public final class HmacSignUtil {
             return false;
         }
         return MessageDigest.isEqual(a.getBytes(StandardCharsets.UTF_8), b.getBytes(StandardCharsets.UTF_8));
-    }
-
-    /**
-     * TODO(v1 高危接口启用阶段)：nonce 防重放。
-     * 使用 Redis {@code SET key NX EX <window>}，key 形如 {@code ceams:sign:nonce:{nonce}}，
-     * 首次写入成功返回 true（放行），已存在返回 false（拦截，对应 SIGN_NONCE_REPLAY）。
-     */
-    public static boolean checkNonceOnce(String nonce) {
-        // 占位实现：本波不接入 Redis，恒返回 true（跳过防重放）。
-        return true;
     }
 }

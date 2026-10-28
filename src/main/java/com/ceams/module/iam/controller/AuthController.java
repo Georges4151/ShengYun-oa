@@ -6,6 +6,7 @@ import com.ceams.module.iam.dto.auth.LoginRequest;
 import com.ceams.module.iam.dto.auth.RefreshRequest;
 import com.ceams.module.iam.service.AuthService;
 import com.ceams.module.iam.vo.LoginResponse;
+import com.ceams.module.iam.vo.SignSecretVO;
 import com.ceams.module.iam.vo.UserSessionVO;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -45,6 +46,12 @@ public class AuthController {
     public ApiResponse<Void> logout(HttpServletRequest httpRequest) {
         authService.logout(httpRequest);
         return ApiResponse.success();
+    }
+
+    @GetMapping("/sign-secret")
+    @PreAuthorize("isAuthenticated()")
+    public ApiResponse<SignSecretVO> signSecret() {
+        return ApiResponse.success(authService.signSecret());
     }
 
     @GetMapping("/sessions")

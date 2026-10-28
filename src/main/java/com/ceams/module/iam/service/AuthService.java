@@ -4,6 +4,7 @@ import com.ceams.common.response.PageResult;
 import com.ceams.module.iam.dto.auth.LoginRequest;
 import com.ceams.module.iam.dto.auth.RefreshRequest;
 import com.ceams.module.iam.vo.LoginResponse;
+import com.ceams.module.iam.vo.SignSecretVO;
 import com.ceams.module.iam.vo.UserSessionVO;
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -21,4 +22,7 @@ public interface AuthService {
     PageResult<UserSessionVO> sessions(long page, long size);
 
     void revokeSession(String sessionId);
+
+    /** 下发高危接口 HMAC 签名共享密钥（当前登录用户）。 */
+    SignSecretVO signSecret();
 }
