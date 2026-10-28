@@ -37,6 +37,12 @@ export const routes: RouteRecordRaw[] = [
       { path: 'seal', name: 'seal', component: () => import('@/views/seal/SealView.vue'), meta: { title: '印章' } },
       { path: 'notification', name: 'notification', component: ModulePlaceholder, meta: { title: '通知' } },
       {
+        path: 'report',
+        name: 'report',
+        component: () => import('@/views/report/ReportView.vue'),
+        meta: { title: '报表' }
+      },
+      {
         path: 'account',
         name: 'account',
         component: () => import('@/views/iam/AccountView.vue'),

@@ -18,6 +18,7 @@ const menus = [
   { path: '/bank', title: '对账' },
   { path: '/seal', title: '印章' },
   { path: '/notification', title: '通知' },
+  { path: '/report', title: '报表' },
   { path: '/account', title: '账号' }
 ]
 

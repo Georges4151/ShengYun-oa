@@ -30,7 +30,8 @@ import type {
   SealStatus,
   StorageType,
   ApplicationStatus,
-  SealApprovalStatus
+  SealApprovalStatus,
+  FinancialSourceType
 } from '@ceams/types'
 
 /** 枚举值 -> 中文标签映射（与三域类型字段一致）。 */
@@ -253,6 +254,15 @@ export const sealApprovalStatusLabels: Record<SealApprovalStatus, string> = {
   PENDING: '待审批',
   APPROVED: '已通过',
   REJECTED: '已驳回'
+}
+
+// ---------- 报表域（report） ----------
+
+export const financialSourceTypeLabels: Record<FinancialSourceType, string> = {
+  ACCOUNT: '收支流水',
+  PAYMENT_TRANSACTION: '付款交易',
+  BANK_STATEMENT: '银行流水',
+  GENERAL_LEDGER: '总账'
 }
 
 /** 将枚举标签映射转换为 el-select 可用的 options 数组。 */

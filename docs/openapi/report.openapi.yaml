@@ -1,0 +1,232 @@
+openapi: 3.0.3
+info:
+  title: CEAMS Report API
+  version: 1.0.0
+  description: |
+    CEAMS 跨域只读报表（report 模块）。报表/Dashboard 不单独成域、不建实体/表、不开写事务，
+    作为 com.ceams.module.report 下的只读聚合应用层。
+    全局规范与 seal/bank 一致：ID=字符串、金额=字符串、时间=ISO8601、鉴权 Bearer。
+    均为只读 GET，不挂 HMAC 签名，普通 isAuthenticated 鉴权即可。
+servers:
+  - url: https://api.ceams.local/api/v1
+    description: 生产
+  - url: http://localhost:8080/api/v1
+    description: 本地
+tags:
+  - name: report
+paths:
+  /reports/financial:
+    get:
+      tags: [report]
+      summary: 财务报表（收支流水/付款交易/银行流水/总账聚合）
+      description: 按月份/项目/账户维度可选过滤，返回合计收入/支出/净额及明细列表。
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: month
+          in: query
+          description: 月份（YYYY-MM）
+          schema: { type: string, example: '2026-10' }
+        - name: projectId
+          in: query
+          description: 项目 ID
+          schema: { type: string }
+        - name: accountId
+          in: query
+          description: 账户 ID
+          schema: { type: string }
+      responses:
+        '200':
+          description: 财务报表
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FinancialReportResponse' }
+  /reports/project-cost:
+    get:
+      tags: [report]
+      summary: 项目成本报表（项目+预算+变更+进度款+成本分摊）
+      description: 按项目维度输出预算/已变更/已付/成本分摊金额对比。
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: projectId
+          in: query
+          description: 项目 ID（为空输出全部项目）
+          schema: { type: string }
+      responses:
+        '200':
+          description: 项目成本报表
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ProjectCostReportResponse' }
+  /reports/material:
+    get:
+      tags: [report]
+      summary: 材料报表（材料库+关联收支流水）
+      description: 按材料维度输出数量/金额（现有表无专门领用表，以 biz_account.material_id 关联归集）。
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: materialId
+          in: query
+          description: 材料 ID
+          schema: { type: string }
+        - name: categoryId
+          in: query
+          description: 分类 ID
+          schema: { type: string }
+      responses:
+        '200':
+          description: 材料报表
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MaterialReportResponse' }
+  /reports/dashboard:
+    get:
+      tags: [report]
+      summary: Dashboard 概览
+      description: 待办数、未读通知数、项目进度、近期收支汇总。
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Dashboard 概览
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DashboardResponse' }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    ApiResponse:
+      type: object
+      required: [code, message, traceId, timestamp]
+      properties:
+        code: { type: integer, format: int32, example: 0 }
+        message: { type: string, example: success }
+        data: { nullable: true }
+        traceId: { type: string }
+        timestamp: { type: string, format: date-time }
+
+    FinancialReportVO:
+      type: object
+      required: [totalIncome, totalExpense, netAmount, items]
+      properties:
+        totalIncome: { type: string, description: 合计收入 }
+        totalExpense: { type: string, description: 合计支出 }
+        netAmount: { type: string, description: 净额（收入-支出） }
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/FinancialReportItemVO' }
+
+    FinancialReportItemVO:
+      type: object
+      required: [id, sourceType, type, amount]
+      properties:
+        id: { type: string }
+        sourceType:
+          type: string
+          enum: [ACCOUNT, PAYMENT_TRANSACTION, BANK_STATEMENT, GENERAL_LEDGER]
+        projectId: { type: string, nullable: true }
+        projectName: { type: string, nullable: true }
+        accountId: { type: string, nullable: true }
+        accountName: { type: string, nullable: true }
+        transactionDate: { type: string, format: date-time, nullable: true }
+        type: { type: string, enum: [INCOME, EXPENSE] }
+        amount: { type: string }
+        description: { type: string, nullable: true }
+
+    ProjectCostReportVO:
+      type: object
+      required: [items, totalBudget, totalChanged, totalPaid, totalAllocated]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/ProjectCostItemVO' }
+        totalBudget: { type: string }
+        totalChanged: { type: string }
+        totalPaid: { type: string }
+        totalAllocated: { type: string }
+
+    ProjectCostItemVO:
+      type: object
+      required: [projectId, projectName]
+      properties:
+        projectId: { type: string }
+        projectName: { type: string }
+        contractAmount: { type: string, nullable: true }
+        budgetAmount: { type: string, nullable: true }
+        changedAmount: { type: string, nullable: true }
+        paidAmount: { type: string, nullable: true }
+        allocatedAmount: { type: string, nullable: true }
+        actualAmount: { type: string, nullable: true }
+
+    MaterialReportVO:
+      type: object
+      required: [items, totalCount, totalAmount]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/MaterialReportItemVO' }
+        totalCount: { type: integer, format: int64 }
+        totalAmount: { type: string }
+
+    MaterialReportItemVO:
+      type: object
+      required: [materialId, materialCode, materialName, transactionCount, totalAmount]
+      properties:
+        materialId: { type: string }
+        materialCode: { type: string }
+        materialName: { type: string }
+        specification: { type: string, nullable: true }
+        unit: { type: string, nullable: true }
+        currentPrice: { type: string, nullable: true }
+        transactionCount: { type: integer, format: int64 }
+        totalAmount: { type: string }
+
+    DashboardVO:
+      type: object
+      required:
+        - pendingReceiptCount
+        - pendingSealApplicationCount
+        - unreadNotificationCount
+        - projectCount
+        - inProgressProjectCount
+        - monthIncome
+        - monthExpense
+        - totalIncome
+        - totalExpense
+      properties:
+        pendingReceiptCount: { type: integer, format: int64, description: 待审批报销数 }
+        pendingSealApplicationCount: { type: integer, format: int64, description: 待审批用印申请数 }
+        unreadNotificationCount: { type: integer, format: int64, description: 未读通知数 }
+        projectCount: { type: integer, format: int64, description: 项目总数 }
+        inProgressProjectCount: { type: integer, format: int64, description: 进行中项目数 }
+        monthIncome: { type: string, description: 本月收入 }
+        monthExpense: { type: string, description: 本月支出 }
+        totalIncome: { type: string, description: 累计收入 }
+        totalExpense: { type: string, description: 累计支出 }
+
+    FinancialReportResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data: { $ref: '#/components/schemas/FinancialReportVO' }
+    ProjectCostReportResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data: { $ref: '#/components/schemas/ProjectCostReportVO' }
+    MaterialReportResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data: { $ref: '#/components/schemas/MaterialReportVO' }
+    DashboardResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data: { $ref: '#/components/schemas/DashboardVO' }

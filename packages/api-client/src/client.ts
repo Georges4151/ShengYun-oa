@@ -22,6 +22,8 @@ import { createSealApi } from './domains/seal'
 import type { SealApi } from './domains/seal'
 import { createNotificationApi } from './domains/notification'
 import type { NotificationApi } from './domains/notification'
+import { createReportApi } from './domains/report'
+import type { ReportApi } from './domains/report'
 
 export interface CeamsApiClient {
   iam: IamApi
@@ -32,6 +34,7 @@ export interface CeamsApiClient {
   bank: BankApi
   seal: SealApi
   notification: NotificationApi
+  report: ReportApi
 }
 
 export function createCeamsApiClient(options: HttpClientOptions): CeamsApiClient {
@@ -44,6 +47,7 @@ export function createCeamsApiClient(options: HttpClientOptions): CeamsApiClient
     payment: createPaymentApi(client),
     bank: createBankApi(client),
     seal: createSealApi(client),
-    notification: createNotificationApi(client)
+    notification: createNotificationApi(client),
+    report: createReportApi(client)
   }
 }
