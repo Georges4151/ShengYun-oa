@@ -51,9 +51,14 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
-function serializeBody(body: unknown): string | undefined {
+function isFormData(value: unknown): value is FormData {
+  return typeof FormData !== 'undefined' && value instanceof FormData
+}
+
+function serializeBody(body: unknown): string | FormData | undefined {
   if (body === undefined || body === null) return undefined
   if (typeof body === 'string') return body
+  if (isFormData(body)) return body
   return JSON.stringify(body)
 }
 
@@ -146,7 +151,7 @@ export class HttpClient {
       signed: init.signed ?? false
     }
 
-    if (hasBody && bodyText !== undefined) {
+    if (hasBody && bodyText !== undefined && !isFormData(bodyText)) {
       request.headers['Content-Type'] = 'application/json'
     }
     if (init.headers) {
@@ -167,7 +172,7 @@ export class HttpClient {
     if (needSign && secret) {
       const timestamp = Date.now().toString()
       const nonce = (this.options.generateNonce ?? defaultNonce)()
-      const bodyHash = request.body ? await sha256Hex(request.body) : ''
+      const bodyHash = typeof request.body === 'string' && request.body ? await sha256Hex(request.body) : ''
       request.headers['X-Sign'] = await hmacSha256Hex(secret, buildSignPayload(timestamp, nonce, bodyHash))
       request.headers['X-Timestamp'] = timestamp
       request.headers['X-Nonce'] = nonce

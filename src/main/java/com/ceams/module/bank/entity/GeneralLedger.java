@@ -1,0 +1,49 @@
+package com.ceams.module.bank.entity;
+
+import com.baomidou.mybatisplus.annotation.TableName;
+import com.ceams.common.base.BaseEntity;
+import com.ceams.module.bank.enums.TransactionType;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
+/**
+ * 总账（biz_general_ledger）。
+ */
+@Data
+@EqualsAndHashCode(callSuper = true)
+@TableName("biz_general_ledger")
+public class GeneralLedger extends BaseEntity {
+
+    /** 账户名。 */
+    private String accountName;
+
+    /** 账号【需加密（阶段4）】。 */
+    private String accountNumber;
+
+    /** 开户行。 */
+    private String bankName;
+
+    /** 余额。 */
+    private BigDecimal balance;
+
+    /** 账户类型（代码值）。 */
+    private String accountType;
+
+    /** 摘要。 */
+    private String summary;
+
+    /** 交易时间。 */
+    private LocalDateTime transactionTime;
+
+    /** 交易类型：INCOME/EXPENSE。 */
+    private TransactionType transactionType;
+
+    /** 金额。 */
+    private BigDecimal amount;
+
+    /** 状态（代码值）。 */
+    private String status;
+}

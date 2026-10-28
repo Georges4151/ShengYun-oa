@@ -17,8 +17,8 @@ export interface HttpRequest {
   url: string
   headers: HttpHeaders
   query?: Record<string, QueryValue>
-  /** 已序列化的请求体（JSON 字符串），GET/HEAD 为 undefined */
-  body?: string
+  /** 已序列化的请求体（JSON 字符串或 multipart FormData），GET/HEAD 为 undefined */
+  body?: string | FormData
   /** 高风险签名接口标记 */
   signed?: boolean
 }
