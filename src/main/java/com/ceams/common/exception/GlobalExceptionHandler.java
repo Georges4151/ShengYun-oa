@@ -9,6 +9,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.BindException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 /**
@@ -49,6 +50,13 @@ public class GlobalExceptionHandler {
         log.warn("Malformed JSON: {}", ex.getMessage());
         return build(HttpStatus.BAD_REQUEST, ErrorCode.VALID_MALFORMED_JSON.getCode(),
                 ErrorCode.VALID_MALFORMED_JSON.name());
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ApiResponse<Void>> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
+        log.warn("TypeMismatch: {}", ex.getMessage());
+        return build(HttpStatus.BAD_REQUEST, ErrorCode.VALID_ILLEGAL_ARGUMENT.getCode(),
+                ErrorCode.VALID_ILLEGAL_ARGUMENT.name());
     }
 
     @ExceptionHandler(AccessDeniedException.class)
