@@ -4,14 +4,11 @@ import com.ceams.module.bank.enums.BankStatementStatus;
 import com.ceams.module.bank.enums.TransactionType;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
-import lombok.Data;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import lombok.Data;
 
-/**
- * 银行流水视图对象。
- */
+/** 银行流水视图对象。 */
 @Data
 public class BankStatementVO {
 

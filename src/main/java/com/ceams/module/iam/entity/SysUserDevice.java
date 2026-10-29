@@ -6,14 +6,11 @@ import com.ceams.common.base.BaseEntity;
 import com.ceams.common.crypto.SensitiveTypeHandler;
 import com.ceams.module.iam.enums.DeviceStatus;
 import com.ceams.module.iam.enums.Platform;
+import java.time.LocalDateTime;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-import java.time.LocalDateTime;
-
-/**
- * 用户设备绑定（sys_user_device）。
- */
+/** 用户设备绑定（sys_user_device）。 */
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName(value = "sys_user_device", autoResultMap = true)

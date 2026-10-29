@@ -21,16 +21,13 @@ import com.ceams.module.seal.mapper.StampApprovalMapper;
 import com.ceams.module.seal.service.ElectronicSealApplicationService;
 import com.ceams.module.seal.util.PageUtil;
 import com.ceams.module.seal.vo.ElectronicSealApplicationVO;
+import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-
-/**
- * 用印申请服务实现。
- */
+/** 用印申请服务实现。 */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -42,16 +39,21 @@ public class ElectronicSealApplicationServiceImpl implements ElectronicSealAppli
     private final ElectronicSealApplicationConverter electronicSealApplicationConverter;
 
     @Override
-    public PageResult<ElectronicSealApplicationVO> page(long page, long size, Long sealId, ApplicationStatus status, Long applicantId) {
+    public PageResult<ElectronicSealApplicationVO> page(
+            long page, long size, Long sealId, ApplicationStatus status, Long applicantId) {
         Page<ElectronicSealApplication> p = PageUtil.resolve(page, size);
         LambdaQueryWrapper<ElectronicSealApplication> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(sealId != null, ElectronicSealApplication::getSealId, sealId);
         wrapper.eq(status != null, ElectronicSealApplication::getStatus, status);
         wrapper.eq(applicantId != null, ElectronicSealApplication::getApplicantId, applicantId);
         wrapper.orderByDesc(ElectronicSealApplication::getCreateTime);
-        IPage<ElectronicSealApplication> result = electronicSealApplicationMapper.selectPage(p, wrapper);
-        return new PageResult<>(electronicSealApplicationConverter.toVOList(result.getRecords()),
-                result.getTotal(), result.getCurrent(), result.getSize());
+        IPage<ElectronicSealApplication> result =
+                electronicSealApplicationMapper.selectPage(p, wrapper);
+        return new PageResult<>(
+                electronicSealApplicationConverter.toVOList(result.getRecords()),
+                result.getTotal(),
+                result.getCurrent(),
+                result.getSize());
     }
 
     @Override
@@ -123,8 +125,9 @@ public class ElectronicSealApplicationServiceImpl implements ElectronicSealAppli
     @Transactional(rollbackFor = Exception.class)
     public void delete(Long id) {
         requireApplication(id);
-        Long approvalCount = stampApprovalMapper.selectCount(
-                new LambdaQueryWrapper<StampApproval>().eq(StampApproval::getStampId, id));
+        Long approvalCount =
+                stampApprovalMapper.selectCount(
+                        new LambdaQueryWrapper<StampApproval>().eq(StampApproval::getStampId, id));
         if (approvalCount != null && approvalCount > 0) {
             throw BusinessException.of(ErrorCode.BIZ_REFERENCED, "该申请存在审批记录，无法删除");
         }

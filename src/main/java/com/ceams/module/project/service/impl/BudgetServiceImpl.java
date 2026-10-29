@@ -18,19 +18,16 @@ import com.ceams.module.project.mapper.SubcontractorContractMapper;
 import com.ceams.module.project.service.BudgetService;
 import com.ceams.module.project.util.PageUtil;
 import com.ceams.module.project.vo.BudgetVO;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-
-/**
- * 预算服务实现。
- */
+/** 预算服务实现。 */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -50,8 +47,11 @@ public class BudgetServiceImpl implements BudgetService {
         }
         wrapper.orderByDesc(Budget::getCreateTime);
         IPage<Budget> result = budgetMapper.selectPage(p, wrapper);
-        return new PageResult<>(budgetConverter.toVOList(result.getRecords()),
-                result.getTotal(), result.getCurrent(), result.getSize());
+        return new PageResult<>(
+                budgetConverter.toVOList(result.getRecords()),
+                result.getTotal(),
+                result.getCurrent(),
+                result.getSize());
     }
 
     @Override
@@ -91,7 +91,8 @@ public class BudgetServiceImpl implements BudgetService {
         }
         if (request.getAmount() != null) {
             budget.setAmount(request.getAmount());
-            budget.setRemainingAmount(recomputeRemaining(request.getAmount(), budget.getUsedAmount()));
+            budget.setRemainingAmount(
+                    recomputeRemaining(request.getAmount(), budget.getUsedAmount()));
         }
         if (request.getProjectId() != null) {
             requireProject(request.getProjectId());

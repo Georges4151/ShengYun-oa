@@ -1,8 +1,6 @@
 package com.ceams.module.bank.enums;
 
-/**
- * 对账结果状态。
- */
+/** 对账结果状态。 */
 public enum ReconciliationStatus {
 
     /** 完全匹配。 */

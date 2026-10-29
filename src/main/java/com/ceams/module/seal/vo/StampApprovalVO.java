@@ -3,13 +3,10 @@ package com.ceams.module.seal.vo;
 import com.ceams.module.seal.enums.ApprovalStatus;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
+import java.time.LocalDateTime;
 import lombok.Data;
 
-import java.time.LocalDateTime;
-
-/**
- * 用印审批视图对象。
- */
+/** 用印审批视图对象。 */
 @Data
 public class StampApprovalVO {
 

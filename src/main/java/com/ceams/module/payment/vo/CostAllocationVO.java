@@ -3,14 +3,11 @@ package com.ceams.module.payment.vo;
 import com.ceams.module.payment.enums.TargetType;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
-import lombok.Data;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import lombok.Data;
 
-/**
- * 成本分摊视图对象。
- */
+/** 成本分摊视图对象。 */
 @Data
 public class CostAllocationVO {
 

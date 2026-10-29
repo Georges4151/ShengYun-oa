@@ -1,7 +1,6 @@
 package com.ceams.module.iam.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ceams.common.exception.BusinessException;
@@ -12,11 +11,11 @@ import com.ceams.common.security.SecurityUtils;
 import com.ceams.module.iam.converter.UserConverter;
 import com.ceams.module.iam.dto.auth.LoginRequest;
 import com.ceams.module.iam.dto.auth.RefreshRequest;
+import com.ceams.module.iam.entity.OperationLog;
 import com.ceams.module.iam.entity.SysRefreshToken;
 import com.ceams.module.iam.entity.SysRole;
 import com.ceams.module.iam.entity.SysUser;
 import com.ceams.module.iam.entity.SysUserDevice;
-import com.ceams.module.iam.entity.OperationLog;
 import com.ceams.module.iam.entity.UserRole;
 import com.ceams.module.iam.enums.DeviceStatus;
 import com.ceams.module.iam.enums.OperationType;
@@ -40,14 +39,6 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -62,10 +53,15 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-/**
- * 认证服务实现。
- */
+/** 认证服务实现。 */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -96,8 +92,12 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public LoginResponse login(LoginRequest request, HttpServletRequest httpRequest) {
-        SysUser user = userMapper.selectOne(new LambdaQueryWrapper<SysUser>().eq(SysUser::getUsername, request.getUsername()));
-        if (user == null || !passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
+        SysUser user =
+                userMapper.selectOne(
+                        new LambdaQueryWrapper<SysUser>()
+                                .eq(SysUser::getUsername, request.getUsername()));
+        if (user == null
+                || !passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
             throw BusinessException.of(ErrorCode.AUTH_INVALID_CREDENTIALS);
         }
         if (user.getStatus() != UserStatus.ACTIVE) {
@@ -112,13 +112,25 @@ public class AuthServiceImpl implements AuthService {
 
         // 设备绑定
         if (StringUtils.isNotBlank(request.getDeviceId())) {
-            bindDevice(user.getId(), request.getDeviceId(), request.getDeviceName(), request.getPlatform(),
-                    user.getLastLoginIp(), now);
+            bindDevice(
+                    user.getId(),
+                    request.getDeviceId(),
+                    request.getDeviceName(),
+                    request.getPlatform(),
+                    user.getLastLoginIp(),
+                    now);
         }
 
         List<RoleVO> roles = userService.listRolesByUser(user.getId());
         LoginResponse response = issueTokens(user, roles, request.getDeviceId(), newJti());
-        logOperation(user.getId(), user.getUsername(), OperationType.LOGIN, "用户登录", null, null, httpRequest);
+        logOperation(
+                user.getId(),
+                user.getUsername(),
+                OperationType.LOGIN,
+                "用户登录",
+                null,
+                null,
+                httpRequest);
         return response;
     }
 
@@ -139,14 +151,17 @@ public class AuthServiceImpl implements AuthService {
         String jti = claims.getId();
         Long userId = jwtUtil.getUserId(claims);
 
-        SysRefreshToken existing = refreshTokenMapper.selectOne(new LambdaQueryWrapper<SysRefreshToken>().eq(SysRefreshToken::getJti, jti));
+        SysRefreshToken existing =
+                refreshTokenMapper.selectOne(
+                        new LambdaQueryWrapper<SysRefreshToken>().eq(SysRefreshToken::getJti, jti));
         if (existing == null || existing.getRevoked() != null && existing.getRevoked() == 1) {
             throw BusinessException.of(ErrorCode.AUTH_REFRESH_REVOKED);
         }
         if (!sha256Hex(request.getRefreshToken()).equals(existing.getTokenHash())) {
             throw BusinessException.of(ErrorCode.AUTH_TOKEN_INVALID, "refresh token 哈希不匹配");
         }
-        if (existing.getExpiresAt() != null && existing.getExpiresAt().isBefore(LocalDateTime.now())) {
+        if (existing.getExpiresAt() != null
+                && existing.getExpiresAt().isBefore(LocalDateTime.now())) {
             throw BusinessException.of(ErrorCode.AUTH_REFRESH_REVOKED, "refresh token 已过期");
         }
 
@@ -174,10 +189,11 @@ public class AuthServiceImpl implements AuthService {
     @Transactional(rollbackFor = Exception.class)
     public void logout(HttpServletRequest httpRequest) {
         Long userId = SecurityUtils.getCurrentUserIdOrDefault();
-        List<SysRefreshToken> tokens = refreshTokenMapper.selectList(
-                new LambdaQueryWrapper<SysRefreshToken>()
-                        .eq(SysRefreshToken::getUserId, userId)
-                        .eq(SysRefreshToken::getRevoked, 0));
+        List<SysRefreshToken> tokens =
+                refreshTokenMapper.selectList(
+                        new LambdaQueryWrapper<SysRefreshToken>()
+                                .eq(SysRefreshToken::getUserId, userId)
+                                .eq(SysRefreshToken::getRevoked, 0));
         LocalDateTime now = LocalDateTime.now();
         for (SysRefreshToken token : tokens) {
             token.setRevoked(1);
@@ -185,17 +201,25 @@ public class AuthServiceImpl implements AuthService {
             refreshTokenMapper.updateById(token);
         }
         SysUser user = userMapper.selectById(userId);
-        logOperation(userId, user == null ? null : user.getUsername(), OperationType.LOGOUT, "用户登出", userId, "USER", httpRequest);
+        logOperation(
+                userId,
+                user == null ? null : user.getUsername(),
+                OperationType.LOGOUT,
+                "用户登出",
+                userId,
+                "USER",
+                httpRequest);
     }
 
     @Override
     public PageResult<UserSessionVO> sessions(long page, long size) {
         Long userId = SecurityUtils.getCurrentUserIdOrDefault();
         Page<SysRefreshToken> p = PageUtil.resolve(page, size);
-        LambdaQueryWrapper<SysRefreshToken> wrapper = new LambdaQueryWrapper<SysRefreshToken>()
-                .eq(SysRefreshToken::getUserId, userId)
-                .eq(SysRefreshToken::getRevoked, 0)
-                .orderByDesc(SysRefreshToken::getCreateTime);
+        LambdaQueryWrapper<SysRefreshToken> wrapper =
+                new LambdaQueryWrapper<SysRefreshToken>()
+                        .eq(SysRefreshToken::getUserId, userId)
+                        .eq(SysRefreshToken::getRevoked, 0)
+                        .orderByDesc(SysRefreshToken::getCreateTime);
         IPage<SysRefreshToken> result = refreshTokenMapper.selectPage(p, wrapper);
 
         List<SysRefreshToken> records = result.getRecords();
@@ -207,7 +231,8 @@ public class AuthServiceImpl implements AuthService {
             vo.setUserId(token.getUserId());
             vo.setLoginTime(token.getCreateTime());
             vo.setLastActiveTime(token.getUpdateTime());
-            SysUserDevice device = token.getDeviceId() == null ? null : deviceMap.get(token.getDeviceId());
+            SysUserDevice device =
+                    token.getDeviceId() == null ? null : deviceMap.get(token.getDeviceId());
             if (device != null) {
                 vo.setPlatform(device.getPlatform());
                 vo.setIpAddress(device.getLastLoginIp());
@@ -220,8 +245,10 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void revokeSession(String sessionId) {
-        SysRefreshToken token = refreshTokenMapper.selectOne(
-                new LambdaQueryWrapper<SysRefreshToken>().eq(SysRefreshToken::getJti, sessionId));
+        SysRefreshToken token =
+                refreshTokenMapper.selectOne(
+                        new LambdaQueryWrapper<SysRefreshToken>()
+                                .eq(SysRefreshToken::getJti, sessionId));
         if (token == null) {
             throw BusinessException.of(ErrorCode.BIZ_NOT_FOUND, "会话不存在");
         }
@@ -245,10 +272,12 @@ public class AuthServiceImpl implements AuthService {
         if (StringUtils.isBlank(deviceId)) {
             throw BusinessException.of(ErrorCode.VALID_REQUIRED_FIELD, "缺少设备标识 deviceId");
         }
-        SysUserDevice device = userDeviceMapper.selectOne(new LambdaQueryWrapper<SysUserDevice>()
-                .eq(SysUserDevice::getUserId, userId)
-                .eq(SysUserDevice::getDeviceId, deviceId)
-                .last("LIMIT 1"));
+        SysUserDevice device =
+                userDeviceMapper.selectOne(
+                        new LambdaQueryWrapper<SysUserDevice>()
+                                .eq(SysUserDevice::getUserId, userId)
+                                .eq(SysUserDevice::getDeviceId, deviceId)
+                                .last("LIMIT 1"));
         if (device == null || StringUtils.isBlank(device.getAppSecret())) {
             throw BusinessException.of(ErrorCode.BIZ_NOT_FOUND, "设备未绑定");
         }
@@ -259,9 +288,12 @@ public class AuthServiceImpl implements AuthService {
 
     // ==================== 内部辅助 ====================
 
-    private LoginResponse issueTokens(SysUser user, List<RoleVO> roles, String deviceId, String jti) {
-        List<String> roleCodes = roles.stream().map(RoleVO::getCode).filter(StringUtils::isNotBlank).toList();
-        String accessToken = jwtUtil.generateAccessToken(user.getId(), user.getUsername(), roleCodes);
+    private LoginResponse issueTokens(
+            SysUser user, List<RoleVO> roles, String deviceId, String jti) {
+        List<String> roleCodes =
+                roles.stream().map(RoleVO::getCode).filter(StringUtils::isNotBlank).toList();
+        String accessToken =
+                jwtUtil.generateAccessToken(user.getId(), user.getUsername(), roleCodes);
         String refreshToken = jwtUtil.generateRefreshToken(user.getId(), jti);
 
         SysRefreshToken entity = new SysRefreshToken();
@@ -291,12 +323,19 @@ public class AuthServiceImpl implements AuthService {
         return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
     }
 
-    private void bindDevice(Long userId, String deviceId, String deviceName,
-                            com.ceams.module.iam.enums.Platform platform, String ip, LocalDateTime now) {
-        SysUserDevice device = userDeviceMapper.selectOne(new LambdaQueryWrapper<SysUserDevice>()
-                .eq(SysUserDevice::getUserId, userId)
-                .eq(SysUserDevice::getDeviceId, deviceId)
-                .last("LIMIT 1"));
+    private void bindDevice(
+            Long userId,
+            String deviceId,
+            String deviceName,
+            com.ceams.module.iam.enums.Platform platform,
+            String ip,
+            LocalDateTime now) {
+        SysUserDevice device =
+                userDeviceMapper.selectOne(
+                        new LambdaQueryWrapper<SysUserDevice>()
+                                .eq(SysUserDevice::getUserId, userId)
+                                .eq(SysUserDevice::getDeviceId, deviceId)
+                                .last("LIMIT 1"));
         if (device == null) {
             device = new SysUserDevice();
             device.setUserId(userId);
@@ -328,23 +367,38 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private Map<String, SysUserDevice> loadDevices(Long userId, List<SysRefreshToken> records) {
-        List<String> deviceIds = records.stream().map(SysRefreshToken::getDeviceId)
-                .filter(StringUtils::isNotBlank).distinct().toList();
+        List<String> deviceIds =
+                records.stream()
+                        .map(SysRefreshToken::getDeviceId)
+                        .filter(StringUtils::isNotBlank)
+                        .distinct()
+                        .toList();
         if (deviceIds.isEmpty()) {
             return new HashMap<>();
         }
-        List<SysUserDevice> devices = userDeviceMapper.selectList(new LambdaQueryWrapper<SysUserDevice>()
-                .eq(SysUserDevice::getUserId, userId)
-                .in(SysUserDevice::getDeviceId, deviceIds));
-        return devices.stream().collect(Collectors.toMap(SysUserDevice::getDeviceId, Function.identity(), (a, b) -> a));
+        List<SysUserDevice> devices =
+                userDeviceMapper.selectList(
+                        new LambdaQueryWrapper<SysUserDevice>()
+                                .eq(SysUserDevice::getUserId, userId)
+                                .in(SysUserDevice::getDeviceId, deviceIds));
+        return devices.stream()
+                .collect(
+                        Collectors.toMap(
+                                SysUserDevice::getDeviceId, Function.identity(), (a, b) -> a));
     }
 
     private boolean isSystemAdmin(Long userId) {
         if (userId == null || userId == 0L) {
             return false;
         }
-        List<Long> roleIds = userRoleMapper.selectList(new LambdaQueryWrapper<UserRole>().eq(UserRole::getUserId, userId))
-                .stream().map(UserRole::getRoleId).distinct().toList();
+        List<Long> roleIds =
+                userRoleMapper
+                        .selectList(
+                                new LambdaQueryWrapper<UserRole>().eq(UserRole::getUserId, userId))
+                        .stream()
+                        .map(UserRole::getRoleId)
+                        .distinct()
+                        .toList();
         if (roleIds.isEmpty()) {
             return false;
         }
@@ -352,8 +406,14 @@ public class AuthServiceImpl implements AuthService {
         return roles.stream().anyMatch(r -> SYSTEM_ADMIN.equals(r.getCode()));
     }
 
-    private void logOperation(Long userId, String username, OperationType type, String description,
-                              Long targetId, String targetType, HttpServletRequest request) {
+    private void logOperation(
+            Long userId,
+            String username,
+            OperationType type,
+            String description,
+            Long targetId,
+            String targetType,
+            HttpServletRequest request) {
         OperationLog log = new OperationLog();
         log.setUserId(userId);
         log.setUsername(username);

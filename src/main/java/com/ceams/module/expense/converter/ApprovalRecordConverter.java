@@ -2,13 +2,10 @@ package com.ceams.module.expense.converter;
 
 import com.ceams.module.expense.entity.ApprovalRecord;
 import com.ceams.module.expense.vo.ApprovalRecordVO;
+import java.util.List;
 import org.mapstruct.Mapper;
 
-import java.util.List;
-
-/**
- * 审批记录实体 <-> VO 转换。
- */
+/** 审批记录实体 <-> VO 转换。 */
 @Mapper(componentModel = "spring")
 public interface ApprovalRecordConverter {
 

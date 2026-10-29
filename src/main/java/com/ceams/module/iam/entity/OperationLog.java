@@ -6,9 +6,7 @@ import com.ceams.module.iam.enums.OperationType;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-/**
- * 操作日志（sys_operation_log）。
- */
+/** 操作日志（sys_operation_log）。 */
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("sys_operation_log")

@@ -30,20 +30,19 @@ import com.ceams.module.expense.vo.ApprovalRecordVO;
 import com.ceams.module.expense.vo.ReceiptVO;
 import com.ceams.module.expense.vo.ReceiptVerificationVO;
 import com.ceams.module.payment.service.PaymentAccountQueryService;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.List;
-
 /**
  * 票据（报销）服务实现。
  *
- * <p>三级审批状态机：approval_status + current_approval_level 表达。</p>
+ * <p>三级审批状态机：approval_status + current_approval_level 表达。
  */
 @Slf4j
 @Service
@@ -62,9 +61,15 @@ public class ReceiptServiceImpl implements ReceiptService {
     private final PaymentAccountQueryService paymentAccountQueryService;
 
     @Override
-    public PageResult<ReceiptVO> page(long page, long size, String receiptNumber, Long userId, Long projectId,
-                                      VerificationStatus verificationStatus, PaymentStatus paymentStatus,
-                                      ReceiptApprovalStatus approvalStatus) {
+    public PageResult<ReceiptVO> page(
+            long page,
+            long size,
+            String receiptNumber,
+            Long userId,
+            Long projectId,
+            VerificationStatus verificationStatus,
+            PaymentStatus paymentStatus,
+            ReceiptApprovalStatus approvalStatus) {
         Page<Receipt> p = PageUtil.resolve(page, size);
         LambdaQueryWrapper<Receipt> wrapper = new LambdaQueryWrapper<>();
         if (StringUtils.isNotBlank(receiptNumber)) {
@@ -87,8 +92,11 @@ public class ReceiptServiceImpl implements ReceiptService {
         }
         wrapper.orderByDesc(Receipt::getCreateTime);
         IPage<Receipt> result = receiptMapper.selectPage(p, wrapper);
-        return new PageResult<>(receiptConverter.toVOList(result.getRecords()),
-                result.getTotal(), result.getCurrent(), result.getSize());
+        return new PageResult<>(
+                receiptConverter.toVOList(result.getRecords()),
+                result.getTotal(),
+                result.getCurrent(),
+                result.getSize());
     }
 
     @Override
@@ -104,7 +112,10 @@ public class ReceiptServiceImpl implements ReceiptService {
         }
         Receipt receipt = new Receipt();
         receipt.setReceiptNumber(request.getReceiptNumber());
-        receipt.setUserId(request.getUserId() == null ? SecurityUtils.getCurrentUserId() : request.getUserId());
+        receipt.setUserId(
+                request.getUserId() == null
+                        ? SecurityUtils.getCurrentUserId()
+                        : request.getUserId());
         receipt.setReporterId(request.getReporterId());
         receipt.setProjectId(request.getProjectId());
         receipt.setReporterName(request.getReporterName());
@@ -290,7 +301,8 @@ public class ReceiptServiceImpl implements ReceiptService {
     public List<ReceiptVerificationVO> listVerifications(Long id) {
         requireReceipt(id);
         LambdaQueryWrapper<ReceiptVerification> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(ReceiptVerification::getReceiptId, id).orderByDesc(ReceiptVerification::getVerificationTime);
+        wrapper.eq(ReceiptVerification::getReceiptId, id)
+                .orderByDesc(ReceiptVerification::getVerificationTime);
         return receiptVerificationConverter.toVOList(receiptVerificationMapper.selectList(wrapper));
     }
 

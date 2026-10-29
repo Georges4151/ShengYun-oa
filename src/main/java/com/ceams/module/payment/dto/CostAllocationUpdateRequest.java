@@ -2,13 +2,10 @@ package com.ceams.module.payment.dto;
 
 import com.ceams.module.payment.enums.TargetType;
 import jakarta.validation.constraints.DecimalMin;
+import java.math.BigDecimal;
 import lombok.Data;
 
-import java.math.BigDecimal;
-
-/**
- * 更新成本分摊（accountRecordId 不可变）。
- */
+/** 更新成本分摊（accountRecordId 不可变）。 */
 @Data
 public class CostAllocationUpdateRequest {
 

@@ -1,8 +1,6 @@
 package com.ceams.module.notification.enums;
 
-/**
- * 推送渠道。
- */
+/** 推送渠道。 */
 public enum PushChannel {
 
     /** 站内信。 */

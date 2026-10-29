@@ -2,15 +2,12 @@ package com.ceams.module.project.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.ceams.common.base.BaseEntity;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-
-/**
- * 结算凭证（biz_settlement_proof）。
- */
+/** 结算凭证（biz_settlement_proof）。 */
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("biz_settlement_proof")

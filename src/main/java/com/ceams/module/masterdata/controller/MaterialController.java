@@ -19,9 +19,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * 材料库管理接口。
- */
+/** 材料库管理接口。 */
 @RestController
 @RequestMapping("/api/v1/materials")
 @RequiredArgsConstructor
@@ -31,10 +29,11 @@ public class MaterialController {
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public ApiResponse<PageResult<MaterialVO>> page(@RequestParam(defaultValue = "1") long page,
-                                                    @RequestParam(defaultValue = "20") long size,
-                                                    @RequestParam(required = false) String keyword,
-                                                    @RequestParam(required = false) Long categoryId) {
+    public ApiResponse<PageResult<MaterialVO>> page(
+            @RequestParam(defaultValue = "1") long page,
+            @RequestParam(defaultValue = "20") long size,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Long categoryId) {
         return ApiResponse.success(materialService.page(page, size, keyword, categoryId));
     }
 
@@ -52,7 +51,8 @@ public class MaterialController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('SYS_ADMIN')")
-    public ApiResponse<Void> update(@PathVariable Long id, @Valid @RequestBody MaterialUpdateRequest request) {
+    public ApiResponse<Void> update(
+            @PathVariable Long id, @Valid @RequestBody MaterialUpdateRequest request) {
         materialService.update(id, request);
         return ApiResponse.success();
     }

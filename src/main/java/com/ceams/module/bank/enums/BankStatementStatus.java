@@ -1,8 +1,6 @@
 package com.ceams.module.bank.enums;
 
-/**
- * 银行流水对账状态。
- */
+/** 银行流水对账状态。 */
 public enum BankStatementStatus {
 
     /** 未对账。 */

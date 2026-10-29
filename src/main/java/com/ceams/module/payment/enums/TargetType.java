@@ -1,8 +1,6 @@
 package com.ceams.module.payment.enums;
 
-/**
- * 成本分摊目标类型。
- */
+/** 成本分摊目标类型。 */
 public enum TargetType {
 
     /** 项目。 */

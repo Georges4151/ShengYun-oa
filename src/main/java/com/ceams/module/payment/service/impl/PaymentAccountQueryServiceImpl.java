@@ -6,9 +6,7 @@ import com.ceams.module.payment.service.PaymentAccountQueryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-/**
- * 付款账户只读查询服务实现。
- */
+/** 付款账户只读查询服务实现。 */
 @Service
 @RequiredArgsConstructor
 public class PaymentAccountQueryServiceImpl implements PaymentAccountQueryService {

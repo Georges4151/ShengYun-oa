@@ -6,9 +6,7 @@ import com.ceams.module.payment.dto.PaymentTransactionUpdateRequest;
 import com.ceams.module.payment.enums.AccountType;
 import com.ceams.module.payment.vo.PaymentTransactionVO;
 
-/**
- * 付款交易服务。
- */
+/** 付款交易服务。 */
 public interface PaymentTransactionService {
 
     PageResult<PaymentTransactionVO> page(long page, long size, Long accountId, AccountType type);

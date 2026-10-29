@@ -12,9 +12,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * 付款执行接口（高危，HMAC 签名）。
- */
+/** 付款执行接口（高危，HMAC 签名）。 */
 @RestController
 @RequestMapping("/api/v1/payments")
 @RequiredArgsConstructor

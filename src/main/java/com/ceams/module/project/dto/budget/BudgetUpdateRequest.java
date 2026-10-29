@@ -3,14 +3,11 @@ package com.ceams.module.project.dto.budget;
 import com.ceams.module.project.enums.BudgetStatus;
 import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
-import lombok.Data;
-
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import lombok.Data;
 
-/**
- * 更新预算请求。
- */
+/** 更新预算请求。 */
 @Data
 public class BudgetUpdateRequest {
 

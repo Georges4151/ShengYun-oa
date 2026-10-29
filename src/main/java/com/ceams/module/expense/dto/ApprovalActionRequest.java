@@ -3,9 +3,7 @@ package com.ceams.module.expense.dto;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
-/**
- * 审批动作请求（通过/驳回）。
- */
+/** 审批动作请求（通过/驳回）。 */
 @Data
 public class ApprovalActionRequest {
 

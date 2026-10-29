@@ -6,9 +6,7 @@ import com.ceams.module.project.dto.progresspayment.ProgressPaymentUpdateRequest
 import com.ceams.module.project.enums.ApprovalStatus;
 import com.ceams.module.project.vo.ProgressPaymentVO;
 
-/**
- * 进度款服务。
- */
+/** 进度款服务。 */
 public interface ProgressPaymentService {
 
     PageResult<ProgressPaymentVO> page(long page, long size, Long projectId, ApprovalStatus status);

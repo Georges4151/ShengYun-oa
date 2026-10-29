@@ -4,9 +4,6 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.ceams.module.seal.entity.ElectronicSeal;
 import org.apache.ibatis.annotations.Mapper;
 
-/**
- * 电子印章 Mapper。
- */
+/** 电子印章 Mapper。 */
 @Mapper
-public interface ElectronicSealMapper extends BaseMapper<ElectronicSeal> {
-}
+public interface ElectronicSealMapper extends BaseMapper<ElectronicSeal> {}

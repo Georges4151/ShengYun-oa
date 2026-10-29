@@ -8,12 +8,11 @@ import com.ceams.module.seal.dto.StampApprovalUpdateRequest;
 import com.ceams.module.seal.enums.ApprovalStatus;
 import com.ceams.module.seal.vo.StampApprovalVO;
 
-/**
- * 用印审批服务。
- */
+/** 用印审批服务。 */
 public interface StampApprovalService {
 
-    PageResult<StampApprovalVO> page(long page, long size, Long stampId, Long sealId, ApprovalStatus status);
+    PageResult<StampApprovalVO> page(
+            long page, long size, Long stampId, Long sealId, ApprovalStatus status);
 
     StampApprovalVO detail(Long id);
 

@@ -4,9 +4,7 @@ import com.ceams.module.iam.enums.Platform;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
-/**
- * 设备绑定请求。
- */
+/** 设备绑定请求。 */
 @Data
 public class DeviceBindRequest {
 

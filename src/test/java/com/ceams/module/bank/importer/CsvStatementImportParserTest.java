@@ -1,6 +1,6 @@
 package com.ceams.module.bank.importer;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -8,21 +8,19 @@ import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.List;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-/**
- * {@link CsvStatementImportParser} 单元测试：标准表头、中文别名、引号转义、重复流水号识别。
- */
+/** {@link CsvStatementImportParser} 单元测试：标准表头、中文别名、引号转义、重复流水号识别。 */
 class CsvStatementImportParserTest {
 
     private final CsvStatementImportParser parser = new CsvStatementImportParser();
 
     @Test
     void 标准表头解析() {
-        String csv = "account_id,transaction_date,amount,type,description,counterparty,bank_reference,balance\n"
-                + "ACC001,2026-10-01,1280.50,CREDIT,收到工程款,建筑公司A,REF001,5000.00\n"
-                + "ACC001,2026-10-02,-300.00,DEBIT,支付材料款,材料商B,REF002,4700.00\n";
+        String csv =
+                "account_id,transaction_date,amount,type,description,counterparty,bank_reference,balance\n"
+                        + "ACC001,2026-10-01,1280.50,CREDIT,收到工程款,建筑公司A,REF001,5000.00\n"
+                        + "ACC001,2026-10-02,-300.00,DEBIT,支付材料款,材料商B,REF002,4700.00\n";
 
         List<StatementRow> rows = parser.parse(toStream(csv), "a.csv");
 
@@ -40,8 +38,9 @@ class CsvStatementImportParserTest {
 
     @Test
     void 中文表头别名解析() {
-        String csv = "账号,交易日期,金额,类型,摘要,对方户名,流水号,余额\n"
-                + "ACC001,2026/10/01,100.00,收入,测试摘要,对方A,REF100,200.00\n";
+        String csv =
+                "账号,交易日期,金额,类型,摘要,对方户名,流水号,余额\n"
+                        + "ACC001,2026/10/01,100.00,收入,测试摘要,对方A,REF100,200.00\n";
 
         List<StatementRow> rows = parser.parse(toStream(csv), "a.csv");
 
@@ -56,8 +55,7 @@ class CsvStatementImportParserTest {
 
     @Test
     void 引号转义解析() {
-        String csv = "account_id,description,bank_reference\n"
-                + "ACC001,\"收到款项, 含税\",REF001\n";
+        String csv = "account_id,description,bank_reference\n" + "ACC001,\"收到款项, 含税\",REF001\n";
 
         List<StatementRow> rows = parser.parse(toStream(csv), "a.csv");
 
@@ -67,9 +65,10 @@ class CsvStatementImportParserTest {
 
     @Test
     void 重复流水号可识别() {
-        String csv = "account_id,transaction_date,amount,type,description,counterparty,bank_reference,balance\n"
-                + "ACC001,2026-10-01,10.00,CREDIT,第一笔,对方A,REF_DUP,100.00\n"
-                + "ACC001,2026-10-01,10.00,CREDIT,重复第二笔,对方A,REF_DUP,110.00\n";
+        String csv =
+                "account_id,transaction_date,amount,type,description,counterparty,bank_reference,balance\n"
+                        + "ACC001,2026-10-01,10.00,CREDIT,第一笔,对方A,REF_DUP,100.00\n"
+                        + "ACC001,2026-10-01,10.00,CREDIT,重复第二笔,对方A,REF_DUP,110.00\n";
 
         List<StatementRow> rows = parser.parse(toStream(csv), "a.csv");
 

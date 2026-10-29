@@ -4,20 +4,19 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-
-import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.List;
+import javax.crypto.SecretKey;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
 /**
  * JWT 工具（jjwt 0.12.x）。
  *
  * <ul>
- *   <li>access token：15min，含用户 ID、用户名、角色集合。</li>
- *   <li>refresh token：7d，含 JTI，用于轮换与吊销校验。</li>
+ *   <li>access token：15min，含用户 ID、用户名、角色集合。
+ *   <li>refresh token：7d，含 JTI，用于轮换与吊销校验。
  * </ul>
  */
 @Component
@@ -68,11 +67,7 @@ public class JwtUtil {
 
     /** 解析并校验 token，失败抛出 {@link JwtException}。 */
     public Claims parse(String token) {
-        return Jwts.parser()
-                .verifyWith(key())
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
+        return Jwts.parser().verifyWith(key()).build().parseSignedClaims(token).getPayload();
     }
 
     public boolean isAccessToken(Claims claims) {

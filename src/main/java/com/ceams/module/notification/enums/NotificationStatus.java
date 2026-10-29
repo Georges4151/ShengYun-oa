@@ -1,8 +1,6 @@
 package com.ceams.module.notification.enums;
 
-/**
- * 通知状态。
- */
+/** 通知状态。 */
 public enum NotificationStatus {
 
     /** 草稿。 */

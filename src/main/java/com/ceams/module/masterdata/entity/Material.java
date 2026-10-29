@@ -2,14 +2,11 @@ package com.ceams.module.masterdata.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.ceams.common.base.BaseEntity;
+import java.math.BigDecimal;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-import java.math.BigDecimal;
-
-/**
- * 材料库（biz_material）。
- */
+/** 材料库（biz_material）。 */
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("biz_material")

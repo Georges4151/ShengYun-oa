@@ -3,15 +3,12 @@ package com.ceams.module.masterdata.entity;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.ceams.common.base.BaseEntity;
 import com.ceams.module.masterdata.enums.EquipmentStatus;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-
-/**
- * 设备台账（biz_equipment）。
- */
+/** 设备台账（biz_equipment）。 */
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("biz_equipment")

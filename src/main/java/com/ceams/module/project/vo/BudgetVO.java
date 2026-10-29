@@ -3,15 +3,12 @@ package com.ceams.module.project.vo;
 import com.ceams.module.project.enums.BudgetStatus;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
-import lombok.Data;
-
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import lombok.Data;
 
-/**
- * 预算视图对象。
- */
+/** 预算视图对象。 */
 @Data
 public class BudgetVO {
 

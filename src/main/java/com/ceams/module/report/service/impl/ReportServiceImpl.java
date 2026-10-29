@@ -13,20 +13,19 @@ import com.ceams.module.report.vo.MaterialReportItemVO;
 import com.ceams.module.report.vo.MaterialReportVO;
 import com.ceams.module.report.vo.ProjectCostItemVO;
 import com.ceams.module.report.vo.ProjectCostReportVO;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-
 import java.math.BigDecimal;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 
 /**
  * 跨域只读报表服务实现。
  *
- * <p>仅读、不开事务；多表聚合全部走 {@link ReportMapper} XML。</p>
+ * <p>仅读、不开事务；多表聚合全部走 {@link ReportMapper} XML。
  */
 @Slf4j
 @Service
@@ -39,8 +38,9 @@ public class ReportServiceImpl implements ReportService {
 
     @Override
     public FinancialReportVO financial(FinancialReportQuery query) {
-        List<FinancialReportItemVO> items = reportMapper.selectFinancialItems(
-                query.getMonth(), query.getProjectId(), query.getAccountId());
+        List<FinancialReportItemVO> items =
+                reportMapper.selectFinancialItems(
+                        query.getMonth(), query.getProjectId(), query.getAccountId());
         BigDecimal income = BigDecimal.ZERO;
         BigDecimal expense = BigDecimal.ZERO;
         for (FinancialReportItemVO item : items) {
@@ -85,8 +85,8 @@ public class ReportServiceImpl implements ReportService {
 
     @Override
     public MaterialReportVO material(MaterialReportQuery query) {
-        List<MaterialReportItemVO> items = reportMapper.selectMaterialItems(
-                query.getMaterialId(), query.getCategoryId());
+        List<MaterialReportItemVO> items =
+                reportMapper.selectMaterialItems(query.getMaterialId(), query.getCategoryId());
         BigDecimal totalAmount = BigDecimal.ZERO;
         if (items != null) {
             for (MaterialReportItemVO item : items) {

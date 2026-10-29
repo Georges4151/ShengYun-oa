@@ -2,9 +2,7 @@ package com.ceams.module.bank.vo;
 
 import lombok.Data;
 
-/**
- * 自动对账结果统计。
- */
+/** 自动对账结果统计。 */
 @Data
 public class ReconciliationMatchResultVO {
 
@@ -17,8 +15,7 @@ public class ReconciliationMatchResultVO {
     /** 部分匹配数（存在差异）。 */
     private int partialMatched;
 
-    public ReconciliationMatchResultVO() {
-    }
+    public ReconciliationMatchResultVO() {}
 
     public ReconciliationMatchResultVO(int matched, int unmatched, int partialMatched) {
         this.matched = matched;

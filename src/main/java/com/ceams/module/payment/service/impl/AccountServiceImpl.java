@@ -23,9 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * 收支流水服务实现。
- */
+/** 收支流水服务实现。 */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -36,7 +34,8 @@ public class AccountServiceImpl implements AccountService {
     private final PaymentAccountQueryService paymentAccountQueryService;
 
     @Override
-    public PageResult<AccountVO> page(long page, long size, Long projectId, AccountType type, AccountStatus status) {
+    public PageResult<AccountVO> page(
+            long page, long size, Long projectId, AccountType type, AccountStatus status) {
         Page<Account> p = PageUtil.resolve(page, size);
         LambdaQueryWrapper<Account> wrapper = new LambdaQueryWrapper<>();
         if (projectId != null) {
@@ -50,8 +49,11 @@ public class AccountServiceImpl implements AccountService {
         }
         wrapper.orderByDesc(Account::getCreateTime);
         IPage<Account> result = accountMapper.selectPage(p, wrapper);
-        return new PageResult<>(accountConverter.toVOList(result.getRecords()),
-                result.getTotal(), result.getCurrent(), result.getSize());
+        return new PageResult<>(
+                accountConverter.toVOList(result.getRecords()),
+                result.getTotal(),
+                result.getCurrent(),
+                result.getSize());
     }
 
     @Override

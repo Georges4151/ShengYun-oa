@@ -1,13 +1,10 @@
 package com.ceams.module.bank.importer;
 
-import lombok.Data;
-
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import lombok.Data;
 
-/**
- * 银行流水导入中间行：解析器产出的统一结构，后续由导入器做校验、去重与落库。
- */
+/** 银行流水导入中间行：解析器产出的统一结构，后续由导入器做校验、去重与落库。 */
 @Data
 public class StatementRow {
 

@@ -3,14 +3,11 @@ package com.ceams.module.payment.entity;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.ceams.common.base.BaseEntity;
 import com.ceams.module.payment.enums.TargetType;
+import java.math.BigDecimal;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-import java.math.BigDecimal;
-
-/**
- * 成本分摊（biz_cost_allocation）。
- */
+/** 成本分摊（biz_cost_allocation）。 */
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("biz_cost_allocation")

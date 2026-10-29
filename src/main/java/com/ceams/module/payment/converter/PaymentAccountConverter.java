@@ -3,13 +3,10 @@ package com.ceams.module.payment.converter;
 import com.ceams.common.mask.SensitiveMaskUtil;
 import com.ceams.module.payment.entity.PaymentAccount;
 import com.ceams.module.payment.vo.PaymentAccountVO;
+import java.util.List;
 import org.mapstruct.Mapper;
 
-import java.util.List;
-
-/**
- * 付款账户实体 <-> VO 转换。
- */
+/** 付款账户实体 <-> VO 转换。 */
 @Mapper(componentModel = "spring")
 public interface PaymentAccountConverter {
 

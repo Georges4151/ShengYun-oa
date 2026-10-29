@@ -19,17 +19,14 @@ import com.ceams.module.project.mapper.ProjectMapper;
 import com.ceams.module.project.service.ChangeRequestService;
 import com.ceams.module.project.util.PageUtil;
 import com.ceams.module.project.vo.ChangeRequestVO;
+import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-
-/**
- * 变更请求服务实现。
- */
+/** 变更请求服务实现。 */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -40,7 +37,8 @@ public class ChangeRequestServiceImpl implements ChangeRequestService {
     private final ChangeRequestConverter changeRequestConverter;
 
     @Override
-    public PageResult<ChangeRequestVO> page(long page, long size, Long projectId, ApprovalStatus status) {
+    public PageResult<ChangeRequestVO> page(
+            long page, long size, Long projectId, ApprovalStatus status) {
         Page<ChangeRequest> p = PageUtil.resolve(page, size);
         LambdaQueryWrapper<ChangeRequest> wrapper = new LambdaQueryWrapper<>();
         if (projectId != null) {
@@ -51,8 +49,11 @@ public class ChangeRequestServiceImpl implements ChangeRequestService {
         }
         wrapper.orderByDesc(ChangeRequest::getCreateTime);
         IPage<ChangeRequest> result = changeRequestMapper.selectPage(p, wrapper);
-        return new PageResult<>(changeRequestConverter.toVOList(result.getRecords()),
-                result.getTotal(), result.getCurrent(), result.getSize());
+        return new PageResult<>(
+                changeRequestConverter.toVOList(result.getRecords()),
+                result.getTotal(),
+                result.getCurrent(),
+                result.getSize());
     }
 
     @Override
@@ -69,7 +70,8 @@ public class ChangeRequestServiceImpl implements ChangeRequestService {
         changeRequest.setRequestType(request.getRequestType());
         changeRequest.setDescription(request.getDescription());
         changeRequest.setEstimatedCost(request.getEstimatedCost());
-        changeRequest.setStatus(request.getStatus() == null ? ApprovalStatus.PENDING : request.getStatus());
+        changeRequest.setStatus(
+                request.getStatus() == null ? ApprovalStatus.PENDING : request.getStatus());
         changeRequest.setRequestedBy(SecurityUtils.getCurrentUserId());
         changeRequestMapper.insert(changeRequest);
         return String.valueOf(changeRequest.getId());

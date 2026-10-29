@@ -4,13 +4,10 @@ import com.ceams.module.notification.enums.ContentType;
 import com.ceams.module.notification.enums.NotificationPriority;
 import com.ceams.module.notification.enums.NotificationType;
 import jakarta.validation.constraints.Size;
+import java.time.LocalDateTime;
 import lombok.Data;
 
-import java.time.LocalDateTime;
-
-/**
- * 更新通知（仅 DRAFT 可编辑，仅更新非空字段）。
- */
+/** 更新通知（仅 DRAFT 可编辑，仅更新非空字段）。 */
 @Data
 public class NotificationUpdateRequest {
 

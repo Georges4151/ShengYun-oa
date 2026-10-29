@@ -3,15 +3,12 @@ package com.ceams.module.payment.entity;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.ceams.common.base.BaseEntity;
 import com.ceams.module.payment.enums.AccountType;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-
-/**
- * 付款交易（biz_payment_transaction）。无 status 字段。
- */
+/** 付款交易（biz_payment_transaction）。无 status 字段。 */
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("biz_payment_transaction")

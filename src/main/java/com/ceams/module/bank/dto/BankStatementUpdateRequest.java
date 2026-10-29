@@ -2,14 +2,11 @@ package com.ceams.module.bank.dto;
 
 import com.ceams.module.bank.enums.TransactionType;
 import jakarta.validation.constraints.DecimalMin;
-import lombok.Data;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import lombok.Data;
 
-/**
- * 更新银行流水（对账状态由对账流程管理，不在此接口修改）。
- */
+/** 更新银行流水（对账状态由对账流程管理，不在此接口修改）。 */
 @Data
 public class BankStatementUpdateRequest {
 

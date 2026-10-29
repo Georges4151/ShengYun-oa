@@ -1,10 +1,9 @@
 package com.ceams.common.response;
 
-import lombok.Getter;
-import lombok.Setter;
-
 import java.time.LocalDateTime;
 import java.util.UUID;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * 统一 API 响应体。
@@ -34,8 +33,7 @@ public class ApiResponse<T> {
     /** 响应时间（ISO8601）。 */
     private LocalDateTime timestamp;
 
-    private ApiResponse() {
-    }
+    private ApiResponse() {}
 
     public static <T> ApiResponse<T> of(ResultCode resultCode, T data, String message) {
         ApiResponse<T> resp = new ApiResponse<>();

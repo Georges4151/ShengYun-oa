@@ -3,9 +3,7 @@ package com.ceams.module.payment.dto;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
-/**
- * 更新付款账户（不接受 balance，余额仅由付款执行驱动）。
- */
+/** 更新付款账户（不接受 balance，余额仅由付款执行驱动）。 */
 @Data
 public class PaymentAccountUpdateRequest {
 

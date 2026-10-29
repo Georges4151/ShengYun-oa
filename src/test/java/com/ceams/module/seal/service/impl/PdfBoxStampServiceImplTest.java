@@ -1,25 +1,21 @@
 package com.ceams.module.seal.service.impl;
 
-import com.ceams.common.pdf.StampRequest;
-import org.apache.pdfbox.Loader;
-import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.pdmodel.PDPage;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import javax.imageio.ImageIO;
+import com.ceams.common.pdf.StampRequest;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import javax.imageio.ImageIO;
+import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-/**
- * {@link PdfBoxStampServiceImpl} 单元测试：默认居中、指定坐标、多页叠加，
- * 并断言产出字节非空且 PDFBox 能重新加载。
- */
+/** {@link PdfBoxStampServiceImpl} 单元测试：默认居中、指定坐标、多页叠加， 并断言产出字节非空且 PDFBox 能重新加载。 */
 class PdfBoxStampServiceImplTest {
 
     private final PdfBoxStampServiceImpl service = new PdfBoxStampServiceImpl();
@@ -59,8 +55,7 @@ class PdfBoxStampServiceImplTest {
         assertNotNull(stamped);
         assertTrue(stamped.length > 0, "产出 PDF 字节不应为空");
         try (PDDocument doc = Loader.loadPDF(stamped)) {
-            assertTrue(doc.getNumberOfPages() == expectedPages,
-                    "重新加载后页数应为 " + expectedPages);
+            assertTrue(doc.getNumberOfPages() == expectedPages, "重新加载后页数应为 " + expectedPages);
         }
     }
 

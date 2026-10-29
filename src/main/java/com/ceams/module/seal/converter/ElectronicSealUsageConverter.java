@@ -2,13 +2,10 @@ package com.ceams.module.seal.converter;
 
 import com.ceams.module.seal.entity.ElectronicSealUsage;
 import com.ceams.module.seal.vo.ElectronicSealUsageVO;
+import java.util.List;
 import org.mapstruct.Mapper;
 
-import java.util.List;
-
-/**
- * 印章使用审计实体 <-> VO 转换。
- */
+/** 印章使用审计实体 <-> VO 转换。 */
 @Mapper(componentModel = "spring")
 public interface ElectronicSealUsageConverter {
 

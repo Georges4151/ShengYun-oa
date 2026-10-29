@@ -19,9 +19,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * 分包合同管理接口。
- */
+/** 分包合同管理接口。 */
 @RestController
 @RequestMapping("/api/v1/subcontractor-contracts")
 @RequiredArgsConstructor
@@ -31,16 +29,19 @@ public class SubcontractorContractController {
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public ApiResponse<PageResult<SubcontractorContractVO>> page(@RequestParam(defaultValue = "1") long page,
-                                                                 @RequestParam(defaultValue = "20") long size,
-                                                                 @RequestParam(required = false) Long subcontractorId,
-                                                                 @RequestParam(required = false) Long projectId) {
-        return ApiResponse.success(subcontractorContractService.page(page, size, subcontractorId, projectId));
+    public ApiResponse<PageResult<SubcontractorContractVO>> page(
+            @RequestParam(defaultValue = "1") long page,
+            @RequestParam(defaultValue = "20") long size,
+            @RequestParam(required = false) Long subcontractorId,
+            @RequestParam(required = false) Long projectId) {
+        return ApiResponse.success(
+                subcontractorContractService.page(page, size, subcontractorId, projectId));
     }
 
     @PostMapping
     @PreAuthorize("hasRole('SYS_ADMIN')")
-    public ApiResponse<String> create(@Valid @RequestBody SubcontractorContractCreateRequest request) {
+    public ApiResponse<String> create(
+            @Valid @RequestBody SubcontractorContractCreateRequest request) {
         return ApiResponse.success(subcontractorContractService.create(request));
     }
 
@@ -52,7 +53,8 @@ public class SubcontractorContractController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('SYS_ADMIN')")
-    public ApiResponse<Void> update(@PathVariable Long id, @Valid @RequestBody SubcontractorContractUpdateRequest request) {
+    public ApiResponse<Void> update(
+            @PathVariable Long id, @Valid @RequestBody SubcontractorContractUpdateRequest request) {
         subcontractorContractService.update(id, request);
         return ApiResponse.success();
     }

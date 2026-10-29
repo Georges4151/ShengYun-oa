@@ -2,13 +2,10 @@ package com.ceams.module.project.converter;
 
 import com.ceams.module.project.entity.Budget;
 import com.ceams.module.project.vo.BudgetVO;
+import java.util.List;
 import org.mapstruct.Mapper;
 
-import java.util.List;
-
-/**
- * 预算实体 <-> VO 转换。
- */
+/** 预算实体 <-> VO 转换。 */
 @Mapper(componentModel = "spring")
 public interface BudgetConverter {
 

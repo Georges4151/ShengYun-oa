@@ -14,20 +14,17 @@ import com.ceams.module.payment.mapper.AccountMapper;
 import com.ceams.module.payment.mapper.PaymentAccountMapper;
 import com.ceams.module.payment.mapper.PaymentTransactionMapper;
 import com.ceams.module.payment.service.PaymentService;
+import java.math.BigDecimal;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-
 /**
  * 付款执行服务实现。
  *
- * <p>全部操作在一个事务内：校验账户 -> 幂等 -> 余额校验 -> 更新余额 ->
- * 写付款交易 -> 写收支流水（CONFIRMED）。票据回写仅体现为
- * biz_payment_transaction.receipt_id 与 biz_account.receipt_id 的落库，
- * 不直接写 expense 域。</p>
+ * <p>全部操作在一个事务内：校验账户 -> 幂等 -> 余额校验 -> 更新余额 -> 写付款交易 -> 写收支流水（CONFIRMED）。票据回写仅体现为
+ * biz_payment_transaction.receipt_id 与 biz_account.receipt_id 的落库， 不直接写 expense 域。
  */
 @Slf4j
 @Service
@@ -58,7 +55,8 @@ public class PaymentServiceImpl implements PaymentService {
 
         BigDecimal amount = request.getAmount();
         AccountType type = request.getType();
-        BigDecimal currentBalance = account.getBalance() == null ? BigDecimal.ZERO : account.getBalance();
+        BigDecimal currentBalance =
+                account.getBalance() == null ? BigDecimal.ZERO : account.getBalance();
 
         // 3. 余额校验（支出）
         if (type == AccountType.EXPENSE && currentBalance.compareTo(amount) < 0) {
@@ -66,9 +64,10 @@ public class PaymentServiceImpl implements PaymentService {
         }
 
         // 4. 更新余额
-        BigDecimal newBalance = type == AccountType.EXPENSE
-                ? currentBalance.subtract(amount)
-                : currentBalance.add(amount);
+        BigDecimal newBalance =
+                type == AccountType.EXPENSE
+                        ? currentBalance.subtract(amount)
+                        : currentBalance.add(amount);
         account.setBalance(newBalance);
         paymentAccountMapper.updateById(account);
 
@@ -96,7 +95,8 @@ public class PaymentServiceImpl implements PaymentService {
         accountRecord.setAllocationStatus(AllocationStatus.UNALLOCATED);
         accountMapper.insert(accountRecord);
 
-        log.info("付款执行成功，账户 {}，金额 {}，交易 ID {}", request.getAccountId(), amount, transaction.getId());
+        log.info(
+                "付款执行成功，账户 {}，金额 {}，交易 ID {}", request.getAccountId(), amount, transaction.getId());
         return String.valueOf(transaction.getId());
     }
 }

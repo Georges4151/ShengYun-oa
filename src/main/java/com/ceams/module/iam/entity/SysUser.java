@@ -5,14 +5,11 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import com.ceams.common.base.BaseEntity;
 import com.ceams.common.crypto.SensitiveTypeHandler;
 import com.ceams.module.iam.enums.UserStatus;
+import java.time.LocalDateTime;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-import java.time.LocalDateTime;
-
-/**
- * 系统用户（sys_user）。
- */
+/** 系统用户（sys_user）。 */
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName(value = "sys_user", autoResultMap = true)

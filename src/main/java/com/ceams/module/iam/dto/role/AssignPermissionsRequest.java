@@ -1,13 +1,10 @@
 package com.ceams.module.iam.dto.role;
 
 import jakarta.validation.constraints.NotNull;
+import java.util.List;
 import lombok.Data;
 
-import java.util.List;
-
-/**
- * 为角色赋权请求。
- */
+/** 为角色赋权请求。 */
 @Data
 public class AssignPermissionsRequest {
 

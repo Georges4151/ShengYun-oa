@@ -6,13 +6,10 @@ import com.ceams.module.notification.enums.NotificationStatus;
 import com.ceams.module.notification.enums.NotificationType;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
+import java.time.LocalDateTime;
 import lombok.Data;
 
-import java.time.LocalDateTime;
-
-/**
- * 通知视图对象。
- */
+/** 通知视图对象。 */
 @Data
 public class NotificationVO {
 

@@ -6,12 +6,9 @@ import com.ceams.module.iam.dto.user.UserCreateRequest;
 import com.ceams.module.iam.dto.user.UserUpdateRequest;
 import com.ceams.module.iam.vo.RoleVO;
 import com.ceams.module.iam.vo.UserVO;
-
 import java.util.List;
 
-/**
- * 用户服务。
- */
+/** 用户服务。 */
 public interface UserService {
 
     PageResult<UserVO> page(long page, long size, String keyword, String status);

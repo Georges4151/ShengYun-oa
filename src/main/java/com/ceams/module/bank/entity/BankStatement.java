@@ -4,15 +4,12 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import com.ceams.common.base.BaseEntity;
 import com.ceams.module.bank.enums.BankStatementStatus;
 import com.ceams.module.bank.enums.TransactionType;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-
-/**
- * 银行流水（biz_bank_statement）。
- */
+/** 银行流水（biz_bank_statement）。 */
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("biz_bank_statement")

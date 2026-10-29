@@ -21,9 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * 付款交易服务实现。
- */
+/** 付款交易服务实现。 */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -34,7 +32,8 @@ public class PaymentTransactionServiceImpl implements PaymentTransactionService 
     private final PaymentAccountQueryService paymentAccountQueryService;
 
     @Override
-    public PageResult<PaymentTransactionVO> page(long page, long size, Long accountId, AccountType type) {
+    public PageResult<PaymentTransactionVO> page(
+            long page, long size, Long accountId, AccountType type) {
         Page<PaymentTransaction> p = PageUtil.resolve(page, size);
         LambdaQueryWrapper<PaymentTransaction> wrapper = new LambdaQueryWrapper<>();
         if (accountId != null) {
@@ -45,8 +44,11 @@ public class PaymentTransactionServiceImpl implements PaymentTransactionService 
         }
         wrapper.orderByDesc(PaymentTransaction::getCreateTime);
         IPage<PaymentTransaction> result = paymentTransactionMapper.selectPage(p, wrapper);
-        return new PageResult<>(paymentTransactionConverter.toVOList(result.getRecords()),
-                result.getTotal(), result.getCurrent(), result.getSize());
+        return new PageResult<>(
+                paymentTransactionConverter.toVOList(result.getRecords()),
+                result.getTotal(),
+                result.getCurrent(),
+                result.getSize());
     }
 
     @Override

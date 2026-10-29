@@ -1,12 +1,9 @@
 package com.ceams.module.report.vo;
 
+import java.math.BigDecimal;
 import lombok.Data;
 
-import java.math.BigDecimal;
-
-/**
- * Dashboard 概览视图对象：供首页卡片展示。
- */
+/** Dashboard 概览视图对象：供首页卡片展示。 */
 @Data
 public class DashboardVO {
 

@@ -5,14 +5,11 @@ import com.ceams.module.payment.enums.AccountType;
 import com.ceams.module.payment.enums.AllocationStatus;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
-import lombok.Data;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import lombok.Data;
 
-/**
- * 收支流水视图对象。
- */
+/** 收支流水视图对象。 */
 @Data
 public class AccountVO {
 

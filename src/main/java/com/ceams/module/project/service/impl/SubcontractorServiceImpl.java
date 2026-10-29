@@ -22,9 +22,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * 分包商服务实现。
- */
+/** 分包商服务实现。 */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -39,13 +37,19 @@ public class SubcontractorServiceImpl implements SubcontractorService {
         Page<Subcontractor> p = PageUtil.resolve(page, size);
         LambdaQueryWrapper<Subcontractor> wrapper = new LambdaQueryWrapper<>();
         if (StringUtils.isNotBlank(keyword)) {
-            wrapper.and(w -> w.like(Subcontractor::getName, keyword)
-                    .or().like(Subcontractor::getContactPerson, keyword));
+            wrapper.and(
+                    w ->
+                            w.like(Subcontractor::getName, keyword)
+                                    .or()
+                                    .like(Subcontractor::getContactPerson, keyword));
         }
         wrapper.orderByDesc(Subcontractor::getCreateTime);
         IPage<Subcontractor> result = subcontractorMapper.selectPage(p, wrapper);
-        return new PageResult<>(subcontractorConverter.toVOList(result.getRecords()),
-                result.getTotal(), result.getCurrent(), result.getSize());
+        return new PageResult<>(
+                subcontractorConverter.toVOList(result.getRecords()),
+                result.getTotal(),
+                result.getCurrent(),
+                result.getSize());
     }
 
     @Override
@@ -112,8 +116,10 @@ public class SubcontractorServiceImpl implements SubcontractorService {
     @Transactional(rollbackFor = Exception.class)
     public void delete(Long id) {
         requireSubcontractor(id);
-        Long contractRefs = subcontractorContractMapper.selectCount(new LambdaQueryWrapper<SubcontractorContract>()
-                .eq(SubcontractorContract::getSubcontractorId, id));
+        Long contractRefs =
+                subcontractorContractMapper.selectCount(
+                        new LambdaQueryWrapper<SubcontractorContract>()
+                                .eq(SubcontractorContract::getSubcontractorId, id));
         if (contractRefs != null && contractRefs > 0) {
             throw BusinessException.of(ErrorCode.BIZ_REFERENCED, "分包商存在关联分包合同，无法删除");
         }

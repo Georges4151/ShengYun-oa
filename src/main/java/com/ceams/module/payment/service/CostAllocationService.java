@@ -5,9 +5,7 @@ import com.ceams.module.payment.dto.CostAllocationCreateRequest;
 import com.ceams.module.payment.dto.CostAllocationUpdateRequest;
 import com.ceams.module.payment.vo.CostAllocationVO;
 
-/**
- * 成本分摊服务。
- */
+/** 成本分摊服务。 */
 public interface CostAllocationService {
 
     PageResult<CostAllocationVO> page(long page, long size, Long accountRecordId);

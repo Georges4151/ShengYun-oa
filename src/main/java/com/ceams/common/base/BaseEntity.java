@@ -8,20 +8,19 @@ import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.Version;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
-import lombok.Data;
-
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import lombok.Data;
 
 /**
  * 所有业务实体的公共审计基类。
  *
  * <ul>
- *   <li>{@code id}：雪花 ID（DB BIGINT，JSON 序列化为字符串）；数据库主键不 AUTO_INCREMENT。</li>
- *   <li>{@code createTime / updateTime}：创建 / 更新时间（DATETIME）。</li>
- *   <li>{@code createBy / updateBy}：创建 / 更新人 ID（BIGINT，逻辑引用，不建物理外键）。</li>
- *   <li>{@code deleted}：逻辑删除标记（0=未删除，1=已删除）。</li>
- *   <li>{@code version}：乐观锁版本号（默认 0）。</li>
+ *   <li>{@code id}：雪花 ID（DB BIGINT，JSON 序列化为字符串）；数据库主键不 AUTO_INCREMENT。
+ *   <li>{@code createTime / updateTime}：创建 / 更新时间（DATETIME）。
+ *   <li>{@code createBy / updateBy}：创建 / 更新人 ID（BIGINT，逻辑引用，不建物理外键）。
+ *   <li>{@code deleted}：逻辑删除标记（0=未删除，1=已删除）。
+ *   <li>{@code version}：乐观锁版本号（默认 0）。
  * </ul>
  */
 @Data

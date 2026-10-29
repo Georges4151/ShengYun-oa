@@ -4,13 +4,10 @@ import com.ceams.module.iam.enums.DeviceStatus;
 import com.ceams.module.iam.enums.Platform;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
+import java.time.LocalDateTime;
 import lombok.Data;
 
-import java.time.LocalDateTime;
-
-/**
- * 用户设备绑定视图对象。
- */
+/** 用户设备绑定视图对象。 */
 @Data
 public class UserDeviceVO {
 

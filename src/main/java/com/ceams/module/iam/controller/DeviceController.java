@@ -17,9 +17,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * 设备绑定接口。
- */
+/** 设备绑定接口。 */
 @RestController
 @RequestMapping("/api/v1/devices")
 @RequiredArgsConstructor
@@ -29,8 +27,9 @@ public class DeviceController {
     private final DeviceService deviceService;
 
     @GetMapping
-    public ApiResponse<PageResult<UserDeviceVO>> page(@RequestParam(defaultValue = "1") long page,
-                                                      @RequestParam(defaultValue = "20") long size) {
+    public ApiResponse<PageResult<UserDeviceVO>> page(
+            @RequestParam(defaultValue = "1") long page,
+            @RequestParam(defaultValue = "20") long size) {
         return ApiResponse.success(deviceService.page(page, size));
     }
 

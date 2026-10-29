@@ -6,16 +6,19 @@ import com.ceams.module.bank.dto.BankStatementUpdateRequest;
 import com.ceams.module.bank.enums.BankStatementStatus;
 import com.ceams.module.bank.enums.TransactionType;
 import com.ceams.module.bank.vo.BankStatementVO;
-
 import java.time.LocalDateTime;
 
-/**
- * 银行流水服务。
- */
+/** 银行流水服务。 */
 public interface BankStatementService {
 
-    PageResult<BankStatementVO> page(long page, long size, Long accountId, BankStatementStatus status,
-                                    TransactionType type, LocalDateTime startDate, LocalDateTime endDate);
+    PageResult<BankStatementVO> page(
+            long page,
+            long size,
+            Long accountId,
+            BankStatementStatus status,
+            TransactionType type,
+            LocalDateTime startDate,
+            LocalDateTime endDate);
 
     BankStatementVO detail(Long id);
 

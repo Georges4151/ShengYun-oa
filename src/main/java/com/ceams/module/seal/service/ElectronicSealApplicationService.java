@@ -6,12 +6,11 @@ import com.ceams.module.seal.dto.ElectronicSealApplicationUpdateRequest;
 import com.ceams.module.seal.enums.ApplicationStatus;
 import com.ceams.module.seal.vo.ElectronicSealApplicationVO;
 
-/**
- * 用印申请服务。
- */
+/** 用印申请服务。 */
 public interface ElectronicSealApplicationService {
 
-    PageResult<ElectronicSealApplicationVO> page(long page, long size, Long sealId, ApplicationStatus status, Long applicantId);
+    PageResult<ElectronicSealApplicationVO> page(
+            long page, long size, Long sealId, ApplicationStatus status, Long applicantId);
 
     ElectronicSealApplicationVO detail(Long id);
 

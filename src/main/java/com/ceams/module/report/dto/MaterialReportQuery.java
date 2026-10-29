@@ -2,9 +2,7 @@ package com.ceams.module.report.dto;
 
 import lombok.Data;
 
-/**
- * 材料报表查询参数（全部可选）。
- */
+/** 材料报表查询参数（全部可选）。 */
 @Data
 public class MaterialReportQuery {
 

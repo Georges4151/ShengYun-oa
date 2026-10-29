@@ -11,10 +11,6 @@ import com.ceams.module.iam.mapper.RolePermissionMapper;
 import com.ceams.module.iam.mapper.UserRoleMapper;
 import com.ceams.module.iam.service.PermissionService;
 import com.ceams.module.iam.vo.PermissionVO;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -23,10 +19,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 
-/**
- * 权限服务实现。
- */
+/** 权限服务实现。 */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -39,8 +36,10 @@ public class PermissionServiceImpl implements PermissionService {
 
     @Override
     public List<PermissionVO> tree() {
-        List<SysPermission> permissions = permissionMapper.selectList(
-                new LambdaQueryWrapper<SysPermission>().orderByAsc(SysPermission::getSortOrder));
+        List<SysPermission> permissions =
+                permissionMapper.selectList(
+                        new LambdaQueryWrapper<SysPermission>()
+                                .orderByAsc(SysPermission::getSortOrder));
         List<PermissionVO> vos = permissionConverter.toVOList(permissions);
 
         Map<Long, PermissionVO> idMap = new HashMap<>();
@@ -67,14 +66,26 @@ public class PermissionServiceImpl implements PermissionService {
         if (userId == null || userId == 0L) {
             return List.of();
         }
-        List<Long> roleIds = userRoleMapper.selectList(new LambdaQueryWrapper<UserRole>().eq(UserRole::getUserId, userId))
-                .stream().map(UserRole::getRoleId).distinct().toList();
+        List<Long> roleIds =
+                userRoleMapper
+                        .selectList(
+                                new LambdaQueryWrapper<UserRole>().eq(UserRole::getUserId, userId))
+                        .stream()
+                        .map(UserRole::getRoleId)
+                        .distinct()
+                        .toList();
         if (roleIds.isEmpty()) {
             return List.of();
         }
-        List<Long> permissionIds = rolePermissionMapper.selectList(
-                        new LambdaQueryWrapper<RolePermission>().in(RolePermission::getRoleId, roleIds))
-                .stream().map(RolePermission::getPermissionId).distinct().toList();
+        List<Long> permissionIds =
+                rolePermissionMapper
+                        .selectList(
+                                new LambdaQueryWrapper<RolePermission>()
+                                        .in(RolePermission::getRoleId, roleIds))
+                        .stream()
+                        .map(RolePermission::getPermissionId)
+                        .distinct()
+                        .toList();
         if (permissionIds.isEmpty()) {
             return List.of();
         }
@@ -89,7 +100,9 @@ public class PermissionServiceImpl implements PermissionService {
         if (nodes == null) {
             return;
         }
-        nodes.sort(Comparator.comparing(PermissionVO::getSort, Comparator.nullsLast(Comparator.naturalOrder())));
+        nodes.sort(
+                Comparator.comparing(
+                        PermissionVO::getSort, Comparator.nullsLast(Comparator.naturalOrder())));
         for (PermissionVO node : nodes) {
             sortTree(node.getChildren());
         }

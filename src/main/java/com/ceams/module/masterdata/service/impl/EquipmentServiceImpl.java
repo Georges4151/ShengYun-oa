@@ -23,9 +23,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * 设备台账服务实现。
- */
+/** 设备台账服务实现。 */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -36,20 +34,27 @@ public class EquipmentServiceImpl implements EquipmentService {
     private final EquipmentConverter equipmentConverter;
 
     @Override
-    public PageResult<EquipmentVO> page(long page, long size, String keyword, EquipmentStatus status) {
+    public PageResult<EquipmentVO> page(
+            long page, long size, String keyword, EquipmentStatus status) {
         Page<Equipment> p = PageUtil.resolve(page, size);
         LambdaQueryWrapper<Equipment> wrapper = new LambdaQueryWrapper<>();
         if (StringUtils.isNotBlank(keyword)) {
-            wrapper.and(w -> w.like(Equipment::getName, keyword)
-                    .or().like(Equipment::getModel, keyword));
+            wrapper.and(
+                    w ->
+                            w.like(Equipment::getName, keyword)
+                                    .or()
+                                    .like(Equipment::getModel, keyword));
         }
         if (status != null) {
             wrapper.eq(Equipment::getStatus, status);
         }
         wrapper.orderByDesc(Equipment::getCreateTime);
         IPage<Equipment> result = equipmentMapper.selectPage(p, wrapper);
-        return new PageResult<>(equipmentConverter.toVOList(result.getRecords()),
-                result.getTotal(), result.getCurrent(), result.getSize());
+        return new PageResult<>(
+                equipmentConverter.toVOList(result.getRecords()),
+                result.getTotal(),
+                result.getCurrent(),
+                result.getSize());
     }
 
     @Override
@@ -65,8 +70,10 @@ public class EquipmentServiceImpl implements EquipmentService {
         equipment.setType(request.getType());
         equipment.setModel(request.getModel());
         equipment.setStatus(request.getStatus());
-        equipment.setPurchaseDate(request.getPurchaseDate() == null
-                ? null : request.getPurchaseDate().atStartOfDay());
+        equipment.setPurchaseDate(
+                request.getPurchaseDate() == null
+                        ? null
+                        : request.getPurchaseDate().atStartOfDay());
         equipment.setPurchasePrice(request.getPurchasePrice());
         equipmentMapper.insert(equipment);
         return String.valueOf(equipment.getId());
@@ -101,8 +108,10 @@ public class EquipmentServiceImpl implements EquipmentService {
     @Transactional(rollbackFor = Exception.class)
     public void delete(Long id) {
         requireEquipment(id);
-        Long leaseRefs = equipmentLeaseMapper.selectCount(new LambdaQueryWrapper<EquipmentLease>()
-                .eq(EquipmentLease::getEquipmentId, id));
+        Long leaseRefs =
+                equipmentLeaseMapper.selectCount(
+                        new LambdaQueryWrapper<EquipmentLease>()
+                                .eq(EquipmentLease::getEquipmentId, id));
         if (leaseRefs != null && leaseRefs > 0) {
             throw BusinessException.of(ErrorCode.BIZ_REFERENCED, "设备已被租赁记录引用，无法删除");
         }

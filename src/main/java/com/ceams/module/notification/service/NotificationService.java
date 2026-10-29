@@ -7,16 +7,19 @@ import com.ceams.module.notification.enums.NotificationPriority;
 import com.ceams.module.notification.enums.NotificationStatus;
 import com.ceams.module.notification.enums.NotificationType;
 import com.ceams.module.notification.vo.NotificationVO;
-
 import java.time.LocalDateTime;
 
-/**
- * 通知服务。
- */
+/** 通知服务。 */
 public interface NotificationService {
 
-    PageResult<NotificationVO> page(long page, long size, NotificationType type, NotificationStatus status,
-                                    NotificationPriority priority, LocalDateTime startTime, LocalDateTime endTime);
+    PageResult<NotificationVO> page(
+            long page,
+            long size,
+            NotificationType type,
+            NotificationStatus status,
+            NotificationPriority priority,
+            LocalDateTime startTime,
+            LocalDateTime endTime);
 
     NotificationVO detail(Long id);
 

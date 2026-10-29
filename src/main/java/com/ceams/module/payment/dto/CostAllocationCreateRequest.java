@@ -3,13 +3,10 @@ package com.ceams.module.payment.dto;
 import com.ceams.module.payment.enums.TargetType;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
+import java.math.BigDecimal;
 import lombok.Data;
 
-import java.math.BigDecimal;
-
-/**
- * 新建成本分摊。
- */
+/** 新建成本分摊。 */
 @Data
 public class CostAllocationCreateRequest {
 

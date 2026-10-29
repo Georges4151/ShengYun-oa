@@ -7,14 +7,11 @@ import com.ceams.module.expense.enums.ReceiptType;
 import com.ceams.module.expense.enums.VerificationStatus;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
-import lombok.Data;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import lombok.Data;
 
-/**
- * 票据视图对象。
- */
+/** 票据视图对象。 */
 @Data
 public class ReceiptVO {
 

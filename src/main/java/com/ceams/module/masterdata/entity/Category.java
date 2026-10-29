@@ -6,9 +6,7 @@ import com.ceams.module.masterdata.enums.CategoryType;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-/**
- * 分类树（biz_category）。
- */
+/** 分类树（biz_category）。 */
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("biz_category")

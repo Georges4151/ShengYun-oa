@@ -6,9 +6,7 @@ import com.ceams.module.iam.enums.PermissionType;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-/**
- * 权限（菜单/按钮/API，sys_permission）。
- */
+/** 权限（菜单/按钮/API，sys_permission）。 */
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("sys_permission")

@@ -22,9 +22,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * 用印审批管理接口。
- */
+/** 用印审批管理接口。 */
 @RestController
 @RequestMapping("/api/v1/seal/approvals")
 @RequiredArgsConstructor
@@ -34,11 +32,12 @@ public class StampApprovalController {
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public ApiResponse<PageResult<StampApprovalVO>> page(@RequestParam(defaultValue = "1") long page,
-                                                         @RequestParam(defaultValue = "20") long size,
-                                                         @RequestParam(required = false) Long stampId,
-                                                         @RequestParam(required = false) Long sealId,
-                                                         @RequestParam(required = false) ApprovalStatus status) {
+    public ApiResponse<PageResult<StampApprovalVO>> page(
+            @RequestParam(defaultValue = "1") long page,
+            @RequestParam(defaultValue = "20") long size,
+            @RequestParam(required = false) Long stampId,
+            @RequestParam(required = false) Long sealId,
+            @RequestParam(required = false) ApprovalStatus status) {
         return ApiResponse.success(stampApprovalService.page(page, size, stampId, sealId, status));
     }
 
@@ -56,21 +55,24 @@ public class StampApprovalController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('SYS_ADMIN','FINANCE')")
-    public ApiResponse<Void> update(@PathVariable Long id, @Valid @RequestBody StampApprovalUpdateRequest request) {
+    public ApiResponse<Void> update(
+            @PathVariable Long id, @Valid @RequestBody StampApprovalUpdateRequest request) {
         stampApprovalService.update(id, request);
         return ApiResponse.success();
     }
 
     @PostMapping("/{id}/approve")
     @PreAuthorize("hasAnyRole('SYS_ADMIN','FINANCE')")
-    public ApiResponse<Void> approve(@PathVariable Long id, @Valid @RequestBody StampApprovalApproveRequest request) {
+    public ApiResponse<Void> approve(
+            @PathVariable Long id, @Valid @RequestBody StampApprovalApproveRequest request) {
         stampApprovalService.approve(id, request);
         return ApiResponse.success();
     }
 
     @PostMapping("/{id}/reject")
     @PreAuthorize("hasAnyRole('SYS_ADMIN','FINANCE')")
-    public ApiResponse<Void> reject(@PathVariable Long id, @Valid @RequestBody StampApprovalRejectRequest request) {
+    public ApiResponse<Void> reject(
+            @PathVariable Long id, @Valid @RequestBody StampApprovalRejectRequest request) {
         stampApprovalService.reject(id, request);
         return ApiResponse.success();
     }

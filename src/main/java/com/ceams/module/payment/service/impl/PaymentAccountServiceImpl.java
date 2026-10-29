@@ -14,17 +14,14 @@ import com.ceams.module.payment.mapper.PaymentAccountMapper;
 import com.ceams.module.payment.service.PaymentAccountService;
 import com.ceams.module.payment.util.PageUtil;
 import com.ceams.module.payment.vo.PaymentAccountVO;
+import java.math.BigDecimal;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-
-/**
- * 付款账户服务实现。
- */
+/** 付款账户服务实现。 */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -45,8 +42,11 @@ public class PaymentAccountServiceImpl implements PaymentAccountService {
         }
         wrapper.orderByDesc(PaymentAccount::getCreateTime);
         IPage<PaymentAccount> result = paymentAccountMapper.selectPage(p, wrapper);
-        return new PageResult<>(paymentAccountConverter.toVOList(result.getRecords()),
-                result.getTotal(), result.getCurrent(), result.getSize());
+        return new PageResult<>(
+                paymentAccountConverter.toVOList(result.getRecords()),
+                result.getTotal(),
+                result.getCurrent(),
+                result.getSize());
     }
 
     @Override

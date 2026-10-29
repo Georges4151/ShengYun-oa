@@ -4,13 +4,10 @@ import com.ceams.module.seal.enums.SealStatus;
 import com.ceams.module.seal.enums.StorageType;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
+import java.time.LocalDateTime;
 import lombok.Data;
 
-import java.time.LocalDateTime;
-
-/**
- * 电子印章视图对象。
- */
+/** 电子印章视图对象。 */
 @Data
 public class ElectronicSealVO {
 

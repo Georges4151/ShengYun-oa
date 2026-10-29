@@ -23,18 +23,15 @@ import com.ceams.module.notification.mapper.UserNotificationPreferenceMapper;
 import com.ceams.module.notification.service.NotificationService;
 import com.ceams.module.notification.util.PageUtil;
 import com.ceams.module.notification.vo.NotificationVO;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.util.List;
-
-/**
- * 通知服务实现。
- */
+/** 通知服务实现。 */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -46,8 +43,14 @@ public class NotificationServiceImpl implements NotificationService {
     private final UserNotificationMapper userNotificationMapper;
 
     @Override
-    public PageResult<NotificationVO> page(long page, long size, NotificationType type, NotificationStatus status,
-                                           NotificationPriority priority, LocalDateTime startTime, LocalDateTime endTime) {
+    public PageResult<NotificationVO> page(
+            long page,
+            long size,
+            NotificationType type,
+            NotificationStatus status,
+            NotificationPriority priority,
+            LocalDateTime startTime,
+            LocalDateTime endTime) {
         Page<Notification> p = PageUtil.resolve(page, size);
         LambdaQueryWrapper<Notification> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(type != null, Notification::getNotificationType, type);
@@ -61,8 +64,11 @@ public class NotificationServiceImpl implements NotificationService {
         }
         wrapper.orderByDesc(Notification::getCreateTime);
         IPage<Notification> result = notificationMapper.selectPage(p, wrapper);
-        return new PageResult<>(notificationConverter.toVOList(result.getRecords()),
-                result.getTotal(), result.getCurrent(), result.getSize());
+        return new PageResult<>(
+                notificationConverter.toVOList(result.getRecords()),
+                result.getTotal(),
+                result.getCurrent(),
+                result.getSize());
     }
 
     @Override
@@ -78,7 +84,10 @@ public class NotificationServiceImpl implements NotificationService {
         notification.setContentType(request.getContentType());
         notification.setContent(request.getContent());
         notification.setLinkUrl(request.getLinkUrl());
-        notification.setPriority(request.getPriority() == null ? NotificationPriority.NORMAL : request.getPriority());
+        notification.setPriority(
+                request.getPriority() == null
+                        ? NotificationPriority.NORMAL
+                        : request.getPriority());
         notification.setNotificationType(request.getNotificationType());
         notification.setSenderId(request.getSenderId());
         notification.setSenderName(request.getSenderName());
@@ -168,40 +177,62 @@ public class NotificationServiceImpl implements NotificationService {
      * 发布后按偏好分渠道分发。
      *
      * <ul>
-     *   <li>receive_system=1 且未命中免打扰 -> 生成 SYSTEM 站内信（push_status=SENT）。</li>
-     *   <li>receive_email=1 -> 生成 EMAIL（push_status=PENDING，本阶段不接真实外部通道，仅落库）。</li>
-     *   <li>receive_sms=1 -> 生成 SMS（push_status=PENDING，本阶段不接真实外部通道，仅落库）。</li>
-     *   <li>命中免打扰（quiet_mode=1 且当前时间在窗口内且 priority 不高于阈值）时，跳过 SYSTEM 站内信。</li>
+     *   <li>receive_system=1 且未命中免打扰 -> 生成 SYSTEM 站内信（push_status=SENT）。
+     *   <li>receive_email=1 -> 生成 EMAIL（push_status=PENDING，本阶段不接真实外部通道，仅落库）。
+     *   <li>receive_sms=1 -> 生成 SMS（push_status=PENDING，本阶段不接真实外部通道，仅落库）。
+     *   <li>命中免打扰（quiet_mode=1 且当前时间在窗口内且 priority 不高于阈值）时，跳过 SYSTEM 站内信。
      * </ul>
      */
     private void distribute(Notification notification) {
         LocalDateTime now = LocalDateTime.now();
         LambdaQueryWrapper<UserNotificationPreference> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(UserNotificationPreference::getNotificationType, notification.getNotificationType());
-        List<UserNotificationPreference> preferences = userNotificationPreferenceMapper.selectList(wrapper);
+        wrapper.eq(
+                UserNotificationPreference::getNotificationType,
+                notification.getNotificationType());
+        List<UserNotificationPreference> preferences =
+                userNotificationPreferenceMapper.selectList(wrapper);
 
         for (UserNotificationPreference preference : preferences) {
             if (isEnabled(preference.getReceiveSystem())) {
                 if (isQuiet(preference, notification.getPriority())) {
-                    log.info("通知 {} 对用户 {} 命中免打扰，跳过 SYSTEM 站内信", notification.getId(), preference.getUserId());
+                    log.info(
+                            "通知 {} 对用户 {} 命中免打扰，跳过 SYSTEM 站内信",
+                            notification.getId(),
+                            preference.getUserId());
                 } else {
-                    insertUserNotification(notification.getId(), preference.getUserId(), PushChannel.SYSTEM,
-                            PushStatus.SENT, now);
+                    insertUserNotification(
+                            notification.getId(),
+                            preference.getUserId(),
+                            PushChannel.SYSTEM,
+                            PushStatus.SENT,
+                            now);
                 }
             }
             if (isEnabled(preference.getReceiveEmail())) {
-                insertUserNotification(notification.getId(), preference.getUserId(), PushChannel.EMAIL,
-                        PushStatus.PENDING, null);
+                insertUserNotification(
+                        notification.getId(),
+                        preference.getUserId(),
+                        PushChannel.EMAIL,
+                        PushStatus.PENDING,
+                        null);
             }
             if (isEnabled(preference.getReceiveSms())) {
-                insertUserNotification(notification.getId(), preference.getUserId(), PushChannel.SMS,
-                        PushStatus.PENDING, null);
+                insertUserNotification(
+                        notification.getId(),
+                        preference.getUserId(),
+                        PushChannel.SMS,
+                        PushStatus.PENDING,
+                        null);
             }
         }
     }
 
-    private void insertUserNotification(Long notificationId, Long userId, PushChannel channel,
-                                        PushStatus pushStatus, LocalDateTime pushTime) {
+    private void insertUserNotification(
+            Long notificationId,
+            Long userId,
+            PushChannel channel,
+            PushStatus pushStatus,
+            LocalDateTime pushTime) {
         UserNotification userNotification = new UserNotification();
         userNotification.setNotificationId(notificationId);
         userNotification.setUserId(userId);
@@ -217,10 +248,10 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     /**
-     * 是否命中免打扰：quiet_mode=1 且当前时间落在 [quiet_start_time, quiet_end_time] 且
-     * 通知 priority 不高于 priority_threshold。
+     * 是否命中免打扰：quiet_mode=1 且当前时间落在 [quiet_start_time, quiet_end_time] 且 通知 priority 不高于
+     * priority_threshold。
      *
-     * <p>支持跨天窗口（start > end）。threshold 为 null 时视为开启免打扰即屏蔽（最保守）。</p>
+     * <p>支持跨天窗口（start > end）。threshold 为 null 时视为开启免打扰即屏蔽（最保守）。
      */
     private boolean isQuiet(UserNotificationPreference preference, NotificationPriority priority) {
         if (!isEnabled(preference.getQuietMode())) {

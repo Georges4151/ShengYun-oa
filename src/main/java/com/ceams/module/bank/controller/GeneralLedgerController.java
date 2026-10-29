@@ -20,9 +20,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * 总账管理接口。
- */
+/** 总账管理接口。 */
 @RestController
 @RequestMapping("/api/v1/bank/ledgers")
 @RequiredArgsConstructor
@@ -32,12 +30,14 @@ public class GeneralLedgerController {
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public ApiResponse<PageResult<GeneralLedgerVO>> page(@RequestParam(defaultValue = "1") long page,
-                                                         @RequestParam(defaultValue = "20") long size,
-                                                         @RequestParam(required = false) String accountName,
-                                                         @RequestParam(required = false) TransactionType transactionType,
-                                                         @RequestParam(required = false) String status) {
-        return ApiResponse.success(generalLedgerService.page(page, size, accountName, transactionType, status));
+    public ApiResponse<PageResult<GeneralLedgerVO>> page(
+            @RequestParam(defaultValue = "1") long page,
+            @RequestParam(defaultValue = "20") long size,
+            @RequestParam(required = false) String accountName,
+            @RequestParam(required = false) TransactionType transactionType,
+            @RequestParam(required = false) String status) {
+        return ApiResponse.success(
+                generalLedgerService.page(page, size, accountName, transactionType, status));
     }
 
     @PostMapping
@@ -54,7 +54,8 @@ public class GeneralLedgerController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('SYS_ADMIN','FINANCE')")
-    public ApiResponse<Void> update(@PathVariable Long id, @Valid @RequestBody GeneralLedgerUpdateRequest request) {
+    public ApiResponse<Void> update(
+            @PathVariable Long id, @Valid @RequestBody GeneralLedgerUpdateRequest request) {
         generalLedgerService.update(id, request);
         return ApiResponse.success();
     }

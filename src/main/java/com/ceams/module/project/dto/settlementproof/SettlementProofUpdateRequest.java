@@ -2,14 +2,11 @@ package com.ceams.module.project.dto.settlementproof;
 
 import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
-import lombok.Data;
-
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import lombok.Data;
 
-/**
- * 更新结算凭证请求。
- */
+/** 更新结算凭证请求。 */
 @Data
 public class SettlementProofUpdateRequest {
 

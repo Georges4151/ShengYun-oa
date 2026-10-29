@@ -8,9 +8,7 @@ import com.ceams.module.iam.vo.SignSecretVO;
 import com.ceams.module.iam.vo.UserSessionVO;
 import jakarta.servlet.http.HttpServletRequest;
 
-/**
- * 认证服务：登录、刷新轮换、登出、会话管理。
- */
+/** 认证服务：登录、刷新轮换、登出、会话管理。 */
 public interface AuthService {
 
     LoginResponse login(LoginRequest request, HttpServletRequest httpRequest);

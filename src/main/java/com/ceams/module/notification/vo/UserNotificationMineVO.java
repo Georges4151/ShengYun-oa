@@ -1,13 +1,10 @@
 package com.ceams.module.notification.vo;
 
-import lombok.Data;
-
 import java.util.Collections;
 import java.util.List;
+import lombok.Data;
 
-/**
- * 「我的通知」分页结果（含未读数）。
- */
+/** 「我的通知」分页结果（含未读数）。 */
 @Data
 public class UserNotificationMineVO {
 

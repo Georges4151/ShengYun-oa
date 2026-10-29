@@ -3,14 +3,11 @@ package com.ceams.module.masterdata.dto.equipment;
 import com.ceams.module.masterdata.enums.EquipmentStatus;
 import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
-import lombok.Data;
-
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import lombok.Data;
 
-/**
- * 更新设备请求。
- */
+/** 更新设备请求。 */
 @Data
 public class EquipmentUpdateRequest {
 

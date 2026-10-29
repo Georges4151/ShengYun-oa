@@ -5,9 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
-/**
- * 新建电子印章。
- */
+/** 新建电子印章。 */
 @Data
 public class ElectronicSealCreateRequest {
 

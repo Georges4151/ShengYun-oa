@@ -4,12 +4,9 @@ import com.ceams.common.response.PageResult;
 import com.ceams.module.iam.dto.role.RoleCreateRequest;
 import com.ceams.module.iam.dto.role.RoleUpdateRequest;
 import com.ceams.module.iam.vo.RoleVO;
-
 import java.util.List;
 
-/**
- * 角色服务。
- */
+/** 角色服务。 */
 public interface RoleService {
 
     PageResult<RoleVO> page(long page, long size, String keyword);

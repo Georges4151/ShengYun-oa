@@ -4,9 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
-/**
- * 新建分包商请求。
- */
+/** 新建分包商请求。 */
 @Data
 public class SubcontractorCreateRequest {
 

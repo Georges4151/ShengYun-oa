@@ -3,9 +3,7 @@ package com.ceams.module.seal.dto;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
-/**
- * 更新用印申请（仅 PENDING 可编辑）。
- */
+/** 更新用印申请（仅 PENDING 可编辑）。 */
 @Data
 public class ElectronicSealApplicationUpdateRequest {
 

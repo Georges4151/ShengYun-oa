@@ -3,14 +3,11 @@ package com.ceams.module.seal.entity;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.ceams.common.base.BaseEntity;
 import com.ceams.module.seal.enums.ApprovalStatus;
+import java.time.LocalDateTime;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-import java.time.LocalDateTime;
-
-/**
- * 用印审批（biz_stamp_approval）。
- */
+/** 用印审批（biz_stamp_approval）。 */
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("biz_stamp_approval")

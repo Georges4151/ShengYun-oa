@@ -2,13 +2,10 @@ package com.ceams.module.project.converter;
 
 import com.ceams.module.project.entity.Project;
 import com.ceams.module.project.vo.ProjectVO;
+import java.util.List;
 import org.mapstruct.Mapper;
 
-import java.util.List;
-
-/**
- * 项目台账实体 <-> VO 转换。
- */
+/** 项目台账实体 <-> VO 转换。 */
 @Mapper(componentModel = "spring")
 public interface ProjectConverter {
 
@@ -22,7 +19,8 @@ public interface ProjectConverter {
         vo.setClientName(project.getClientName());
         vo.setProjectAddress(project.getProjectAddress());
         vo.setProjectType(project.getProjectType());
-        vo.setStartDate(project.getStartDate() == null ? null : project.getStartDate().toLocalDate());
+        vo.setStartDate(
+                project.getStartDate() == null ? null : project.getStartDate().toLocalDate());
         vo.setEndDate(project.getEndDate() == null ? null : project.getEndDate().toLocalDate());
         vo.setContractAmount(project.getContractAmount());
         vo.setBudgetAmount(project.getBudgetAmount());

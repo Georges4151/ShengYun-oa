@@ -21,9 +21,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * 收支流水管理接口。
- */
+/** 收支流水管理接口。 */
 @RestController
 @RequestMapping("/api/v1/accounts")
 @RequiredArgsConstructor
@@ -33,11 +31,12 @@ public class AccountController {
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public ApiResponse<PageResult<AccountVO>> page(@RequestParam(defaultValue = "1") long page,
-                                                   @RequestParam(defaultValue = "20") long size,
-                                                   @RequestParam(required = false) Long projectId,
-                                                   @RequestParam(required = false) AccountType type,
-                                                   @RequestParam(required = false) AccountStatus status) {
+    public ApiResponse<PageResult<AccountVO>> page(
+            @RequestParam(defaultValue = "1") long page,
+            @RequestParam(defaultValue = "20") long size,
+            @RequestParam(required = false) Long projectId,
+            @RequestParam(required = false) AccountType type,
+            @RequestParam(required = false) AccountStatus status) {
         return ApiResponse.success(accountService.page(page, size, projectId, type, status));
     }
 
@@ -55,7 +54,8 @@ public class AccountController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('SYS_ADMIN','FINANCE')")
-    public ApiResponse<Void> update(@PathVariable Long id, @Valid @RequestBody AccountUpdateRequest request) {
+    public ApiResponse<Void> update(
+            @PathVariable Long id, @Valid @RequestBody AccountUpdateRequest request) {
         accountService.update(id, request);
         return ApiResponse.success();
     }

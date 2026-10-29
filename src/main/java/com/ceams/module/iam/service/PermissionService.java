@@ -1,12 +1,9 @@
 package com.ceams.module.iam.service;
 
 import com.ceams.module.iam.vo.PermissionVO;
-
 import java.util.List;
 
-/**
- * 权限服务。
- */
+/** 权限服务。 */
 public interface PermissionService {
 
     /** 权限树（按 parent_id 组装）。 */

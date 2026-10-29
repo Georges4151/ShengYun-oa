@@ -12,9 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * 用户通知（收件箱）接口。
- */
+/** 用户通知（收件箱）接口。 */
 @RestController
 @RequestMapping("/api/v1/notifications/user-notifications")
 @RequiredArgsConstructor
@@ -24,8 +22,9 @@ public class UserNotificationController {
 
     @GetMapping("/mine")
     @PreAuthorize("isAuthenticated()")
-    public ApiResponse<UserNotificationMineVO> mine(@RequestParam(defaultValue = "1") long page,
-                                                    @RequestParam(defaultValue = "20") long size) {
+    public ApiResponse<UserNotificationMineVO> mine(
+            @RequestParam(defaultValue = "1") long page,
+            @RequestParam(defaultValue = "20") long size) {
         return ApiResponse.success(userNotificationService.mine(page, size));
     }
 

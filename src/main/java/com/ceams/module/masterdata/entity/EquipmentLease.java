@@ -3,16 +3,15 @@ package com.ceams.module.masterdata.entity;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.ceams.common.base.BaseEntity;
 import com.ceams.module.masterdata.enums.PaymentStatus;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 /**
  * 设备租赁（biz_equipment_lease）。
  *
- * <p>project_id 仅作 Long 逻辑引用，不依赖 project 域代码。</p>
+ * <p>project_id 仅作 Long 逻辑引用，不依赖 project 域代码。
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

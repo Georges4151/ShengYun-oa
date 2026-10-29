@@ -1,17 +1,14 @@
 package com.ceams.module.iam.converter;
 
-import com.ceams.module.iam.entity.SysUser;
 import com.ceams.common.mask.SensitiveMaskUtil;
+import com.ceams.module.iam.entity.SysUser;
 import com.ceams.module.iam.vo.UserVO;
+import java.util.List;
 import org.mapstruct.AfterMapping;
 import org.mapstruct.Mapper;
 import org.mapstruct.MappingTarget;
 
-import java.util.List;
-
-/**
- * 用户实体 <-> VO 转换。
- */
+/** 用户实体 <-> VO 转换。 */
 @Mapper(componentModel = "spring")
 public interface UserConverter {
 

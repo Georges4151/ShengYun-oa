@@ -21,9 +21,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * 电子印章管理接口。
- */
+/** 电子印章管理接口。 */
 @RestController
 @RequestMapping("/api/v1/seals")
 @RequiredArgsConstructor
@@ -33,12 +31,14 @@ public class ElectronicSealController {
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public ApiResponse<PageResult<ElectronicSealVO>> page(@RequestParam(defaultValue = "1") long page,
-                                                          @RequestParam(defaultValue = "20") long size,
-                                                          @RequestParam(required = false) String name,
-                                                          @RequestParam(required = false) SealStatus status,
-                                                          @RequestParam(required = false) StorageType storageType) {
-        return ApiResponse.success(electronicSealService.page(page, size, name, status, storageType));
+    public ApiResponse<PageResult<ElectronicSealVO>> page(
+            @RequestParam(defaultValue = "1") long page,
+            @RequestParam(defaultValue = "20") long size,
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) SealStatus status,
+            @RequestParam(required = false) StorageType storageType) {
+        return ApiResponse.success(
+                electronicSealService.page(page, size, name, status, storageType));
     }
 
     @PostMapping
@@ -55,7 +55,8 @@ public class ElectronicSealController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('SYS_ADMIN','FINANCE')")
-    public ApiResponse<Void> update(@PathVariable Long id, @Valid @RequestBody ElectronicSealUpdateRequest request) {
+    public ApiResponse<Void> update(
+            @PathVariable Long id, @Valid @RequestBody ElectronicSealUpdateRequest request) {
         electronicSealService.update(id, request);
         return ApiResponse.success();
     }

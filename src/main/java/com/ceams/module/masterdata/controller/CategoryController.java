@@ -8,6 +8,7 @@ import com.ceams.module.masterdata.enums.CategoryType;
 import com.ceams.module.masterdata.service.CategoryService;
 import com.ceams.module.masterdata.vo.CategoryVO;
 import jakarta.validation.Valid;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -20,11 +21,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-
-/**
- * 分类管理接口。
- */
+/** 分类管理接口。 */
 @RestController
 @RequestMapping("/api/v1/categories")
 @RequiredArgsConstructor
@@ -40,10 +37,11 @@ public class CategoryController {
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public ApiResponse<PageResult<CategoryVO>> page(@RequestParam(defaultValue = "1") long page,
-                                                    @RequestParam(defaultValue = "20") long size,
-                                                    @RequestParam(required = false) CategoryType type,
-                                                    @RequestParam(required = false) Long parentId) {
+    public ApiResponse<PageResult<CategoryVO>> page(
+            @RequestParam(defaultValue = "1") long page,
+            @RequestParam(defaultValue = "20") long size,
+            @RequestParam(required = false) CategoryType type,
+            @RequestParam(required = false) Long parentId) {
         return ApiResponse.success(categoryService.page(page, size, type, parentId));
     }
 
@@ -61,7 +59,8 @@ public class CategoryController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('SYS_ADMIN')")
-    public ApiResponse<Void> update(@PathVariable Long id, @Valid @RequestBody CategoryUpdateRequest request) {
+    public ApiResponse<Void> update(
+            @PathVariable Long id, @Valid @RequestBody CategoryUpdateRequest request) {
         categoryService.update(id, request);
         return ApiResponse.success();
     }

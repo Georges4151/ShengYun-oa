@@ -13,9 +13,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * PDF 盖章接口（HMAC 高危接口）。
- */
+/** PDF 盖章接口（HMAC 高危接口）。 */
 @RestController
 @RequestMapping("/api/v1/seals")
 @RequiredArgsConstructor

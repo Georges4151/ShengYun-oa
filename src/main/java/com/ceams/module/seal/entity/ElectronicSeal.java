@@ -4,14 +4,11 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import com.ceams.common.base.BaseEntity;
 import com.ceams.module.seal.enums.SealStatus;
 import com.ceams.module.seal.enums.StorageType;
+import java.time.LocalDateTime;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-import java.time.LocalDateTime;
-
-/**
- * 电子印章（biz_electronic_seal）。
- */
+/** 电子印章（biz_electronic_seal）。 */
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("biz_electronic_seal")

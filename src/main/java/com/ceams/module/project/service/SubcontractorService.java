@@ -5,9 +5,7 @@ import com.ceams.module.project.dto.subcontractor.SubcontractorCreateRequest;
 import com.ceams.module.project.dto.subcontractor.SubcontractorUpdateRequest;
 import com.ceams.module.project.vo.SubcontractorVO;
 
-/**
- * 分包商服务。
- */
+/** 分包商服务。 */
 public interface SubcontractorService {
 
     PageResult<SubcontractorVO> page(long page, long size, String keyword);

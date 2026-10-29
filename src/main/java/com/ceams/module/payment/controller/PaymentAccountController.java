@@ -19,9 +19,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * 付款账户管理接口。
- */
+/** 付款账户管理接口。 */
 @RestController
 @RequestMapping("/api/v1/payment-accounts")
 @RequiredArgsConstructor
@@ -31,10 +29,11 @@ public class PaymentAccountController {
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public ApiResponse<PageResult<PaymentAccountVO>> page(@RequestParam(defaultValue = "1") long page,
-                                                          @RequestParam(defaultValue = "20") long size,
-                                                          @RequestParam(required = false) String name,
-                                                          @RequestParam(required = false) String type) {
+    public ApiResponse<PageResult<PaymentAccountVO>> page(
+            @RequestParam(defaultValue = "1") long page,
+            @RequestParam(defaultValue = "20") long size,
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String type) {
         return ApiResponse.success(paymentAccountService.page(page, size, name, type));
     }
 
@@ -52,7 +51,8 @@ public class PaymentAccountController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('SYS_ADMIN','FINANCE')")
-    public ApiResponse<Void> update(@PathVariable Long id, @Valid @RequestBody PaymentAccountUpdateRequest request) {
+    public ApiResponse<Void> update(
+            @PathVariable Long id, @Valid @RequestBody PaymentAccountUpdateRequest request) {
         paymentAccountService.update(id, request);
         return ApiResponse.success();
     }

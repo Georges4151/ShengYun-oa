@@ -11,17 +11,20 @@ import com.ceams.module.expense.enums.VerificationStatus;
 import com.ceams.module.expense.vo.ApprovalRecordVO;
 import com.ceams.module.expense.vo.ReceiptVO;
 import com.ceams.module.expense.vo.ReceiptVerificationVO;
-
 import java.util.List;
 
-/**
- * 票据（报销）服务。
- */
+/** 票据（报销）服务。 */
 public interface ReceiptService {
 
-    PageResult<ReceiptVO> page(long page, long size, String receiptNumber, Long userId, Long projectId,
-                               VerificationStatus verificationStatus, PaymentStatus paymentStatus,
-                               ReceiptApprovalStatus approvalStatus);
+    PageResult<ReceiptVO> page(
+            long page,
+            long size,
+            String receiptNumber,
+            Long userId,
+            Long projectId,
+            VerificationStatus verificationStatus,
+            PaymentStatus paymentStatus,
+            ReceiptApprovalStatus approvalStatus);
 
     ReceiptVO detail(Long id);
 

@@ -5,9 +5,7 @@ import com.ceams.module.payment.dto.PaymentAccountCreateRequest;
 import com.ceams.module.payment.dto.PaymentAccountUpdateRequest;
 import com.ceams.module.payment.vo.PaymentAccountVO;
 
-/**
- * 付款账户服务。
- */
+/** 付款账户服务。 */
 public interface PaymentAccountService {
 
     PageResult<PaymentAccountVO> page(long page, long size, String name, String type);

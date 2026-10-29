@@ -5,9 +5,7 @@ import com.ceams.module.seal.vo.DownloadUrlVO;
 import com.ceams.module.seal.vo.ElectronicSealStampVO;
 import jakarta.servlet.http.HttpServletRequest;
 
-/**
- * 用印盖章记录服务。
- */
+/** 用印盖章记录服务。 */
 public interface ElectronicSealStampService {
 
     PageResult<ElectronicSealStampVO> page(long page, long size, Long sealId, Long projectId);

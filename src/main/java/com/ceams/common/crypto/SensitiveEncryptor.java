@@ -1,27 +1,25 @@
 package com.ceams.common.crypto;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-
-import javax.crypto.Cipher;
-import javax.crypto.SecretKey;
-import javax.crypto.spec.GCMParameterSpec;
-import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Base64;
+import javax.crypto.Cipher;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.GCMParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
 /**
  * 敏感字段统一加解密器（AES-256-GCM）。
  *
- * <p>密钥从配置 {@code ceams.sensitive.secret} 读取，为 Base64 编码的 32 字节（256 位）密钥。
- * 生产环境必须通过 {@code CEAMS_SENSITIVE_KEY} 环境变量覆盖，仓库内仅保留 dev 占位默认值。</p>
+ * <p>密钥从配置 {@code ceams.sensitive.secret} 读取，为 Base64 编码的 32 字节（256 位）密钥。 生产环境必须通过 {@code
+ * CEAMS_SENSITIVE_KEY} 环境变量覆盖，仓库内仅保留 dev 占位默认值。
  *
- * <p>密文格式（带版本前缀，便于未来算法升级）：
- * {@code v1: + Base64( IV(12字节) || 密文 || GCM Tag(16字节) )}。
- * 每次加密使用随机 12 字节 IV，保证相同明文产生不同密文。</p>
+ * <p>密文格式（带版本前缀，便于未来算法升级）： {@code v1: + Base64( IV(12字节) || 密文 || GCM Tag(16字节) )}。 每次加密使用随机 12 字节
+ * IV，保证相同明文产生不同密文。
  */
 @Component
 public class SensitiveEncryptor {
@@ -86,7 +84,7 @@ public class SensitiveEncryptor {
     /**
      * 解密密文。null / 空白字符串原样返回。
      *
-     * <p>密文被篡改、版本不匹配或密钥不一致时抛出 {@link IllegalStateException}（GCM 认证失败）。</p>
+     * <p>密文被篡改、版本不匹配或密钥不一致时抛出 {@link IllegalStateException}（GCM 认证失败）。
      *
      * @param ciphertext 密文
      * @return 明文；null/blank 原样返回

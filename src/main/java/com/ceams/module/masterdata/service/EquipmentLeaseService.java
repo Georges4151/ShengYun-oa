@@ -5,9 +5,7 @@ import com.ceams.module.masterdata.dto.lease.EquipmentLeaseCreateRequest;
 import com.ceams.module.masterdata.dto.lease.EquipmentLeaseUpdateRequest;
 import com.ceams.module.masterdata.vo.EquipmentLeaseVO;
 
-/**
- * 设备租赁服务。
- */
+/** 设备租赁服务。 */
 public interface EquipmentLeaseService {
 
     PageResult<EquipmentLeaseVO> page(long page, long size, Long equipmentId, Long projectId);

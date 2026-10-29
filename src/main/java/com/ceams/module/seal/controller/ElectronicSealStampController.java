@@ -18,9 +18,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * 用印盖章记录管理接口。
- */
+/** 用印盖章记录管理接口。 */
 @RestController
 @RequestMapping("/api/v1/seal/stamps")
 @RequiredArgsConstructor
@@ -30,10 +28,11 @@ public class ElectronicSealStampController {
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public ApiResponse<PageResult<ElectronicSealStampVO>> page(@RequestParam(defaultValue = "1") long page,
-                                                               @RequestParam(defaultValue = "20") long size,
-                                                               @RequestParam(required = false) Long sealId,
-                                                               @RequestParam(required = false) Long projectId) {
+    public ApiResponse<PageResult<ElectronicSealStampVO>> page(
+            @RequestParam(defaultValue = "1") long page,
+            @RequestParam(defaultValue = "20") long size,
+            @RequestParam(required = false) Long sealId,
+            @RequestParam(required = false) Long projectId) {
         return ApiResponse.success(electronicSealStampService.page(page, size, sealId, projectId));
     }
 
@@ -51,10 +50,11 @@ public class ElectronicSealStampController {
 
     @GetMapping("/{id}/download")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<byte[]> download(@PathVariable Long id,
-                                           @RequestParam(value = "expires", required = false) Long expires,
-                                           @RequestParam(value = "sign", required = false) String sign,
-                                           HttpServletRequest request) {
+    public ResponseEntity<byte[]> download(
+            @PathVariable Long id,
+            @RequestParam(value = "expires", required = false) Long expires,
+            @RequestParam(value = "sign", required = false) String sign,
+            HttpServletRequest request) {
         byte[] bytes = electronicSealStampService.download(id, expires, sign, request);
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_PDF);

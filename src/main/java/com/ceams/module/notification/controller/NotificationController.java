@@ -10,6 +10,7 @@ import com.ceams.module.notification.enums.NotificationType;
 import com.ceams.module.notification.service.NotificationService;
 import com.ceams.module.notification.vo.NotificationVO;
 import jakarta.validation.Valid;
+import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -23,11 +24,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.time.LocalDateTime;
-
-/**
- * 通知管理接口。
- */
+/** 通知管理接口。 */
 @RestController
 @RequestMapping("/api/v1/notifications")
 @RequiredArgsConstructor
@@ -37,18 +34,18 @@ public class NotificationController {
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public ApiResponse<PageResult<NotificationVO>> page(@RequestParam(defaultValue = "1") long page,
-                                                        @RequestParam(defaultValue = "20") long size,
-                                                        @RequestParam(required = false) NotificationType type,
-                                                        @RequestParam(required = false) NotificationStatus status,
-                                                        @RequestParam(required = false) NotificationPriority priority,
-                                                        @RequestParam(required = false)
-                                                        @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
-                                                        LocalDateTime startTime,
-                                                        @RequestParam(required = false)
-                                                        @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
-                                                        LocalDateTime endTime) {
-        return ApiResponse.success(notificationService.page(page, size, type, status, priority, startTime, endTime));
+    public ApiResponse<PageResult<NotificationVO>> page(
+            @RequestParam(defaultValue = "1") long page,
+            @RequestParam(defaultValue = "20") long size,
+            @RequestParam(required = false) NotificationType type,
+            @RequestParam(required = false) NotificationStatus status,
+            @RequestParam(required = false) NotificationPriority priority,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+                    LocalDateTime startTime,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+                    LocalDateTime endTime) {
+        return ApiResponse.success(
+                notificationService.page(page, size, type, status, priority, startTime, endTime));
     }
 
     @PostMapping
@@ -65,7 +62,8 @@ public class NotificationController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('SYS_ADMIN','FINANCE')")
-    public ApiResponse<Void> update(@PathVariable Long id, @Valid @RequestBody NotificationUpdateRequest request) {
+    public ApiResponse<Void> update(
+            @PathVariable Long id, @Valid @RequestBody NotificationUpdateRequest request) {
         notificationService.update(id, request);
         return ApiResponse.success();
     }

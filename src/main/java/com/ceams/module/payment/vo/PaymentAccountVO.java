@@ -2,14 +2,11 @@ package com.ceams.module.payment.vo;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
-import lombok.Data;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import lombok.Data;
 
-/**
- * 付款账户视图对象。
- */
+/** 付款账户视图对象。 */
 @Data
 public class PaymentAccountVO {
 

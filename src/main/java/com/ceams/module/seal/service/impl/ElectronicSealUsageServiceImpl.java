@@ -16,9 +16,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-/**
- * 印章使用审计服务实现。
- */
+/** 印章使用审计服务实现。 */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -35,8 +33,11 @@ public class ElectronicSealUsageServiceImpl implements ElectronicSealUsageServic
         wrapper.eq(userId != null, ElectronicSealUsage::getUserId, userId);
         wrapper.orderByDesc(ElectronicSealUsage::getUsageTime);
         IPage<ElectronicSealUsage> result = electronicSealUsageMapper.selectPage(p, wrapper);
-        return new PageResult<>(electronicSealUsageConverter.toVOList(result.getRecords()),
-                result.getTotal(), result.getCurrent(), result.getSize());
+        return new PageResult<>(
+                electronicSealUsageConverter.toVOList(result.getRecords()),
+                result.getTotal(),
+                result.getCurrent(),
+                result.getSize());
     }
 
     @Override

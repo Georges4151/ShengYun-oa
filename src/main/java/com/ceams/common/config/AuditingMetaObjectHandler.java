@@ -2,14 +2,11 @@ package com.ceams.common.config;
 
 import com.baomidou.mybatisplus.core.handlers.MetaObjectHandler;
 import com.ceams.common.security.SecurityUtils;
+import java.time.LocalDateTime;
 import org.apache.ibatis.reflection.MetaObject;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDateTime;
-
-/**
- * 审计字段自动填充：createTime / updateTime / createBy / updateBy。
- */
+/** 审计字段自动填充：createTime / updateTime / createBy / updateBy。 */
 @Component
 public class AuditingMetaObjectHandler implements MetaObjectHandler {
 

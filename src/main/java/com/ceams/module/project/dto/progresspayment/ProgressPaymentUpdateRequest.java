@@ -3,14 +3,11 @@ package com.ceams.module.project.dto.progresspayment;
 import com.ceams.module.project.enums.ApprovalStatus;
 import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
-import lombok.Data;
-
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import lombok.Data;
 
-/**
- * 更新进度款请求。
- */
+/** 更新进度款请求。 */
 @Data
 public class ProgressPaymentUpdateRequest {
 

@@ -3,9 +3,7 @@ package com.ceams.module.masterdata.dto.category;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
-/**
- * 更新分类请求。
- */
+/** 更新分类请求。 */
 @Data
 public class CategoryUpdateRequest {
 

@@ -2,13 +2,10 @@ package com.ceams.module.project.vo;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
+import java.time.LocalDateTime;
 import lombok.Data;
 
-import java.time.LocalDateTime;
-
-/**
- * 分包商视图对象（敏感字段已脱敏）。
- */
+/** 分包商视图对象（敏感字段已脱敏）。 */
 @Data
 public class SubcontractorVO {
 

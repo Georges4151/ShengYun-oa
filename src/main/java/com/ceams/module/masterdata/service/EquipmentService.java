@@ -6,9 +6,7 @@ import com.ceams.module.masterdata.dto.equipment.EquipmentUpdateRequest;
 import com.ceams.module.masterdata.enums.EquipmentStatus;
 import com.ceams.module.masterdata.vo.EquipmentVO;
 
-/**
- * 设备台账服务。
- */
+/** 设备台账服务。 */
 public interface EquipmentService {
 
     PageResult<EquipmentVO> page(long page, long size, String keyword, EquipmentStatus status);

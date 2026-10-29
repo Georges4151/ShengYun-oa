@@ -3,14 +3,11 @@ package com.ceams.module.masterdata.dto.lease;
 import com.ceams.module.masterdata.enums.PaymentStatus;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
-import lombok.Data;
-
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import lombok.Data;
 
-/**
- * 新建设备租赁请求。
- */
+/** 新建设备租赁请求。 */
 @Data
 public class EquipmentLeaseCreateRequest {
 

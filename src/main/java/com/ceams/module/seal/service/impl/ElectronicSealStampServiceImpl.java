@@ -21,19 +21,16 @@ import com.ceams.module.seal.util.PageUtil;
 import com.ceams.module.seal.vo.DownloadUrlVO;
 import com.ceams.module.seal.vo.ElectronicSealStampVO;
 import jakarta.servlet.http.HttpServletRequest;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-
-/**
- * 用印盖章记录服务实现。
- */
+/** 用印盖章记录服务实现。 */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -56,15 +53,19 @@ public class ElectronicSealStampServiceImpl implements ElectronicSealStampServic
     private long urlTtlMillis;
 
     @Override
-    public PageResult<ElectronicSealStampVO> page(long page, long size, Long sealId, Long projectId) {
+    public PageResult<ElectronicSealStampVO> page(
+            long page, long size, Long sealId, Long projectId) {
         Page<ElectronicSealStamp> p = PageUtil.resolve(page, size);
         LambdaQueryWrapper<ElectronicSealStamp> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(sealId != null, ElectronicSealStamp::getSealId, sealId);
         wrapper.eq(projectId != null, ElectronicSealStamp::getProjectId, projectId);
         wrapper.orderByDesc(ElectronicSealStamp::getStampTime);
         IPage<ElectronicSealStamp> result = electronicSealStampMapper.selectPage(p, wrapper);
-        return new PageResult<>(electronicSealStampConverter.toVOList(result.getRecords()),
-                result.getTotal(), result.getCurrent(), result.getSize());
+        return new PageResult<>(
+                electronicSealStampConverter.toVOList(result.getRecords()),
+                result.getTotal(),
+                result.getCurrent(),
+                result.getSize());
     }
 
     @Override
@@ -104,9 +105,8 @@ public class ElectronicSealStampServiceImpl implements ElectronicSealStampServic
     /**
      * 计算下载 URL 签名：{@code sign = HMAC-SHA256(exportSecret, id + ":" + expires)}。
      *
-     * <p>复用 {@link HmacSignUtil#sign(String, String, String, String)}，将
-     * {@code (id, ":", expires)} 依次代入三个 payload 片段，等价于对 {@code id + ":" + expires}
-     * 做 HMAC-SHA256，校验端按同样参数复算即可。</p>
+     * <p>复用 {@link HmacSignUtil#sign(String, String, String, String)}，将 {@code (id, ":", expires)}
+     * 依次代入三个 payload 片段，等价于对 {@code id + ":" + expires} 做 HMAC-SHA256，校验端按同样参数复算即可。
      */
     private String downloadSign(Long id, long expires) {
         return HmacSignUtil.sign(String.valueOf(id), ":", String.valueOf(expires), exportSecret);

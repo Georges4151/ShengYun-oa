@@ -2,14 +2,11 @@ package com.ceams.module.iam.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.ceams.common.base.BaseEntity;
+import java.time.LocalDateTime;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-import java.time.LocalDateTime;
-
-/**
- * 刷新令牌（sys_refresh_token）。
- */
+/** 刷新令牌（sys_refresh_token）。 */
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("sys_refresh_token")

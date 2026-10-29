@@ -2,9 +2,7 @@ package com.ceams.module.report.dto;
 
 import lombok.Data;
 
-/**
- * 项目成本报表查询参数（全部可选）。
- */
+/** 项目成本报表查询参数（全部可选）。 */
 @Data
 public class ProjectCostReportQuery {
 

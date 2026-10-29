@@ -2,13 +2,10 @@ package com.ceams.module.project.converter;
 
 import com.ceams.module.project.entity.SettlementProof;
 import com.ceams.module.project.vo.SettlementProofVO;
+import java.util.List;
 import org.mapstruct.Mapper;
 
-import java.util.List;
-
-/**
- * 结算凭证实体 <-> VO 转换。
- */
+/** 结算凭证实体 <-> VO 转换。 */
 @Mapper(componentModel = "spring")
 public interface SettlementProofConverter {
 

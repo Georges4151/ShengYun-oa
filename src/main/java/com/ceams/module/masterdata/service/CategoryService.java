@@ -5,12 +5,9 @@ import com.ceams.module.masterdata.dto.category.CategoryCreateRequest;
 import com.ceams.module.masterdata.dto.category.CategoryUpdateRequest;
 import com.ceams.module.masterdata.enums.CategoryType;
 import com.ceams.module.masterdata.vo.CategoryVO;
-
 import java.util.List;
 
-/**
- * 分类服务。
- */
+/** 分类服务。 */
 public interface CategoryService {
 
     List<CategoryVO> tree(CategoryType type);

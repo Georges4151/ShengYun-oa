@@ -6,8 +6,8 @@ import org.springframework.http.HttpStatus;
 /**
  * RFC7807 错误码枚举。
  *
- * <p>业务码前缀：AUTH_（认证/授权）、VALID_（参数校验）、BIZ_（业务规则）、SIGN_（签名）。
- * 数值 code 按 HTTP 语义分段：400xxx 校验、401/403xxx 认证授权、404/409/422xxx 业务、500xxx 系统。</p>
+ * <p>业务码前缀：AUTH_（认证/授权）、VALID_（参数校验）、BIZ_（业务规则）、SIGN_（签名）。 数值 code 按 HTTP 语义分段：400xxx 校验、401/403xxx
+ * 认证授权、404/409/422xxx 业务、500xxx 系统。
  */
 @Getter
 public enum ErrorCode {

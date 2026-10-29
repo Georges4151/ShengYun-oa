@@ -3,13 +3,10 @@ package com.ceams.module.seal.vo;
 import com.ceams.module.seal.enums.ApplicationStatus;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
+import java.time.LocalDateTime;
 import lombok.Data;
 
-import java.time.LocalDateTime;
-
-/**
- * 用印申请视图对象。
- */
+/** 用印申请视图对象。 */
 @Data
 public class ElectronicSealApplicationVO {
 

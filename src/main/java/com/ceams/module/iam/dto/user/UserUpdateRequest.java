@@ -5,9 +5,7 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
-/**
- * 更新用户请求。
- */
+/** 更新用户请求。 */
 @Data
 public class UserUpdateRequest {
 

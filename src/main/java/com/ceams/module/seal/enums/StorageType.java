@@ -1,8 +1,6 @@
 package com.ceams.module.seal.enums;
 
-/**
- * 电子印章存储类型。
- */
+/** 电子印章存储类型。 */
 public enum StorageType {
 
     /** 文件。 */

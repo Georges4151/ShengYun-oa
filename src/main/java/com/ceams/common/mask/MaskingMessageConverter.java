@@ -2,16 +2,14 @@ package com.ceams.common.mask;
 
 import ch.qos.logback.classic.pattern.MessageConverter;
 import ch.qos.logback.classic.spi.ILoggingEvent;
-
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
  * Logback 消息脱敏转换器。
  *
- * <p>在日志输出前对消息文本做正则脱敏，避免手机号、银行账号、税号等敏感明文泄露到日志。
- * 通过 {@code src/main/resources/logback-spring.xml} 中的 {@code <conversionRule>} 替换默认的
- * {@code %m} / {@code %msg} 消息转换器。</p>
+ * <p>在日志输出前对消息文本做正则脱敏，避免手机号、银行账号、税号等敏感明文泄露到日志。 通过 {@code src/main/resources/logback-spring.xml} 中的
+ * {@code <conversionRule>} 替换默认的 {@code %m} / {@code %msg} 消息转换器。
  */
 public class MaskingMessageConverter extends MessageConverter {
 
@@ -40,8 +38,8 @@ public class MaskingMessageConverter extends MessageConverter {
         }
         StringBuffer sb = new StringBuffer();
         do {
-            matcher.appendReplacement(sb, Matcher.quoteReplacement(
-                    matcher.group(1) + MASK + matcher.group(2)));
+            matcher.appendReplacement(
+                    sb, Matcher.quoteReplacement(matcher.group(1) + MASK + matcher.group(2)));
         } while (matcher.find());
         matcher.appendTail(sb);
         return sb.toString();
@@ -56,8 +54,8 @@ public class MaskingMessageConverter extends MessageConverter {
         StringBuffer sb = new StringBuffer();
         do {
             String digits = matcher.group(1);
-            matcher.appendReplacement(sb, Matcher.quoteReplacement(
-                    MASK + digits.substring(digits.length() - 4)));
+            matcher.appendReplacement(
+                    sb, Matcher.quoteReplacement(MASK + digits.substring(digits.length() - 4)));
         } while (matcher.find());
         matcher.appendTail(sb);
         return sb.toString();

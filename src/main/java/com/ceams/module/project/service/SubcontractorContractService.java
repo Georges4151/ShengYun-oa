@@ -5,12 +5,11 @@ import com.ceams.module.project.dto.subcontractorcontract.SubcontractorContractC
 import com.ceams.module.project.dto.subcontractorcontract.SubcontractorContractUpdateRequest;
 import com.ceams.module.project.vo.SubcontractorContractVO;
 
-/**
- * 分包合同服务。
- */
+/** 分包合同服务。 */
 public interface SubcontractorContractService {
 
-    PageResult<SubcontractorContractVO> page(long page, long size, Long subcontractorId, Long projectId);
+    PageResult<SubcontractorContractVO> page(
+            long page, long size, Long subcontractorId, Long projectId);
 
     SubcontractorContractVO detail(Long id);
 

@@ -6,13 +6,10 @@ import com.ceams.module.notification.enums.NotificationType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import java.time.LocalDateTime;
 import lombok.Data;
 
-import java.time.LocalDateTime;
-
-/**
- * 新建通知（状态固定为 DRAFT）。
- */
+/** 新建通知（状态固定为 DRAFT）。 */
 @Data
 public class NotificationCreateRequest {
 

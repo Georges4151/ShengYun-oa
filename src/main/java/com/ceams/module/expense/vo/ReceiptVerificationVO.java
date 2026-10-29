@@ -3,14 +3,11 @@ package com.ceams.module.expense.vo;
 import com.ceams.module.expense.enums.PaymentMethod;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
-import lombok.Data;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import lombok.Data;
 
-/**
- * 财务核验视图对象。
- */
+/** 财务核验视图对象。 */
 @Data
 public class ReceiptVerificationVO {
 

@@ -4,15 +4,14 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.ceams.common.base.BaseEntity;
 import com.ceams.common.crypto.SensitiveTypeHandler;
+import java.math.BigDecimal;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-
-import java.math.BigDecimal;
 
 /**
  * 付款账户（biz_payment_account）。
  *
- * <p>M2 阶段仅提供最小只读查询服务，供 expense 域财务核验反向依赖。</p>
+ * <p>M2 阶段仅提供最小只读查询服务，供 expense 域财务核验反向依赖。
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

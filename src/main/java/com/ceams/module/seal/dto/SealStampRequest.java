@@ -4,9 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
-/**
- * 盖章请求（HMAC 高危接口，JSON body）。
- */
+/** 盖章请求（HMAC 高危接口，JSON body）。 */
 @Data
 public class SealStampRequest {
 

@@ -20,9 +20,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * 付款交易管理接口。
- */
+/** 付款交易管理接口。 */
 @RestController
 @RequestMapping("/api/v1/transactions")
 @RequiredArgsConstructor
@@ -32,10 +30,11 @@ public class PaymentTransactionController {
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public ApiResponse<PageResult<PaymentTransactionVO>> page(@RequestParam(defaultValue = "1") long page,
-                                                              @RequestParam(defaultValue = "20") long size,
-                                                              @RequestParam(required = false) Long accountId,
-                                                              @RequestParam(required = false) AccountType type) {
+    public ApiResponse<PageResult<PaymentTransactionVO>> page(
+            @RequestParam(defaultValue = "1") long page,
+            @RequestParam(defaultValue = "20") long size,
+            @RequestParam(required = false) Long accountId,
+            @RequestParam(required = false) AccountType type) {
         return ApiResponse.success(paymentTransactionService.page(page, size, accountId, type));
     }
 
@@ -53,8 +52,8 @@ public class PaymentTransactionController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('SYS_ADMIN','FINANCE')")
-    public ApiResponse<Void> update(@PathVariable Long id,
-                                    @Valid @RequestBody PaymentTransactionUpdateRequest request) {
+    public ApiResponse<Void> update(
+            @PathVariable Long id, @Valid @RequestBody PaymentTransactionUpdateRequest request) {
         paymentTransactionService.update(id, request);
         return ApiResponse.success();
     }

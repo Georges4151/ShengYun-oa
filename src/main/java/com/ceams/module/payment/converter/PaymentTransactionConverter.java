@@ -2,13 +2,10 @@ package com.ceams.module.payment.converter;
 
 import com.ceams.module.payment.entity.PaymentTransaction;
 import com.ceams.module.payment.vo.PaymentTransactionVO;
+import java.util.List;
 import org.mapstruct.Mapper;
 
-import java.util.List;
-
-/**
- * 付款交易实体 <-> VO 转换。
- */
+/** 付款交易实体 <-> VO 转换。 */
 @Mapper(componentModel = "spring")
 public interface PaymentTransactionConverter {
 

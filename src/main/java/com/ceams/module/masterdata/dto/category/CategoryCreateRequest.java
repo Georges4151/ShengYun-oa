@@ -6,9 +6,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
-/**
- * 新建分类请求。
- */
+/** 新建分类请求。 */
 @Data
 public class CategoryCreateRequest {
 

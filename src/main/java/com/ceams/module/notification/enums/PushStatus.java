@@ -1,8 +1,6 @@
 package com.ceams.module.notification.enums;
 
-/**
- * 推送状态。
- */
+/** 推送状态。 */
 public enum PushStatus {
 
     /** 待推送。 */

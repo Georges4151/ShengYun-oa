@@ -1,8 +1,6 @@
 package com.ceams.module.payment.enums;
 
-/**
- * 收支流水状态。
- */
+/** 收支流水状态。 */
 public enum AccountStatus {
 
     /** 草稿。 */

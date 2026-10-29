@@ -2,15 +2,12 @@ package com.ceams.module.project.vo;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
-import lombok.Data;
-
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import lombok.Data;
 
-/**
- * 结算凭证视图对象。
- */
+/** 结算凭证视图对象。 */
 @Data
 public class SettlementProofVO {
 

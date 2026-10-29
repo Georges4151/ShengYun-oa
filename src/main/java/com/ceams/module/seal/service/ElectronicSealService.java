@@ -7,12 +7,11 @@ import com.ceams.module.seal.enums.SealStatus;
 import com.ceams.module.seal.enums.StorageType;
 import com.ceams.module.seal.vo.ElectronicSealVO;
 
-/**
- * 电子印章服务。
- */
+/** 电子印章服务。 */
 public interface ElectronicSealService {
 
-    PageResult<ElectronicSealVO> page(long page, long size, String name, SealStatus status, StorageType storageType);
+    PageResult<ElectronicSealVO> page(
+            long page, long size, String name, SealStatus status, StorageType storageType);
 
     ElectronicSealVO detail(Long id);
 

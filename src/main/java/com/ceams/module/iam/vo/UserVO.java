@@ -3,14 +3,11 @@ package com.ceams.module.iam.vo;
 import com.ceams.module.iam.enums.UserStatus;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
-import lombok.Data;
-
 import java.time.LocalDateTime;
 import java.util.List;
+import lombok.Data;
 
-/**
- * 用户视图对象（敏感字段脱敏，密码绝不外泄）。
- */
+/** 用户视图对象（敏感字段脱敏，密码绝不外泄）。 */
 @Data
 public class UserVO {
 

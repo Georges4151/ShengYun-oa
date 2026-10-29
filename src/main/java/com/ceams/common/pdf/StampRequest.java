@@ -7,8 +7,7 @@ import lombok.NoArgsConstructor;
 /**
  * PDF 盖章请求参数。
  *
- * <p>坐标 {@code x/y} 为 PDF 页面左下角坐标系下的位置（单位：PDF point，1/72 英寸），
- * 传 {@code null} 时默认将印章居中放置于目标页中心。</p>
+ * <p>坐标 {@code x/y} 为 PDF 页面左下角坐标系下的位置（单位：PDF point，1/72 英寸）， 传 {@code null} 时默认将印章居中放置于目标页中心。
  */
 @Data
 @NoArgsConstructor

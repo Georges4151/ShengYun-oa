@@ -3,15 +3,12 @@ package com.ceams.module.project.entity;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.ceams.common.base.BaseEntity;
 import com.ceams.module.project.enums.ContractStatus;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-
-/**
- * 分包合同（biz_subcontractor_contract）。
- */
+/** 分包合同（biz_subcontractor_contract）。 */
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("biz_subcontractor_contract")

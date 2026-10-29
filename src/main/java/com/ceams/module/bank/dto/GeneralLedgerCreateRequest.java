@@ -2,14 +2,11 @@ package com.ceams.module.bank.dto;
 
 import com.ceams.module.bank.enums.TransactionType;
 import jakarta.validation.constraints.NotBlank;
-import lombok.Data;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import lombok.Data;
 
-/**
- * 新建总账。
- */
+/** 新建总账。 */
 @Data
 public class GeneralLedgerCreateRequest {
 

@@ -3,13 +3,10 @@ package com.ceams.module.payment.dto;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import java.math.BigDecimal;
 import lombok.Data;
 
-import java.math.BigDecimal;
-
-/**
- * 新建付款账户。
- */
+/** 新建付款账户。 */
 @Data
 public class PaymentAccountCreateRequest {
 

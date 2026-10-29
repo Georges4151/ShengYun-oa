@@ -2,14 +2,11 @@ package com.ceams.module.masterdata.dto.lease;
 
 import com.ceams.module.masterdata.enums.PaymentStatus;
 import jakarta.validation.constraints.PositiveOrZero;
-import lombok.Data;
-
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import lombok.Data;
 
-/**
- * 更新设备租赁请求（设备 ID 不可修改）。
- */
+/** 更新设备租赁请求（设备 ID 不可修改）。 */
 @Data
 public class EquipmentLeaseUpdateRequest {
 

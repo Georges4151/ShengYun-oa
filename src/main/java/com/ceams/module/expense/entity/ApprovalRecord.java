@@ -3,14 +3,11 @@ package com.ceams.module.expense.entity;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.ceams.common.base.BaseEntity;
 import com.ceams.module.expense.enums.ApprovalRecordStatus;
+import java.time.LocalDateTime;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-import java.time.LocalDateTime;
-
-/**
- * 审批记录（biz_approval_record）。
- */
+/** 审批记录（biz_approval_record）。 */
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("biz_approval_record")

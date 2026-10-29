@@ -4,9 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
-/**
- * 重置用户密码请求。
- */
+/** 重置用户密码请求。 */
 @Data
 public class ResetPasswordRequest {
 

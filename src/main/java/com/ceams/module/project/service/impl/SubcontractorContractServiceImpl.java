@@ -22,18 +22,15 @@ import com.ceams.module.project.mapper.SubcontractorMapper;
 import com.ceams.module.project.service.SubcontractorContractService;
 import com.ceams.module.project.util.PageUtil;
 import com.ceams.module.project.vo.SubcontractorContractVO;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-
-/**
- * 分包合同服务实现。
- */
+/** 分包合同服务实现。 */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -47,7 +44,8 @@ public class SubcontractorContractServiceImpl implements SubcontractorContractSe
     private final SubcontractorContractConverter subcontractorContractConverter;
 
     @Override
-    public PageResult<SubcontractorContractVO> page(long page, long size, Long subcontractorId, Long projectId) {
+    public PageResult<SubcontractorContractVO> page(
+            long page, long size, Long subcontractorId, Long projectId) {
         Page<SubcontractorContract> p = PageUtil.resolve(page, size);
         LambdaQueryWrapper<SubcontractorContract> wrapper = new LambdaQueryWrapper<>();
         if (subcontractorId != null) {
@@ -58,8 +56,11 @@ public class SubcontractorContractServiceImpl implements SubcontractorContractSe
         }
         wrapper.orderByDesc(SubcontractorContract::getCreateTime);
         IPage<SubcontractorContract> result = subcontractorContractMapper.selectPage(p, wrapper);
-        return new PageResult<>(subcontractorContractConverter.toVOList(result.getRecords()),
-                result.getTotal(), result.getCurrent(), result.getSize());
+        return new PageResult<>(
+                subcontractorContractConverter.toVOList(result.getRecords()),
+                result.getTotal(),
+                result.getCurrent(),
+                result.getSize());
     }
 
     @Override
@@ -122,13 +123,16 @@ public class SubcontractorContractServiceImpl implements SubcontractorContractSe
     @Transactional(rollbackFor = Exception.class)
     public void delete(Long id) {
         requireContract(id);
-        Long budgetRefs = budgetMapper.selectCount(new LambdaQueryWrapper<Budget>()
-                .eq(Budget::getContractId, id));
+        Long budgetRefs =
+                budgetMapper.selectCount(
+                        new LambdaQueryWrapper<Budget>().eq(Budget::getContractId, id));
         if (budgetRefs != null && budgetRefs > 0) {
             throw BusinessException.of(ErrorCode.BIZ_REFERENCED, "分包合同存在关联预算，无法删除");
         }
-        Long proofRefs = settlementProofMapper.selectCount(new LambdaQueryWrapper<SettlementProof>()
-                .eq(SettlementProof::getContractId, id));
+        Long proofRefs =
+                settlementProofMapper.selectCount(
+                        new LambdaQueryWrapper<SettlementProof>()
+                                .eq(SettlementProof::getContractId, id));
         if (proofRefs != null && proofRefs > 0) {
             throw BusinessException.of(ErrorCode.BIZ_REFERENCED, "分包合同存在关联结算凭证，无法删除");
         }
@@ -158,8 +162,9 @@ public class SubcontractorContractServiceImpl implements SubcontractorContractSe
     }
 
     private void checkNumberUnique(String contractNumber, Long excludeId) {
-        LambdaQueryWrapper<SubcontractorContract> wrapper = new LambdaQueryWrapper<SubcontractorContract>()
-                .eq(SubcontractorContract::getContractNumber, contractNumber);
+        LambdaQueryWrapper<SubcontractorContract> wrapper =
+                new LambdaQueryWrapper<SubcontractorContract>()
+                        .eq(SubcontractorContract::getContractNumber, contractNumber);
         if (excludeId != null) {
             wrapper.ne(SubcontractorContract::getId, excludeId);
         }

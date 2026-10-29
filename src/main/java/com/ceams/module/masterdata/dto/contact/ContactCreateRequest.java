@@ -6,9 +6,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
-/**
- * 新建往来单位请求。
- */
+/** 新建往来单位请求。 */
 @Data
 public class ContactCreateRequest {
 

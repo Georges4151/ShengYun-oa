@@ -3,9 +3,7 @@ package com.ceams.module.project.dto.subcontractor;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
-/**
- * 更新分包商请求。
- */
+/** 更新分包商请求。 */
 @Data
 public class SubcontractorUpdateRequest {
 

@@ -22,13 +22,6 @@ import com.ceams.module.iam.service.UserService;
 import com.ceams.module.iam.util.PageUtil;
 import com.ceams.module.iam.vo.RoleVO;
 import com.ceams.module.iam.vo.UserVO;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -37,10 +30,14 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-/**
- * 用户服务实现。
- */
+/** 用户服务实现。 */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -61,9 +58,13 @@ public class UserServiceImpl implements UserService {
         Page<SysUser> p = PageUtil.resolve(page, size);
         LambdaQueryWrapper<SysUser> wrapper = new LambdaQueryWrapper<>();
         if (StringUtils.isNotBlank(keyword)) {
-            wrapper.and(w -> w.like(SysUser::getUsername, keyword)
-                    .or().like(SysUser::getName, keyword)
-                    .or().like(SysUser::getEmail, keyword));
+            wrapper.and(
+                    w ->
+                            w.like(SysUser::getUsername, keyword)
+                                    .or()
+                                    .like(SysUser::getName, keyword)
+                                    .or()
+                                    .like(SysUser::getEmail, keyword));
         }
         wrapper.eq(userStatus != null, SysUser::getStatus, userStatus);
         wrapper.orderByDesc(SysUser::getCreateTime);
@@ -89,7 +90,10 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public String create(UserCreateRequest request) {
-        Long count = userMapper.selectCount(new LambdaQueryWrapper<SysUser>().eq(SysUser::getUsername, request.getUsername()));
+        Long count =
+                userMapper.selectCount(
+                        new LambdaQueryWrapper<SysUser>()
+                                .eq(SysUser::getUsername, request.getUsername()));
         if (count != null && count > 0) {
             throw BusinessException.of(ErrorCode.BIZ_DUPLICATE_CODE, "用户名已存在");
         }
@@ -100,7 +104,10 @@ public class UserServiceImpl implements UserService {
         user.setEmail(request.getEmail());
         user.setPhone(request.getPhone());
         user.setStatus(request.getStatus() == null ? UserStatus.ACTIVE : request.getStatus());
-        String rawPassword = StringUtils.isBlank(request.getPassword()) ? DEFAULT_PASSWORD : request.getPassword();
+        String rawPassword =
+                StringUtils.isBlank(request.getPassword())
+                        ? DEFAULT_PASSWORD
+                        : request.getPassword();
         user.setPasswordHash(passwordEncoder.encode(rawPassword));
         userMapper.insert(user);
 
@@ -143,12 +150,16 @@ public class UserServiceImpl implements UserService {
         validateRolesExist(distinct);
         userRoleMapper.delete(new LambdaQueryWrapper<UserRole>().eq(UserRole::getUserId, id));
         if (!distinct.isEmpty()) {
-            List<UserRole> links = distinct.stream().map(rid -> {
-                UserRole link = new UserRole();
-                link.setUserId(id);
-                link.setRoleId(rid);
-                return link;
-            }).toList();
+            List<UserRole> links =
+                    distinct.stream()
+                            .map(
+                                    rid -> {
+                                        UserRole link = new UserRole();
+                                        link.setUserId(id);
+                                        link.setRoleId(rid);
+                                        return link;
+                                    })
+                            .toList();
             links.forEach(userRoleMapper::insert);
         }
     }
@@ -163,7 +174,9 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public List<RoleVO> listRolesByUser(Long userId) {
-        List<UserRole> links = userRoleMapper.selectList(new LambdaQueryWrapper<UserRole>().eq(UserRole::getUserId, userId));
+        List<UserRole> links =
+                userRoleMapper.selectList(
+                        new LambdaQueryWrapper<UserRole>().eq(UserRole::getUserId, userId));
         if (links.isEmpty()) {
             return Collections.emptyList();
         }
@@ -176,26 +189,30 @@ public class UserServiceImpl implements UserService {
         if (vos.isEmpty()) {
             return;
         }
-        List<Long> userIds = vos.stream().map(UserVO::getId).filter(Objects::nonNull).distinct().toList();
+        List<Long> userIds =
+                vos.stream().map(UserVO::getId).filter(Objects::nonNull).distinct().toList();
         if (userIds.isEmpty()) {
             return;
         }
         // 一次查询所有关联
-        List<UserRole> links = userRoleMapper.selectList(
-                new LambdaQueryWrapper<UserRole>().in(UserRole::getUserId, userIds));
+        List<UserRole> links =
+                userRoleMapper.selectList(
+                        new LambdaQueryWrapper<UserRole>().in(UserRole::getUserId, userIds));
         if (links.isEmpty()) {
             return;
         }
         List<Long> roleIds = links.stream().map(UserRole::getRoleId).distinct().toList();
         List<SysRole> roles = roleMapper.selectBatchIds(roleIds);
-        Map<Long, SysRole> roleMap = roles.stream().collect(Collectors.toMap(SysRole::getId, r -> r, (a, b) -> a));
+        Map<Long, SysRole> roleMap =
+                roles.stream().collect(Collectors.toMap(SysRole::getId, r -> r, (a, b) -> a));
         Map<Long, List<RoleVO>> userRoleMap = new HashMap<>();
         for (UserRole link : links) {
             SysRole role = roleMap.get(link.getRoleId());
             if (role == null) {
                 continue;
             }
-            userRoleMap.computeIfAbsent(link.getUserId(), k -> new ArrayList<>())
+            userRoleMap
+                    .computeIfAbsent(link.getUserId(), k -> new ArrayList<>())
                     .add(roleConverter.toVO(role));
         }
         for (UserVO vo : vos) {
@@ -226,7 +243,10 @@ public class UserServiceImpl implements UserService {
         if (roleIds.isEmpty()) {
             return;
         }
-        Set<Long> existing = roleMapper.selectBatchIds(roleIds).stream().map(SysRole::getId).collect(Collectors.toSet());
+        Set<Long> existing =
+                roleMapper.selectBatchIds(roleIds).stream()
+                        .map(SysRole::getId)
+                        .collect(Collectors.toSet());
         if (existing.size() != roleIds.size()) {
             throw BusinessException.of(ErrorCode.BIZ_NOT_FOUND, "存在无效的角色");
         }

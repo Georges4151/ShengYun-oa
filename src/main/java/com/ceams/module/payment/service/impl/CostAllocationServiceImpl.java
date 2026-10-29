@@ -17,20 +17,18 @@ import com.ceams.module.payment.mapper.CostAllocationMapper;
 import com.ceams.module.payment.service.CostAllocationService;
 import com.ceams.module.payment.util.PageUtil;
 import com.ceams.module.payment.vo.CostAllocationVO;
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-import java.util.List;
-import java.util.Objects;
-
 /**
  * 成本分摊服务实现。
  *
- * <p>分摊约束：同一账户记录下所有分摊金额合计（含本次）不得超出记录金额，
- * 每次变更后回写 biz_account.allocation_status。</p>
+ * <p>分摊约束：同一账户记录下所有分摊金额合计（含本次）不得超出记录金额， 每次变更后回写 biz_account.allocation_status。
  */
 @Slf4j
 @Service
@@ -50,8 +48,11 @@ public class CostAllocationServiceImpl implements CostAllocationService {
         }
         wrapper.orderByDesc(CostAllocation::getCreateTime);
         IPage<CostAllocation> result = costAllocationMapper.selectPage(p, wrapper);
-        return new PageResult<>(costAllocationConverter.toVOList(result.getRecords()),
-                result.getTotal(), result.getCurrent(), result.getSize());
+        return new PageResult<>(
+                costAllocationConverter.toVOList(result.getRecords()),
+                result.getTotal(),
+                result.getCurrent(),
+                result.getSize());
     }
 
     @Override
@@ -64,8 +65,10 @@ public class CostAllocationServiceImpl implements CostAllocationService {
     public String create(CostAllocationCreateRequest request) {
         Account account = requireAccountRecord(request.getAccountRecordId());
         BigDecimal allocated = sumAllocated(request.getAccountRecordId(), null);
-        BigDecimal requestAmount = request.getAllocationAmount() == null
-                ? BigDecimal.ZERO : request.getAllocationAmount();
+        BigDecimal requestAmount =
+                request.getAllocationAmount() == null
+                        ? BigDecimal.ZERO
+                        : request.getAllocationAmount();
         BigDecimal total = account.getAmount() == null ? BigDecimal.ZERO : account.getAmount();
         if (allocated.add(requestAmount).compareTo(total) > 0) {
             throw BusinessException.of(ErrorCode.BIZ_UNPROCESSABLE, "分摊金额合计不能超过记录金额");

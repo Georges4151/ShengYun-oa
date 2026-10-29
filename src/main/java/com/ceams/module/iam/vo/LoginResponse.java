@@ -4,9 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/**
- * 登录 / 刷新响应负载。
- */
+/** 登录 / 刷新响应负载。 */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

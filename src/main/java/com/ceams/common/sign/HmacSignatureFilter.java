@@ -10,6 +10,11 @@ import jakarta.servlet.ServletInputStream;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -21,29 +26,22 @@ import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerExecutionChain;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 
-import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
-
 /**
  * HMAC 签名校验过滤器：仅对命中 {@link HmacSigned} 的处理器生效。
  *
  * <p>校验流程（顺序固定）：
- * <ol>
- *   <li>根据请求映射定位 handler，仅方法/类标注 {@link HmacSigned} 时执行，其余直接放行。</li>
- *   <li>读取 {@code X-Timestamp}，校验落在 ±window 时间窗内，否则 {@code SIGN_TIMESTAMP_EXPIRED}。</li>
- *   <li>通过 {@link NonceStore} 占用 {@code X-Nonce}，重复则 {@code SIGN_NONCE_REPLAY}。</li>
- *   <li>重算 {@code HMAC-SHA256(timestamp + nonce + bodyHash)} 并与 {@code X-Sign} 常量时间比较，
- *       不一致则 {@code SIGN_INVALID}。</li>
- * </ol>
- * </p>
  *
- * <p>bodyHash 基于「已序列化的原始请求体字节」的 SHA-256 hex；空请求体时 bodyHash 为空串 {@code ""}，
- * 与前端 {@code sign.ts} 约定一致。过滤器需在控制器消费请求体前完成校验，因此这里使用可重复读取的
- * 请求体包装器缓存原始字节（等价于 Spring {@code ContentCachingRequestWrapper} 的缓存语义，
- * 同时保证下游控制器仍能再次读取请求体）。</p>
+ * <ol>
+ *   <li>根据请求映射定位 handler，仅方法/类标注 {@link HmacSigned} 时执行，其余直接放行。
+ *   <li>读取 {@code X-Timestamp}，校验落在 ±window 时间窗内，否则 {@code SIGN_TIMESTAMP_EXPIRED}。
+ *   <li>通过 {@link NonceStore} 占用 {@code X-Nonce}，重复则 {@code SIGN_NONCE_REPLAY}。
+ *   <li>重算 {@code HMAC-SHA256(timestamp + nonce + bodyHash)} 并与 {@code X-Sign} 常量时间比较， 不一致则 {@code
+ *       SIGN_INVALID}。
+ * </ol>
+ *
+ * <p>bodyHash 基于「已序列化的原始请求体字节」的 SHA-256 hex；空请求体时 bodyHash 为空串 {@code ""}， 与前端 {@code sign.ts}
+ * 约定一致。过滤器需在控制器消费请求体前完成校验，因此这里使用可重复读取的 请求体包装器缓存原始字节（等价于 Spring {@code ContentCachingRequestWrapper}
+ * 的缓存语义， 同时保证下游控制器仍能再次读取请求体）。
  */
 @Slf4j
 @Component
@@ -70,7 +68,8 @@ public class HmacSignatureFilter extends OncePerRequestFilter {
     private long windowMillis;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+    protected void doFilterInternal(
+            HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
         if (!isHmacSigned(request)) {
             filterChain.doFilter(request, response);
@@ -80,7 +79,10 @@ public class HmacSignatureFilter extends OncePerRequestFilter {
         // 缓存原始请求体，供 bodyHash 计算，同时保证下游可重复读取
         CachedBodyRequestWrapper cachedRequest = new CachedBodyRequestWrapper(request);
         byte[] body = cachedRequest.getBody();
-        String bodyHash = body.length == 0 ? "" : HmacSignUtil.sha256Hex(new String(body, StandardCharsets.UTF_8));
+        String bodyHash =
+                body.length == 0
+                        ? ""
+                        : HmacSignUtil.sha256Hex(new String(body, StandardCharsets.UTF_8));
 
         String timestamp = request.getHeader("X-Timestamp");
         String nonce = request.getHeader("X-Nonce");
@@ -164,10 +166,7 @@ public class HmacSignatureFilter extends OncePerRequestFilter {
         objectMapper.writeValue(response.getWriter(), body);
     }
 
-    /**
-     * 可重复读取的请求体包装器：构造时一次性读取并缓存原始字节，
-     * 之后通过 {@link #getInputStream()} / {@link #getReader()} 重复提供。
-     */
+    /** 可重复读取的请求体包装器：构造时一次性读取并缓存原始字节， 之后通过 {@link #getInputStream()} / {@link #getReader()} 重复提供。 */
     private static final class CachedBodyRequestWrapper extends HttpServletRequestWrapper {
 
         private final byte[] body;
@@ -209,7 +208,8 @@ public class HmacSignatureFilter extends OncePerRequestFilter {
 
         @Override
         public BufferedReader getReader() {
-            return new BufferedReader(new InputStreamReader(getInputStream(), StandardCharsets.UTF_8));
+            return new BufferedReader(
+                    new InputStreamReader(getInputStream(), StandardCharsets.UTF_8));
         }
     }
 }

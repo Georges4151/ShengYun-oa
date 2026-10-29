@@ -24,9 +24,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * 电子印章服务实现。
- */
+/** 电子印章服务实现。 */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -37,7 +35,8 @@ public class ElectronicSealServiceImpl implements ElectronicSealService {
     private final ElectronicSealConverter electronicSealConverter;
 
     @Override
-    public PageResult<ElectronicSealVO> page(long page, long size, String name, SealStatus status, StorageType storageType) {
+    public PageResult<ElectronicSealVO> page(
+            long page, long size, String name, SealStatus status, StorageType storageType) {
         Page<ElectronicSeal> p = PageUtil.resolve(page, size);
         LambdaQueryWrapper<ElectronicSeal> wrapper = new LambdaQueryWrapper<>();
         if (StringUtils.isNotBlank(name)) {
@@ -47,8 +46,11 @@ public class ElectronicSealServiceImpl implements ElectronicSealService {
         wrapper.eq(storageType != null, ElectronicSeal::getStorageType, storageType);
         wrapper.orderByDesc(ElectronicSeal::getCreateTime);
         IPage<ElectronicSeal> result = electronicSealMapper.selectPage(p, wrapper);
-        return new PageResult<>(electronicSealConverter.toVOList(result.getRecords()),
-                result.getTotal(), result.getCurrent(), result.getSize());
+        return new PageResult<>(
+                electronicSealConverter.toVOList(result.getRecords()),
+                result.getTotal(),
+                result.getCurrent(),
+                result.getSize());
     }
 
     @Override
@@ -70,7 +72,10 @@ public class ElectronicSealServiceImpl implements ElectronicSealService {
         seal.setStorageType(request.getStorageType());
         seal.setSealFileId(request.getSealFileId());
         seal.setUsbDriveId(request.getUsbDriveId());
-        seal.setPasswordProtected(request.getPasswordProtected() == null ? Boolean.FALSE : request.getPasswordProtected());
+        seal.setPasswordProtected(
+                request.getPasswordProtected() == null
+                        ? Boolean.FALSE
+                        : request.getPasswordProtected());
         electronicSealMapper.insert(seal);
         return String.valueOf(seal.getId());
     }
@@ -117,8 +122,10 @@ public class ElectronicSealServiceImpl implements ElectronicSealService {
     @Transactional(rollbackFor = Exception.class)
     public void delete(Long id) {
         requireSeal(id);
-        Long referenceCount = electronicSealApplicationMapper.selectCount(
-                new LambdaQueryWrapper<ElectronicSealApplication>().eq(ElectronicSealApplication::getSealId, id));
+        Long referenceCount =
+                electronicSealApplicationMapper.selectCount(
+                        new LambdaQueryWrapper<ElectronicSealApplication>()
+                                .eq(ElectronicSealApplication::getSealId, id));
         if (referenceCount != null && referenceCount > 0) {
             throw BusinessException.of(ErrorCode.BIZ_REFERENCED, "该印章存在用印申请，无法删除");
         }
@@ -137,9 +144,10 @@ public class ElectronicSealServiceImpl implements ElectronicSealService {
         if (StringUtils.isBlank(sealCode)) {
             return;
         }
-        LambdaQueryWrapper<ElectronicSeal> wrapper = new LambdaQueryWrapper<ElectronicSeal>()
-                .eq(ElectronicSeal::getSealCode, sealCode)
-                .ne(excludeId != null, ElectronicSeal::getId, excludeId);
+        LambdaQueryWrapper<ElectronicSeal> wrapper =
+                new LambdaQueryWrapper<ElectronicSeal>()
+                        .eq(ElectronicSeal::getSealCode, sealCode)
+                        .ne(excludeId != null, ElectronicSeal::getId, excludeId);
         Long count = electronicSealMapper.selectCount(wrapper);
         if (count != null && count > 0) {
             throw BusinessException.of(ErrorCode.BIZ_DUPLICATE_CODE, "印章编码已存在");

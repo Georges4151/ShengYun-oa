@@ -2,13 +2,10 @@ package com.ceams.module.report.vo;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
+import java.math.BigDecimal;
 import lombok.Data;
 
-import java.math.BigDecimal;
-
-/**
- * 项目成本报表明细项。
- */
+/** 项目成本报表明细项。 */
 @Data
 public class ProjectCostItemVO {
 

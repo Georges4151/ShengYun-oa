@@ -18,18 +18,15 @@ import com.ceams.module.project.mapper.ProjectMapper;
 import com.ceams.module.project.service.ProgressPaymentService;
 import com.ceams.module.project.util.PageUtil;
 import com.ceams.module.project.vo.ProgressPaymentVO;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-
-/**
- * 进度款服务实现。
- */
+/** 进度款服务实现。 */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -40,7 +37,8 @@ public class ProgressPaymentServiceImpl implements ProgressPaymentService {
     private final ProgressPaymentConverter progressPaymentConverter;
 
     @Override
-    public PageResult<ProgressPaymentVO> page(long page, long size, Long projectId, ApprovalStatus status) {
+    public PageResult<ProgressPaymentVO> page(
+            long page, long size, Long projectId, ApprovalStatus status) {
         Page<ProgressPayment> p = PageUtil.resolve(page, size);
         LambdaQueryWrapper<ProgressPayment> wrapper = new LambdaQueryWrapper<>();
         if (projectId != null) {
@@ -51,8 +49,11 @@ public class ProgressPaymentServiceImpl implements ProgressPaymentService {
         }
         wrapper.orderByDesc(ProgressPayment::getCreateTime);
         IPage<ProgressPayment> result = progressPaymentMapper.selectPage(p, wrapper);
-        return new PageResult<>(progressPaymentConverter.toVOList(result.getRecords()),
-                result.getTotal(), result.getCurrent(), result.getSize());
+        return new PageResult<>(
+                progressPaymentConverter.toVOList(result.getRecords()),
+                result.getTotal(),
+                result.getCurrent(),
+                result.getSize());
     }
 
     @Override

@@ -5,9 +5,7 @@ import com.ceams.module.seal.enums.StorageType;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
-/**
- * 更新电子印章。
- */
+/** 更新电子印章。 */
 @Data
 public class ElectronicSealUpdateRequest {
 

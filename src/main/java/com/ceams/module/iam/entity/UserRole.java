@@ -5,16 +5,15 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-import lombok.Data;
-
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import lombok.Data;
 
 /**
  * 用户-角色关联（sys_user_role）。
  *
- * <p>关联表：物理删除，无 update_time/update_by/deleted/version 审计列，
- * 仅含 id/user_id/role_id/create_time/create_by，故不继承 BaseEntity。</p>
+ * <p>关联表：物理删除，无 update_time/update_by/deleted/version 审计列， 仅含
+ * id/user_id/role_id/create_time/create_by，故不继承 BaseEntity。
  */
 @Data
 @TableName("sys_user_role")

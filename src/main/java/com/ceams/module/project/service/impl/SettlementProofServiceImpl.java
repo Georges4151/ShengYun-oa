@@ -16,18 +16,15 @@ import com.ceams.module.project.mapper.SubcontractorContractMapper;
 import com.ceams.module.project.service.SettlementProofService;
 import com.ceams.module.project.util.PageUtil;
 import com.ceams.module.project.vo.SettlementProofVO;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-
-/**
- * 结算凭证服务实现。
- */
+/** 结算凭证服务实现。 */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -46,8 +43,11 @@ public class SettlementProofServiceImpl implements SettlementProofService {
         }
         wrapper.orderByDesc(SettlementProof::getCreateTime);
         IPage<SettlementProof> result = settlementProofMapper.selectPage(p, wrapper);
-        return new PageResult<>(settlementProofConverter.toVOList(result.getRecords()),
-                result.getTotal(), result.getCurrent(), result.getSize());
+        return new PageResult<>(
+                settlementProofConverter.toVOList(result.getRecords()),
+                result.getTotal(),
+                result.getCurrent(),
+                result.getSize());
     }
 
     @Override
@@ -118,8 +118,9 @@ public class SettlementProofServiceImpl implements SettlementProofService {
     }
 
     private void checkNumberUnique(String proofNumber, Long excludeId) {
-        LambdaQueryWrapper<SettlementProof> wrapper = new LambdaQueryWrapper<SettlementProof>()
-                .eq(SettlementProof::getProofNumber, proofNumber);
+        LambdaQueryWrapper<SettlementProof> wrapper =
+                new LambdaQueryWrapper<SettlementProof>()
+                        .eq(SettlementProof::getProofNumber, proofNumber);
         if (excludeId != null) {
             wrapper.ne(SettlementProof::getId, excludeId);
         }

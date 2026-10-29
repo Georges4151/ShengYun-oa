@@ -6,9 +6,7 @@ import com.ceams.module.iam.enums.RoleStatus;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-/**
- * 角色（sys_role）。
- */
+/** 角色（sys_role）。 */
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("sys_role")

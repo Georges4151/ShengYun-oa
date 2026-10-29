@@ -2,14 +2,11 @@ package com.ceams.module.report.vo;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
-import lombok.Data;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import lombok.Data;
 
-/**
- * 财务报表明细项：四类流水按统一口径合并后的单条记录。
- */
+/** 财务报表明细项：四类流水按统一口径合并后的单条记录。 */
 @Data
 public class FinancialReportItemVO {
 

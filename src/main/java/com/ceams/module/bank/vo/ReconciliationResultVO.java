@@ -5,14 +5,11 @@ import com.ceams.module.bank.enums.ReconciliationStatus;
 import com.ceams.module.bank.enums.ResolutionStatus;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
-import lombok.Data;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import lombok.Data;
 
-/**
- * 对账结果视图对象。
- */
+/** 对账结果视图对象。 */
 @Data
 public class ReconciliationResultVO {
 

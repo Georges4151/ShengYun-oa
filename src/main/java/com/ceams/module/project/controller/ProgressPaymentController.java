@@ -20,9 +20,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * 进度款管理接口。
- */
+/** 进度款管理接口。 */
 @RestController
 @RequestMapping("/api/v1/progress-payments")
 @RequiredArgsConstructor
@@ -32,10 +30,11 @@ public class ProgressPaymentController {
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public ApiResponse<PageResult<ProgressPaymentVO>> page(@RequestParam(defaultValue = "1") long page,
-                                                           @RequestParam(defaultValue = "20") long size,
-                                                           @RequestParam(required = false) Long projectId,
-                                                           @RequestParam(required = false) ApprovalStatus status) {
+    public ApiResponse<PageResult<ProgressPaymentVO>> page(
+            @RequestParam(defaultValue = "1") long page,
+            @RequestParam(defaultValue = "20") long size,
+            @RequestParam(required = false) Long projectId,
+            @RequestParam(required = false) ApprovalStatus status) {
         return ApiResponse.success(progressPaymentService.page(page, size, projectId, status));
     }
 
@@ -53,7 +52,8 @@ public class ProgressPaymentController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('SYS_ADMIN','FINANCE')")
-    public ApiResponse<Void> update(@PathVariable Long id, @Valid @RequestBody ProgressPaymentUpdateRequest request) {
+    public ApiResponse<Void> update(
+            @PathVariable Long id, @Valid @RequestBody ProgressPaymentUpdateRequest request) {
         progressPaymentService.update(id, request);
         return ApiResponse.success();
     }

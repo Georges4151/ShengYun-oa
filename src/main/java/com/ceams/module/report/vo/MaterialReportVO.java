@@ -1,13 +1,10 @@
 package com.ceams.module.report.vo;
 
-import lombok.Data;
-
 import java.math.BigDecimal;
 import java.util.List;
+import lombok.Data;
 
-/**
- * 材料报表视图对象：按材料维度输出数量 / 金额。
- */
+/** 材料报表视图对象：按材料维度输出数量 / 金额。 */
 @Data
 public class MaterialReportVO {
 

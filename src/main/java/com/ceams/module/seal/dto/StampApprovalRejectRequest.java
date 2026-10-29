@@ -4,9 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
-/**
- * 用印审批驳回请求。
- */
+/** 用印审批驳回请求。 */
 @Data
 public class StampApprovalRejectRequest {
 

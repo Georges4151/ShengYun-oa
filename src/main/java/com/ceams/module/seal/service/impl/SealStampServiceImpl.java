@@ -18,6 +18,11 @@ import com.ceams.module.seal.mapper.ElectronicSealStampMapper;
 import com.ceams.module.seal.mapper.ElectronicSealUsageMapper;
 import com.ceams.module.seal.service.SealStampService;
 import com.ceams.module.seal.vo.SealStampResultVO;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.LocalDateTime;
+import java.util.Base64;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -25,15 +30,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.time.LocalDateTime;
-import java.util.Base64;
-
-/**
- * PDF 盖章服务实现（HMAC 高危接口）。
- */
+/** PDF 盖章服务实现（HMAC 高危接口）。 */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -52,12 +49,15 @@ public class SealStampServiceImpl implements SealStampService {
     @Transactional(rollbackFor = Exception.class)
     public SealStampResultVO stamp(SealStampRequest request) {
         ElectronicSeal seal = requireActiveSeal(request.getSealId());
-        ElectronicSealApplication application = requireApprovedApplication(request.getApplicationId(), seal.getId());
+        ElectronicSealApplication application =
+                requireApprovedApplication(request.getApplicationId(), seal.getId());
 
         byte[] sourcePdf = decodeBase64(request.getSourcePdfBase64(), "sourcePdfBase64");
         byte[] sealImage = decodeBase64(request.getSealImageBase64(), "sealImageBase64");
 
-        byte[] stampedPdf = pdfStampService.stamp(sourcePdf, buildStampRequest(sealImage, request.getStampPosition()));
+        byte[] stampedPdf =
+                pdfStampService.stamp(
+                        sourcePdf, buildStampRequest(sealImage, request.getStampPosition()));
 
         ElectronicSealStamp stamp = new ElectronicSealStamp();
         stamp.setSealId(seal.getId());
@@ -66,8 +66,10 @@ public class SealStampServiceImpl implements SealStampService {
         stamp.setProjectName(application.getProjectName());
         stamp.setContractName(application.getContractName());
         stamp.setContractPath(application.getContractPath());
-        stamp.setStampPosition(StringUtils.isNotBlank(request.getStampPosition())
-                ? request.getStampPosition() : application.getStampPosition());
+        stamp.setStampPosition(
+                StringUtils.isNotBlank(request.getStampPosition())
+                        ? request.getStampPosition()
+                        : application.getStampPosition());
         stamp.setStampImage(seal.getSealImage());
         stamp.setStampTime(LocalDateTime.now());
         stamp.setUserId(SecurityUtils.getCurrentUserId());
@@ -107,7 +109,8 @@ public class SealStampServiceImpl implements SealStampService {
     }
 
     private ElectronicSealApplication requireApprovedApplication(Long applicationId, Long sealId) {
-        ElectronicSealApplication application = electronicSealApplicationMapper.selectById(applicationId);
+        ElectronicSealApplication application =
+                electronicSealApplicationMapper.selectById(applicationId);
         if (application == null) {
             throw BusinessException.of(ErrorCode.BIZ_NOT_FOUND, "用印申请不存在");
         }
@@ -149,7 +152,8 @@ public class SealStampServiceImpl implements SealStampService {
         try {
             return Base64.getDecoder().decode(data.trim());
         } catch (IllegalArgumentException e) {
-            throw BusinessException.of(ErrorCode.VALID_ILLEGAL_ARGUMENT, fieldName + " 不是合法的 Base64");
+            throw BusinessException.of(
+                    ErrorCode.VALID_ILLEGAL_ARGUMENT, fieldName + " 不是合法的 Base64");
         }
     }
 

@@ -5,15 +5,12 @@ import com.ceams.common.base.BaseEntity;
 import com.ceams.module.bank.enums.DiscrepancyType;
 import com.ceams.module.bank.enums.ReconciliationStatus;
 import com.ceams.module.bank.enums.ResolutionStatus;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-
-/**
- * 对账结果（biz_reconciliation_result）。
- */
+/** 对账结果（biz_reconciliation_result）。 */
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("biz_reconciliation_result")

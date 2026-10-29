@@ -15,16 +15,13 @@ import com.ceams.module.iam.mapper.UserDeviceMapper;
 import com.ceams.module.iam.service.DeviceService;
 import com.ceams.module.iam.util.PageUtil;
 import com.ceams.module.iam.vo.UserDeviceVO;
+import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-
-/**
- * 设备绑定服务实现。
- */
+/** 设备绑定服务实现。 */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -37,12 +34,16 @@ public class DeviceServiceImpl implements DeviceService {
     public PageResult<UserDeviceVO> page(long page, long size) {
         Long userId = SecurityUtils.getCurrentUserIdOrDefault();
         Page<SysUserDevice> p = PageUtil.resolve(page, size);
-        LambdaQueryWrapper<SysUserDevice> wrapper = new LambdaQueryWrapper<SysUserDevice>()
-                .eq(SysUserDevice::getUserId, userId)
-                .orderByDesc(SysUserDevice::getCreateTime);
+        LambdaQueryWrapper<SysUserDevice> wrapper =
+                new LambdaQueryWrapper<SysUserDevice>()
+                        .eq(SysUserDevice::getUserId, userId)
+                        .orderByDesc(SysUserDevice::getCreateTime);
         IPage<SysUserDevice> result = userDeviceMapper.selectPage(p, wrapper);
-        return new PageResult<>(deviceConverter.toVOList(result.getRecords()),
-                result.getTotal(), result.getCurrent(), result.getSize());
+        return new PageResult<>(
+                deviceConverter.toVOList(result.getRecords()),
+                result.getTotal(),
+                result.getCurrent(),
+                result.getSize());
     }
 
     @Override
@@ -50,11 +51,12 @@ public class DeviceServiceImpl implements DeviceService {
     public String bind(DeviceBindRequest request) {
         Long userId = SecurityUtils.getCurrentUserIdOrDefault();
         LocalDateTime now = LocalDateTime.now();
-        SysUserDevice device = userDeviceMapper.selectOne(
-                new LambdaQueryWrapper<SysUserDevice>()
-                        .eq(SysUserDevice::getUserId, userId)
-                        .eq(SysUserDevice::getDeviceId, request.getDeviceId())
-                        .last("LIMIT 1"));
+        SysUserDevice device =
+                userDeviceMapper.selectOne(
+                        new LambdaQueryWrapper<SysUserDevice>()
+                                .eq(SysUserDevice::getUserId, userId)
+                                .eq(SysUserDevice::getDeviceId, request.getDeviceId())
+                                .last("LIMIT 1"));
         if (device == null) {
             device = new SysUserDevice();
             device.setUserId(userId);

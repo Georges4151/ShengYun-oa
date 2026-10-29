@@ -20,9 +20,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * 项目台账管理接口。
- */
+/** 项目台账管理接口。 */
 @RestController
 @RequestMapping("/api/v1/projects")
 @RequiredArgsConstructor
@@ -32,10 +30,11 @@ public class ProjectController {
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public ApiResponse<PageResult<ProjectVO>> page(@RequestParam(defaultValue = "1") long page,
-                                                   @RequestParam(defaultValue = "20") long size,
-                                                   @RequestParam(required = false) String keyword,
-                                                   @RequestParam(required = false) ProjectStatus status) {
+    public ApiResponse<PageResult<ProjectVO>> page(
+            @RequestParam(defaultValue = "1") long page,
+            @RequestParam(defaultValue = "20") long size,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) ProjectStatus status) {
         return ApiResponse.success(projectService.page(page, size, keyword, status));
     }
 
@@ -53,7 +52,8 @@ public class ProjectController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('SYS_ADMIN')")
-    public ApiResponse<Void> update(@PathVariable Long id, @Valid @RequestBody ProjectUpdateRequest request) {
+    public ApiResponse<Void> update(
+            @PathVariable Long id, @Valid @RequestBody ProjectUpdateRequest request) {
         projectService.update(id, request);
         return ApiResponse.success();
     }

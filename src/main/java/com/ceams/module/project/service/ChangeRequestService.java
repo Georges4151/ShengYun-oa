@@ -7,9 +7,7 @@ import com.ceams.module.project.dto.changerequest.ChangeRequestUpdateRequest;
 import com.ceams.module.project.enums.ApprovalStatus;
 import com.ceams.module.project.vo.ChangeRequestVO;
 
-/**
- * 变更请求服务。
- */
+/** 变更请求服务。 */
 public interface ChangeRequestService {
 
     PageResult<ChangeRequestVO> page(long page, long size, Long projectId, ApprovalStatus status);

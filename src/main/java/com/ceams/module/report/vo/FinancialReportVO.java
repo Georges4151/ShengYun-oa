@@ -1,13 +1,10 @@
 package com.ceams.module.report.vo;
 
-import lombok.Data;
-
 import java.math.BigDecimal;
 import java.util.List;
+import lombok.Data;
 
-/**
- * 财务报表视图对象：聚合收支流水 / 付款交易 / 银行流水 / 总账。
- */
+/** 财务报表视图对象：聚合收支流水 / 付款交易 / 银行流水 / 总账。 */
 @Data
 public class FinancialReportVO {
 

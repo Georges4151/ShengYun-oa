@@ -3,14 +3,11 @@ package com.ceams.module.project.dto.project;
 import com.ceams.module.project.enums.ProjectStatus;
 import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
-import lombok.Data;
-
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import lombok.Data;
 
-/**
- * 更新项目请求。
- */
+/** 更新项目请求。 */
 @Data
 public class ProjectUpdateRequest {
 

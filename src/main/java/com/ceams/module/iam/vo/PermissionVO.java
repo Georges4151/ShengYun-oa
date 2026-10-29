@@ -3,14 +3,11 @@ package com.ceams.module.iam.vo;
 import com.ceams.module.iam.enums.PermissionType;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
-import lombok.Data;
-
 import java.util.ArrayList;
 import java.util.List;
+import lombok.Data;
 
-/**
- * 权限视图对象（树节点）。
- */
+/** 权限视图对象（树节点）。 */
 @Data
 public class PermissionVO {
 

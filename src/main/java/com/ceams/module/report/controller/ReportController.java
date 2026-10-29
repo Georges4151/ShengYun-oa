@@ -16,9 +16,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * 跨域只读报表接口（report 模块，只读、不挂 @HmacSigned）。
- */
+/** 跨域只读报表接口（report 模块，只读、不挂 @HmacSigned）。 */
 @RestController
 @RequestMapping("/api/v1/reports")
 @RequiredArgsConstructor

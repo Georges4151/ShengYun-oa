@@ -2,9 +2,7 @@ package com.ceams.module.payment.service;
 
 import com.ceams.module.payment.dto.PaymentExecuteRequest;
 
-/**
- * 付款执行服务。
- */
+/** 付款执行服务。 */
 public interface PaymentService {
 
     /**

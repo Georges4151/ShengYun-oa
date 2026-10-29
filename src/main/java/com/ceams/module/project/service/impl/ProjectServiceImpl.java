@@ -23,18 +23,15 @@ import com.ceams.module.project.mapper.SubcontractorContractMapper;
 import com.ceams.module.project.service.ProjectService;
 import com.ceams.module.project.util.PageUtil;
 import com.ceams.module.project.vo.ProjectVO;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-
-/**
- * 项目台账服务实现。
- */
+/** 项目台账服务实现。 */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -52,16 +49,22 @@ public class ProjectServiceImpl implements ProjectService {
         Page<Project> p = PageUtil.resolve(page, size);
         LambdaQueryWrapper<Project> wrapper = new LambdaQueryWrapper<>();
         if (StringUtils.isNotBlank(keyword)) {
-            wrapper.and(w -> w.like(Project::getProjectName, keyword)
-                    .or().like(Project::getClientName, keyword));
+            wrapper.and(
+                    w ->
+                            w.like(Project::getProjectName, keyword)
+                                    .or()
+                                    .like(Project::getClientName, keyword));
         }
         if (status != null) {
             wrapper.eq(Project::getStatus, status);
         }
         wrapper.orderByDesc(Project::getCreateTime);
         IPage<Project> result = projectMapper.selectPage(p, wrapper);
-        return new PageResult<>(projectConverter.toVOList(result.getRecords()),
-                result.getTotal(), result.getCurrent(), result.getSize());
+        return new PageResult<>(
+                projectConverter.toVOList(result.getRecords()),
+                result.getTotal(),
+                result.getCurrent(),
+                result.getSize());
     }
 
     @Override
@@ -132,23 +135,30 @@ public class ProjectServiceImpl implements ProjectService {
     @Transactional(rollbackFor = Exception.class)
     public void delete(Long id) {
         requireProject(id);
-        Long budgetRefs = budgetMapper.selectCount(new LambdaQueryWrapper<Budget>()
-                .eq(Budget::getProjectId, id));
+        Long budgetRefs =
+                budgetMapper.selectCount(
+                        new LambdaQueryWrapper<Budget>().eq(Budget::getProjectId, id));
         if (budgetRefs != null && budgetRefs > 0) {
             throw BusinessException.of(ErrorCode.BIZ_REFERENCED, "项目存在关联预算，无法删除");
         }
-        Long changeRefs = changeRequestMapper.selectCount(new LambdaQueryWrapper<ChangeRequest>()
-                .eq(ChangeRequest::getProjectId, id));
+        Long changeRefs =
+                changeRequestMapper.selectCount(
+                        new LambdaQueryWrapper<ChangeRequest>()
+                                .eq(ChangeRequest::getProjectId, id));
         if (changeRefs != null && changeRefs > 0) {
             throw BusinessException.of(ErrorCode.BIZ_REFERENCED, "项目存在关联变更请求，无法删除");
         }
-        Long paymentRefs = progressPaymentMapper.selectCount(new LambdaQueryWrapper<ProgressPayment>()
-                .eq(ProgressPayment::getProjectId, id));
+        Long paymentRefs =
+                progressPaymentMapper.selectCount(
+                        new LambdaQueryWrapper<ProgressPayment>()
+                                .eq(ProgressPayment::getProjectId, id));
         if (paymentRefs != null && paymentRefs > 0) {
             throw BusinessException.of(ErrorCode.BIZ_REFERENCED, "项目存在关联进度款，无法删除");
         }
-        Long contractRefs = subcontractorContractMapper.selectCount(new LambdaQueryWrapper<SubcontractorContract>()
-                .eq(SubcontractorContract::getProjectId, id));
+        Long contractRefs =
+                subcontractorContractMapper.selectCount(
+                        new LambdaQueryWrapper<SubcontractorContract>()
+                                .eq(SubcontractorContract::getProjectId, id));
         if (contractRefs != null && contractRefs > 0) {
             throw BusinessException.of(ErrorCode.BIZ_REFERENCED, "项目存在关联分包合同，无法删除");
         }

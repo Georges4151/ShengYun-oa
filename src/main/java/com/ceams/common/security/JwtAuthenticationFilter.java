@@ -5,6 +5,8 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.List;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -12,12 +14,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import java.io.IOException;
-import java.util.List;
-
 /**
- * JWT 认证过滤器：解析 {@code Authorization: Bearer <access>}，
- * 校验通过后将用户 ID（principal）与角色（authorities）写入安全上下文。
+ * JWT 认证过滤器：解析 {@code Authorization: Bearer <access>}， 校验通过后将用户
+ * ID（principal）与角色（authorities）写入安全上下文。
  */
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
@@ -30,7 +29,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+    protected void doFilterInternal(
+            HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
         String header = request.getHeader("Authorization");
         if (header != null && header.startsWith(BEARER_PREFIX)) {
@@ -39,12 +39,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 Claims claims = jwtUtil.parse(token);
                 if (jwtUtil.isAccessToken(claims)) {
                     Long userId = jwtUtil.getUserId(claims);
-                    List<GrantedAuthority> authorities = jwtUtil.getRoles(claims).stream()
-                            .map(r -> (GrantedAuthority) new SimpleGrantedAuthority("ROLE_" + r))
-                            .toList();
+                    List<GrantedAuthority> authorities =
+                            jwtUtil.getRoles(claims).stream()
+                                    .map(
+                                            r ->
+                                                    (GrantedAuthority)
+                                                            new SimpleGrantedAuthority("ROLE_" + r))
+                                    .toList();
                     UsernamePasswordAuthenticationToken authentication =
                             new UsernamePasswordAuthenticationToken(userId, null, authorities);
-                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    authentication.setDetails(
+                            new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authentication);
                 }
             } catch (Exception ex) {

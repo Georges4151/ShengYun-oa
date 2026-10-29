@@ -20,9 +20,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * 设备台账管理接口。
- */
+/** 设备台账管理接口。 */
 @RestController
 @RequestMapping("/api/v1/equipment")
 @RequiredArgsConstructor
@@ -32,10 +30,11 @@ public class EquipmentController {
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public ApiResponse<PageResult<EquipmentVO>> page(@RequestParam(defaultValue = "1") long page,
-                                                     @RequestParam(defaultValue = "20") long size,
-                                                     @RequestParam(required = false) String keyword,
-                                                     @RequestParam(required = false) EquipmentStatus status) {
+    public ApiResponse<PageResult<EquipmentVO>> page(
+            @RequestParam(defaultValue = "1") long page,
+            @RequestParam(defaultValue = "20") long size,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) EquipmentStatus status) {
         return ApiResponse.success(equipmentService.page(page, size, keyword, status));
     }
 
@@ -53,7 +52,8 @@ public class EquipmentController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('SYS_ADMIN')")
-    public ApiResponse<Void> update(@PathVariable Long id, @Valid @RequestBody EquipmentUpdateRequest request) {
+    public ApiResponse<Void> update(
+            @PathVariable Long id, @Valid @RequestBody EquipmentUpdateRequest request) {
         equipmentService.update(id, request);
         return ApiResponse.success();
     }

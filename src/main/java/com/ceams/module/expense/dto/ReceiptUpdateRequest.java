@@ -4,14 +4,11 @@ import com.ceams.module.expense.enums.PaymentMethod;
 import com.ceams.module.expense.enums.ReceiptType;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Size;
-import lombok.Data;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import lombok.Data;
 
-/**
- * 更新票据（仅草稿/驳回态可编辑）。
- */
+/** 更新票据（仅草稿/驳回态可编辑）。 */
 @Data
 public class ReceiptUpdateRequest {
 

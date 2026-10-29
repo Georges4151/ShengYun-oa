@@ -2,13 +2,10 @@ package com.ceams.module.masterdata.dto.material;
 
 import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
+import java.math.BigDecimal;
 import lombok.Data;
 
-import java.math.BigDecimal;
-
-/**
- * 更新材料请求（材料编码不可修改）。
- */
+/** 更新材料请求（材料编码不可修改）。 */
 @Data
 public class MaterialUpdateRequest {
 

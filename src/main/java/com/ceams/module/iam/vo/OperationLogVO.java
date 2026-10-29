@@ -3,13 +3,10 @@ package com.ceams.module.iam.vo;
 import com.ceams.module.iam.enums.OperationType;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
+import java.time.LocalDateTime;
 import lombok.Data;
 
-import java.time.LocalDateTime;
-
-/**
- * 操作日志视图对象。
- */
+/** 操作日志视图对象。 */
 @Data
 public class OperationLogVO {
 

@@ -19,9 +19,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * 分包商管理接口。
- */
+/** 分包商管理接口。 */
 @RestController
 @RequestMapping("/api/v1/subcontractors")
 @RequiredArgsConstructor
@@ -31,9 +29,10 @@ public class SubcontractorController {
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public ApiResponse<PageResult<SubcontractorVO>> page(@RequestParam(defaultValue = "1") long page,
-                                                         @RequestParam(defaultValue = "20") long size,
-                                                         @RequestParam(required = false) String keyword) {
+    public ApiResponse<PageResult<SubcontractorVO>> page(
+            @RequestParam(defaultValue = "1") long page,
+            @RequestParam(defaultValue = "20") long size,
+            @RequestParam(required = false) String keyword) {
         return ApiResponse.success(subcontractorService.page(page, size, keyword));
     }
 
@@ -51,7 +50,8 @@ public class SubcontractorController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('SYS_ADMIN')")
-    public ApiResponse<Void> update(@PathVariable Long id, @Valid @RequestBody SubcontractorUpdateRequest request) {
+    public ApiResponse<Void> update(
+            @PathVariable Long id, @Valid @RequestBody SubcontractorUpdateRequest request) {
         subcontractorService.update(id, request);
         return ApiResponse.success();
     }

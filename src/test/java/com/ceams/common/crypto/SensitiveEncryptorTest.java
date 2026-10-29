@@ -1,16 +1,16 @@
 package com.ceams.common.crypto;
 
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import org.junit.jupiter.api.Test;
+
 /**
  * {@link SensitiveEncryptor} 纯单元测试（无需数据库 / Spring 容器）。
  *
- * <p>覆盖：加解密往返、随机 IV 导致密文变化、null/blank 原样返回、篡改后解密失败。</p>
+ * <p>覆盖：加解密往返、随机 IV 导致密文变化、null/blank 原样返回、篡改后解密失败。
  */
 class SensitiveEncryptorTest {
 

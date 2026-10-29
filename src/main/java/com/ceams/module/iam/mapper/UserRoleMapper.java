@@ -4,9 +4,6 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.ceams.module.iam.entity.UserRole;
 import org.apache.ibatis.annotations.Mapper;
 
-/**
- * 用户-角色关联 Mapper（物理删除）。
- */
+/** 用户-角色关联 Mapper（物理删除）。 */
 @Mapper
-public interface UserRoleMapper extends BaseMapper<UserRole> {
-}
+public interface UserRoleMapper extends BaseMapper<UserRole> {}

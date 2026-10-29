@@ -13,17 +13,14 @@ import com.ceams.module.iam.mapper.OperationLogMapper;
 import com.ceams.module.iam.service.OperationLogService;
 import com.ceams.module.iam.util.PageUtil;
 import com.ceams.module.iam.vo.OperationLogVO;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeParseException;
-
-/**
- * 操作日志服务实现。
- */
+/** 操作日志服务实现。 */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -33,8 +30,13 @@ public class OperationLogServiceImpl implements OperationLogService {
     private final OperationLogConverter operationLogConverter;
 
     @Override
-    public PageResult<OperationLogVO> page(long page, long size, String userId, String operationType,
-                                           String startTime, String endTime) {
+    public PageResult<OperationLogVO> page(
+            long page,
+            long size,
+            String userId,
+            String operationType,
+            String startTime,
+            String endTime) {
         Page<OperationLog> p = PageUtil.resolve(page, size);
         LambdaQueryWrapper<OperationLog> wrapper = new LambdaQueryWrapper<>();
         if (StringUtils.isNotBlank(userId)) {
@@ -52,8 +54,11 @@ public class OperationLogServiceImpl implements OperationLogService {
         wrapper.orderByDesc(OperationLog::getCreateTime);
 
         IPage<OperationLog> result = operationLogMapper.selectPage(p, wrapper);
-        return new PageResult<>(operationLogConverter.toVOList(result.getRecords()),
-                result.getTotal(), result.getCurrent(), result.getSize());
+        return new PageResult<>(
+                operationLogConverter.toVOList(result.getRecords()),
+                result.getTotal(),
+                result.getCurrent(),
+                result.getSize());
     }
 
     private Long parseLong(String value) {
@@ -76,7 +81,8 @@ public class OperationLogServiceImpl implements OperationLogService {
         try {
             return LocalDateTime.parse(value.trim());
         } catch (DateTimeParseException ex) {
-            throw BusinessException.of(ErrorCode.VALID_ILLEGAL_ARGUMENT, "非法的 " + field + " 时间: " + value);
+            throw BusinessException.of(
+                    ErrorCode.VALID_ILLEGAL_ARGUMENT, "非法的 " + field + " 时间: " + value);
         }
     }
 }

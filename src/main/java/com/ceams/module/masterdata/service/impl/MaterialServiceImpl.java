@@ -21,9 +21,7 @@ import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * 材料服务实现。
- */
+/** 材料服务实现。 */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -37,17 +35,24 @@ public class MaterialServiceImpl implements MaterialService {
         Page<Material> p = PageUtil.resolve(page, size);
         LambdaQueryWrapper<Material> wrapper = new LambdaQueryWrapper<>();
         if (StringUtils.isNotBlank(keyword)) {
-            wrapper.and(w -> w.like(Material::getMaterialName, keyword)
-                    .or().like(Material::getMaterialCode, keyword)
-                    .or().like(Material::getSpecification, keyword));
+            wrapper.and(
+                    w ->
+                            w.like(Material::getMaterialName, keyword)
+                                    .or()
+                                    .like(Material::getMaterialCode, keyword)
+                                    .or()
+                                    .like(Material::getSpecification, keyword));
         }
         if (categoryId != null) {
             wrapper.eq(Material::getCategoryId, categoryId);
         }
         wrapper.orderByDesc(Material::getCreateTime);
         IPage<Material> result = materialMapper.selectPage(p, wrapper);
-        return new PageResult<>(materialConverter.toVOList(result.getRecords()),
-                result.getTotal(), result.getCurrent(), result.getSize());
+        return new PageResult<>(
+                materialConverter.toVOList(result.getRecords()),
+                result.getTotal(),
+                result.getCurrent(),
+                result.getSize());
     }
 
     @Override
@@ -58,8 +63,10 @@ public class MaterialServiceImpl implements MaterialService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public String create(MaterialCreateRequest request) {
-        Long count = materialMapper.selectCount(new LambdaQueryWrapper<Material>()
-                .eq(Material::getMaterialCode, request.getMaterialCode()));
+        Long count =
+                materialMapper.selectCount(
+                        new LambdaQueryWrapper<Material>()
+                                .eq(Material::getMaterialCode, request.getMaterialCode()));
         if (count != null && count > 0) {
             throw BusinessException.of(ErrorCode.BIZ_DUPLICATE_CODE, "材料编码已存在");
         }

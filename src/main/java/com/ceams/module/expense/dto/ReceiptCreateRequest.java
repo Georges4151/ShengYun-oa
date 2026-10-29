@@ -6,14 +6,11 @@ import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import lombok.Data;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import lombok.Data;
 
-/**
- * 新建票据（报销单）。
- */
+/** 新建票据（报销单）。 */
 @Data
 public class ReceiptCreateRequest {
 

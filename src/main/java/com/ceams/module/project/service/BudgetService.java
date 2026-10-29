@@ -5,9 +5,7 @@ import com.ceams.module.project.dto.budget.BudgetCreateRequest;
 import com.ceams.module.project.dto.budget.BudgetUpdateRequest;
 import com.ceams.module.project.vo.BudgetVO;
 
-/**
- * 预算服务。
- */
+/** 预算服务。 */
 public interface BudgetService {
 
     PageResult<BudgetVO> page(long page, long size, Long projectId);

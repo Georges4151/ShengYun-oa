@@ -3,13 +3,10 @@ package com.ceams.module.masterdata.dto.material;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
+import java.math.BigDecimal;
 import lombok.Data;
 
-import java.math.BigDecimal;
-
-/**
- * 新建材料请求。
- */
+/** 新建材料请求。 */
 @Data
 public class MaterialCreateRequest {
 

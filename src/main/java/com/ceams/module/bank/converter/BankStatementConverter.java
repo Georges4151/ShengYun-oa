@@ -2,13 +2,10 @@ package com.ceams.module.bank.converter;
 
 import com.ceams.module.bank.entity.BankStatement;
 import com.ceams.module.bank.vo.BankStatementVO;
+import java.util.List;
 import org.mapstruct.Mapper;
 
-import java.util.List;
-
-/**
- * 银行流水实体 <-> VO 转换。
- */
+/** 银行流水实体 <-> VO 转换。 */
 @Mapper(componentModel = "spring")
 public interface BankStatementConverter {
 

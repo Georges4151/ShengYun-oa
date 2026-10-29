@@ -3,9 +3,7 @@ package com.ceams.module.seal.dto;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
-/**
- * 用印审批通过请求。
- */
+/** 用印审批通过请求。 */
 @Data
 public class StampApprovalApproveRequest {
 

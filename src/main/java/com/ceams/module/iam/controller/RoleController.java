@@ -20,9 +20,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * 角色管理接口。
- */
+/** 角色管理接口。 */
 @RestController
 @RequestMapping("/api/v1/roles")
 @RequiredArgsConstructor
@@ -32,9 +30,10 @@ public class RoleController {
     private final RoleService roleService;
 
     @GetMapping
-    public ApiResponse<PageResult<RoleVO>> page(@RequestParam(defaultValue = "1") long page,
-                                                @RequestParam(defaultValue = "20") long size,
-                                                @RequestParam(required = false) String keyword) {
+    public ApiResponse<PageResult<RoleVO>> page(
+            @RequestParam(defaultValue = "1") long page,
+            @RequestParam(defaultValue = "20") long size,
+            @RequestParam(required = false) String keyword) {
         return ApiResponse.success(roleService.page(page, size, keyword));
     }
 
@@ -49,7 +48,8 @@ public class RoleController {
     }
 
     @PutMapping("/{id}")
-    public ApiResponse<Void> update(@PathVariable Long id, @Valid @RequestBody RoleUpdateRequest request) {
+    public ApiResponse<Void> update(
+            @PathVariable Long id, @Valid @RequestBody RoleUpdateRequest request) {
         roleService.update(id, request);
         return ApiResponse.success();
     }
@@ -61,7 +61,8 @@ public class RoleController {
     }
 
     @PutMapping("/{id}/permissions")
-    public ApiResponse<Void> assignPermissions(@PathVariable Long id, @Valid @RequestBody AssignPermissionsRequest request) {
+    public ApiResponse<Void> assignPermissions(
+            @PathVariable Long id, @Valid @RequestBody AssignPermissionsRequest request) {
         roleService.assignPermissions(id, request.getPermissionIds());
         return ApiResponse.success();
     }

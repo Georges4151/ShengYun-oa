@@ -12,9 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * 印章使用审计接口。
- */
+/** 印章使用审计接口。 */
 @RestController
 @RequestMapping("/api/v1/seal/usages")
 @RequiredArgsConstructor
@@ -24,10 +22,11 @@ public class ElectronicSealUsageController {
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public ApiResponse<PageResult<ElectronicSealUsageVO>> page(@RequestParam(defaultValue = "1") long page,
-                                                               @RequestParam(defaultValue = "20") long size,
-                                                               @RequestParam(required = false) Long sealId,
-                                                               @RequestParam(required = false) Long userId) {
+    public ApiResponse<PageResult<ElectronicSealUsageVO>> page(
+            @RequestParam(defaultValue = "1") long page,
+            @RequestParam(defaultValue = "20") long size,
+            @RequestParam(required = false) Long sealId,
+            @RequestParam(required = false) Long userId) {
         return ApiResponse.success(electronicSealUsageService.page(page, size, sealId, userId));
     }
 

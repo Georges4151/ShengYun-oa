@@ -3,13 +3,10 @@ package com.ceams.module.iam.vo;
 import com.ceams.module.iam.enums.Platform;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
+import java.time.LocalDateTime;
 import lombok.Data;
 
-import java.time.LocalDateTime;
-
-/**
- * 用户活跃会话视图对象。
- */
+/** 用户活跃会话视图对象。 */
 @Data
 public class UserSessionVO {
 

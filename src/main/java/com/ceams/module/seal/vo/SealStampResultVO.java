@@ -4,9 +4,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import lombok.Data;
 
-/**
- * 盖章结果。
- */
+/** 盖章结果。 */
 @Data
 public class SealStampResultVO {
 

@@ -25,9 +25,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * 往来单位服务实现。
- */
+/** 往来单位服务实现。 */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -43,16 +41,22 @@ public class ContactServiceImpl implements ContactService {
         Page<Contact> p = PageUtil.resolve(page, size);
         LambdaQueryWrapper<Contact> wrapper = new LambdaQueryWrapper<>();
         if (StringUtils.isNotBlank(keyword)) {
-            wrapper.and(w -> w.like(Contact::getName, keyword)
-                    .or().like(Contact::getContactPerson, keyword));
+            wrapper.and(
+                    w ->
+                            w.like(Contact::getName, keyword)
+                                    .or()
+                                    .like(Contact::getContactPerson, keyword));
         }
         if (type != null) {
             wrapper.eq(Contact::getType, type);
         }
         wrapper.orderByDesc(Contact::getCreateTime);
         IPage<Contact> result = contactMapper.selectPage(p, wrapper);
-        return new PageResult<>(contactConverter.toVOList(result.getRecords()),
-                result.getTotal(), result.getCurrent(), result.getSize());
+        return new PageResult<>(
+                contactConverter.toVOList(result.getRecords()),
+                result.getTotal(),
+                result.getCurrent(),
+                result.getSize());
     }
 
     @Override
@@ -111,13 +115,16 @@ public class ContactServiceImpl implements ContactService {
     @Transactional(rollbackFor = Exception.class)
     public void delete(Long id) {
         requireContact(id);
-        Long materialRefs = materialMapper.selectCount(new LambdaQueryWrapper<Material>()
-                .eq(Material::getSupplierId, id));
+        Long materialRefs =
+                materialMapper.selectCount(
+                        new LambdaQueryWrapper<Material>().eq(Material::getSupplierId, id));
         if (materialRefs != null && materialRefs > 0) {
             throw BusinessException.of(ErrorCode.BIZ_REFERENCED, "往来单位已被材料关联，无法删除");
         }
-        Long leaseRefs = equipmentLeaseMapper.selectCount(new LambdaQueryWrapper<EquipmentLease>()
-                .eq(EquipmentLease::getLessorId, id));
+        Long leaseRefs =
+                equipmentLeaseMapper.selectCount(
+                        new LambdaQueryWrapper<EquipmentLease>()
+                                .eq(EquipmentLease::getLessorId, id));
         if (leaseRefs != null && leaseRefs > 0) {
             throw BusinessException.of(ErrorCode.BIZ_REFERENCED, "往来单位已被设备租赁关联，无法删除");
         }

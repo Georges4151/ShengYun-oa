@@ -2,13 +2,10 @@ package com.ceams.module.bank.converter;
 
 import com.ceams.module.bank.entity.ReconciliationResult;
 import com.ceams.module.bank.vo.ReconciliationResultVO;
+import java.util.List;
 import org.mapstruct.Mapper;
 
-import java.util.List;
-
-/**
- * 对账结果实体 <-> VO 转换。
- */
+/** 对账结果实体 <-> VO 转换。 */
 @Mapper(componentModel = "spring")
 public interface ReconciliationResultConverter {
 

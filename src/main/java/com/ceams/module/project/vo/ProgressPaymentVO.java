@@ -3,15 +3,12 @@ package com.ceams.module.project.vo;
 import com.ceams.module.project.enums.ApprovalStatus;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
-import lombok.Data;
-
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import lombok.Data;
 
-/**
- * 进度款视图对象。
- */
+/** 进度款视图对象。 */
 @Data
 public class ProgressPaymentVO {
 

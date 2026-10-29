@@ -3,14 +3,11 @@ package com.ceams.module.payment.dto;
 import com.ceams.module.payment.enums.AccountType;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
-import lombok.Data;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import lombok.Data;
 
-/**
- * 新建收支流水。
- */
+/** 新建收支流水。 */
 @Data
 public class AccountCreateRequest {
 

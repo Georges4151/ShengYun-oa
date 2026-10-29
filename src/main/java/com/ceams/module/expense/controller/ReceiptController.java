@@ -15,6 +15,7 @@ import com.ceams.module.expense.vo.ApprovalRecordVO;
 import com.ceams.module.expense.vo.ReceiptVO;
 import com.ceams.module.expense.vo.ReceiptVerificationVO;
 import jakarta.validation.Valid;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -27,11 +28,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-
-/**
- * 票据（报销）管理接口。
- */
+/** 票据（报销）管理接口。 */
 @RestController
 @RequestMapping("/api/v1/expenses")
 @RequiredArgsConstructor
@@ -41,16 +38,25 @@ public class ReceiptController {
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public ApiResponse<PageResult<ReceiptVO>> page(@RequestParam(defaultValue = "1") long page,
-                                                   @RequestParam(defaultValue = "20") long size,
-                                                   @RequestParam(required = false) String receiptNumber,
-                                                   @RequestParam(required = false) Long userId,
-                                                   @RequestParam(required = false) Long projectId,
-                                                   @RequestParam(required = false) VerificationStatus verificationStatus,
-                                                   @RequestParam(required = false) PaymentStatus paymentStatus,
-                                                   @RequestParam(required = false) ReceiptApprovalStatus approvalStatus) {
-        return ApiResponse.success(receiptService.page(page, size, receiptNumber, userId, projectId,
-                verificationStatus, paymentStatus, approvalStatus));
+    public ApiResponse<PageResult<ReceiptVO>> page(
+            @RequestParam(defaultValue = "1") long page,
+            @RequestParam(defaultValue = "20") long size,
+            @RequestParam(required = false) String receiptNumber,
+            @RequestParam(required = false) Long userId,
+            @RequestParam(required = false) Long projectId,
+            @RequestParam(required = false) VerificationStatus verificationStatus,
+            @RequestParam(required = false) PaymentStatus paymentStatus,
+            @RequestParam(required = false) ReceiptApprovalStatus approvalStatus) {
+        return ApiResponse.success(
+                receiptService.page(
+                        page,
+                        size,
+                        receiptNumber,
+                        userId,
+                        projectId,
+                        verificationStatus,
+                        paymentStatus,
+                        approvalStatus));
     }
 
     @PostMapping
@@ -67,7 +73,8 @@ public class ReceiptController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('SYS_ADMIN','FINANCE')")
-    public ApiResponse<Void> update(@PathVariable Long id, @Valid @RequestBody ReceiptUpdateRequest request) {
+    public ApiResponse<Void> update(
+            @PathVariable Long id, @Valid @RequestBody ReceiptUpdateRequest request) {
         receiptService.update(id, request);
         return ApiResponse.success();
     }
@@ -89,8 +96,8 @@ public class ReceiptController {
     @HmacSigned
     @PostMapping("/{id}/approve")
     @PreAuthorize("hasAnyRole('SYS_ADMIN','FINANCE')")
-    public ApiResponse<Void> approve(@PathVariable Long id,
-                                     @RequestBody(required = false) ApprovalActionRequest request) {
+    public ApiResponse<Void> approve(
+            @PathVariable Long id, @RequestBody(required = false) ApprovalActionRequest request) {
         receiptService.approve(id, request);
         return ApiResponse.success();
     }
@@ -98,8 +105,8 @@ public class ReceiptController {
     @HmacSigned
     @PostMapping("/{id}/reject")
     @PreAuthorize("hasAnyRole('SYS_ADMIN','FINANCE')")
-    public ApiResponse<Void> reject(@PathVariable Long id,
-                                    @RequestBody(required = false) ApprovalActionRequest request) {
+    public ApiResponse<Void> reject(
+            @PathVariable Long id, @RequestBody(required = false) ApprovalActionRequest request) {
         receiptService.reject(id, request);
         return ApiResponse.success();
     }
@@ -107,7 +114,8 @@ public class ReceiptController {
     @HmacSigned
     @PostMapping("/{id}/verify")
     @PreAuthorize("hasAnyRole('SYS_ADMIN','FINANCE')")
-    public ApiResponse<Void> verify(@PathVariable Long id, @Valid @RequestBody ReceiptVerifyRequest request) {
+    public ApiResponse<Void> verify(
+            @PathVariable Long id, @Valid @RequestBody ReceiptVerifyRequest request) {
         receiptService.verify(id, request);
         return ApiResponse.success();
     }

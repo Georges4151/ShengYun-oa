@@ -1,8 +1,6 @@
 package com.ceams.module.seal.enums;
 
-/**
- * 电子印章状态。
- */
+/** 电子印章状态。 */
 public enum SealStatus {
 
     /** 可用。 */

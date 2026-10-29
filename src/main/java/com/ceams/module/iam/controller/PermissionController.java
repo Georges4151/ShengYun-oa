@@ -3,17 +3,14 @@ package com.ceams.module.iam.controller;
 import com.ceams.common.response.ApiResponse;
 import com.ceams.module.iam.service.PermissionService;
 import com.ceams.module.iam.vo.PermissionVO;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-
-/**
- * 权限查询接口。
- */
+/** 权限查询接口。 */
 @RestController
 @RequestMapping("/api/v1/permissions")
 @RequiredArgsConstructor

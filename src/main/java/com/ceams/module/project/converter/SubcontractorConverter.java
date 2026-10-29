@@ -1,15 +1,12 @@
 package com.ceams.module.project.converter;
 
-import com.ceams.module.project.entity.Subcontractor;
 import com.ceams.common.mask.SensitiveMaskUtil;
+import com.ceams.module.project.entity.Subcontractor;
 import com.ceams.module.project.vo.SubcontractorVO;
+import java.util.List;
 import org.mapstruct.Mapper;
 
-import java.util.List;
-
-/**
- * 分包商实体 <-> VO 转换（敏感字段脱敏）。
- */
+/** 分包商实体 <-> VO 转换（敏感字段脱敏）。 */
 @Mapper(componentModel = "spring")
 public interface SubcontractorConverter {
 
@@ -26,7 +23,8 @@ public interface SubcontractorConverter {
         vo.setQualificationLevel(subcontractor.getQualificationLevel());
         vo.setCreditRating(subcontractor.getCreditRating());
         vo.setBusinessScope(subcontractor.getBusinessScope());
-        vo.setTaxIdentificationNumber(SensitiveMaskUtil.maskTaxNumber(subcontractor.getTaxIdentificationNumber()));
+        vo.setTaxIdentificationNumber(
+                SensitiveMaskUtil.maskTaxNumber(subcontractor.getTaxIdentificationNumber()));
         vo.setBankAccount(SensitiveMaskUtil.maskBankAccount(subcontractor.getBankAccount()));
         vo.setDescription(subcontractor.getDescription());
         vo.setCreateTime(subcontractor.getCreateTime());

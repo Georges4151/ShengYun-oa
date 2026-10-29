@@ -19,9 +19,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * 结算凭证管理接口。
- */
+/** 结算凭证管理接口。 */
 @RestController
 @RequestMapping("/api/v1/settlement-proofs")
 @RequiredArgsConstructor
@@ -31,9 +29,10 @@ public class SettlementProofController {
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public ApiResponse<PageResult<SettlementProofVO>> page(@RequestParam(defaultValue = "1") long page,
-                                                           @RequestParam(defaultValue = "20") long size,
-                                                           @RequestParam(required = false) Long contractId) {
+    public ApiResponse<PageResult<SettlementProofVO>> page(
+            @RequestParam(defaultValue = "1") long page,
+            @RequestParam(defaultValue = "20") long size,
+            @RequestParam(required = false) Long contractId) {
         return ApiResponse.success(settlementProofService.page(page, size, contractId));
     }
 
@@ -51,7 +50,8 @@ public class SettlementProofController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('SYS_ADMIN','FINANCE')")
-    public ApiResponse<Void> update(@PathVariable Long id, @Valid @RequestBody SettlementProofUpdateRequest request) {
+    public ApiResponse<Void> update(
+            @PathVariable Long id, @Valid @RequestBody SettlementProofUpdateRequest request) {
         settlementProofService.update(id, request);
         return ApiResponse.success();
     }

@@ -5,9 +5,7 @@ import com.ceams.module.project.dto.settlementproof.SettlementProofCreateRequest
 import com.ceams.module.project.dto.settlementproof.SettlementProofUpdateRequest;
 import com.ceams.module.project.vo.SettlementProofVO;
 
-/**
- * 结算凭证服务。
- */
+/** 结算凭证服务。 */
 public interface SettlementProofService {
 
     PageResult<SettlementProofVO> page(long page, long size, Long contractId);

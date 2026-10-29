@@ -13,16 +13,13 @@ import com.ceams.module.notification.mapper.UserNotificationMapper;
 import com.ceams.module.notification.service.UserNotificationService;
 import com.ceams.module.notification.util.PageUtil;
 import com.ceams.module.notification.vo.UserNotificationMineVO;
+import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-
-/**
- * 用户通知服务实现。
- */
+/** 用户通知服务实现。 */
 @Slf4j
 @Service
 @RequiredArgsConstructor

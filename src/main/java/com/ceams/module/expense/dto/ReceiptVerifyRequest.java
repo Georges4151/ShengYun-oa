@@ -4,13 +4,10 @@ import com.ceams.module.expense.enums.PaymentMethod;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import java.math.BigDecimal;
 import lombok.Data;
 
-import java.math.BigDecimal;
-
-/**
- * 财务核验请求。
- */
+/** 财务核验请求。 */
 @Data
 public class ReceiptVerifyRequest {
 

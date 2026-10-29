@@ -5,15 +5,12 @@ import com.ceams.common.base.BaseEntity;
 import com.ceams.module.payment.enums.AccountStatus;
 import com.ceams.module.payment.enums.AccountType;
 import com.ceams.module.payment.enums.AllocationStatus;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-
-/**
- * 收支流水（biz_account）。
- */
+/** 收支流水（biz_account）。 */
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("biz_account")

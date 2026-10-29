@@ -3,13 +3,10 @@ package com.ceams.module.notification.dto;
 import com.ceams.module.notification.enums.NotificationPriority;
 import com.ceams.module.notification.enums.NotificationType;
 import jakarta.validation.constraints.NotNull;
+import java.time.LocalTime;
 import lombok.Data;
 
-import java.time.LocalTime;
-
-/**
- * 新建 / 更新用户通知偏好（按 (user_id, notification_type) 唯一键 upsert）。
- */
+/** 新建 / 更新用户通知偏好（按 (user_id, notification_type) 唯一键 upsert）。 */
 @Data
 public class UserNotificationPreferenceUpsertRequest {
 

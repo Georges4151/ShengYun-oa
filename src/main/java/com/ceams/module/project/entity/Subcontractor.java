@@ -10,7 +10,7 @@ import lombok.EqualsAndHashCode;
 /**
  * 分包商（biz_subcontractor）。
  *
- * <p>手机号 / 税号 / 银行账号为敏感字段，库内需加密、VO 输出脱敏。</p>
+ * <p>手机号 / 税号 / 银行账号为敏感字段，库内需加密、VO 输出脱敏。
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

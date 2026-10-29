@@ -9,22 +9,18 @@ import com.ceams.module.bank.enums.TransactionType;
 import com.ceams.module.bank.mapper.BankStatementMapper;
 import com.ceams.module.bank.vo.StatementImportResultVO;
 import com.ceams.module.payment.service.PaymentAccountQueryService;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-/**
- * 银行流水导入器实现：解析 + 校验 + 按 account_id + bank_reference 去重 + 逐条落库。
- */
+/** 银行流水导入器实现：解析 + 校验 + 按 account_id + bank_reference 去重 + 逐条落库。 */
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -35,7 +31,8 @@ public class StatementImporterImpl implements StatementImporter {
     private final PaymentAccountQueryService paymentAccountQueryService;
 
     @Override
-    public StatementImportResultVO importStatements(Long accountId, InputStream in, String fileName) {
+    public StatementImportResultVO importStatements(
+            Long accountId, InputStream in, String fileName) {
         if (accountId == null) {
             throw BusinessException.of(ErrorCode.BIZ_UNPROCESSABLE, "付款账户ID不能为空");
         }
@@ -93,11 +90,12 @@ public class StatementImporterImpl implements StatementImporter {
     }
 
     private Set<String> loadExistingReferences(Long accountId) {
-        List<BankStatement> existing = bankStatementMapper.selectList(
-                new LambdaQueryWrapper<BankStatement>()
-                        .eq(BankStatement::getAccountId, accountId)
-                        .isNotNull(BankStatement::getBankReference)
-                        .select(BankStatement::getBankReference));
+        List<BankStatement> existing =
+                bankStatementMapper.selectList(
+                        new LambdaQueryWrapper<BankStatement>()
+                                .eq(BankStatement::getAccountId, accountId)
+                                .isNotNull(BankStatement::getBankReference)
+                                .select(BankStatement::getBankReference));
         return existing.stream()
                 .map(BankStatement::getBankReference)
                 .filter(StringUtils::isNotBlank)

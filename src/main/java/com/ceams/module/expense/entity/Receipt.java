@@ -7,15 +7,12 @@ import com.ceams.module.expense.enums.PaymentStatus;
 import com.ceams.module.expense.enums.ReceiptApprovalStatus;
 import com.ceams.module.expense.enums.ReceiptType;
 import com.ceams.module.expense.enums.VerificationStatus;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-
-/**
- * 票据（报销单）（biz_receipt）。
- */
+/** 票据（报销单）（biz_receipt）。 */
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("biz_receipt")

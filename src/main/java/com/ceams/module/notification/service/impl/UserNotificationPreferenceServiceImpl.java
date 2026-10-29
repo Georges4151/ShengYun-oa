@@ -10,16 +10,13 @@ import com.ceams.module.notification.entity.UserNotificationPreference;
 import com.ceams.module.notification.mapper.UserNotificationPreferenceMapper;
 import com.ceams.module.notification.service.UserNotificationPreferenceService;
 import com.ceams.module.notification.vo.UserNotificationPreferenceVO;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-
-/**
- * 用户通知偏好服务实现。
- */
+/** 用户通知偏好服务实现。 */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -34,7 +31,8 @@ public class UserNotificationPreferenceServiceImpl implements UserNotificationPr
         LambdaQueryWrapper<UserNotificationPreference> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(UserNotificationPreference::getUserId, userId);
         wrapper.orderByAsc(UserNotificationPreference::getNotificationType);
-        return userNotificationPreferenceConverter.toVOList(userNotificationPreferenceMapper.selectList(wrapper));
+        return userNotificationPreferenceConverter.toVOList(
+                userNotificationPreferenceMapper.selectList(wrapper));
     }
 
     @Override
@@ -75,8 +73,10 @@ public class UserNotificationPreferenceServiceImpl implements UserNotificationPr
         UserNotificationPreference preference = new UserNotificationPreference();
         preference.setUserId(userId);
         preference.setNotificationType(request.getNotificationType());
-        preference.setReceiveSystem(request.getReceiveSystem() == null ? 1 : request.getReceiveSystem());
-        preference.setReceiveEmail(request.getReceiveEmail() == null ? 0 : request.getReceiveEmail());
+        preference.setReceiveSystem(
+                request.getReceiveSystem() == null ? 1 : request.getReceiveSystem());
+        preference.setReceiveEmail(
+                request.getReceiveEmail() == null ? 0 : request.getReceiveEmail());
         preference.setReceiveSms(request.getReceiveSms() == null ? 0 : request.getReceiveSms());
         preference.setQuietMode(request.getQuietMode() == null ? 0 : request.getQuietMode());
         preference.setQuietStartTime(request.getQuietStartTime());

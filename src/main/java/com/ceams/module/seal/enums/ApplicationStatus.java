@@ -1,8 +1,6 @@
 package com.ceams.module.seal.enums;
 
-/**
- * 用印申请状态。
- */
+/** 用印申请状态。 */
 public enum ApplicationStatus {
 
     /** 待审批。 */

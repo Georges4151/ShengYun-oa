@@ -3,9 +3,7 @@ package com.ceams.module.seal.vo;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
-/**
- * 短期签名下载 URL 负载。
- */
+/** 短期签名下载 URL 负载。 */
 @Data
 @AllArgsConstructor
 public class DownloadUrlVO {

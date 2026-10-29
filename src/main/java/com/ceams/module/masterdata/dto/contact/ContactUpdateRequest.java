@@ -4,9 +4,7 @@ import com.ceams.module.masterdata.enums.ContactType;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
-/**
- * 更新往来单位请求。
- */
+/** 更新往来单位请求。 */
 @Data
 public class ContactUpdateRequest {
 

@@ -17,20 +17,17 @@ import com.ceams.module.masterdata.mapper.MaterialMapper;
 import com.ceams.module.masterdata.service.CategoryService;
 import com.ceams.module.masterdata.util.PageUtil;
 import com.ceams.module.masterdata.vo.CategoryVO;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-/**
- * 分类服务实现。
- */
+/** 分类服务实现。 */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -63,8 +60,11 @@ public class CategoryServiceImpl implements CategoryService {
         }
         wrapper.orderByAsc(Category::getSortOrder).orderByAsc(Category::getId);
         IPage<Category> result = categoryMapper.selectPage(p, wrapper);
-        return new PageResult<>(categoryConverter.toVOList(result.getRecords()),
-                result.getTotal(), result.getCurrent(), result.getSize());
+        return new PageResult<>(
+                categoryConverter.toVOList(result.getRecords()),
+                result.getTotal(),
+                result.getCurrent(),
+                result.getSize());
     }
 
     @Override
@@ -126,13 +126,15 @@ public class CategoryServiceImpl implements CategoryService {
     @Transactional(rollbackFor = Exception.class)
     public void delete(Long id) {
         requireCategory(id);
-        Long children = categoryMapper.selectCount(new LambdaQueryWrapper<Category>()
-                .eq(Category::getParentId, id));
+        Long children =
+                categoryMapper.selectCount(
+                        new LambdaQueryWrapper<Category>().eq(Category::getParentId, id));
         if (children != null && children > 0) {
             throw BusinessException.of(ErrorCode.BIZ_REFERENCED, "存在子分类，无法删除");
         }
-        Long materialRefs = materialMapper.selectCount(new LambdaQueryWrapper<Material>()
-                .eq(Material::getCategoryId, id));
+        Long materialRefs =
+                materialMapper.selectCount(
+                        new LambdaQueryWrapper<Material>().eq(Material::getCategoryId, id));
         if (materialRefs != null && materialRefs > 0) {
             throw BusinessException.of(ErrorCode.BIZ_REFERENCED, "分类已被材料引用，无法删除");
         }

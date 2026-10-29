@@ -21,9 +21,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * 认证接口：登录 / 刷新轮换 / 登出 / 会话管理。
- */
+/** 认证接口：登录 / 刷新轮换 / 登出 / 会话管理。 */
 @RestController
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
@@ -32,7 +30,8 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/login")
-    public ApiResponse<LoginResponse> login(@Valid @RequestBody LoginRequest request, HttpServletRequest httpRequest) {
+    public ApiResponse<LoginResponse> login(
+            @Valid @RequestBody LoginRequest request, HttpServletRequest httpRequest) {
         return ApiResponse.success(authService.login(request, httpRequest));
     }
 
@@ -56,8 +55,9 @@ public class AuthController {
 
     @GetMapping("/sessions")
     @PreAuthorize("isAuthenticated()")
-    public ApiResponse<PageResult<UserSessionVO>> sessions(@RequestParam(defaultValue = "1") long page,
-                                                           @RequestParam(defaultValue = "20") long size) {
+    public ApiResponse<PageResult<UserSessionVO>> sessions(
+            @RequestParam(defaultValue = "1") long page,
+            @RequestParam(defaultValue = "20") long size) {
         return ApiResponse.success(authService.sessions(page, size));
     }
 

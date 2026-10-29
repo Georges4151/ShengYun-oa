@@ -3,14 +3,11 @@ package com.ceams.module.masterdata.vo;
 import com.ceams.module.masterdata.enums.CategoryType;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
-import lombok.Data;
-
 import java.time.LocalDateTime;
 import java.util.List;
+import lombok.Data;
 
-/**
- * 分类视图对象。
- */
+/** 分类视图对象。 */
 @Data
 public class CategoryVO {
 

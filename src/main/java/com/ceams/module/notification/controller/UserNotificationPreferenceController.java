@@ -5,6 +5,7 @@ import com.ceams.module.notification.dto.UserNotificationPreferenceUpsertRequest
 import com.ceams.module.notification.service.UserNotificationPreferenceService;
 import com.ceams.module.notification.vo.UserNotificationPreferenceVO;
 import jakarta.validation.Valid;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -15,11 +16,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-
-/**
- * 用户通知偏好接口。
- */
+/** 用户通知偏好接口。 */
 @RestController
 @RequestMapping("/api/v1/notifications/preferences")
 @RequiredArgsConstructor
@@ -35,7 +32,8 @@ public class UserNotificationPreferenceController {
 
     @PutMapping
     @PreAuthorize("isAuthenticated()")
-    public ApiResponse<String> upsert(@Valid @RequestBody UserNotificationPreferenceUpsertRequest request) {
+    public ApiResponse<String> upsert(
+            @Valid @RequestBody UserNotificationPreferenceUpsertRequest request) {
         return ApiResponse.success(userNotificationPreferenceService.upsert(request));
     }
 

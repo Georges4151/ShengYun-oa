@@ -19,9 +19,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * 设备租赁管理接口。
- */
+/** 设备租赁管理接口。 */
 @RestController
 @RequestMapping("/api/v1/equipment-leases")
 @RequiredArgsConstructor
@@ -31,10 +29,11 @@ public class EquipmentLeaseController {
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public ApiResponse<PageResult<EquipmentLeaseVO>> page(@RequestParam(defaultValue = "1") long page,
-                                                          @RequestParam(defaultValue = "20") long size,
-                                                          @RequestParam(required = false) Long equipmentId,
-                                                          @RequestParam(required = false) Long projectId) {
+    public ApiResponse<PageResult<EquipmentLeaseVO>> page(
+            @RequestParam(defaultValue = "1") long page,
+            @RequestParam(defaultValue = "20") long size,
+            @RequestParam(required = false) Long equipmentId,
+            @RequestParam(required = false) Long projectId) {
         return ApiResponse.success(equipmentLeaseService.page(page, size, equipmentId, projectId));
     }
 
@@ -52,7 +51,8 @@ public class EquipmentLeaseController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('SYS_ADMIN')")
-    public ApiResponse<Void> update(@PathVariable Long id, @Valid @RequestBody EquipmentLeaseUpdateRequest request) {
+    public ApiResponse<Void> update(
+            @PathVariable Long id, @Valid @RequestBody EquipmentLeaseUpdateRequest request) {
         equipmentLeaseService.update(id, request);
         return ApiResponse.success();
     }

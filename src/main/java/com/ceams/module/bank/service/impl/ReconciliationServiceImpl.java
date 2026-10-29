@@ -27,22 +27,19 @@ import com.ceams.module.payment.entity.PaymentAccount;
 import com.ceams.module.payment.entity.PaymentTransaction;
 import com.ceams.module.payment.mapper.PaymentTransactionMapper;
 import com.ceams.module.payment.service.PaymentAccountQueryService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-/**
- * 对账结果服务实现：自动匹配（金额 + 日期±N 天为主键，流水号/户名辅助）。
- */
+/** 对账结果服务实现：自动匹配（金额 + 日期±N 天为主键，流水号/户名辅助）。 */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -58,8 +55,12 @@ public class ReconciliationServiceImpl implements ReconciliationService {
     private final PaymentAccountQueryService paymentAccountQueryService;
 
     @Override
-    public PageResult<ReconciliationResultVO> page(long page, long size, Long accountId,
-                                                   ReconciliationStatus status, ResolutionStatus resolutionStatus) {
+    public PageResult<ReconciliationResultVO> page(
+            long page,
+            long size,
+            Long accountId,
+            ReconciliationStatus status,
+            ResolutionStatus resolutionStatus) {
         Page<ReconciliationResult> p = PageUtil.resolve(page, size);
         LambdaQueryWrapper<ReconciliationResult> wrapper = new LambdaQueryWrapper<>();
         if (accountId != null) {
@@ -73,8 +74,11 @@ public class ReconciliationServiceImpl implements ReconciliationService {
         }
         wrapper.orderByDesc(ReconciliationResult::getCreateTime);
         IPage<ReconciliationResult> result = reconciliationResultMapper.selectPage(p, wrapper);
-        return new PageResult<>(reconciliationResultConverter.toVOList(result.getRecords()),
-                result.getTotal(), result.getCurrent(), result.getSize());
+        return new PageResult<>(
+                reconciliationResultConverter.toVOList(result.getRecords()),
+                result.getTotal(),
+                result.getCurrent(),
+                result.getSize());
     }
 
     @Override
@@ -89,16 +93,21 @@ public class ReconciliationServiceImpl implements ReconciliationService {
         if (!paymentAccountQueryService.exists(accountId)) {
             throw BusinessException.of(ErrorCode.BIZ_NOT_FOUND, "付款账户不存在");
         }
-        int days = request.getDaysTolerance() == null ? DEFAULT_DAYS_TOLERANCE : request.getDaysTolerance();
+        int days =
+                request.getDaysTolerance() == null
+                        ? DEFAULT_DAYS_TOLERANCE
+                        : request.getDaysTolerance();
 
-        List<BankStatement> statements = bankStatementMapper.selectList(
-                new LambdaQueryWrapper<BankStatement>()
-                        .eq(BankStatement::getAccountId, accountId)
-                        .eq(BankStatement::getStatus, BankStatementStatus.UNRECONCILED));
+        List<BankStatement> statements =
+                bankStatementMapper.selectList(
+                        new LambdaQueryWrapper<BankStatement>()
+                                .eq(BankStatement::getAccountId, accountId)
+                                .eq(BankStatement::getStatus, BankStatementStatus.UNRECONCILED));
 
-        List<PaymentTransaction> transactions = paymentTransactionMapper.selectList(
-                new LambdaQueryWrapper<PaymentTransaction>()
-                        .eq(PaymentTransaction::getAccountId, accountId));
+        List<PaymentTransaction> transactions =
+                paymentTransactionMapper.selectList(
+                        new LambdaQueryWrapper<PaymentTransaction>()
+                                .eq(PaymentTransaction::getAccountId, accountId));
 
         List<GeneralLedger> ledgers = loadLedgersByAccount(accountId);
 
@@ -192,16 +201,21 @@ public class ReconciliationServiceImpl implements ReconciliationService {
     }
 
     /** 系统有记录但银行无对应流水 -> 生成 UNMATCHED(MISSING_IN_BANK)。 */
-    private int createMissingInBank(Long accountId, List<PaymentTransaction> transactions,
-                                    Set<Long> matchedTransactionIds) {
+    private int createMissingInBank(
+            Long accountId,
+            List<PaymentTransaction> transactions,
+            Set<Long> matchedTransactionIds) {
         int created = 0;
         for (PaymentTransaction transaction : transactions) {
             if (matchedTransactionIds.contains(transaction.getId())) {
                 continue;
             }
-            Long exists = reconciliationResultMapper.selectCount(
-                    new LambdaQueryWrapper<ReconciliationResult>()
-                            .eq(ReconciliationResult::getTransactionId, transaction.getId()));
+            Long exists =
+                    reconciliationResultMapper.selectCount(
+                            new LambdaQueryWrapper<ReconciliationResult>()
+                                    .eq(
+                                            ReconciliationResult::getTransactionId,
+                                            transaction.getId()));
             if (exists != null && exists > 0) {
                 continue;
             }
@@ -220,20 +234,31 @@ public class ReconciliationServiceImpl implements ReconciliationService {
         return created;
     }
 
-    private Candidate findBestCandidate(BankStatement statement, List<PaymentTransaction> transactions,
-                                        List<GeneralLedger> ledgers, int days) {
+    private Candidate findBestCandidate(
+            BankStatement statement,
+            List<PaymentTransaction> transactions,
+            List<GeneralLedger> ledgers,
+            int days) {
         Candidate best = null;
         for (PaymentTransaction transaction : transactions) {
             if (!amountEquals(transaction.getAmount(), statement.getAmount())) {
                 continue;
             }
-            int diff = daysBetween(statement.getTransactionDate(), transaction.getTransactionDate());
+            int diff =
+                    daysBetween(statement.getTransactionDate(), transaction.getTransactionDate());
             if (diff > days) {
                 continue;
             }
-            Candidate candidate = new Candidate(transaction.getAmount(), transaction.getTransactionDate(),
-                    transaction.getDescription(), transaction.getId(), null, diff,
-                    descriptionsMatch(statement.getDescription(), transaction.getDescription()));
+            Candidate candidate =
+                    new Candidate(
+                            transaction.getAmount(),
+                            transaction.getTransactionDate(),
+                            transaction.getDescription(),
+                            transaction.getId(),
+                            null,
+                            diff,
+                            descriptionsMatch(
+                                    statement.getDescription(), transaction.getDescription()));
             if (isBetter(candidate, best)) {
                 best = candidate;
             }
@@ -246,9 +271,15 @@ public class ReconciliationServiceImpl implements ReconciliationService {
             if (diff > days) {
                 continue;
             }
-            Candidate candidate = new Candidate(ledger.getAmount(), ledger.getTransactionTime(),
-                    ledger.getSummary(), null, ledger.getAccountNumber(), diff,
-                    descriptionsMatch(statement.getDescription(), ledger.getSummary()));
+            Candidate candidate =
+                    new Candidate(
+                            ledger.getAmount(),
+                            ledger.getTransactionTime(),
+                            ledger.getSummary(),
+                            null,
+                            ledger.getAccountNumber(),
+                            diff,
+                            descriptionsMatch(statement.getDescription(), ledger.getSummary()));
             if (isBetter(candidate, best)) {
                 best = candidate;
             }
@@ -267,7 +298,8 @@ public class ReconciliationServiceImpl implements ReconciliationService {
         if (bankDate == null || systemDate == null) {
             return Integer.MAX_VALUE;
         }
-        return (int) Math.abs(ChronoUnit.DAYS.between(bankDate.toLocalDate(), systemDate.toLocalDate()));
+        return (int)
+                Math.abs(ChronoUnit.DAYS.between(bankDate.toLocalDate(), systemDate.toLocalDate()));
     }
 
     private boolean descriptionsMatch(String bankDesc, String systemDesc) {
@@ -289,10 +321,13 @@ public class ReconciliationServiceImpl implements ReconciliationService {
         return candidate.descriptionMatch() && !best.descriptionMatch();
     }
 
-    /**
-     * 匹配候选：系统侧（付款交易或总账）的一条记录。
-     */
-    private record Candidate(BigDecimal amount, LocalDateTime date, String description,
-                             Long transactionId, String reference, int dateDiff, boolean descriptionMatch) {
-    }
+    /** 匹配候选：系统侧（付款交易或总账）的一条记录。 */
+    private record Candidate(
+            BigDecimal amount,
+            LocalDateTime date,
+            String description,
+            Long transactionId,
+            String reference,
+            int dateDiff,
+            boolean descriptionMatch) {}
 }

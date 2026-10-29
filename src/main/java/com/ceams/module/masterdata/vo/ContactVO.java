@@ -3,13 +3,10 @@ package com.ceams.module.masterdata.vo;
 import com.ceams.module.masterdata.enums.ContactType;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
+import java.time.LocalDateTime;
 import lombok.Data;
 
-import java.time.LocalDateTime;
-
-/**
- * 往来单位视图对象（敏感字段已脱敏）。
- */
+/** 往来单位视图对象（敏感字段已脱敏）。 */
 @Data
 public class ContactVO {
 

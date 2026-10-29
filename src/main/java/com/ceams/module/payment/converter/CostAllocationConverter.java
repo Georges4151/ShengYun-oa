@@ -2,13 +2,10 @@ package com.ceams.module.payment.converter;
 
 import com.ceams.module.payment.entity.CostAllocation;
 import com.ceams.module.payment.vo.CostAllocationVO;
+import java.util.List;
 import org.mapstruct.Mapper;
 
-import java.util.List;
-
-/**
- * 成本分摊实体 <-> VO 转换。
- */
+/** 成本分摊实体 <-> VO 转换。 */
 @Mapper(componentModel = "spring")
 public interface CostAllocationConverter {
 

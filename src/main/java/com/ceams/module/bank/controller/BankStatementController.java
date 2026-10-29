@@ -13,6 +13,9 @@ import com.ceams.module.bank.service.BankStatementService;
 import com.ceams.module.bank.vo.BankStatementVO;
 import com.ceams.module.bank.vo.StatementImportResultVO;
 import jakarta.validation.Valid;
+import java.io.IOException;
+import java.io.InputStream;
+import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -27,13 +30,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.time.LocalDateTime;
-
-/**
- * 银行流水管理接口。
- */
+/** 银行流水管理接口。 */
 @RestController
 @RequestMapping("/api/v1/bank/statements")
 @RequiredArgsConstructor
@@ -44,18 +41,18 @@ public class BankStatementController {
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public ApiResponse<PageResult<BankStatementVO>> page(@RequestParam(defaultValue = "1") long page,
-                                                         @RequestParam(defaultValue = "20") long size,
-                                                         @RequestParam(required = false) Long accountId,
-                                                         @RequestParam(required = false) BankStatementStatus status,
-                                                         @RequestParam(required = false) TransactionType type,
-                                                         @RequestParam(required = false)
-                                                         @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
-                                                         LocalDateTime startDate,
-                                                         @RequestParam(required = false)
-                                                         @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
-                                                         LocalDateTime endDate) {
-        return ApiResponse.success(bankStatementService.page(page, size, accountId, status, type, startDate, endDate));
+    public ApiResponse<PageResult<BankStatementVO>> page(
+            @RequestParam(defaultValue = "1") long page,
+            @RequestParam(defaultValue = "20") long size,
+            @RequestParam(required = false) Long accountId,
+            @RequestParam(required = false) BankStatementStatus status,
+            @RequestParam(required = false) TransactionType type,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+                    LocalDateTime startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+                    LocalDateTime endDate) {
+        return ApiResponse.success(
+                bankStatementService.page(page, size, accountId, status, type, startDate, endDate));
     }
 
     @PostMapping
@@ -66,10 +63,11 @@ public class BankStatementController {
 
     @PostMapping("/import")
     @PreAuthorize("hasAnyRole('SYS_ADMIN','FINANCE')")
-    public ApiResponse<StatementImportResultVO> importStatements(@RequestParam("accountId") Long accountId,
-                                                                 @RequestParam("file") MultipartFile file) {
+    public ApiResponse<StatementImportResultVO> importStatements(
+            @RequestParam("accountId") Long accountId, @RequestParam("file") MultipartFile file) {
         try (InputStream in = file.getInputStream()) {
-            return ApiResponse.success(statementImporter.importStatements(accountId, in, file.getOriginalFilename()));
+            return ApiResponse.success(
+                    statementImporter.importStatements(accountId, in, file.getOriginalFilename()));
         } catch (IOException e) {
             throw BusinessException.of(ErrorCode.BIZ_UNPROCESSABLE, "读取流水文件失败");
         }
@@ -83,7 +81,8 @@ public class BankStatementController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('SYS_ADMIN','FINANCE')")
-    public ApiResponse<Void> update(@PathVariable Long id, @Valid @RequestBody BankStatementUpdateRequest request) {
+    public ApiResponse<Void> update(
+            @PathVariable Long id, @Valid @RequestBody BankStatementUpdateRequest request) {
         bankStatementService.update(id, request);
         return ApiResponse.success();
     }

@@ -3,9 +3,7 @@ package com.ceams.module.iam.vo;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
-/**
- * 高危接口 HMAC 签名密钥下发响应负载。
- */
+/** 高危接口 HMAC 签名密钥下发响应负载。 */
 @Data
 @AllArgsConstructor
 public class SignSecretVO {

@@ -2,13 +2,10 @@ package com.ceams.module.iam.converter;
 
 import com.ceams.module.iam.entity.SysRole;
 import com.ceams.module.iam.vo.RoleVO;
+import java.util.List;
 import org.mapstruct.Mapper;
 
-import java.util.List;
-
-/**
- * 角色实体 <-> VO 转换。
- */
+/** 角色实体 <-> VO 转换。 */
 @Mapper(componentModel = "spring")
 public interface RoleConverter {
 

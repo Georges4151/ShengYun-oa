@@ -4,9 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/**
- * access + refresh 令牌对。
- */
+/** access + refresh 令牌对。 */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

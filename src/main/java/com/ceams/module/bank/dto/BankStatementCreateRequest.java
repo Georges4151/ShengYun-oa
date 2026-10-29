@@ -3,14 +3,11 @@ package com.ceams.module.bank.dto;
 import com.ceams.module.bank.enums.TransactionType;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
-import lombok.Data;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import lombok.Data;
 
-/**
- * 新建银行流水。
- */
+/** 新建银行流水。 */
 @Data
 public class BankStatementCreateRequest {
 

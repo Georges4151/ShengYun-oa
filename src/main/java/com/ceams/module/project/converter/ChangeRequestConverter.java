@@ -2,13 +2,10 @@ package com.ceams.module.project.converter;
 
 import com.ceams.module.project.entity.ChangeRequest;
 import com.ceams.module.project.vo.ChangeRequestVO;
+import java.util.List;
 import org.mapstruct.Mapper;
 
-import java.util.List;
-
-/**
- * 变更请求实体 <-> VO 转换。
- */
+/** 变更请求实体 <-> VO 转换。 */
 @Mapper(componentModel = "spring")
 public interface ChangeRequestConverter {
 

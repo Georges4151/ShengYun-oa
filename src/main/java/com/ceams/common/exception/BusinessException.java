@@ -3,7 +3,8 @@ package com.ceams.common.exception;
 import lombok.Getter;
 
 /**
- * 业务异常：携带 RFC7807 错误码，由 {@link GlobalExceptionHandler} 统一转换为 {@link com.ceams.common.response.ApiResponse}。
+ * 业务异常：携带 RFC7807 错误码，由 {@link GlobalExceptionHandler} 统一转换为 {@link
+ * com.ceams.common.response.ApiResponse}。
  */
 @Getter
 public class BusinessException extends RuntimeException {

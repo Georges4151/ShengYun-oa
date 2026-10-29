@@ -1,8 +1,6 @@
 package com.ceams.module.seal.enums;
 
-/**
- * 用印审批状态。
- */
+/** 用印审批状态。 */
 public enum ApprovalStatus {
 
     /** 待审批。 */

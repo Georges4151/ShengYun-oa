@@ -1,8 +1,6 @@
 package com.ceams.module.bank.enums;
 
-/**
- * 对账差异类型。
- */
+/** 对账差异类型。 */
 public enum DiscrepancyType {
 
     /** 银行有流水但系统无对应记录。 */

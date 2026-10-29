@@ -2,13 +2,10 @@ package com.ceams.module.project.dto.changerequest;
 
 import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
+import java.math.BigDecimal;
 import lombok.Data;
 
-import java.math.BigDecimal;
-
-/**
- * 更新变更请求（仅草稿/驳回态可编辑）。
- */
+/** 更新变更请求（仅草稿/驳回态可编辑）。 */
 @Data
 public class ChangeRequestUpdateRequest {
 

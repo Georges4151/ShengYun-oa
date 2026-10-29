@@ -2,13 +2,10 @@ package com.ceams.module.notification.converter;
 
 import com.ceams.module.notification.entity.UserNotificationPreference;
 import com.ceams.module.notification.vo.UserNotificationPreferenceVO;
+import java.util.List;
 import org.mapstruct.Mapper;
 
-import java.util.List;
-
-/**
- * 用户通知偏好实体 <-> VO 转换。
- */
+/** 用户通知偏好实体 <-> VO 转换。 */
 @Mapper(componentModel = "spring")
 public interface UserNotificationPreferenceConverter {
 

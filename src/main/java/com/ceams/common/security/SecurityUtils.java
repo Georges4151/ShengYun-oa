@@ -6,13 +6,12 @@ import org.springframework.security.core.context.SecurityContextHolder;
 /**
  * 安全上下文工具：获取当前登录用户信息。
  *
- * <p>当前骨架阶段 principal 由 {@link JwtAuthenticationFilter} 设置为用户 ID（Long）。
- * 未认证时返回 {@code null}，调用方自行兜底。</p>
+ * <p>当前骨架阶段 principal 由 {@link JwtAuthenticationFilter} 设置为用户 ID（Long）。 未认证时返回 {@code
+ * null}，调用方自行兜底。
  */
 public final class SecurityUtils {
 
-    private SecurityUtils() {
-    }
+    private SecurityUtils() {}
 
     /** 当前登录用户 ID（未认证时返回 null）。 */
     public static Long getCurrentUserId() {

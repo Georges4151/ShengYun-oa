@@ -3,9 +3,7 @@ package com.ceams.module.report.dto;
 import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 
-/**
- * 财务报表查询参数（全部可选，按需过滤）。
- */
+/** 财务报表查询参数（全部可选，按需过滤）。 */
 @Data
 public class FinancialReportQuery {
 

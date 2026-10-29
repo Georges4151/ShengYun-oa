@@ -2,13 +2,10 @@ package com.ceams.module.expense.converter;
 
 import com.ceams.module.expense.entity.ReceiptVerification;
 import com.ceams.module.expense.vo.ReceiptVerificationVO;
+import java.util.List;
 import org.mapstruct.Mapper;
 
-import java.util.List;
-
-/**
- * 财务核验实体 <-> VO 转换。
- */
+/** 财务核验实体 <-> VO 转换。 */
 @Mapper(componentModel = "spring")
 public interface ReceiptVerificationConverter {
 

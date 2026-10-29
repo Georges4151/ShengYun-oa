@@ -10,8 +10,7 @@ import org.springframework.context.annotation.Configuration;
 /**
  * MyBatis-Plus 配置：分页插件（默认每页 20、上限 100）+ 乐观锁插件。
  *
- * <p>单表 CRUD 统一使用 BaseMapper/IService + LambdaQueryWrapper（禁止字符串列名），
- * 本配置为其铺好分页与审计填充基础。</p>
+ * <p>单表 CRUD 统一使用 BaseMapper/IService + LambdaQueryWrapper（禁止字符串列名）， 本配置为其铺好分页与审计填充基础。
  */
 @Configuration
 public class MyBatisPlusConfig {

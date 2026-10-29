@@ -1,13 +1,10 @@
 package com.ceams.module.bank.vo;
 
-import lombok.Data;
-
 import java.util.ArrayList;
 import java.util.List;
+import lombok.Data;
 
-/**
- * 银行流水导入结果。
- */
+/** 银行流水导入结果。 */
 @Data
 public class StatementImportResultVO {
 
@@ -26,9 +23,7 @@ public class StatementImportResultVO {
     /** 失败明细（行号 + 原因）。 */
     private List<ErrorItem> errors = new ArrayList<>();
 
-    /**
-     * 单行失败明细。
-     */
+    /** 单行失败明细。 */
     @Data
     public static class ErrorItem {
 
@@ -38,8 +33,7 @@ public class StatementImportResultVO {
         /** 失败原因。 */
         private String reason;
 
-        public ErrorItem() {
-        }
+        public ErrorItem() {}
 
         public ErrorItem(int row, String reason) {
             this.row = row;

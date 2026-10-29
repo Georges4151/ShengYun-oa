@@ -20,9 +20,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * 对账结果管理接口。
- */
+/** 对账结果管理接口。 */
 @RestController
 @RequestMapping("/api/v1/bank/reconciliations")
 @RequiredArgsConstructor
@@ -32,17 +30,20 @@ public class ReconciliationController {
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public ApiResponse<PageResult<ReconciliationResultVO>> page(@RequestParam(defaultValue = "1") long page,
-                                                                @RequestParam(defaultValue = "20") long size,
-                                                                @RequestParam(required = false) Long accountId,
-                                                                @RequestParam(required = false) ReconciliationStatus status,
-                                                                @RequestParam(required = false) ResolutionStatus resolutionStatus) {
-        return ApiResponse.success(reconciliationService.page(page, size, accountId, status, resolutionStatus));
+    public ApiResponse<PageResult<ReconciliationResultVO>> page(
+            @RequestParam(defaultValue = "1") long page,
+            @RequestParam(defaultValue = "20") long size,
+            @RequestParam(required = false) Long accountId,
+            @RequestParam(required = false) ReconciliationStatus status,
+            @RequestParam(required = false) ResolutionStatus resolutionStatus) {
+        return ApiResponse.success(
+                reconciliationService.page(page, size, accountId, status, resolutionStatus));
     }
 
     @PostMapping("/match")
     @PreAuthorize("hasAnyRole('SYS_ADMIN','FINANCE')")
-    public ApiResponse<ReconciliationMatchResultVO> match(@Valid @RequestBody ReconciliationMatchRequest request) {
+    public ApiResponse<ReconciliationMatchResultVO> match(
+            @Valid @RequestBody ReconciliationMatchRequest request) {
         return ApiResponse.success(reconciliationService.match(request));
     }
 
@@ -54,7 +55,8 @@ public class ReconciliationController {
 
     @PostMapping("/{id}/resolve")
     @PreAuthorize("hasAnyRole('SYS_ADMIN','FINANCE')")
-    public ApiResponse<Void> resolve(@PathVariable Long id, @Valid @RequestBody ReconciliationResolveRequest request) {
+    public ApiResponse<Void> resolve(
+            @PathVariable Long id, @Valid @RequestBody ReconciliationResolveRequest request) {
         reconciliationService.resolve(id, request);
         return ApiResponse.success();
     }

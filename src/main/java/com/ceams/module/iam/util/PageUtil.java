@@ -4,15 +4,12 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ceams.common.exception.BusinessException;
 import com.ceams.common.exception.ErrorCode;
 
-/**
- * 分页工具：统一解析 page/size，越界抛 VALID_PAGE_BOUNDS。
- */
+/** 分页工具：统一解析 page/size，越界抛 VALID_PAGE_BOUNDS。 */
 public final class PageUtil {
 
     public static final long MAX_SIZE = 100L;
 
-    private PageUtil() {
-    }
+    private PageUtil() {}
 
     public static <T> Page<T> resolve(long page, long size) {
         if (page < 1) {

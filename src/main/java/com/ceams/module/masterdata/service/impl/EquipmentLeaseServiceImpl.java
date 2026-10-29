@@ -20,9 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * 设备租赁服务实现。
- */
+/** 设备租赁服务实现。 */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -33,7 +31,8 @@ public class EquipmentLeaseServiceImpl implements EquipmentLeaseService {
     private final EquipmentLeaseConverter equipmentLeaseConverter;
 
     @Override
-    public PageResult<EquipmentLeaseVO> page(long page, long size, Long equipmentId, Long projectId) {
+    public PageResult<EquipmentLeaseVO> page(
+            long page, long size, Long equipmentId, Long projectId) {
         Page<EquipmentLease> p = PageUtil.resolve(page, size);
         LambdaQueryWrapper<EquipmentLease> wrapper = new LambdaQueryWrapper<>();
         if (equipmentId != null) {
@@ -44,8 +43,11 @@ public class EquipmentLeaseServiceImpl implements EquipmentLeaseService {
         }
         wrapper.orderByDesc(EquipmentLease::getCreateTime);
         IPage<EquipmentLease> result = equipmentLeaseMapper.selectPage(p, wrapper);
-        return new PageResult<>(equipmentLeaseConverter.toVOList(result.getRecords()),
-                result.getTotal(), result.getCurrent(), result.getSize());
+        return new PageResult<>(
+                equipmentLeaseConverter.toVOList(result.getRecords()),
+                result.getTotal(),
+                result.getCurrent(),
+                result.getSize());
     }
 
     @Override
@@ -100,7 +102,8 @@ public class EquipmentLeaseServiceImpl implements EquipmentLeaseService {
         if (request.getPaymentStatus() != null) {
             lease.setPaymentStatus(request.getPaymentStatus());
         }
-        if (lease.getLeaseStartDate() != null && lease.getLeaseEndDate() != null
+        if (lease.getLeaseStartDate() != null
+                && lease.getLeaseEndDate() != null
                 && lease.getLeaseEndDate().isBefore(lease.getLeaseStartDate())) {
             throw BusinessException.of(ErrorCode.BIZ_UNPROCESSABLE, "租赁结束日期不能早于开始日期");
         }

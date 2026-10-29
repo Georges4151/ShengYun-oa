@@ -2,13 +2,10 @@ package com.ceams.module.report.vo;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
+import java.math.BigDecimal;
 import lombok.Data;
 
-import java.math.BigDecimal;
-
-/**
- * 材料报表明细项。
- */
+/** 材料报表明细项。 */
 @Data
 public class MaterialReportItemVO {
 

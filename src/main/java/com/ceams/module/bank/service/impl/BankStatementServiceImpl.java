@@ -17,16 +17,13 @@ import com.ceams.module.bank.service.BankStatementService;
 import com.ceams.module.bank.util.PageUtil;
 import com.ceams.module.bank.vo.BankStatementVO;
 import com.ceams.module.payment.service.PaymentAccountQueryService;
+import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-
-/**
- * 银行流水服务实现。
- */
+/** 银行流水服务实现。 */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -37,8 +34,14 @@ public class BankStatementServiceImpl implements BankStatementService {
     private final PaymentAccountQueryService paymentAccountQueryService;
 
     @Override
-    public PageResult<BankStatementVO> page(long page, long size, Long accountId, BankStatementStatus status,
-                                            TransactionType type, LocalDateTime startDate, LocalDateTime endDate) {
+    public PageResult<BankStatementVO> page(
+            long page,
+            long size,
+            Long accountId,
+            BankStatementStatus status,
+            TransactionType type,
+            LocalDateTime startDate,
+            LocalDateTime endDate) {
         Page<BankStatement> p = PageUtil.resolve(page, size);
         LambdaQueryWrapper<BankStatement> wrapper = new LambdaQueryWrapper<>();
         if (accountId != null) {
@@ -58,8 +61,11 @@ public class BankStatementServiceImpl implements BankStatementService {
         }
         wrapper.orderByDesc(BankStatement::getCreateTime);
         IPage<BankStatement> result = bankStatementMapper.selectPage(p, wrapper);
-        return new PageResult<>(bankStatementConverter.toVOList(result.getRecords()),
-                result.getTotal(), result.getCurrent(), result.getSize());
+        return new PageResult<>(
+                bankStatementConverter.toVOList(result.getRecords()),
+                result.getTotal(),
+                result.getCurrent(),
+                result.getSize());
     }
 
     @Override

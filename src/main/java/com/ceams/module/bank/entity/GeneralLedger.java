@@ -5,15 +5,12 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import com.ceams.common.base.BaseEntity;
 import com.ceams.common.crypto.SensitiveTypeHandler;
 import com.ceams.module.bank.enums.TransactionType;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-
-/**
- * 总账（biz_general_ledger）。
- */
+/** 总账（biz_general_ledger）。 */
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName(value = "biz_general_ledger", autoResultMap = true)

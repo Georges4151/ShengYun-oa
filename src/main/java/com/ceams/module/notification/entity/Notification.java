@@ -6,14 +6,11 @@ import com.ceams.module.notification.enums.ContentType;
 import com.ceams.module.notification.enums.NotificationPriority;
 import com.ceams.module.notification.enums.NotificationStatus;
 import com.ceams.module.notification.enums.NotificationType;
+import java.time.LocalDateTime;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-import java.time.LocalDateTime;
-
-/**
- * 通知（biz_notification）。
- */
+/** 通知（biz_notification）。 */
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("biz_notification")

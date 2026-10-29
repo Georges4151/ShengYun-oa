@@ -21,9 +21,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * 总账服务实现。
- */
+/** 总账服务实现。 */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -33,8 +31,12 @@ public class GeneralLedgerServiceImpl implements GeneralLedgerService {
     private final GeneralLedgerConverter generalLedgerConverter;
 
     @Override
-    public PageResult<GeneralLedgerVO> page(long page, long size, String accountName,
-                                            TransactionType transactionType, String status) {
+    public PageResult<GeneralLedgerVO> page(
+            long page,
+            long size,
+            String accountName,
+            TransactionType transactionType,
+            String status) {
         Page<GeneralLedger> p = PageUtil.resolve(page, size);
         LambdaQueryWrapper<GeneralLedger> wrapper = new LambdaQueryWrapper<>();
         if (StringUtils.isNotBlank(accountName)) {
@@ -48,8 +50,11 @@ public class GeneralLedgerServiceImpl implements GeneralLedgerService {
         }
         wrapper.orderByDesc(GeneralLedger::getCreateTime);
         IPage<GeneralLedger> result = generalLedgerMapper.selectPage(p, wrapper);
-        return new PageResult<>(generalLedgerConverter.toVOList(result.getRecords()),
-                result.getTotal(), result.getCurrent(), result.getSize());
+        return new PageResult<>(
+                generalLedgerConverter.toVOList(result.getRecords()),
+                result.getTotal(),
+                result.getCurrent(),
+                result.getSize());
     }
 
     @Override

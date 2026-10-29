@@ -2,13 +2,10 @@ package com.ceams.module.payment.converter;
 
 import com.ceams.module.payment.entity.Account;
 import com.ceams.module.payment.vo.AccountVO;
+import java.util.List;
 import org.mapstruct.Mapper;
 
-import java.util.List;
-
-/**
- * 收支流水实体 <-> VO 转换。
- */
+/** 收支流水实体 <-> VO 转换。 */
 @Mapper(componentModel = "spring")
 public interface AccountConverter {
 

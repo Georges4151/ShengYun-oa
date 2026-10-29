@@ -2,13 +2,10 @@ package com.ceams.module.seal.converter;
 
 import com.ceams.module.seal.entity.StampApproval;
 import com.ceams.module.seal.vo.StampApprovalVO;
+import java.util.List;
 import org.mapstruct.Mapper;
 
-import java.util.List;
-
-/**
- * 用印审批实体 <-> VO 转换。
- */
+/** 用印审批实体 <-> VO 转换。 */
 @Mapper(componentModel = "spring")
 public interface StampApprovalConverter {
 

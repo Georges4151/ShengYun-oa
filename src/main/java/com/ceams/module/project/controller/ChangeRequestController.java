@@ -21,9 +21,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * 变更请求管理接口。
- */
+/** 变更请求管理接口。 */
 @RestController
 @RequestMapping("/api/v1/change-requests")
 @RequiredArgsConstructor
@@ -33,10 +31,11 @@ public class ChangeRequestController {
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public ApiResponse<PageResult<ChangeRequestVO>> page(@RequestParam(defaultValue = "1") long page,
-                                                         @RequestParam(defaultValue = "20") long size,
-                                                         @RequestParam(required = false) Long projectId,
-                                                         @RequestParam(required = false) ApprovalStatus status) {
+    public ApiResponse<PageResult<ChangeRequestVO>> page(
+            @RequestParam(defaultValue = "1") long page,
+            @RequestParam(defaultValue = "20") long size,
+            @RequestParam(required = false) Long projectId,
+            @RequestParam(required = false) ApprovalStatus status) {
         return ApiResponse.success(changeRequestService.page(page, size, projectId, status));
     }
 
@@ -54,7 +53,8 @@ public class ChangeRequestController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('SYS_ADMIN','FINANCE')")
-    public ApiResponse<Void> update(@PathVariable Long id, @Valid @RequestBody ChangeRequestUpdateRequest request) {
+    public ApiResponse<Void> update(
+            @PathVariable Long id, @Valid @RequestBody ChangeRequestUpdateRequest request) {
         changeRequestService.update(id, request);
         return ApiResponse.success();
     }
@@ -68,16 +68,16 @@ public class ChangeRequestController {
 
     @PostMapping("/{id}/approve")
     @PreAuthorize("hasAnyRole('SYS_ADMIN','FINANCE')")
-    public ApiResponse<Void> approve(@PathVariable Long id,
-                                     @RequestBody(required = false) ApprovalActionRequest request) {
+    public ApiResponse<Void> approve(
+            @PathVariable Long id, @RequestBody(required = false) ApprovalActionRequest request) {
         changeRequestService.approve(id, request);
         return ApiResponse.success();
     }
 
     @PostMapping("/{id}/reject")
     @PreAuthorize("hasAnyRole('SYS_ADMIN','FINANCE')")
-    public ApiResponse<Void> reject(@PathVariable Long id,
-                                    @RequestBody(required = false) ApprovalActionRequest request) {
+    public ApiResponse<Void> reject(
+            @PathVariable Long id, @RequestBody(required = false) ApprovalActionRequest request) {
         changeRequestService.reject(id, request);
         return ApiResponse.success();
     }

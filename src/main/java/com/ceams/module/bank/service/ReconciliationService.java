@@ -8,13 +8,15 @@ import com.ceams.module.bank.enums.ResolutionStatus;
 import com.ceams.module.bank.vo.ReconciliationMatchResultVO;
 import com.ceams.module.bank.vo.ReconciliationResultVO;
 
-/**
- * 对账结果服务。
- */
+/** 对账结果服务。 */
 public interface ReconciliationService {
 
-    PageResult<ReconciliationResultVO> page(long page, long size, Long accountId,
-                                            ReconciliationStatus status, ResolutionStatus resolutionStatus);
+    PageResult<ReconciliationResultVO> page(
+            long page,
+            long size,
+            Long accountId,
+            ReconciliationStatus status,
+            ResolutionStatus resolutionStatus);
 
     ReconciliationResultVO detail(Long id);
 

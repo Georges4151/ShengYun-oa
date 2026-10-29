@@ -3,15 +3,12 @@ package com.ceams.module.expense.entity;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.ceams.common.base.BaseEntity;
 import com.ceams.module.expense.enums.PaymentMethod;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-
-/**
- * 财务核验（biz_receipt_verification）。
- */
+/** 财务核验（biz_receipt_verification）。 */
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("biz_receipt_verification")

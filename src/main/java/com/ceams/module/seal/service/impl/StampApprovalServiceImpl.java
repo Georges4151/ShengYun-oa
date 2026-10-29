@@ -24,16 +24,13 @@ import com.ceams.module.seal.mapper.StampApprovalMapper;
 import com.ceams.module.seal.service.StampApprovalService;
 import com.ceams.module.seal.util.PageUtil;
 import com.ceams.module.seal.vo.StampApprovalVO;
+import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-
-/**
- * 用印审批服务实现。
- */
+/** 用印审批服务实现。 */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -45,7 +42,8 @@ public class StampApprovalServiceImpl implements StampApprovalService {
     private final StampApprovalConverter stampApprovalConverter;
 
     @Override
-    public PageResult<StampApprovalVO> page(long page, long size, Long stampId, Long sealId, ApprovalStatus status) {
+    public PageResult<StampApprovalVO> page(
+            long page, long size, Long stampId, Long sealId, ApprovalStatus status) {
         Page<StampApproval> p = PageUtil.resolve(page, size);
         LambdaQueryWrapper<StampApproval> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(stampId != null, StampApproval::getStampId, stampId);
@@ -53,8 +51,11 @@ public class StampApprovalServiceImpl implements StampApprovalService {
         wrapper.eq(status != null, StampApproval::getStatus, status);
         wrapper.orderByDesc(StampApproval::getCreateTime);
         IPage<StampApproval> result = stampApprovalMapper.selectPage(p, wrapper);
-        return new PageResult<>(stampApprovalConverter.toVOList(result.getRecords()),
-                result.getTotal(), result.getCurrent(), result.getSize());
+        return new PageResult<>(
+                stampApprovalConverter.toVOList(result.getRecords()),
+                result.getTotal(),
+                result.getCurrent(),
+                result.getSize());
     }
 
     @Override
@@ -124,8 +125,12 @@ public class StampApprovalServiceImpl implements StampApprovalService {
         approval.setRejectReason(null);
         stampApprovalMapper.updateById(approval);
 
-        updateApplicationStatus(approval.getStampId(), ApplicationStatus.APPROVED,
-                approval.getApproverId(), approval.getApprovalTime(), request.getApprovalComment());
+        updateApplicationStatus(
+                approval.getStampId(),
+                ApplicationStatus.APPROVED,
+                approval.getApproverId(),
+                approval.getApprovalTime(),
+                request.getApprovalComment());
     }
 
     @Override
@@ -142,8 +147,12 @@ public class StampApprovalServiceImpl implements StampApprovalService {
         approval.setApprovalTime(LocalDateTime.now());
         stampApprovalMapper.updateById(approval);
 
-        updateApplicationStatus(approval.getStampId(), ApplicationStatus.REJECTED,
-                approval.getApproverId(), approval.getApprovalTime(), request.getRejectReason());
+        updateApplicationStatus(
+                approval.getStampId(),
+                ApplicationStatus.REJECTED,
+                approval.getApproverId(),
+                approval.getApprovalTime(),
+                request.getRejectReason());
     }
 
     @Override
@@ -162,7 +171,8 @@ public class StampApprovalServiceImpl implements StampApprovalService {
     }
 
     private ElectronicSealApplication requirePendingApplication(Long applicationId) {
-        ElectronicSealApplication application = electronicSealApplicationMapper.selectById(applicationId);
+        ElectronicSealApplication application =
+                electronicSealApplicationMapper.selectById(applicationId);
         if (application == null) {
             throw BusinessException.of(ErrorCode.BIZ_NOT_FOUND, "用印申请不存在");
         }
@@ -183,9 +193,14 @@ public class StampApprovalServiceImpl implements StampApprovalService {
         return seal;
     }
 
-    private void updateApplicationStatus(Long applicationId, ApplicationStatus status,
-                                         Long approverId, LocalDateTime approvalTime, String comment) {
-        ElectronicSealApplication application = electronicSealApplicationMapper.selectById(applicationId);
+    private void updateApplicationStatus(
+            Long applicationId,
+            ApplicationStatus status,
+            Long approverId,
+            LocalDateTime approvalTime,
+            String comment) {
+        ElectronicSealApplication application =
+                electronicSealApplicationMapper.selectById(applicationId);
         if (application == null) {
             throw BusinessException.of(ErrorCode.BIZ_NOT_FOUND, "用印申请不存在");
         }

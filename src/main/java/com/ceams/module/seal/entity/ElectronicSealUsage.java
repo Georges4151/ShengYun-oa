@@ -2,14 +2,11 @@ package com.ceams.module.seal.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.ceams.common.base.BaseEntity;
+import java.time.LocalDateTime;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-import java.time.LocalDateTime;
-
-/**
- * 印章使用审计（biz_electronic_seal_usage）。
- */
+/** 印章使用审计（biz_electronic_seal_usage）。 */
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("biz_electronic_seal_usage")

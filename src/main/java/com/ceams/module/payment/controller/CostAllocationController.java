@@ -19,9 +19,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * 成本分摊管理接口。
- */
+/** 成本分摊管理接口。 */
 @RestController
 @RequestMapping("/api/v1/cost-allocations")
 @RequiredArgsConstructor
@@ -31,9 +29,10 @@ public class CostAllocationController {
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public ApiResponse<PageResult<CostAllocationVO>> page(@RequestParam(defaultValue = "1") long page,
-                                                          @RequestParam(defaultValue = "20") long size,
-                                                          @RequestParam(required = false) Long accountRecordId) {
+    public ApiResponse<PageResult<CostAllocationVO>> page(
+            @RequestParam(defaultValue = "1") long page,
+            @RequestParam(defaultValue = "20") long size,
+            @RequestParam(required = false) Long accountRecordId) {
         return ApiResponse.success(costAllocationService.page(page, size, accountRecordId));
     }
 
@@ -51,7 +50,8 @@ public class CostAllocationController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('SYS_ADMIN','FINANCE')")
-    public ApiResponse<Void> update(@PathVariable Long id, @Valid @RequestBody CostAllocationUpdateRequest request) {
+    public ApiResponse<Void> update(
+            @PathVariable Long id, @Valid @RequestBody CostAllocationUpdateRequest request) {
         costAllocationService.update(id, request);
         return ApiResponse.success();
     }

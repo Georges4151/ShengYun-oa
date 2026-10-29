@@ -6,9 +6,7 @@ import com.ceams.module.masterdata.dto.contact.ContactUpdateRequest;
 import com.ceams.module.masterdata.enums.ContactType;
 import com.ceams.module.masterdata.vo.ContactVO;
 
-/**
- * 往来单位服务。
- */
+/** 往来单位服务。 */
 public interface ContactService {
 
     PageResult<ContactVO> page(long page, long size, String keyword, ContactType type);

@@ -2,9 +2,7 @@ package com.ceams.common.response;
 
 import lombok.Getter;
 
-/**
- * 统一响应码。
- */
+/** 统一响应码。 */
 @Getter
 public enum ResultCode {
 

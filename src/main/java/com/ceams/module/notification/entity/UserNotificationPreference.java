@@ -4,14 +4,11 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import com.ceams.common.base.BaseEntity;
 import com.ceams.module.notification.enums.NotificationPriority;
 import com.ceams.module.notification.enums.NotificationType;
+import java.time.LocalTime;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-import java.time.LocalTime;
-
-/**
- * 用户通知偏好（biz_user_notification_preference）。
- */
+/** 用户通知偏好（biz_user_notification_preference）。 */
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("biz_user_notification_preference")

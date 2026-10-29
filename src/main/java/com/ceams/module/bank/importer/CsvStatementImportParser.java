@@ -2,9 +2,6 @@ package com.ceams.module.bank.importer;
 
 import com.ceams.common.exception.BusinessException;
 import com.ceams.common.exception.ErrorCode;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -17,11 +14,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
-/**
- * CSV 银行流水解析器：手写轻量 CSV 解析（支持引号包裹与双引号转义），
- * 通过表头别名映射到 {@link StatementRow} 字段，兼容常见中英文列名。
- */
+/** CSV 银行流水解析器：手写轻量 CSV 解析（支持引号包裹与双引号转义）， 通过表头别名映射到 {@link StatementRow} 字段，兼容常见中英文列名。 */
 @Slf4j
 @Component
 public class CsvStatementImportParser implements StatementImportParser {
@@ -32,13 +28,39 @@ public class CsvStatementImportParser implements StatementImportParser {
     private static Map<String, String> buildAliasMap() {
         Map<String, String> map = new HashMap<>();
         put(map, "accountId", "account_id", "accountid", "account", "账号", "账户号", "账户");
-        put(map, "transactionDate", "transaction_date", "transactiondate", "date", "交易日期", "交易时间", "日期");
+        put(
+                map,
+                "transactionDate",
+                "transaction_date",
+                "transactiondate",
+                "date",
+                "交易日期",
+                "交易时间",
+                "日期");
         put(map, "amount", "amount", "金额", "交易金额", "发生额");
         put(map, "type", "type", "类型", "收支类型", "借贷标志", "借贷");
         put(map, "description", "description", "summary", "摘要", "描述", "备注", "附言");
-        put(map, "counterparty", "counterparty", "counterparty_name", "对方户名", "对方账户名", "对方单位", "对方");
-        put(map, "bankReference", "bank_reference", "bankreference", "reference", "ref_no", "refno",
-                "流水号", "银行流水号", "交易流水号", "交易参考号");
+        put(
+                map,
+                "counterparty",
+                "counterparty",
+                "counterparty_name",
+                "对方户名",
+                "对方账户名",
+                "对方单位",
+                "对方");
+        put(
+                map,
+                "bankReference",
+                "bank_reference",
+                "bankreference",
+                "reference",
+                "ref_no",
+                "refno",
+                "流水号",
+                "银行流水号",
+                "交易流水号",
+                "交易参考号");
         put(map, "balance", "balance", "余额", "账户余额", "账面余额");
         return map;
     }
@@ -127,7 +149,8 @@ public class CsvStatementImportParser implements StatementImportParser {
 
     private List<String> readLines(InputStream in) {
         List<String> lines = new ArrayList<>();
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
+        try (BufferedReader reader =
+                new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
             String line;
             while ((line = reader.readLine()) != null) {
                 lines.add(stripBom(line));

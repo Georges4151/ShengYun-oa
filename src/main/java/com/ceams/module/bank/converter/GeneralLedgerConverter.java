@@ -3,13 +3,10 @@ package com.ceams.module.bank.converter;
 import com.ceams.common.mask.SensitiveMaskUtil;
 import com.ceams.module.bank.entity.GeneralLedger;
 import com.ceams.module.bank.vo.GeneralLedgerVO;
+import java.util.List;
 import org.mapstruct.Mapper;
 
-import java.util.List;
-
-/**
- * 总账实体 <-> VO 转换。
- */
+/** 总账实体 <-> VO 转换。 */
 @Mapper(componentModel = "spring")
 public interface GeneralLedgerConverter {
 
