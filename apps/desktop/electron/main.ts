@@ -37,12 +37,15 @@ function buildCsp(dev: boolean): string {
 }
 
 /**
- * 生产环境加载 apps/web 的构建产物。
- * __dirname = apps/desktop/dist-electron，向上两级到 apps，再进入 web/dist。
+ * 生产环境加载 apps/web 的 Electron 专用构建产物（base='./'，资源相对路径适配 file:// 协议）。
+ * __dirname = apps/desktop/dist-electron，向上两级到 apps，再进入 web/dist-electron。
  */
-const WEB_DIST_INDEX = path.join(__dirname, '..', '..', 'web', 'dist', 'index.html')
+const WEB_DIST_INDEX = path.join(__dirname, '..', '..', 'web', 'dist-electron', 'index.html')
 
 function isDev(): boolean {
+  // 显式环境变量优先（打包环境与 .pnpm junction 路径下 app.isPackaged 不可靠）
+  if (process.env.CEAMS_ENV === 'production') return false
+  if (process.env.CEAMS_ENV === 'development') return true
   return !app.isPackaged && process.env.NODE_ENV !== 'production'
 }
 
@@ -55,7 +58,7 @@ function loadFallback(win: BrowserWindow, message: string): void {
     '<h2>渲染层加载失败</h2>',
     `<p>${message}</p>`,
     '<p>开发模式请先在 <code>apps/web</code> 执行 <code>pnpm dev</code>（默认端口 5173）；',
-    '生产模式请先执行 <code>pnpm --filter @ceams/web build</code> 生成 <code>apps/web/dist</code>。</p>',
+    '生产模式请先执行 <code>pnpm --filter @ceams/web build:electron</code> 生成 <code>apps/web/dist-electron</code>。</p>',
     '</body></html>'
   ].join('')
   void win.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`)

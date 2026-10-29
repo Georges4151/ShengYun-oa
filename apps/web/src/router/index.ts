@@ -1,9 +1,15 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHashHistory, createWebHistory } from 'vue-router'
 import { routes } from './routes'
 import { useAuthStore } from '@/stores/auth'
 
+// Electron（file:// 协议）下 pushState 受限，改用 hash 历史模式；Web 部署保持 history 模式
+const history =
+  import.meta.env.VITE_ROUTER_MODE === 'hash'
+    ? createWebHashHistory(import.meta.env.BASE_URL)
+    : createWebHistory(import.meta.env.BASE_URL)
+
 export const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
+  history,
   routes
 })
 

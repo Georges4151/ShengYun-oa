@@ -10,6 +10,8 @@ export default defineConfig(({ mode }) => {
   const proxyTarget = env.VITE_PROXY_TARGET ?? 'http://localhost:8080'
 
   return {
+    // electron 模式使用相对路径，保证 file:// 协议下资源可被正确解析；Web 部署仍用根路径
+    base: mode === 'electron' ? './' : '/',
     plugins: [vue()],
     resolve: {
       alias: {
