@@ -169,8 +169,9 @@ export class HttpClient {
       if (token) request.headers['Authorization'] = `Bearer ${token}`
     }
 
-    const secret = this.options.getSignSecret ? await this.options.getSignSecret() : null
-    const needSign = secret != null && (this.options.shouldSign?.(request) ?? request.signed === true)
+    // 先判定是否需要签名，只有签名请求才获取密钥（避免非签名请求触发密钥获取，进而自调用递归）
+    const needSign = this.options.shouldSign?.(request) ?? request.signed === true
+    const secret = needSign && this.options.getSignSecret ? await this.options.getSignSecret() : null
     if (needSign && secret) {
       const timestamp = Date.now().toString()
       const nonce = (this.options.generateNonce ?? defaultNonce)()
