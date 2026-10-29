@@ -10,22 +10,31 @@ import type {
   UsbDriveInfo
 } from './ipc-types'
 
-/**
- * 渲染层 CSP：渲染进程不接触 Node，仅允许自身资源与公网 HTTPS 接口。
- * - connect-src 收紧为 'self' + https:，禁止 ws:/http: 明文与任意跨域。
- * - script-src 仅 'self'，杜绝内联脚本注入。
- */
-const CSP = [
-  "default-src 'self'",
-  "script-src 'self'",
-  "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: https:",
-  "connect-src 'self' https:",
-  "font-src 'self' data:"
-].join('; ')
-
 /** Web 开发服务器地址（apps/web 默认 5173） */
 const WEB_DEV_URL = 'http://localhost:5173'
+
+/** dev 模式下 Vite HMR 的 WebSocket 地址（由 WEB_DEV_URL 推导为 ws://） */
+const WEB_DEV_WS_URL = WEB_DEV_URL.replace(/^http/, 'ws')
+
+/**
+ * 渲染层 CSP：渲染进程不接触 Node，仅允许自身资源与公网 HTTPS 接口。
+ * - connect-src 生产环境收紧为 'self' + https:，禁止 ws:/http: 明文与任意跨域。
+ * - 仅 dev 模式追加 Vite HMR 的 ws 地址，保证热更新可用；生产环境不放宽。
+ * - script-src 仅 'self'，杜绝内联脚本注入。
+ */
+function buildCsp(dev: boolean): string {
+  const connectSrc = dev
+    ? `connect-src 'self' https: ${WEB_DEV_WS_URL}`
+    : "connect-src 'self' https:"
+  return [
+    "default-src 'self'",
+    "script-src 'self'",
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: https:",
+    connectSrc,
+    "font-src 'self' data:"
+  ].join('; ')
+}
 
 /**
  * 生产环境加载 apps/web 的构建产物。
@@ -123,10 +132,11 @@ function registerIpc(): void {
 }
 
 function registerCsp(): void {
+  const csp = buildCsp(isDev())
   session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
     const headers: Record<string, string[]> = {
       ...(details.responseHeaders ?? {}),
-      'Content-Security-Policy': [CSP]
+      'Content-Security-Policy': [csp]
     }
     callback({ responseHeaders: headers })
   })
