@@ -8,7 +8,7 @@
 
   适配本项目既有代码风格：
     - 缩进 4 空格（Google 默认 2 空格，此处按项目实际改为 4）；
-    - import 分组：第三方 -> java/javax -> static（AOSP/IDEA 风格，java 与 javax 同组）；
+    - import 排序交由 Spotless（google-java-format AOSP）保证，Checkstyle 不再校验 import 顺序；
     - 默认 severity=warning，配合 maven-checkstyle-plugin 的 failOnViolation=false，
       首轮仅生成报告与告警，不阻断构建。
 
@@ -33,13 +33,6 @@
         <module name="RedundantImport"/>
         <module name="UnusedImports">
             <property name="processJavadoc" value="false"/>
-        </module>
-        <module name="CustomImportOrder">
-            <property name="customImportOrderRules"
-                      value="THIRD_PARTY_PACKAGE###STANDARD_JAVA_PACKAGE###STATIC"/>
-            <property name="standardPackageRegExp" value="^(java|javax)\."/>
-            <property name="sortImportsInGroupAlphabetically" value="false"/>
-            <property name="separateLineBetweenGroups" value="true"/>
         </module>
 
         <!-- ===== 缩进（4 空格，宽松模式避免 lambda/stream 误报） ===== -->
