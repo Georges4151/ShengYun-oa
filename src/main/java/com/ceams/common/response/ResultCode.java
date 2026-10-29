@@ -10,7 +10,7 @@ public enum ResultCode {
     SUCCESS(0, "success"),
 
     /** 通用系统错误兜底。 */
-    ERROR(500000, "SYSTEM_INTERNAL_ERROR");
+    ERROR(500_000, "SYSTEM_INTERNAL_ERROR");
 
     private final int code;
     private final String message;
