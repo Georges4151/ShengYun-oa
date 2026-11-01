@@ -1,4 +1,5 @@
 import { app, BrowserWindow, ipcMain, session, shell } from 'electron'
+import * as fs from 'node:fs'
 import * as path from 'node:path'
 import { deleteRefreshToken, getRefreshToken, setRefreshToken } from './auth-token'
 import { listUsbDrives, readSealImage, stampLocal } from './usb-seal'
@@ -37,10 +38,18 @@ function buildCsp(dev: boolean): string {
 }
 
 /**
- * 生产环境加载 apps/web 的 Electron 专用构建产物（base='./'，资源相对路径适配 file:// 协议）。
- * __dirname = apps/desktop/dist-electron，向上两级到 apps，再进入 web/dist-electron。
+ * 生产环境渲染层入口。
+ * - 打包后：electron-builder 通过 files.from 将 apps/web/dist-electron 复制到
+ *   app 内的 dist-electron/renderer，故优先加载 __dirname/renderer/index.html。
+ * - 未打包 monorepo 场景（CEAMS_ENV=production 跑源码产物）：向上两级到 apps/web/dist-electron。
+ * 两者产物均由 `vite build --mode electron`（base='./'）产出，资源相对路径适配 file:// 协议。
  */
-const WEB_DIST_INDEX = path.join(__dirname, '..', '..', 'web', 'dist-electron', 'index.html')
+const BUNDLED_WEB_INDEX = path.join(__dirname, 'renderer', 'index.html')
+const MONOREPO_WEB_INDEX = path.join(__dirname, '..', '..', 'web', 'dist-electron', 'index.html')
+
+function resolveProdIndex(): string {
+  return fs.existsSync(BUNDLED_WEB_INDEX) ? BUNDLED_WEB_INDEX : MONOREPO_WEB_INDEX
+}
 
 function isDev(): boolean {
   // 显式环境变量优先（打包环境与 .pnpm junction 路径下 app.isPackaged 不可靠）
@@ -104,9 +113,10 @@ function createWindow(): BrowserWindow {
       loadFallback(win, '未检测到 Web 开发服务器（localhost:5173）。')
     })
   } else {
-    win.loadFile(WEB_DIST_INDEX).catch((error: Error) => {
+    const prodIndex = resolveProdIndex()
+    win.loadFile(prodIndex).catch((error: Error) => {
       console.error('[ceams-desktop] 生产渲染层加载失败：', error)
-      loadFallback(win, `未找到生产构建产物：${WEB_DIST_INDEX}`)
+      loadFallback(win, `未找到生产构建产物：${prodIndex}`)
     })
   }
 

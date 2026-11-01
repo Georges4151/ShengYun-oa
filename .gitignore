@@ -59,6 +59,10 @@ coverage/
 *.local
 *.tsbuildinfo
 
+# Electron 打包产物
+release/
+builder-debug.yml
+
 # Vite
 .vite/
 

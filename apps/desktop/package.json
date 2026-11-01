@@ -9,7 +9,10 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "lint": "tsc --noEmit -p tsconfig.json",
     "dev:web": "pnpm --filter @ceams/web dev",
-    "start": "pnpm build && electron ."
+    "start": "pnpm build && electron .",
+    "build:web": "pnpm --filter @ceams/web build:electron",
+    "dist": "pnpm build:web && pnpm build && cross-env ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/ ELECTRON_BUILDER_BINARIES_MIRROR=https://registry.npmmirror.com/-/binary/electron-builder-binaries/ electron-builder",
+    "dist:dir": "pnpm build:web && pnpm build && cross-env ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/ ELECTRON_BUILDER_BINARIES_MIRROR=https://registry.npmmirror.com/-/binary/electron-builder-binaries/ electron-builder --dir"
   },
   "dependencies": {
     "@ceams/api-client": "workspace:*",
@@ -20,7 +23,45 @@
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
+    "cross-env": "^10.1.0",
     "electron": "^45.0.0",
+    "electron-builder": "^26.18.0",
     "typescript": "^5.9.3"
+  },
+  "build": {
+    "appId": "com.ceams.desktop",
+    "productName": "CEAMS",
+    "asar": true,
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "dist-electron/**",
+      "package.json",
+      {
+        "from": "../web/dist-electron",
+        "to": "dist-electron/renderer",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
   }
 }
