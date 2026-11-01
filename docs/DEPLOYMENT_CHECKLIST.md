@@ -1,6 +1,6 @@
 # CEAMS 上线部署清单
 
-> 生成时间：2026-11-01 ｜ 适用版本：`ceams 2.0.0-SNAPSHOT`（分支 `dev`）
+> 生成时间：2026-11-01 ｜ 更新：2026-11-01（A1~A6 阻断项代码侧已全部解决）｜ 适用版本：`ceams 2.0.0-SNAPSHOT`（分支 `dev`）
 > 依据：`docs/ARCHITECTURE.md`、`src/main/resources/application.yml`、`docs/STAGE4_PLAN.md`
 > 说明：本文档只覆盖「代码完成 → 生产可用」之间的缺口，不重复架构设计内容。
 
@@ -22,18 +22,18 @@
 | Electron | `apps/desktop` 可 `pnpm build && electron .` 启动 |
 | CI 静态检查 | Checkstyle / Spotless / PMD / JaCoCo（非阻断）+ ArchUnit（阻断） |
 
-### 上线前必须补齐（阻断项）
+### 上线前阻断项（代码侧已全部解决）
 
-| # | 缺口 | 影响 | 优先级 |
+| # | 原始缺口 | 解决方式 | 状态 |
 |---|---|---|---|
-| **A1** | **后端无 `/api/v1/files/upload` 端点** — 小程序票据拍照调用该接口，但后端仅有银行流水 CSV 导入的 `MultipartFile` | 小程序「报销票据拍照上传」必定 404，功能不可用 | **P0** |
-| **A2** | **Electron 无 `electron-builder` 配置** — `apps/desktop/package.json` 只有 `start`，无打包脚本 | 无法产出 Windows 安装包，桌面端无法交付 | **P0** |
-| **A3** | **根目录 `Dockerfile` / `docker-compose.yml` 是旧系统遗留** — 指向 `ceams-1.0-SNAPSHOT.jar`、端口 `9095`、`db/schema.sql` | 直接使用会构建出错误镜像，必须新写 | **P0** |
-| **A4** | 备份加密仅有配置占位（`application.yml` 第 76~78 行注释） | 数据库备份为明文，不满足安全基线 | **P1** |
-| **A5** | 生产环境密钥全部使用仓库内 dev 默认值 | 敏感字段加密、JWT 可被伪造 | **P1** |
-| **A6** | 上传文件存储位置未定义（无对象存储、无本地目录配置） | A1 补齐时需同时确定落盘位置与访问方式 | **P1** |
+| **A1** | 后端无 `/api/v1/files/upload` 端点 | 新增 `module/file` 域（`FileController` / `FileServiceImpl` / `FileVO`）：鉴权 + 20MB 上限 + `jpg/jpeg/png/webp/pdf` 白名单 + 雪花 ID 落盘 + 文件名正则防穿越；小程序 `platform/upload.ts` 与票据详情预览同步打通 | ✅ 已完成（`e6d2664`） |
+| **A2** | Electron 无 `electron-builder` 配置 | `apps/desktop/package.json` 接入 electron-builder（NSIS x64、oneClick=false）+ `dist`/`dist:dir` 脚本固化镜像源；已产出 `release/CEAMS Setup 0.1.0.exe` 与 `win-unpacked` | ✅ 已完成（`cef5e84`） |
+| **A3** | 根目录 Dockerfile / compose 为旧系统遗留 | 新建 `deploy/Dockerfile`（maven 构建 → temurin-17 JRE，HEALTHCHECK）+ `deploy/docker-compose.yml`（mysql8/redis7/app + service_healthy 依赖）+ `deploy/README.md`；`docker compose config` 校验通过 | ✅ 已完成（`7aa6551`） |
+| **A4** | 备份加密仅有配置占位 | 新增 `scripts/backup-mysql.sh`：`mysqldump --single-transaction` 管道 `gpg --symmetric AES256`，`KEEP_DAYS` 默认 7 | ✅ 脚本就绪（`7aa6551`），恢复演练待上线时执行 |
+| **A5** | 生产密钥使用 dev 默认值 | `deploy/docker-compose.yml` 全部敏感值改为 `${VAR:?}` 强制注入，`deploy/README.md` 给出 `openssl rand -base64 32` 生成方式与变量表 | ✅ 清单就绪（`7aa6551`），生产值待上线时替换 |
+| **A6** | 上传文件存储位置未定义 | `application.yml` 新增 `ceams.file.upload-dir: ${FILE_UPLOAD_DIR:./data/files}`，与既有 `ceams.file.stamp-dir` 同级；返回相对路径 `/api/v1/files/{name}` | ✅ 已完成（`e6d2664`） |
 
-> 另外，根目录存在大量旧系统文件（`androidclient/`、`deploy/`、`*_VPN_*.md`、`build-client.bat`、`installer.iss` 等），**与 2.0 架构无关，不可复用**。
+> 另外，根目录仍存在旧系统文件（`androidclient/`、`*_VPN_*.md`、`build-client.bat`、`installer.iss`、根目录 `Dockerfile` / `docker-compose.yml` 等），**与 2.0 架构无关，不可复用**；生产部署统一使用 `deploy/` 目录下的新文件。
 
 ---
 
@@ -113,32 +113,32 @@ Spring Boot ──► MySQL 8（Flyway 迁移）
 | Web | `VITE_ROUTER_MODE` | `history`（静态托管需配 Nginx fallback） |
 | 小程序 | `VITE_API_BASE_URL` | `https://api.xxx`（**必须 HTTPS 且已加入微信白名单**） |
 
+### 3.4 文件存储
+
+| 变量 | 必填 | 默认 | 备注 |
+|---|---|---|---|
+| `FILE_UPLOAD_DIR` | 是 | `./data/files` | 票据/附件落盘目录；容器部署时需挂载持久卷，多实例需共享存储 |
+
+> `ceams.file.stamp-dir` 为盖章 PDF 目录（`./data/stamps`），当前无环境变量覆盖入口，容器化时需随 `FILE_UPLOAD_DIR` 一并挂载。
+
 ---
 
 ## 4. 后端部署步骤
 
-### 4.1 需要新写的 Dockerfile（A3）
+### 4.1 镜像构建（A3，已就绪）
 
-根目录旧 `Dockerfile` 不可用。新文件要点：
+使用 `deploy/Dockerfile`（多阶段：maven 构建 → `eclipse-temurin:17-jre` 运行，内置 `HEALTHCHECK /actuator/health`）：
 
-```dockerfile
-FROM maven:3.9-eclipse-temurin-17 AS build
-WORKDIR /app
-COPY pom.xml .
-RUN mvn -B dependency:go-offline
-COPY src ./src
-RUN mvn -B clean package -DskipTests
-
-FROM eclipse-temurin:17-jre
-WORKDIR /app
-COPY --from=build /app/target/ceams-2.0.0-SNAPSHOT.jar ./app.jar
-EXPOSE 8080
-HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
-  CMD wget -qO- http://localhost:8080/actuator/health || exit 1
-ENTRYPOINT ["java","-XX:MaxRAMPercentage=75","-jar","app.jar"]
+```bash
+docker build -f deploy/Dockerfile -t ceams-backend:2.0.0-SNAPSHOT .
 ```
 
-> 不要 `COPY db/schema.sql`——建库完全由 Flyway 管理。
+要点：
+
+- 运行阶段基于 JDK 17（`pom.xml` `java.version=17`），不引入 19
+- 启动参数 `-XX:MaxRAMPercentage=75`，按容器内存自适应
+- **不要 `COPY db/schema.sql`**——建库完全由 Flyway 管理
+- 配套编排：`deploy/docker-compose.yml`（mysql8 + redis7 + app，`depends_on: service_healthy`），首次启动前复制 `deploy/.env` 模板并填值（见 `deploy/README.md`）
 
 ### 4.2 启动
 
@@ -146,6 +146,7 @@ ENTRYPOINT ["java","-XX:MaxRAMPercentage=75","-jar","app.jar"]
 export MYSQL_HOST=... MYSQL_PORT=3306 MYSQL_DATABASE=ceams MYSQL_USER=ceams MYSQL_PASSWORD=...
 export REDIS_HOST=... REDIS_PORT=6379 REDIS_PASSWORD=...
 export JWT_SECRET=... CEAMS_SENSITIVE_KEY=... EXPORT_SECRET=...
+export FILE_UPLOAD_DIR=/data/ceams/files
 java -jar app.jar
 ```
 
@@ -198,21 +199,26 @@ server {
 
 ---
 
-## 6. Electron 交付（A2）
+## 6. Electron 交付（A2，已就绪）
 
-当前 `apps/desktop` 只有 `start`，需新增打包能力：
+`apps/desktop` 已接入 `electron-builder`，打包配置在 `package.json` 的 `build` 字段（`appId=com.ceams.desktop`、`productName=CEAMS`、输出 `release/`、`win.target=nsis` x64、`nsis.oneClick=false`）。
 
-1. 引入 `electron-builder`（devDependency）
-2. 新增配置：
-   - `directories.output` → `release/`
-   - `files` → `dist-electron/**`、`node_modules/**`、内置 Web 产物
-   - `win.target` → `nsis`
-   - `nsis.oneClick: false`、`allowToChangeInstallationDirectory: true`
-3. 打包前必须先构建 Web（`pnpm --filter @ceams/web build:electron`，`base: './'`，产物进 `dist-electron`）
-4. Windows 代码签名证书（可选但强烈建议；否则 SmartScreen 拦截）
-5. 发布物：安装包 + 版本号 + 更新通道（如需自动更新，另接 `electron-updater`）
+```bash
+pnpm install
+pnpm --filter @ceams/desktop dist        # 产出 release/CEAMS Setup <version>.exe
+pnpm --filter @ceams/desktop dist:dir    # 仅产出 win-unpacked（调试用）
+```
 
-验证要点：安装后首次启动能加载页面、`contextIsolation` 生效、USB 印章设备枚举正常。
+已验证：`release/CEAMS Setup 0.1.0.exe`（119.1 MB）与 `win-unpacked`（含 `drivelist.node` 原生模块）。
+
+上线前仍需完成：
+
+1. 装配到干净 Windows 机器验证：启动、页面加载、`contextIsolation` 生效、USB 印章设备枚举正常
+2. 生产版需用 `VITE_API_BASE_URL` 指向生产域名重新构建 Web 产物后再打包
+3. Windows 代码签名证书（可选但强烈建议；否则 SmartScreen 拦截）
+4. 发布物：安装包 + 版本号 + 更新通道（如需自动更新，另接 `electron-updater`）
+
+> 打包脚本已内置 `ELECTRON_MIRROR` / `ELECTRON_BUILDER_BINARIES_MIRROR`（cross-env 固化），内网/慢网环境无需额外设置。
 
 ---
 
@@ -257,7 +263,7 @@ pnpm --filter @ceams/miniprogram build:mp-weixin   # 产物 dist/build/mp-weixin
 | 数据库账号 | 专用账号，仅授予 `ceams` 库必要权限 |
 | 网络 | MySQL / Redis / 8080 不对外暴露，仅安全组内网互通 |
 | TLS | 443 强制 HTTPS，HTTP 301 跳转；证书自动续期 |
-| 备份加密（A4） | `mysqldump \| gpg --encrypt` 或托管数据库自动加密备份；备份文件存异地 |
+| 备份加密（A4） | 已提供 `scripts/backup-mysql.sh`（`mysqldump --single-transaction \| gpg --symmetric AES256`，`KEEP_DAYS` 默认 7）；备份文件存异地，GPG 口令单独托管 |
 | 日志脱敏 | 已内置 `MaskingMessageConverter`，确认生产 logback 使用该 converter |
 | 导出留痕 | 已实现签名 URL（`EXPORT_SECRET` + TTL），确认 `url-ttl-millis` 符合安全要求 |
 | 设备绑定 | 高危接口走 `X-Device-Id` + AppSecret，确认设备表 `app_secret` 已加密（`SensitiveTypeHandler`） |
@@ -269,11 +275,17 @@ pnpm --filter @ceams/miniprogram build:mp-weixin   # 产物 dist/build/mp-weixin
 
 ### 上线前
 
-- [ ] A1：补齐 `/api/v1/files/upload`（含鉴权、大小限制 20MB、类型白名单、落盘路径）并在小程序实机验证拍照上传
-- [ ] A2：Electron 打包出 NSIS 安装包，安装后可启动并加载页面
-- [ ] A3：新 Dockerfile 构建成功，镜像启动后 health = UP
-- [ ] A4：备份加密脚本就绪并演练一次恢复
-- [ ] A5：三项密钥已替换，且 `CEAMS_SENSITIVE_KEY` 已备份到密钥库
+- [x] A1：`/api/v1/files/upload` 已补齐（鉴权、20MB 上限、jpg/jpeg/png/webp/pdf 白名单、`FILE_UPLOAD_DIR` 落盘、文件名正则防穿越），本机实测上传/下载/拦截均通过
+- [ ] A1-实机：小程序真机拍照上传 + 票据附件预览走通（需真机/真 AppID 环境）
+- [x] A2：Electron 已产出 `release/CEAMS Setup 0.1.0.exe`；待装到干净 Windows 机器验证「安装后可启动并加载页面」
+- [ ] A2-装机：在干净机安装 NSIS 包，确认启动、页面加载、USB 盖章可用
+- [x] A3：新 Dockerfile + compose 就绪，`docker compose config` 校验通过；待构建镜像并确认 health = UP
+- [ ] A3-构建：`docker compose build && up` 后 `/actuator/health` = UP
+- [x] A4：`scripts/backup-mysql.sh` 加密备份脚本就绪
+- [ ] A4-演练：按脚本执行一次备份并成功恢复
+- [x] A5：`deploy/docker-compose.yml` 敏感值已改为 `${VAR:?}` 强制注入，`deploy/README.md` 给出密钥生成方式
+- [ ] A5-替换：生产环境三项密钥已替换，且 `CEAMS_SENSITIVE_KEY` 已备份到密钥库
+- [x] A6：上传存储目录已定义（`ceams.file.upload-dir` = `FILE_UPLOAD_DIR`，默认 `./data/files`）
 - [ ] MySQL 空库已创建，迁移前全量备份策略就绪
 - [ ] Nginx 反向代理 + TLS 生效，`/api/v1/auth/login` 走 HTTPS 可通
 - [ ] Web 构建产物部署，history 路由刷新不 404
