@@ -7,7 +7,7 @@
   "transformPx": false,
   "vueVersion": "3",
   "mp-weixin": {
-    "appid": "",
+    "appid": "wx3ba625ae02189da2",
     "setting": {
       "urlCheck": false,
       "es6": true,
