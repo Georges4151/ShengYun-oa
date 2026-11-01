@@ -37,7 +37,17 @@ export function uploadFile(url: string, filePath: string, options: UploadOptions
       formData: options.formData,
       header: options.header,
       success: (res: UniApp.UploadFileSuccessCallbackResult) => {
-        resolve(res.data)
+        try {
+          const parsed = JSON.parse(res.data) as { data?: { url?: string } }
+          const url = parsed?.data?.url
+          if (!url) {
+            reject(new Error('上传响应缺少文件地址'))
+            return
+          }
+          resolve(url)
+        } catch {
+          reject(new Error('上传响应解析失败'))
+        }
       },
       fail: (err: UniApp.GeneralCallbackResult) => {
         reject(new Error(err.errMsg ?? '上传失败'))
