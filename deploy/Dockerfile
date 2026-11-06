@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 # ================= CEAMS 生产镜像（多阶段构建） =================
 # 构建产物：ceams-2.0.0-SNAPSHOT.jar (Spring Boot fat jar, JDK 17)
 # 运行时端口：8080；健康检查：/actuator/health
@@ -7,21 +8,14 @@
 FROM maven:3.9-eclipse-temurin-17 AS build
 WORKDIR /build
 
-# 先复制 pom.xml 并预下载依赖，利用 Docker 层缓存（pom.xml 不变则不重复下载）
+# 复制 pom 与源码并打包（跳过测试）；依赖通过 BuildKit 缓存挂载 /root/.m2 复用
 COPY pom.xml ./
-RUN mvn -B dependency:go-offline
-
-# 复制源码并打包（跳过测试）
 COPY src ./src
-RUN mvn -B clean package -DskipTests
+RUN --mount=type=cache,target=/root/.m2 mvn -B clean package -DskipTests -Dmaven.wagon.http.retryHandler.count=6 -Dmaven.wagon.httpconnectionManager.ttlSeconds=120
 
 # ===== 阶段二：运行时 =====
 FROM eclipse-temurin:17-jre AS runtime
 WORKDIR /app
-
-# wget 用于容器健康检查
-RUN apt-get update && apt-get install -y --no-install-recommends wget \
-    && rm -rf /var/lib/apt/lists/*
 
 # 复制 fat jar 并重命名为 app.jar
 COPY --from=build /build/target/ceams-2.0.0-SNAPSHOT.jar app.jar

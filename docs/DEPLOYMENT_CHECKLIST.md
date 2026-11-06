@@ -1,6 +1,6 @@
 # CEAMS 上线部署清单
 
-> 生成时间：2026-11-01 ｜ 更新：2026-11-01（A1~A6 阻断项代码侧已全部解决）｜ 适用版本：`ceams 2.0.0-SNAPSHOT`（分支 `dev`）
+> 生成时间：2026-11-01 ｜ 更新：2026-11-06（A3 镜像构建与启动实测通过）｜ 适用版本：`ceams 2.0.0-SNAPSHOT`（分支 `dev`）
 > 依据：`docs/ARCHITECTURE.md`、`src/main/resources/application.yml`、`docs/STAGE4_PLAN.md`
 > 说明：本文档只覆盖「代码完成 → 生产可用」之间的缺口，不重复架构设计内容。
 
@@ -28,7 +28,7 @@
 |---|---|---|---|
 | **A1** | 后端无 `/api/v1/files/upload` 端点 | 新增 `module/file` 域（`FileController` / `FileServiceImpl` / `FileVO`）：鉴权 + 20MB 上限 + `jpg/jpeg/png/webp/pdf` 白名单 + 雪花 ID 落盘 + 文件名正则防穿越；小程序 `platform/upload.ts` 与票据详情预览同步打通 | ✅ 已完成（`e6d2664`） |
 | **A2** | Electron 无 `electron-builder` 配置 | `apps/desktop/package.json` 接入 electron-builder（NSIS x64、oneClick=false）+ `dist`/`dist:dir` 脚本固化镜像源；已产出 `release/CEAMS Setup 0.1.0.exe` 与 `win-unpacked` | ✅ 已完成（`cef5e84`） |
-| **A3** | 根目录 Dockerfile / compose 为旧系统遗留 | 新建 `deploy/Dockerfile`（maven 构建 → temurin-17 JRE，HEALTHCHECK）+ `deploy/docker-compose.yml`（mysql8/redis7/app + service_healthy 依赖）+ `deploy/README.md`；`docker compose config` 校验通过 | ✅ 已完成（`7aa6551`） |
+| **A3** | 根目录 Dockerfile / compose 为旧系统遗留 | 新建 `deploy/Dockerfile`（maven 构建 → temurin-17 JRE，HEALTHCHECK，BuildKit 依赖缓存挂载）+ `deploy/docker-compose.yml`（mysql8/redis7/app + service_healthy 依赖）+ `deploy/README.md` | ✅ 已完成并实测（`7aa6551` + 2026-11-06 构建/启动/健康检查通过） |
 | **A4** | 备份加密仅有配置占位 | 新增 `scripts/backup-mysql.sh`：`mysqldump --single-transaction` 管道 `gpg --symmetric AES256`，`KEEP_DAYS` 默认 7 | ✅ 脚本就绪（`7aa6551`），恢复演练待上线时执行 |
 | **A5** | 生产密钥使用 dev 默认值 | `deploy/docker-compose.yml` 全部敏感值改为 `${VAR:?}` 强制注入，`deploy/README.md` 给出 `openssl rand -base64 32` 生成方式与变量表 | ✅ 清单就绪（`7aa6551`），生产值待上线时替换 |
 | **A6** | 上传文件存储位置未定义 | `application.yml` 新增 `ceams.file.upload-dir: ${FILE_UPLOAD_DIR:./data/files}`，与既有 `ceams.file.stamp-dir` 同级；返回相对路径 `/api/v1/files/{name}` | ✅ 已完成（`e6d2664`） |
@@ -139,6 +139,9 @@ docker build -f deploy/Dockerfile -t ceams-backend:2.0.0-SNAPSHOT .
 - 启动参数 `-XX:MaxRAMPercentage=75`，按容器内存自适应
 - **不要 `COPY db/schema.sql`**——建库完全由 Flyway 管理
 - 配套编排：`deploy/docker-compose.yml`（mysql8 + redis7 + app，`depends_on: service_healthy`），首次启动前复制 `deploy/.env` 模板并填值（见 `deploy/README.md`）
+- 构建依赖通过 BuildKit 缓存挂载 `--mount=type=cache,target=/root/.m2` 复用，弱网环境下重试可续传；国内网络拉取 Docker Hub 基础镜像受限时，可加 `--pull=false` 使用本地已缓存镜像
+
+**已实测（2026-11-06）**：`docker build` 成功产出 `ceams-backend:a3-verify`（559 MB）；以独立容器接入 MySQL 8 空库启动，Flyway 从零应用 9 个迁移（V1、V2、V4~V10）到 `v10`，建表 40 张，`/actuator/health` 返回 `{"status":"UP"}`，容器内置 HEALTHCHECK 在 15 秒内转为 `healthy`，启动耗时 9.2 秒；未认证访问 `/api/v1/files/**` 返回 401。
 
 ### 4.2 启动
 
@@ -279,8 +282,8 @@ pnpm --filter @ceams/miniprogram build:mp-weixin   # 产物 dist/build/mp-weixin
 - [ ] A1-实机：小程序真机拍照上传 + 票据附件预览走通（需真机/真 AppID 环境）
 - [x] A2：Electron 已产出 `release/CEAMS Setup 0.1.0.exe`；待装到干净 Windows 机器验证「安装后可启动并加载页面」
 - [ ] A2-装机：在干净机安装 NSIS 包，确认启动、页面加载、USB 盖章可用
-- [x] A3：新 Dockerfile + compose 就绪，`docker compose config` 校验通过；待构建镜像并确认 health = UP
-- [ ] A3-构建：`docker compose build && up` 后 `/actuator/health` = UP
+- [x] A3：新 Dockerfile 构建成功，镜像启动后 `/actuator/health` = UP（2026-11-06 实测：空库 Flyway 跑到 v10、40 表、容器 healthy、启动 9.2s；未认证接口 401）
+- [ ] A3-编排：`docker compose up` 三容器联动（mysql/redis/app）实跑一次
 - [x] A4：`scripts/backup-mysql.sh` 加密备份脚本就绪
 - [ ] A4-演练：按脚本执行一次备份并成功恢复
 - [x] A5：`deploy/docker-compose.yml` 敏感值已改为 `${VAR:?}` 强制注入，`deploy/README.md` 给出密钥生成方式
