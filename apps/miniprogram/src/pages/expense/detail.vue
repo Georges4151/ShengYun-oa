@@ -5,7 +5,7 @@ import type { ReceiptVO } from '@ceams/types'
 import { formatMoney } from '@ceams/utils'
 import { apiClient } from '../../platform/http'
 import { chooseImage, uploadFile } from '../../platform/upload'
-import { previewPdf } from '../../platform/download'
+import { previewFile } from '../../platform/download'
 import { API_BASE_URL, ATTACHMENT_UPLOAD_URL } from '../../platform/config'
 import { getAccessToken } from '../../platform/auth'
 import {
@@ -70,7 +70,7 @@ function previewAttachment(): void {
     uni.showToast({ title: '暂无附件', icon: 'none' })
     return
   }
-  previewPdf(`${API_BASE_URL}${filePath}`).catch((err: unknown) => {
+  previewFile(`${API_BASE_URL}${filePath}`).catch((err: unknown) => {
     uni.showToast({ title: apiErrorMessage(err, '预览失败'), icon: 'none' })
   })
 }

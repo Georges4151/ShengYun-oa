@@ -51,3 +51,42 @@ export async function previewPdf(url: string, fileType = 'pdf'): Promise<void> {
   const filePath = await downloadFile(url, { header })
   await openDocument(filePath, fileType)
 }
+
+/** 图片类型：微信 openDocument 不支持，需走 previewImage */
+const IMAGE_TYPES = ['jpg', 'jpeg', 'png', 'webp']
+
+/** openDocument 可打开的文档类型，不在列表内时按 pdf 处理 */
+const DOCUMENT_TYPES = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx']
+
+/** 从 url 中提取小写扩展名（忽略查询串与哈希） */
+function getFileExtension(url: string): string {
+  const path = url.split(/[?#]/)[0]
+  const index = path.lastIndexOf('.')
+  return index === -1 ? '' : path.slice(index + 1).toLowerCase()
+}
+
+/**
+ * 通用附件预览：按扩展名分流。
+ * 图片走 downloadFile + previewImage，其余文档走 previewPdf / openDocument。
+ * 需要登录态时自动携带 Authorization 头。
+ */
+export async function previewFile(url: string): Promise<void> {
+  const ext = getFileExtension(url)
+  if (IMAGE_TYPES.includes(ext)) {
+    const token = getAccessToken()
+    const header = token ? { Authorization: `Bearer ${token}` } : undefined
+    const filePath = await downloadFile(url, { header })
+    await new Promise<void>((resolve, reject) => {
+      uni.previewImage({
+        urls: [filePath],
+        current: filePath,
+        success: () => resolve(),
+        fail: (err: UniApp.GeneralCallbackResult) => {
+          reject(new Error(err.errMsg ?? '预览图片失败'))
+        }
+      })
+    })
+    return
+  }
+  await previewPdf(url, DOCUMENT_TYPES.includes(ext) ? ext : 'pdf')
+}
