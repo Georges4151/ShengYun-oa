@@ -20,6 +20,8 @@ import type {
   RoleUpdateRequest,
   AssignPermissionsRequest,
   PermissionVO,
+  PermissionCreatePayload,
+  PermissionUpdatePayload,
   UserDeviceVO,
   DeviceBindRequest,
   UserSessionVO,
@@ -55,6 +57,9 @@ export interface IamApi {
 
   permissionTree(): Promise<PermissionVO[]>
   permissionMine(): Promise<string[]>
+  permissionCreate(body: PermissionCreatePayload): Promise<string>
+  permissionUpdate(id: string, body: PermissionUpdatePayload): Promise<void>
+  permissionRemove(id: string): Promise<void>
 
   devicePage(query?: { page?: number; size?: number }): Promise<PageResult<UserDeviceVO>>
   deviceBind(body: DeviceBindRequest): Promise<Id>
@@ -141,6 +146,15 @@ export function createIamApi(client: HttpClient): IamApi {
     },
     async permissionMine() {
       return client.get<string[]>('/api/v1/permissions/me')
+    },
+    async permissionCreate(body) {
+      return client.post<string>('/api/v1/permissions', body)
+    },
+    async permissionUpdate(id, body) {
+      return client.put<void>(`/api/v1/permissions/${id}`, body)
+    },
+    async permissionRemove(id) {
+      return client.delete<void>(`/api/v1/permissions/${id}`)
     },
 
     async devicePage(query = {}) {

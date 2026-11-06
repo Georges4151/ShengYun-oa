@@ -144,6 +144,25 @@ export interface PermissionVO {
   children?: PermissionVO[]
 }
 
+export interface PermissionCreatePayload {
+  /** 权限码，规则 ^[A-Za-z0-9:_-]{2,100}$ */
+  code: string
+  /** 权限名称，长度 ≤100 */
+  name: string
+  type: PermissionType
+  /** 父权限 id；null 表示作为根节点 */
+  parentId?: Id | null
+  /** 前端路由，仅 MENU 类型使用，长度 ≤255 */
+  path?: string | null
+  /** 图标标识，长度 ≤100 */
+  icon?: string | null
+  /** 排序值，默认 0 */
+  sortOrder?: number
+}
+
+/** 权限更新请求体，字段与创建一致 */
+export type PermissionUpdatePayload = PermissionCreatePayload
+
 // ---------- 会话 ----------
 export interface UserSessionVO {
   sessionId: string
