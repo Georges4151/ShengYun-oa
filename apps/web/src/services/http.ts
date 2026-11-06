@@ -13,17 +13,31 @@ let apiClient!: CeamsApiClient
 /**
  * 刷新令牌轮换：用 refreshToken 换取新的令牌对并写回 auth store，
  * 返回新的 access token 供 HttpClient 重试原请求。
+ * 单飞：同一时刻只允许一个刷新在飞，并发 401 共享同一个 Promise，
+ * 避免一次性轮换的 refreshToken 被重复消费导致后续请求全部失败。
  */
+let refreshPromise: Promise<string> | null = null
+
 function refreshAccessToken(): Promise<string> {
+  if (refreshPromise) {
+    return refreshPromise
+  }
   const auth = useAuthStore(pinia)
   const currentRefreshToken = auth.refreshToken
   if (!currentRefreshToken) {
     return Promise.reject(new Error('AUTH_TOKEN_EXPIRED'))
   }
-  return apiClient.iam.refresh({ refreshToken: currentRefreshToken }).then((data) => {
-    auth.setSession(data)
-    return data.tokenPair.accessToken
-  })
+  const pending = apiClient.iam.refresh({ refreshToken: currentRefreshToken })
+    .then((data) => {
+      auth.setSession(data)
+      return data.tokenPair.accessToken
+    })
+    .finally(() => {
+      // 成功或失败都在此处清空，保证下一次令牌过期能重新发起新一轮刷新。
+      refreshPromise = null
+    })
+  refreshPromise = pending
+  return pending
 }
 
 // 签名密钥缓存：后端短期下发，带过期刷新；客户端不落 AppSecret
