@@ -1,0 +1,115 @@
+/**
+ * CEAMS 全局基础样式
+ * 仅包含跨页面复用的基类与小程序默认样式修正，具体页面布局仍由各页面 scoped 样式承担。
+ */
+
+page {
+  background-color: var(--ceams-bg-page);
+  color: var(--ceams-text-primary);
+  font-size: var(--ceams-font-size-body);
+  line-height: var(--ceams-line-height-normal);
+}
+
+/* 页面容器：统一的水平留白与纵向节奏 */
+.ceams-page {
+  padding: var(--ceams-space-lg) var(--ceams-space-xl);
+  box-sizing: border-box;
+}
+
+/* 底部安全区：用于带底部操作栏的页面 */
+.ceams-safe-bottom {
+  padding-bottom: calc(var(--ceams-space-lg) + env(safe-area-inset-bottom));
+}
+
+/* 卡片基类 */
+.ceams-card {
+  margin-bottom: var(--ceams-space-md);
+  padding: var(--ceams-space-lg);
+  background-color: var(--ceams-bg-card);
+  border-radius: var(--ceams-radius-card);
+  box-shadow: var(--ceams-shadow-card);
+  box-sizing: border-box;
+}
+
+/* 列表分隔 */
+.ceams-divider {
+  height: var(--ceams-border-width);
+  background-color: var(--ceams-divider);
+}
+
+.ceams-list-item {
+  padding: var(--ceams-space-md) 0;
+  border-bottom: var(--ceams-border-width) solid var(--ceams-divider);
+}
+
+.ceams-list-item--last {
+  border-bottom: none;
+}
+
+/* 按钮重置：去掉小程序 button 默认的 ::after 边框 */
+button::after {
+  border: none;
+}
+
+.ceams-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--ceams-control-height);
+  padding: 0 var(--ceams-space-lg);
+  border-radius: var(--ceams-radius-md);
+  font-size: var(--ceams-font-size-body);
+  font-weight: var(--ceams-font-weight-semibold);
+  line-height: var(--ceams-line-height-tight);
+  box-sizing: border-box;
+}
+
+.ceams-btn--primary {
+  color: var(--ceams-text-inverse);
+  background-color: var(--ceams-color-primary);
+}
+
+.ceams-btn--ghost {
+  color: var(--ceams-color-primary);
+  background-color: var(--ceams-bg-card);
+  border: var(--ceams-border-width) solid var(--ceams-color-primary);
+}
+
+.ceams-btn--danger {
+  color: var(--ceams-text-inverse);
+  background-color: var(--ceams-color-danger);
+}
+
+/* 金额数字：统一字重与字距，配合 amount-text 组件使用 */
+.ceams-amount {
+  color: var(--ceams-text-amount);
+  font-weight: var(--ceams-font-weight-semibold);
+  letter-spacing: var(--ceams-letter-spacing-number);
+}
+
+/* 单行省略 */
+.ceams-ellipsis {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* 文本层级工具类 */
+.ceams-text-secondary {
+  color: var(--ceams-text-secondary);
+}
+
+.ceams-text-placeholder {
+  color: var(--ceams-text-placeholder);
+}
+
+.ceams-text-inverse {
+  color: var(--ceams-text-inverse);
+}
+
+/* 常用横向分布 */
+.ceams-flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}

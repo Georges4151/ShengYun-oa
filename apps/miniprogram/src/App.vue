@@ -8,7 +8,7 @@ onLaunch(() => {
 </script>
 
 <style>
-page {
-  background-color: #f5f6f7;
-}
+/* 全局设计基础层：先令牌、后基础样式，编译后会内联进 app.wxss */
+@import './styles/theme.css';
+@import './styles/common.css';
 </style>

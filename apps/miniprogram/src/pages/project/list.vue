@@ -1,11 +1,22 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { onReachBottom, onShow } from '@dcloudio/uni-app'
-import type { ProjectVO } from '@ceams/types'
-import { formatMoney } from '@ceams/utils'
+import type { ProjectStatus, ProjectVO } from '@ceams/types'
+import { formatDate } from '@ceams/utils'
 import { apiClient } from '../../platform/http'
 import { projectStatusLabels } from '../../utils/labels'
 import { apiErrorMessage } from '../../utils/error'
+
+type TagType = 'pending' | 'approved' | 'rejected' | 'verified' | 'paid' | 'neutral'
+
+/** 项目状态 -> 状态标签语义（仅用于展示配色） */
+const projectStatusTagTypes: Record<ProjectStatus, TagType> = {
+  PLANNING: 'neutral',
+  IN_PROGRESS: 'verified',
+  PAUSED: 'pending',
+  COMPLETED: 'approved',
+  CLOSED: 'neutral'
+}
 
 const list = ref<ProjectVO[]>([])
 const keyword = ref('')
@@ -53,91 +64,184 @@ onReachBottom(() => {
 </script>
 
 <template>
-  <view class="page">
-    <view class="search">
-      <input v-model="keyword" class="search__input" type="text" placeholder="项目名称 / 客户" />
-      <button class="search__btn" @click="onSearch">查询</button>
+  <view class="ceams-page project-list">
+    <view class="project-list__search">
+      <input
+        v-model="keyword"
+        class="project-list__input"
+        type="text"
+        placeholder="项目名称 / 客户"
+        @confirm="onSearch"
+      />
+      <button class="project-list__search-btn" @click="onSearch">查询</button>
     </view>
 
-    <view v-if="loading && list.length === 0" class="empty">加载中...</view>
-    <view v-else-if="list.length === 0" class="empty">暂无项目</view>
-
-    <view v-for="item in list" :key="item.id" class="card" @click="openDetail(item.id)">
-      <view class="card__row">
-        <text class="card__title">{{ item.projectName }}</text>
-        <text class="card__tag">{{ projectStatusLabels[item.status] }}</text>
+    <view class="project-list__summary">
+      <view class="project-list__summary-cell">
+        <text class="project-list__summary-label">项目总数</text>
+        <text class="project-list__summary-value">{{ total }}</text>
       </view>
-      <text class="card__line">客户：{{ item.clientName || '-' }}</text>
-      <text class="card__line">类型：{{ item.projectType }}</text>
-      <text class="card__line">合同金额：{{ formatMoney(item.contractAmount) }}</text>
+      <view class="project-list__summary-divider" />
+      <view class="project-list__summary-cell">
+        <text class="project-list__summary-label">当前展示</text>
+        <text class="project-list__summary-value">{{ list.length }}</text>
+      </view>
     </view>
 
-    <view v-if="list.length > 0 && list.length < total" class="loadmore">上拉加载更多</view>
+    <view v-if="loading && list.length === 0" class="project-list__state">加载中...</view>
+    <empty-state
+      v-else-if="list.length === 0"
+      title="暂无项目"
+      description="调整关键词后重新查询"
+      icon="◈"
+    />
+
+    <view
+      v-for="item in list"
+      :key="item.id"
+      class="project-list__item"
+      @click="openDetail(item.id)"
+    >
+      <list-card
+        :title="item.projectName"
+        :subtitle="'客户：' + (item.clientName || '-') + ' · 负责人：' + (item.managerName || '-') + ' · ' + (item.startDate ? formatDate(item.startDate) : '日期待定')"
+      >
+        <template #right>
+          <status-tag
+            :label="projectStatusLabels[item.status]"
+            :type="projectStatusTagTypes[item.status]"
+          />
+        </template>
+        <view class="project-list__metrics">
+          <view class="project-list__metric">
+            <text class="project-list__metric-label">合同金额</text>
+            <amount-text :value="item.contractAmount ?? '--'" size="md" />
+          </view>
+          <view class="project-list__metric project-list__metric--end">
+            <text class="project-list__metric-label">实际金额</text>
+            <amount-text
+              :value="item.actualAmount ?? '--'"
+              size="md"
+              color="var(--ceams-text-secondary)"
+            />
+          </view>
+        </view>
+      </list-card>
+    </view>
+
+    <view v-if="list.length > 0 && list.length < total" class="project-list__loadmore">
+      上拉加载更多
+    </view>
   </view>
 </template>
 
 <style scoped>
-.page {
-  padding: 24rpx 32rpx;
-}
-.search {
-  display: flex;
-  gap: 16rpx;
-  margin-bottom: 24rpx;
-}
-.search__input {
-  flex: 1;
-  padding: 18rpx 20rpx;
-  background-color: #ffffff;
-  border: 1rpx solid #e5e7eb;
-  border-radius: 12rpx;
-}
-.search__btn {
-  width: 140rpx;
-  background-color: #2563eb;
-  color: #ffffff;
-  font-size: 28rpx;
-  border-radius: 12rpx;
-}
-.card {
-  padding: 28rpx;
-  background-color: #ffffff;
-  border-radius: 16rpx;
-  margin-bottom: 20rpx;
-  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
-}
-.card__row {
+.project-list__search {
   display: flex;
   align-items: center;
+  margin-bottom: var(--ceams-space-md);
+}
+
+.project-list__input {
+  flex: 1;
+  height: var(--ceams-control-height-sm);
+  padding: 0 var(--ceams-space-md);
+  color: var(--ceams-text-primary);
+  font-size: var(--ceams-font-size-body);
+  background-color: var(--ceams-bg-card);
+  border: var(--ceams-border-width) solid var(--ceams-border);
+  border-radius: var(--ceams-radius-md);
+  box-sizing: border-box;
+}
+
+.project-list__search-btn {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  height: var(--ceams-control-height-sm);
+  margin-left: var(--ceams-space-sm);
+  padding: 0 var(--ceams-space-lg);
+  color: var(--ceams-text-inverse);
+  font-size: var(--ceams-font-size-body);
+  font-weight: var(--ceams-font-weight-semibold);
+  line-height: var(--ceams-line-height-tight);
+  background-color: var(--ceams-color-primary);
+  border-radius: var(--ceams-radius-md);
+  box-sizing: border-box;
+}
+
+.project-list__summary {
+  display: flex;
+  align-items: center;
+  margin-bottom: var(--ceams-space-md);
+  padding: var(--ceams-space-md) var(--ceams-space-lg);
+  background-color: var(--ceams-bg-card);
+  border-radius: var(--ceams-radius-card);
+  box-shadow: var(--ceams-shadow-card);
+}
+
+.project-list__summary-cell {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.project-list__summary-label {
+  color: var(--ceams-text-secondary);
+  font-size: var(--ceams-font-size-caption);
+}
+
+.project-list__summary-value {
+  margin-top: var(--ceams-space-2xs);
+  color: var(--ceams-color-primary);
+  font-size: var(--ceams-font-size-title);
+  font-weight: var(--ceams-font-weight-semibold);
+  line-height: var(--ceams-line-height-tight);
+  letter-spacing: var(--ceams-letter-spacing-number);
+}
+
+.project-list__summary-divider {
+  align-self: stretch;
+  width: var(--ceams-border-width);
+  margin: 0 var(--ceams-space-lg);
+  background-color: var(--ceams-divider);
+}
+
+.project-list__state {
+  padding: var(--ceams-space-3xl) 0;
+  color: var(--ceams-text-placeholder);
+  font-size: var(--ceams-font-size-body);
+  text-align: center;
+}
+
+.project-list__metrics {
+  display: flex;
+  align-items: flex-end;
   justify-content: space-between;
-  margin-bottom: 12rpx;
+  padding-top: var(--ceams-space-sm);
+  border-top: var(--ceams-border-width) solid var(--ceams-divider);
 }
-.card__title {
-  font-size: 32rpx;
-  font-weight: 600;
+
+.project-list__metric {
+  display: flex;
+  flex-direction: column;
 }
-.card__tag {
-  font-size: 22rpx;
-  color: #2563eb;
-  background-color: #eff6ff;
-  padding: 4rpx 14rpx;
-  border-radius: 999rpx;
+
+.project-list__metric--end {
+  align-items: flex-end;
 }
-.card__line {
-  display: block;
-  font-size: 26rpx;
-  color: #6b7280;
-  margin-top: 6rpx;
+
+.project-list__metric-label {
+  margin-bottom: var(--ceams-space-2xs);
+  color: var(--ceams-text-secondary);
+  font-size: var(--ceams-font-size-caption);
 }
-.empty {
+
+.project-list__loadmore {
+  padding: var(--ceams-space-md) 0;
+  color: var(--ceams-text-placeholder);
+  font-size: var(--ceams-font-size-caption);
   text-align: center;
-  color: #9ca3af;
-  padding: 80rpx 0;
-}
-.loadmore {
-  text-align: center;
-  color: #9ca3af;
-  font-size: 24rpx;
-  padding: 20rpx 0;
 }
 </style>

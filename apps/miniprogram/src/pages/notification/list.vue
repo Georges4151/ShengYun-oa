@@ -1,11 +1,18 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { onReachBottom, onShow } from '@dcloudio/uni-app'
-import type { UserNotificationVO } from '@ceams/types'
+import type { PushChannel, UserNotificationVO } from '@ceams/types'
 import { formatDateTime } from '@ceams/utils'
 import { apiClient } from '../../platform/http'
 import { pushChannelLabels, pushStatusLabels } from '../../utils/labels'
 import { apiErrorMessage } from '../../utils/error'
+
+/** 渠道 -> 几何字符标识（不使用 emoji / 图标库） */
+const channelMarks: Record<PushChannel, string> = {
+  SYSTEM: '◈',
+  EMAIL: '@',
+  SMS: '≡'
+}
 
 const records = ref<UserNotificationVO[]>([])
 const page = ref(1)
@@ -60,89 +67,209 @@ onReachBottom(() => {
 </script>
 
 <template>
-  <view class="page">
-    <view class="toolbar">
-      <text class="toolbar__count">未读 {{ unreadCount }} 条</text>
-      <button class="toolbar__btn" @click="markAllRead">全部已读</button>
+  <view class="ceams-page notification-list">
+    <view class="notification-list__toolbar">
+      <view class="notification-list__toolbar-info">
+        <text class="notification-list__toolbar-label">未读</text>
+        <text class="notification-list__toolbar-count">{{ unreadCount }}</text>
+        <text class="notification-list__toolbar-unit">条</text>
+      </view>
+      <button class="notification-list__readall" @click="markAllRead">全部已读</button>
     </view>
 
-    <view v-if="records.length === 0" class="empty">暂无通知</view>
-    <view v-for="item in records" :key="item.id" class="card">
-      <view class="card__row">
-        <text class="card__channel">{{ pushChannelLabels[item.channel ?? 'SYSTEM'] }}</text>
-        <text v-if="item.isRead === 0" class="card__badge">未读</text>
+    <view v-if="records.length === 0" class="ceams-card">
+      <empty-state title="暂无通知" description="新的通知会出现在这里" icon="◈" />
+    </view>
+
+    <view v-else class="ceams-card notification-list__panel">
+      <view
+        v-for="(item, index) in records"
+        :key="item.id"
+        :class="[
+          'ceams-list-item',
+          'notification-list__item',
+          item.isRead === 0 ? 'notification-list__item--unread' : 'notification-list__item--read',
+          index === records.length - 1 ? 'ceams-list-item--last' : ''
+        ]"
+      >
+        <view v-if="item.isRead === 0" class="notification-list__bar" />
+        <view class="notification-list__mark">
+          {{ channelMarks[item.channel ?? 'SYSTEM'] }}
+        </view>
+        <view class="notification-list__body">
+          <view class="notification-list__head">
+            <text class="notification-list__title">
+              {{ pushChannelLabels[item.channel ?? 'SYSTEM'] }}通知
+            </text>
+            <text class="notification-list__time">
+              {{ formatDateTime(item.pushTime ?? item.createTime) }}
+            </text>
+          </view>
+          <text class="notification-list__summary">
+            {{ pushStatusLabels[item.pushStatus] }} · 通知编号 {{ item.notificationId }}
+          </text>
+          <text
+            v-if="item.isRead === 0"
+            class="notification-list__action"
+            @click="markRead(item.id)"
+          >
+            标记已读
+          </text>
+        </view>
       </view>
-      <text class="card__line">通知 ID：{{ item.notificationId }}</text>
-      <text class="card__line">发送状态：{{ pushStatusLabels[item.pushStatus] }}</text>
-      <text class="card__line">时间：{{ formatDateTime(item.pushTime ?? item.createTime) }}</text>
-      <view v-if="item.isRead === 0" class="card__action" @click="markRead(item.id)">标记已读</view>
     </view>
   </view>
 </template>
 
 <style scoped>
-.page {
-  padding: 24rpx 32rpx;
-}
-.toolbar {
+.notification-list__toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 24rpx;
+  margin-bottom: var(--ceams-space-md);
 }
-.toolbar__count {
-  font-size: 26rpx;
-  color: #6b7280;
+
+.notification-list__toolbar-info {
+  display: flex;
+  align-items: center;
 }
-.toolbar__btn {
-  font-size: 26rpx;
-  color: #2563eb;
-  background-color: transparent;
-  padding: 0 8rpx;
-  line-height: 1;
+
+.notification-list__toolbar-label {
+  color: var(--ceams-text-secondary);
+  font-size: var(--ceams-font-size-caption);
 }
-.toolbar__btn::after {
-  border: none;
+
+.notification-list__toolbar-count {
+  margin: 0 var(--ceams-space-2xs);
+  color: var(--ceams-color-primary);
+  font-size: var(--ceams-font-size-heading);
+  font-weight: var(--ceams-font-weight-semibold);
+  letter-spacing: var(--ceams-letter-spacing-number);
 }
-.card {
-  padding: 28rpx;
-  background-color: #ffffff;
-  border-radius: 16rpx;
-  margin-bottom: 20rpx;
-  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
+
+.notification-list__toolbar-unit {
+  color: var(--ceams-text-secondary);
+  font-size: var(--ceams-font-size-caption);
 }
-.card__row {
+
+.notification-list__readall {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--ceams-control-height-sm);
+  padding: 0 var(--ceams-space-md);
+  color: var(--ceams-color-primary);
+  font-size: var(--ceams-font-size-caption);
+  font-weight: var(--ceams-font-weight-medium);
+  line-height: var(--ceams-line-height-tight);
+  background-color: var(--ceams-bg-card);
+  border: var(--ceams-border-width) solid var(--ceams-color-primary);
+  border-radius: var(--ceams-radius-pill);
+  box-sizing: border-box;
+}
+
+.notification-list__panel {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.notification-list__item {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  padding-left: var(--ceams-space-lg);
+}
+
+.notification-list__bar {
+  position: absolute;
+  top: var(--ceams-space-md);
+  bottom: var(--ceams-space-md);
+  left: 0;
+  width: var(--ceams-space-2xs);
+  background-color: var(--ceams-color-primary);
+  border-radius: var(--ceams-radius-pill);
+}
+
+.notification-list__mark {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--ceams-control-height-sm);
+  height: var(--ceams-control-height-sm);
+  margin-right: var(--ceams-space-md);
+  color: var(--ceams-color-primary);
+  font-size: var(--ceams-font-size-heading);
+  font-weight: var(--ceams-font-weight-semibold);
+  background-color: var(--ceams-color-primary-tint);
+  border-radius: var(--ceams-radius-pill);
+}
+
+.notification-list__item--unread .notification-list__mark {
+  color: var(--ceams-text-inverse);
+  background-color: var(--ceams-color-primary);
+}
+
+.notification-list__item--read .notification-list__mark {
+  color: var(--ceams-color-neutral);
+  background-color: var(--ceams-color-neutral-tint);
+}
+
+.notification-list__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.notification-list__head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 12rpx;
 }
-.card__channel {
-  font-size: 30rpx;
-  font-weight: 600;
+
+.notification-list__title {
+  flex: 1;
+  min-width: 0;
+  margin-right: var(--ceams-space-sm);
+  overflow: hidden;
+  color: var(--ceams-text-primary);
+  font-size: var(--ceams-font-size-body);
+  font-weight: var(--ceams-font-weight-semibold);
+  line-height: var(--ceams-line-height-tight);
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
-.card__badge {
-  font-size: 22rpx;
-  color: #dc2626;
-  background-color: #fef2f2;
-  padding: 4rpx 14rpx;
-  border-radius: 999rpx;
+
+.notification-list__time {
+  flex-shrink: 0;
+  color: var(--ceams-text-placeholder);
+  font-size: var(--ceams-font-size-caption);
+  line-height: var(--ceams-line-height-tight);
 }
-.card__line {
-  display: block;
-  font-size: 26rpx;
-  color: #6b7280;
-  margin-top: 6rpx;
+
+.notification-list__summary {
+  display: -webkit-box;
+  margin-top: var(--ceams-space-2xs);
+  overflow: hidden;
+  color: var(--ceams-text-secondary);
+  font-size: var(--ceams-font-size-caption);
+  line-height: var(--ceams-line-height-normal);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
-.card__action {
-  margin-top: 16rpx;
-  text-align: right;
-  font-size: 26rpx;
-  color: #2563eb;
+
+.notification-list__item--read .notification-list__title {
+  color: var(--ceams-text-secondary);
+  font-weight: var(--ceams-font-weight-regular);
 }
-.empty {
-  text-align: center;
-  color: #9ca3af;
-  padding: 80rpx 0;
+
+.notification-list__item--read .notification-list__summary {
+  color: var(--ceams-text-placeholder);
+}
+
+.notification-list__action {
+  display: inline-block;
+  margin-top: var(--ceams-space-xs);
+  color: var(--ceams-color-primary);
+  font-size: var(--ceams-font-size-mini);
 }
 </style>

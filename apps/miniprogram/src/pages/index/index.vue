@@ -6,14 +6,38 @@ import { clearSession, getUserName, isLoggedIn } from '../../platform/auth'
 interface MenuItem {
   title: string
   path: string
+  /** 纯 CSS 图标块中的几何字符，不引入图标库 */
+  icon: string
+  /** 卡片下方的一行业务说明 */
+  desc: string
 }
 
 const name = ref('')
 const menus: MenuItem[] = [
-  { title: '项目与进度款', path: '/pages/project/list' },
-  { title: '报销待办审批', path: '/pages/expense/pending' },
-  { title: '只读账目', path: '/pages/payment/list' },
-  { title: '通知列表', path: '/pages/notification/list' }
+  {
+    title: '项目与进度款',
+    path: '/pages/project/list',
+    icon: '▤',
+    desc: '查看项目进度与进度款'
+  },
+  {
+    title: '报销待办审批',
+    path: '/pages/expense/pending',
+    icon: '¥',
+    desc: '处理待审批报销单据'
+  },
+  {
+    title: '只读账目',
+    path: '/pages/payment/list',
+    icon: '◈',
+    desc: '浏览付款与账目明细'
+  },
+  {
+    title: '通知列表',
+    path: '/pages/notification/list',
+    icon: '▣',
+    desc: '接收系统与审批通知'
+  }
 ]
 
 onShow(() => {
@@ -44,62 +68,209 @@ function logout(): void {
 
 <template>
   <view class="home">
-    <view class="home__header">
-      <text class="home__greeting">{{ name ? '你好，' + name : 'CEAMS 移动办公' }}</text>
-      <button class="home__logout" @click="logout">退出</button>
-    </view>
-    <view class="home__menu">
-      <view v-for="item in menus" :key="item.path" class="home__card" @click="open(item.path)">
-        <text class="home__card-title">{{ item.title }}</text>
-        <text class="home__card-arrow">›</text>
+    <!-- 品牌区：主色渐变 + 底部大圆角 -->
+    <view class="home__banner">
+      <view class="home__banner-bar">
+        <view class="home__brand">
+          <text class="home__greeting">{{ name ? '你好，' + name : '你好，欢迎回来' }}</text>
+          <text class="home__subtitle">CEAMS 建筑财务移动办公</text>
+        </view>
+        <button class="home__logout" @click="logout">退出登录</button>
       </view>
+    </view>
+
+    <view class="home__body">
+      <view class="home__section">
+        <view class="home__section-bar"></view>
+        <text class="home__section-title">常用功能</text>
+      </view>
+
+      <!-- 2 列网格：宽度百分比 + margin 实现，不使用 gap -->
+      <view class="home__menu">
+        <view
+          v-for="item in menus"
+          :key="item.path"
+          class="home__card"
+          hover-class="home__card--pressed"
+          @click="open(item.path)"
+        >
+          <view class="home__icon">
+            <text class="home__icon-symbol">{{ item.icon }}</text>
+          </view>
+          <view class="home__card-text">
+            <text class="home__card-title">{{ item.title }}</text>
+            <text class="home__card-desc ceams-ellipsis">{{ item.desc }}</text>
+          </view>
+        </view>
+      </view>
+
+      <text class="home__footer">数据来自 CEAMS 服务端 · v1.0.0</text>
     </view>
   </view>
 </template>
 
 <style scoped>
 .home {
-  padding: 40rpx 32rpx;
+  min-height: 100vh;
+  box-sizing: border-box;
+  background-color: var(--ceams-bg-page);
 }
-.home__header {
+
+/* ---------------- 顶部品牌区 ---------------- */
+.home__banner {
+  padding: var(--ceams-space-2xl) var(--ceams-space-xl);
+  background-image: linear-gradient(
+    135deg,
+    var(--ceams-color-primary) 0%,
+    var(--ceams-color-primary-deep) 100%
+  );
+  border-bottom-left-radius: var(--ceams-radius-xl);
+  border-bottom-right-radius: var(--ceams-radius-xl);
+  box-sizing: border-box;
+}
+
+.home__banner-bar {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  margin-bottom: 40rpx;
 }
+
+.home__brand {
+  flex: 1;
+  min-width: 0;
+}
+
 .home__greeting {
-  font-size: 36rpx;
-  font-weight: 600;
+  display: block;
+  color: var(--ceams-text-inverse);
+  font-size: var(--ceams-font-size-title);
+  font-weight: var(--ceams-font-weight-bold);
+  line-height: var(--ceams-line-height-tight);
 }
+
+.home__subtitle {
+  display: block;
+  margin-top: var(--ceams-space-xs);
+  color: var(--ceams-text-inverse);
+  opacity: 0.72;
+  font-size: var(--ceams-font-size-caption);
+  line-height: var(--ceams-line-height-normal);
+}
+
 .home__logout {
-  font-size: 26rpx;
-  color: #2563eb;
+  flex-shrink: 0;
+  margin: 0 0 0 var(--ceams-space-md);
+  padding: 0;
   background-color: transparent;
-  padding: 0 8rpx;
-  line-height: 1;
+  color: var(--ceams-text-inverse);
+  opacity: 0.78;
+  font-size: var(--ceams-font-size-caption);
+  font-weight: var(--ceams-font-weight-regular);
+  line-height: var(--ceams-line-height-normal);
 }
+
 .home__logout::after {
   border: none;
 }
+
+/* ---------------- 内容区 ---------------- */
+.home__body {
+  padding: var(--ceams-space-lg) var(--ceams-space-xl) var(--ceams-space-2xl);
+  box-sizing: border-box;
+}
+
+.home__section {
+  display: flex;
+  align-items: center;
+  margin-bottom: var(--ceams-space-md);
+}
+
+.home__section-bar {
+  width: var(--ceams-space-2xs);
+  height: var(--ceams-space-lg);
+  margin-right: var(--ceams-space-xs);
+  background-color: var(--ceams-color-primary);
+  border-radius: var(--ceams-radius-xs);
+}
+
+.home__section-title {
+  color: var(--ceams-text-primary);
+  font-size: var(--ceams-font-size-heading);
+  font-weight: var(--ceams-font-weight-semibold);
+  line-height: var(--ceams-line-height-tight);
+}
+
+/* ---------------- 功能入口卡片（2 列） ---------------- */
 .home__menu {
   display: flex;
-  flex-direction: column;
-  gap: 20rpx;
+  flex-wrap: wrap;
 }
+
 .home__card {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 32rpx 28rpx;
-  background-color: #ffffff;
-  border-radius: 16rpx;
-  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
+  width: calc(50% - var(--ceams-space-xs));
+  margin: 0 var(--ceams-space-xs) var(--ceams-space-md) 0;
+  padding: var(--ceams-space-md);
+  background-color: var(--ceams-bg-card);
+  border-radius: var(--ceams-radius-card);
+  box-shadow: var(--ceams-shadow-card);
+  box-sizing: border-box;
+  transition: background-color 0.15s ease, transform 0.15s ease;
 }
+
+.home__card--pressed {
+  background-color: var(--ceams-bg-subtle);
+  transform: scale(0.97);
+}
+
+.home__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: var(--ceams-control-height-sm);
+  height: var(--ceams-control-height-sm);
+  background-color: var(--ceams-color-primary-tint);
+  border-radius: var(--ceams-radius-md);
+}
+
+.home__icon-symbol {
+  color: var(--ceams-color-primary);
+  font-size: var(--ceams-font-size-heading);
+  font-weight: var(--ceams-font-weight-semibold);
+  line-height: var(--ceams-line-height-tight);
+}
+
+.home__card-text {
+  flex: 1;
+  min-width: 0;
+  margin-left: var(--ceams-space-sm);
+}
+
 .home__card-title {
-  font-size: 30rpx;
+  display: block;
+  color: var(--ceams-text-primary);
+  font-size: var(--ceams-font-size-body);
+  font-weight: var(--ceams-font-weight-semibold);
+  line-height: var(--ceams-line-height-tight);
 }
-.home__card-arrow {
-  font-size: 40rpx;
-  color: #9ca3af;
+
+.home__card-desc {
+  display: block;
+  margin-top: var(--ceams-space-2xs);
+  color: var(--ceams-text-secondary);
+  font-size: var(--ceams-font-size-mini);
+  line-height: var(--ceams-line-height-normal);
+}
+
+/* ---------------- 页脚 ---------------- */
+.home__footer {
+  display: block;
+  margin-top: var(--ceams-space-xl);
+  text-align: center;
+  color: var(--ceams-text-placeholder);
+  font-size: var(--ceams-font-size-caption);
+  line-height: var(--ceams-line-height-normal);
 }
 </style>

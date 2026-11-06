@@ -1,11 +1,29 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { onLoad, onReachBottom } from '@dcloudio/uni-app'
-import type { ProgressPaymentVO, ProjectVO } from '@ceams/types'
-import { formatMoney } from '@ceams/utils'
+import type { ApprovalStatus, ProgressPaymentVO, ProjectStatus, ProjectVO } from '@ceams/types'
+import { formatDate } from '@ceams/utils'
 import { apiClient } from '../../platform/http'
 import { approvalStatusLabels, projectStatusLabels } from '../../utils/labels'
 import { apiErrorMessage } from '../../utils/error'
+
+type TagType = 'pending' | 'approved' | 'rejected' | 'verified' | 'paid' | 'neutral'
+
+/** 展示用的状态配色映射，不参与业务判断 */
+const projectStatusTagTypes: Record<ProjectStatus, TagType> = {
+  PLANNING: 'neutral',
+  IN_PROGRESS: 'verified',
+  PAUSED: 'pending',
+  COMPLETED: 'approved',
+  CLOSED: 'neutral'
+}
+
+const approvalStatusTagTypes: Record<ApprovalStatus, TagType> = {
+  DRAFT: 'neutral',
+  PENDING: 'pending',
+  APPROVED: 'approved',
+  REJECTED: 'rejected'
+}
 
 const id = ref('')
 const project = ref<ProjectVO | null>(null)
@@ -52,127 +70,277 @@ onReachBottom(() => {
 </script>
 
 <template>
-  <view class="page">
-    <view v-if="project" class="panel">
-      <view class="panel__title">
-        <text class="panel__name">{{ project.projectName }}</text>
-        <text class="panel__tag">{{ projectStatusLabels[project.status] }}</text>
+  <view class="ceams-page detail">
+    <view v-if="project" class="detail__overview">
+      <view class="detail__overview-head">
+        <text class="detail__name">{{ project.projectName }}</text>
+        <status-tag
+          :label="projectStatusLabels[project.status]"
+          :type="projectStatusTagTypes[project.status]"
+        />
       </view>
-      <view class="kv">
-        <text class="kv__label">客户</text>
-        <text class="kv__value">{{ project.clientName || '-' }}</text>
+      <text class="detail__overview-label">合同金额</text>
+      <amount-text
+        :value="project.contractAmount ?? '--'"
+        size="lg"
+        color="var(--ceams-color-primary-dark)"
+      />
+      <text class="detail__overview-meta">
+        {{ project.projectType }} · {{ project.clientName || '-' }}
+      </text>
+    </view>
+
+    <view v-if="project" class="ceams-card detail__info">
+      <text class="detail__section-title">项目信息</text>
+      <view class="ceams-list-item detail__kv">
+        <text class="detail__kv-label">客户</text>
+        <text class="detail__kv-value">{{ project.clientName || '-' }}</text>
       </view>
-      <view class="kv">
-        <text class="kv__label">类型</text>
-        <text class="kv__value">{{ project.projectType }}</text>
+      <view class="ceams-list-item detail__kv">
+        <text class="detail__kv-label">项目类型</text>
+        <text class="detail__kv-value">{{ project.projectType }}</text>
       </view>
-      <view class="kv">
-        <text class="kv__label">合同金额</text>
-        <text class="kv__value">{{ formatMoney(project.contractAmount) }}</text>
+      <view class="ceams-list-item detail__kv">
+        <text class="detail__kv-label">预算金额</text>
+        <amount-text :value="project.budgetAmount ?? '--'" size="sm" />
       </view>
-      <view class="kv">
-        <text class="kv__label">预算金额</text>
-        <text class="kv__value">{{ formatMoney(project.budgetAmount) }}</text>
+      <view class="ceams-list-item detail__kv">
+        <text class="detail__kv-label">实际金额</text>
+        <amount-text :value="project.actualAmount ?? '--'" size="sm" />
       </view>
-      <view class="kv">
-        <text class="kv__label">负责人</text>
-        <text class="kv__value">{{ project.managerName || '-' }}</text>
+      <view class="ceams-list-item detail__kv">
+        <text class="detail__kv-label">负责人</text>
+        <text class="detail__kv-value">{{ project.managerName || '-' }}</text>
+      </view>
+      <view class="ceams-list-item detail__kv">
+        <text class="detail__kv-label">项目周期</text>
+        <text class="detail__kv-value">
+          {{ project.startDate ? formatDate(project.startDate) : '--' }} 至
+          {{ project.endDate ? formatDate(project.endDate) : '未定' }}
+        </text>
+      </view>
+      <view class="ceams-list-item detail__kv">
+        <text class="detail__kv-label">项目地址</text>
+        <text class="detail__kv-value">{{ project.projectAddress || '-' }}</text>
+      </view>
+      <view class="ceams-list-item ceams-list-item--last detail__kv">
+        <text class="detail__kv-label">项目描述</text>
+        <text class="detail__kv-value">{{ project.description || '-' }}</text>
       </view>
     </view>
 
-    <text class="section">进度款（只读）</text>
-    <view v-if="payments.length === 0" class="empty">暂无进度款</view>
-    <view v-for="item in payments" :key="item.id" class="card">
-      <view class="card__row">
-        <text class="card__title">{{ item.paymentPeriod }}</text>
-        <text class="card__tag">{{ approvalStatusLabels[item.status] }}</text>
+    <view class="detail__section-head">
+      <text class="detail__section-title detail__section-title--plain">进度款</text>
+      <text class="detail__section-count">共 {{ total }} 笔</text>
+    </view>
+
+    <view v-if="payments.length === 0" class="ceams-card">
+      <empty-state title="暂无进度款" description="该项目尚未产生进度款记录" icon="◈" />
+    </view>
+
+    <view v-else class="ceams-card detail__payments">
+      <view
+        v-for="(item, index) in payments"
+        :key="item.id"
+        :class="[
+          'ceams-list-item',
+          'detail__payment',
+          index === payments.length - 1 ? 'ceams-list-item--last' : ''
+        ]"
+      >
+        <view class="detail__payment-main">
+          <view class="detail__payment-head">
+            <text class="detail__payment-period">{{ item.paymentPeriod }}</text>
+            <status-tag
+              :label="approvalStatusLabels[item.status]"
+              :type="approvalStatusTagTypes[item.status]"
+            />
+          </view>
+          <text class="detail__payment-date">
+            申请日期：{{ item.applicationDate ? formatDate(item.applicationDate) : '--' }}
+          </text>
+          <view class="detail__figs">
+            <view class="detail__fig">
+              <text class="detail__fig-label">申请</text>
+              <amount-text
+                :value="item.applicationAmount ?? '--'"
+                size="sm"
+                color="var(--ceams-text-secondary)"
+              />
+            </view>
+            <view class="detail__fig">
+              <text class="detail__fig-label">批准</text>
+              <amount-text
+                :value="item.approvedAmount ?? '--'"
+                size="sm"
+                color="var(--ceams-text-secondary)"
+              />
+            </view>
+          </view>
+        </view>
+        <view class="detail__payment-amount">
+          <text class="detail__payment-amount-label">实付金额</text>
+          <amount-text
+            :value="item.paymentAmount ?? item.approvedAmount ?? item.applicationAmount ?? '--'"
+            size="md"
+          />
+        </view>
       </view>
-      <text class="card__line">申请金额：{{ formatMoney(item.applicationAmount) }}</text>
-      <text class="card__line">批准金额：{{ formatMoney(item.approvedAmount) }}</text>
-      <text class="card__line">实付金额：{{ formatMoney(item.paymentAmount) }}</text>
     </view>
   </view>
 </template>
 
 <style scoped>
-.page {
-  padding: 24rpx 32rpx;
+.detail__overview {
+  margin-bottom: var(--ceams-space-md);
+  padding: var(--ceams-space-lg);
+  background-color: var(--ceams-color-primary-tint);
+  border-radius: var(--ceams-radius-card);
 }
-.panel {
-  padding: 28rpx;
-  background-color: #ffffff;
-  border-radius: 16rpx;
-  margin-bottom: 24rpx;
-  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
+
+.detail__overview-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: var(--ceams-space-md);
 }
-.panel__title {
+
+.detail__name {
+  flex: 1;
+  min-width: 0;
+  margin-right: var(--ceams-space-md);
+  color: var(--ceams-text-primary);
+  font-size: var(--ceams-font-size-title);
+  font-weight: var(--ceams-font-weight-semibold);
+  line-height: var(--ceams-line-height-tight);
+}
+
+.detail__overview-label {
+  display: block;
+  color: var(--ceams-color-primary-deep);
+  font-size: var(--ceams-font-size-caption);
+}
+
+.detail__overview-meta {
+  display: block;
+  margin-top: var(--ceams-space-xs);
+  color: var(--ceams-text-secondary);
+  font-size: var(--ceams-font-size-caption);
+}
+
+.detail__section-title {
+  display: block;
+  margin-bottom: var(--ceams-space-sm);
+  color: var(--ceams-text-primary);
+  font-size: var(--ceams-font-size-heading);
+  font-weight: var(--ceams-font-weight-semibold);
+  line-height: var(--ceams-line-height-tight);
+}
+
+.detail__section-title--plain {
+  margin-bottom: 0;
+}
+
+.detail__section-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 16rpx;
+  margin-bottom: var(--ceams-space-sm);
 }
-.panel__name {
-  font-size: 34rpx;
-  font-weight: 600;
+
+.detail__section-count {
+  color: var(--ceams-text-placeholder);
+  font-size: var(--ceams-font-size-caption);
 }
-.panel__tag {
-  font-size: 22rpx;
-  color: #2563eb;
-  background-color: #eff6ff;
-  padding: 4rpx 14rpx;
-  border-radius: 999rpx;
+
+.detail__info {
+  padding-bottom: 0;
 }
-.kv {
-  display: flex;
-  justify-content: space-between;
-  padding: 12rpx 0;
-  border-bottom: 1rpx solid #f3f4f6;
-}
-.kv__label {
-  font-size: 26rpx;
-  color: #6b7280;
-}
-.kv__value {
-  font-size: 26rpx;
-}
-.section {
-  display: block;
-  font-size: 28rpx;
-  font-weight: 600;
-  margin-bottom: 16rpx;
-}
-.card {
-  padding: 28rpx;
-  background-color: #ffffff;
-  border-radius: 16rpx;
-  margin-bottom: 20rpx;
-}
-.card__row {
+
+.detail__kv {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 12rpx;
 }
-.card__title {
-  font-size: 30rpx;
-  font-weight: 600;
+
+.detail__kv-label {
+  flex-shrink: 0;
+  margin-right: var(--ceams-space-lg);
+  color: var(--ceams-text-secondary);
+  font-size: var(--ceams-font-size-body);
 }
-.card__tag {
-  font-size: 22rpx;
-  color: #2563eb;
-  background-color: #eff6ff;
-  padding: 4rpx 14rpx;
-  border-radius: 999rpx;
+
+.detail__kv-value {
+  flex: 1;
+  min-width: 0;
+  color: var(--ceams-text-primary);
+  font-size: var(--ceams-font-size-body);
+  line-height: var(--ceams-line-height-normal);
+  text-align: right;
+  word-break: break-all;
 }
-.card__line {
+
+.detail__payments {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.detail__payment {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.detail__payment-main {
+  flex: 1;
+  min-width: 0;
+  margin-right: var(--ceams-space-md);
+}
+
+.detail__payment-head {
+  display: flex;
+  align-items: center;
+}
+
+.detail__payment-period {
+  margin-right: var(--ceams-space-sm);
+  color: var(--ceams-text-primary);
+  font-size: var(--ceams-font-size-body);
+  font-weight: var(--ceams-font-weight-semibold);
+}
+
+.detail__payment-date {
   display: block;
-  font-size: 26rpx;
-  color: #6b7280;
-  margin-top: 6rpx;
+  margin-top: var(--ceams-space-2xs);
+  color: var(--ceams-text-placeholder);
+  font-size: var(--ceams-font-size-mini);
 }
-.empty {
-  text-align: center;
-  color: #9ca3af;
-  padding: 80rpx 0;
+
+.detail__figs {
+  display: flex;
+  margin-top: var(--ceams-space-xs);
+}
+
+.detail__fig {
+  display: flex;
+  flex-direction: column;
+  margin-right: var(--ceams-space-lg);
+}
+
+.detail__fig-label {
+  color: var(--ceams-text-placeholder);
+  font-size: var(--ceams-font-size-mini);
+}
+
+.detail__payment-amount {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.detail__payment-amount-label {
+  color: var(--ceams-text-placeholder);
+  font-size: var(--ceams-font-size-mini);
 }
 </style>
