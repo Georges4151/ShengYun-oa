@@ -59,6 +59,47 @@ export interface BankStatementUpdateRequest {
   balance?: Money | null
 }
 
+// ---------- 流水匹配候选（只读建议，不自动确认对账） ----------
+/** 单条匹配候选：来源可能是付款交易或总账 */
+export interface MatchCandidateVO {
+  source: 'PAYMENT_TRANSACTION' | 'GENERAL_LEDGER'
+  sourceId: Id
+  amount: Money
+  transactionDate: DateTime
+  description?: string | null
+  reference?: string | null
+  /** 与流水交易日期相差天数（绝对值） */
+  dateDiffDays: number
+  /** 金额差异（候选金额 - 流水金额） */
+  amountDiff: Money
+  /** 匹配分（越高越可能匹配） */
+  score: number
+  /** 命中原因（后端提供中文文案，可直接展示） */
+  reasons: string[]
+}
+
+/** 流水匹配候选结果（含流水摘要、候选列表与免责声明） */
+export interface BankMatchCandidatesVO {
+  statementId: Id
+  accountId: Id
+  statementStatus: BankStatementStatus
+  transactionDate: DateTime
+  amount: Money
+  type: TransactionType
+  description?: string | null
+  counterparty?: string | null
+  bankReference?: string | null
+  /** 本次匹配使用的日期容忍天数 */
+  daysTolerance: number
+  /** 候选总数 */
+  candidateCount: number
+  /** 候选是否因 limit 被截断 */
+  truncated: boolean
+  /** 免责声明（后端提供文案，直接展示） */
+  disclaimer: string
+  candidates: MatchCandidateVO[]
+}
+
 // ---------- 流水导入 ----------
 export interface StatementImportError {
   row: number

@@ -95,6 +95,9 @@ ceams:
       amount-threshold: ${AI_PREAUDIT_AMOUNT_THRESHOLD:5000}
       budget-usage-warn-percent: 90
       budget-usage-high-percent: 100
+    contract-risk:
+      # 是否允许 AI 复述合同要点与风险提示（仍需 AI_ENABLED=true）。
+      ai-note-enabled: ${AI_CONTRACT_RISK_NOTE_ENABLED:true}
 
   # 备份加密说明（占位）：
   #   数据库备份必须在运维层加密，例如 mysqldump 管道加密（openssl/gpg）或使用托管数据库的自动备份加密；

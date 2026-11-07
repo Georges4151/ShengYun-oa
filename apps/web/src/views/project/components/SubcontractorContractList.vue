@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
 import {
+  ElAlert,
   ElButton,
   ElDatePicker,
   ElDescriptions,
@@ -20,12 +21,36 @@ import {
 } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { ceamsApi } from '@/services/http'
-import type { ContractStatus, SubcontractorContractVO } from '@ceams/types'
+import type {
+  ContractRiskHintVO,
+  ContractRiskItemVO,
+  ContractRiskLevel,
+  ContractStatus,
+  SubcontractorContractVO
+} from '@ceams/types'
 import { usePage } from '@/composables/usePage'
 import { apiErrorMessage } from '@/utils/error'
 import { contractStatusLabels, toOptions } from '@/utils/labels'
 
 defineOptions({ name: 'SubcontractorContractList' })
+
+/** ElTag 支持的语义色 */
+type TagType = 'primary' | 'success' | 'info' | 'warning' | 'danger'
+
+/** 综合风险等级 -> 标签文案与颜色（HIGH 红 / MEDIUM 橙 / LOW 灰 / NONE 绿） */
+const riskLevelMeta: Record<ContractRiskLevel, { label: string; type: TagType }> = {
+  HIGH: { label: '高风险', type: 'danger' },
+  MEDIUM: { label: '中风险', type: 'warning' },
+  LOW: { label: '低风险', type: 'info' },
+  NONE: { label: '无风险', type: 'success' }
+}
+
+/** 单条风险等级 -> 标签文案与颜色 */
+const riskItemLevelMeta: Record<ContractRiskItemVO['level'], { label: string; type: TagType }> = {
+  HIGH: { label: '高', type: 'danger' },
+  MEDIUM: { label: '中', type: 'warning' },
+  LOW: { label: '低', type: 'info' }
+}
 
 const statusOptions = toOptions(contractStatusLabels)
 
@@ -66,6 +91,27 @@ const rules: FormRules<typeof form> = {
   contractName: [{ required: true, message: '请输入合同名称', trigger: 'blur' }],
   contractNumber: [{ required: true, message: '请输入合同编号', trigger: 'blur' }],
   contractAmount: [{ required: true, message: '请输入合同金额', trigger: 'blur' }]
+}
+
+// ---------- 合同要点与风险提示 ----------
+const riskVisible = ref(false)
+const riskLoading = ref(false)
+const riskHint = ref<ContractRiskHintVO | null>(null)
+const riskError = ref('')
+
+async function openRiskHints(row: SubcontractorContractVO): Promise<void> {
+  riskHint.value = null
+  riskError.value = ''
+  riskVisible.value = true
+  riskLoading.value = true
+  try {
+    riskHint.value = await ceamsApi.ai.contractRiskHints(row.id)
+  } catch (err) {
+    riskError.value = apiErrorMessage(err, '风险提示加载失败')
+    ElMessage.error(riskError.value)
+  } finally {
+    riskLoading.value = false
+  }
 }
 
 async function load(): Promise<void> {
@@ -204,9 +250,10 @@ onMounted(load)
           <span v-else>-</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="200" fixed="right">
+      <el-table-column label="操作" width="260" fixed="right">
         <template #default="{ row }">
           <el-button link type="primary" size="small" @click="openDetail(row as SubcontractorContractVO)">详情</el-button>
+          <el-button link type="primary" size="small" @click="openRiskHints(row as SubcontractorContractVO)">风险提示</el-button>
           <el-button link type="primary" size="small" @click="openEdit(row as SubcontractorContractVO)">编辑</el-button>
           <el-button link type="danger" size="small" @click="onRemove(row as SubcontractorContractVO)">删除</el-button>
         </template>
@@ -279,6 +326,65 @@ onMounted(load)
         <el-descriptions-item label="描述" :span="2">{{ detail.description ?? '-' }}</el-descriptions-item>
       </el-descriptions>
     </el-dialog>
+
+    <el-dialog v-model="riskVisible" title="合同要点与风险提示" width="760px">
+      <div v-loading="riskLoading" class="risk-body">
+        <el-alert v-if="riskError" type="warning" :closable="false" show-icon :title="riskError" />
+        <template v-if="riskHint">
+          <div class="risk-section">
+            <div class="risk-section__title">条款要点</div>
+            <el-descriptions v-if="riskHint.clausePoints.length" :column="2" border size="small">
+              <el-descriptions-item
+                v-for="(point, index) in riskHint.clausePoints"
+                :key="index"
+                :label="point.label"
+              >
+                {{ point.value }}
+              </el-descriptions-item>
+            </el-descriptions>
+            <div v-else class="risk-empty">暂无可提取的条款要点</div>
+          </div>
+
+          <div class="risk-section">
+            <div class="risk-section__title">
+              风险提示
+              <el-tag
+                v-if="riskHint.riskLevel !== 'NONE'"
+                size="small"
+                effect="plain"
+                :type="riskLevelMeta[riskHint.riskLevel].type"
+              >
+                {{ riskLevelMeta[riskHint.riskLevel].label }}
+              </el-tag>
+            </div>
+            <div v-if="riskHint.riskLevel === 'NONE' || riskHint.risks.length === 0" class="risk-empty">
+              未发现明显风险
+            </div>
+            <el-table v-else :data="riskHint.risks" border size="small">
+              <el-table-column label="等级" width="80">
+                <template #default="{ row }">
+                  <el-tag size="small" effect="plain" :type="riskItemLevelMeta[(row as ContractRiskItemVO).level].type">
+                    {{ riskItemLevelMeta[(row as ContractRiskItemVO).level].label }}
+                  </el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column prop="title" label="风险" width="180" show-overflow-tooltip />
+              <el-table-column prop="detail" label="说明" min-width="260" />
+            </el-table>
+          </div>
+
+          <div v-if="riskHint.aiNote" class="risk-section">
+            <div class="risk-section__title">AI 说明，请核实</div>
+            <div class="risk-note">{{ riskHint.aiNote }}</div>
+          </div>
+
+          <el-alert class="risk-disclaimer" type="info" :closable="false" show-icon :title="riskHint.disclaimer" />
+        </template>
+      </div>
+      <template #footer>
+        <el-button @click="riskVisible = false">关闭</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -291,5 +397,36 @@ onMounted(load)
 .pagination {
   margin-top: 12px;
   justify-content: flex-end;
+}
+.risk-body {
+  min-height: 120px;
+}
+.risk-section {
+  margin-bottom: 16px;
+}
+.risk-section__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  color: #303133;
+  font-size: 14px;
+  font-weight: 600;
+}
+.risk-empty {
+  color: #909399;
+  font-size: 12px;
+}
+.risk-note {
+  padding: 8px 12px;
+  border-radius: 4px;
+  background: #f5f7fa;
+  color: #606266;
+  font-size: 12px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+.risk-disclaimer {
+  margin-top: 4px;
 }
 </style>

@@ -4,7 +4,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/** 工具 JSON Schema 构造辅助，保证 8 个工具的 schema 结构一致。 */
+/** 工具 JSON Schema 构造辅助，保证各只读工具的 schema 结构一致。 */
 public final class ToolSchemas {
 
     private ToolSchemas() {}

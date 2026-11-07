@@ -21,13 +21,14 @@ class ToolRegistryTest {
                     "queryCashflow",
                     "queryPendingApprovals",
                     "queryBankUnmatched",
+                    "queryBankMatchCandidates",
                     "queryBudgetUsage",
                     "querySealUsage");
 
     @Test
-    void registersAllEightTools() {
-        ToolRegistry registry = registryForAllEight();
-        assertEquals(8, registry.all().size());
+    void registersAllAllowedTools() {
+        ToolRegistry registry = registryForAllAllowedTools();
+        assertEquals(9, registry.all().size());
         for (String name : EXPECTED_NAMES) {
             assertTrue(registry.find(name).isPresent(), "缺少工具：" + name);
         }
@@ -35,9 +36,9 @@ class ToolRegistryTest {
 
     @Test
     void definitionsHaveOllamaFunctionStructure() {
-        ToolRegistry registry = registryForAllEight();
+        ToolRegistry registry = registryForAllAllowedTools();
         List<Map<String, Object>> definitions = registry.definitions();
-        assertEquals(8, definitions.size());
+        assertEquals(9, definitions.size());
         for (Map<String, Object> definition : definitions) {
             assertEquals("function", definition.get("type"));
             @SuppressWarnings("unchecked")
@@ -76,11 +77,11 @@ class ToolRegistryTest {
 
     @Test
     void findReturnsEmptyForUnknownName() {
-        ToolRegistry registry = registryForAllEight();
+        ToolRegistry registry = registryForAllAllowedTools();
         assertTrue(registry.find("queryUnknown").isEmpty());
     }
 
-    private ToolRegistry registryForAllEight() {
+    private ToolRegistry registryForAllAllowedTools() {
         List<ReadOnlyTool> tools = new ArrayList<>();
         for (String name : EXPECTED_NAMES) {
             tools.add(fakeTool(name));

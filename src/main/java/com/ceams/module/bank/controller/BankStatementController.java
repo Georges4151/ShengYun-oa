@@ -10,6 +10,8 @@ import com.ceams.module.bank.enums.BankStatementStatus;
 import com.ceams.module.bank.enums.TransactionType;
 import com.ceams.module.bank.importer.StatementImporter;
 import com.ceams.module.bank.service.BankStatementService;
+import com.ceams.module.bank.service.ReconciliationService;
+import com.ceams.module.bank.vo.BankMatchCandidatesVO;
 import com.ceams.module.bank.vo.BankStatementVO;
 import com.ceams.module.bank.vo.StatementImportResultVO;
 import jakarta.validation.Valid;
@@ -38,6 +40,7 @@ public class BankStatementController {
 
     private final BankStatementService bankStatementService;
     private final StatementImporter statementImporter;
+    private final ReconciliationService reconciliationService;
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
@@ -77,6 +80,15 @@ public class BankStatementController {
     @PreAuthorize("isAuthenticated()")
     public ApiResponse<BankStatementVO> detail(@PathVariable Long id) {
         return ApiResponse.success(bankStatementService.detail(id));
+    }
+
+    @GetMapping("/{id}/match-candidates")
+    @PreAuthorize("hasAnyRole('SYS_ADMIN','FINANCE')")
+    public ApiResponse<BankMatchCandidatesVO> matchCandidates(
+            @PathVariable Long id,
+            @RequestParam(required = false) Integer daysTolerance,
+            @RequestParam(required = false) Integer limit) {
+        return ApiResponse.success(reconciliationService.matchCandidates(id, daysTolerance, limit));
     }
 
     @PutMapping("/{id}")

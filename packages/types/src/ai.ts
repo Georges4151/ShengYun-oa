@@ -6,7 +6,8 @@
  * - SSE 事件建模为判别联合（discriminated union），`event` 为判别键
  */
 
-import type { DateTime, Id } from './common'
+import type { DateTime, Id, Money } from './common'
+import type { ContractStatus } from './project'
 
 // ---------- 服务状态 ----------
 export interface AiStatusVO {
@@ -214,4 +215,52 @@ export interface ReceiptPreAuditVO {
 export interface PreAuditListQuery {
   /** 返回条数，缺省沿用后端默认值 */
   limit?: number
+}
+
+// ---------- 合同要点与风险提示（只读建议） ----------
+/** 合同综合风险等级（NONE 表示未发现明显风险） */
+export type ContractRiskLevel = 'HIGH' | 'MEDIUM' | 'LOW' | 'NONE'
+
+/** 合同条款要点（已结构化的关键条款） */
+export interface ContractClausePointVO {
+  /** 要点名称，如「工期」「结算方式」 */
+  label: string
+  /** 要点内容 */
+  value: string
+}
+
+/** 单条合同风险提示 */
+export interface ContractRiskItemVO {
+  level: 'HIGH' | 'MEDIUM' | 'LOW'
+  /** 规则编码，如 EXPIRED / PAYMENT_RATIO */
+  code: string
+  /** 风险标题 */
+  title: string
+  /** 风险说明 */
+  detail: string
+}
+
+export interface ContractRiskHintVO {
+  contractId: Id
+  contractNumber: string
+  contractName: string
+  subcontractorId: Id
+  projectId?: Id | null
+  status: ContractStatus
+  contractAmount: Money
+  paidAmount: Money
+  remainingAmount: Money
+  /** 已付比例（字符串，如 "0.65"） */
+  paidRatio: Money
+  /** 合同起止日期，yyyy-MM-dd */
+  startDate?: DateTime | null
+  endDate?: DateTime | null
+  clausePoints: ContractClausePointVO[]
+  risks: ContractRiskItemVO[]
+  riskLevel: ContractRiskLevel
+  /** AI 补充说明（可能为空） */
+  aiNote?: string | null
+  aiEnabled: boolean
+  /** 免责声明（后端提供文案，直接展示） */
+  disclaimer: string
 }

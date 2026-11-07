@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
 import {
+  ElAlert,
   ElButton,
   ElDatePicker,
   ElDescriptions,
   ElDescriptionsItem,
   ElDialog,
+  ElEmpty,
   ElForm,
   ElFormItem,
   ElInput,
@@ -21,12 +23,15 @@ import {
 import type { FormInstance, FormRules } from 'element-plus'
 import { ceamsApi } from '@/services/http'
 import type {
+  BankMatchCandidatesVO,
   BankStatementStatus,
   BankStatementVO,
+  MatchCandidateVO,
   StatementImportResultVO,
   TransactionType
 } from '@ceams/types'
 import { usePage } from '@/composables/usePage'
+import { formatDate } from '@ceams/utils'
 import { apiErrorMessage } from '@/utils/error'
 import { bankStatementStatusLabels, toOptions, transactionTypeLabels } from '@/utils/labels'
 
@@ -34,6 +39,11 @@ defineOptions({ name: 'BankStatementList' })
 
 const typeOptions = toOptions(transactionTypeLabels)
 const statusOptions = toOptions(bankStatementStatusLabels)
+/** 匹配候选来源 -> 中文标签 */
+const matchSourceLabels: Record<MatchCandidateVO['source'], string> = {
+  PAYMENT_TRANSACTION: '付款交易',
+  GENERAL_LEDGER: '总账'
+}
 
 const query = reactive<{
   accountId?: string
@@ -67,6 +77,27 @@ const rules: FormRules<typeof form> = {
   transactionDate: [{ required: true, message: '请选择交易日期', trigger: 'change' }],
   amount: [{ required: true, message: '请输入金额', trigger: 'blur' }],
   type: [{ required: true, message: '请选择收支类型', trigger: 'change' }]
+}
+
+// ---------- 匹配候选建议 ----------
+const matchVisible = ref(false)
+const matchLoading = ref(false)
+const matchResult = ref<BankMatchCandidatesVO | null>(null)
+const matchError = ref('')
+
+async function openMatchCandidates(row: BankStatementVO): Promise<void> {
+  matchResult.value = null
+  matchError.value = ''
+  matchVisible.value = true
+  matchLoading.value = true
+  try {
+    matchResult.value = await ceamsApi.bank.statementMatchCandidates(row.id)
+  } catch (err) {
+    matchError.value = apiErrorMessage(err, '匹配建议加载失败')
+    ElMessage.error(matchError.value)
+  } finally {
+    matchLoading.value = false
+  }
 }
 
 // ---------- CSV 导入 ----------
@@ -262,9 +293,10 @@ onMounted(load)
       <el-table-column prop="counterparty" label="对方" width="140" show-overflow-tooltip />
       <el-table-column prop="bankReference" label="银行流水号" width="160" show-overflow-tooltip />
       <el-table-column prop="balance" label="余额" width="110" />
-      <el-table-column label="操作" width="200" fixed="right">
+      <el-table-column label="操作" width="260" fixed="right">
         <template #default="{ row }">
           <el-button link type="primary" size="small" @click="openDetail(row as BankStatementVO)">详情</el-button>
+          <el-button link type="primary" size="small" @click="openMatchCandidates(row as BankStatementVO)">匹配建议</el-button>
           <el-button link type="primary" size="small" @click="openEdit(row as BankStatementVO)">编辑</el-button>
           <el-button link type="danger" size="small" @click="onRemove(row as BankStatementVO)">删除</el-button>
         </template>
@@ -331,6 +363,58 @@ onMounted(load)
       </el-descriptions>
     </el-dialog>
 
+    <el-dialog v-model="matchVisible" title="匹配建议" width="900px">
+      <div v-loading="matchLoading" class="match-body">
+        <el-alert v-if="matchError" type="warning" :closable="false" show-icon :title="matchError" />
+        <template v-if="matchResult">
+          <el-descriptions :column="2" border size="small">
+            <el-descriptions-item label="交易日期">{{ formatDate(matchResult.transactionDate) }}</el-descriptions-item>
+            <el-descriptions-item label="金额">{{ matchResult.amount }}</el-descriptions-item>
+            <el-descriptions-item label="收支方向">{{ transactionTypeLabels[matchResult.type] }}</el-descriptions-item>
+            <el-descriptions-item label="对方户名">{{ matchResult.counterparty ?? '-' }}</el-descriptions-item>
+            <el-descriptions-item label="摘要" :span="2">{{ matchResult.description ?? '-' }}</el-descriptions-item>
+          </el-descriptions>
+          <el-alert class="match-disclaimer" type="info" :closable="false" show-icon :title="matchResult.disclaimer" />
+          <div v-if="matchResult.truncated" class="match-truncated">
+            仅展示前 {{ matchResult.candidates.length }} 条
+          </div>
+          <el-empty
+            v-if="matchResult.candidates.length === 0"
+            description="未找到候选，建议人工核对或补录"
+            :image-size="60"
+          />
+          <el-table v-else :data="matchResult.candidates" border size="small">
+            <el-table-column label="来源" width="100">
+              <template #default="{ row }">{{ matchSourceLabels[(row as MatchCandidateVO).source] }}</template>
+            </el-table-column>
+            <el-table-column label="日期" width="110">
+              <template #default="{ row }">{{ formatDate((row as MatchCandidateVO).transactionDate) }}</template>
+            </el-table-column>
+            <el-table-column prop="amount" label="金额" width="110" />
+            <el-table-column prop="amountDiff" label="金额差异" width="110" />
+            <el-table-column prop="dateDiffDays" label="日期差（天）" width="110" />
+            <el-table-column prop="score" label="匹配分" width="90" />
+            <el-table-column label="理由" min-width="260">
+              <template #default="{ row }">
+                <el-tag
+                  v-for="(reason, index) in (row as MatchCandidateVO).reasons"
+                  :key="index"
+                  size="small"
+                  effect="plain"
+                  class="match-reason"
+                >
+                  {{ reason }}
+                </el-tag>
+              </template>
+            </el-table-column>
+          </el-table>
+        </template>
+      </div>
+      <template #footer>
+        <el-button @click="matchVisible = false">关闭</el-button>
+      </template>
+    </el-dialog>
+
     <el-dialog v-model="importVisible" title="CSV 导入银行流水" width="560px">
       <el-form label-width="110px">
         <el-form-item label="导入账户 ID" required>
@@ -394,5 +478,19 @@ onMounted(load)
   padding-left: 20px;
   color: #f56c6c;
   font-size: 12px;
+}
+.match-body {
+  min-height: 120px;
+}
+.match-disclaimer {
+  margin-top: 12px;
+}
+.match-truncated {
+  margin-top: 8px;
+  color: #909399;
+  font-size: 12px;
+}
+.match-reason {
+  margin: 2px 4px 2px 0;
 }
 </style>

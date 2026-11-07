@@ -21,12 +21,18 @@ import type {
   ReconciliationMatchRequest,
   ReconciliationResolveRequest,
   ReconciliationMatchResultVO,
-  ReconciliationResultPageQuery
+  ReconciliationResultPageQuery,
+  BankMatchCandidatesVO
 } from '@ceams/types'
 
 export interface BankApi {
   statementPage(query?: BankStatementPageQuery): Promise<PageResult<BankStatementVO>>
   statementDetail(id: Id): Promise<BankStatementVO>
+  /** 流水的匹配候选建议（只读，不自动确认对账；缺省 daysTolerance=3、limit=5） */
+  statementMatchCandidates(
+    id: Id,
+    query?: { daysTolerance?: number; limit?: number }
+  ): Promise<BankMatchCandidatesVO>
   statementCreate(body: BankStatementCreateRequest): Promise<Id>
   statementUpdate(id: Id, body: BankStatementUpdateRequest): Promise<void>
   statementRemove(id: Id): Promise<void>
@@ -61,6 +67,14 @@ export function createBankApi(client: HttpClient): BankApi {
     },
     async statementDetail(id) {
       return client.get<BankStatementVO>(`/api/v1/bank/statements/${id}`)
+    },
+    async statementMatchCandidates(id, query = {}) {
+      return client.get<BankMatchCandidatesVO>(`/api/v1/bank/statements/${id}/match-candidates`, {
+        query: {
+          daysTolerance: query.daysTolerance ?? 3,
+          limit: query.limit ?? 5
+        }
+      })
     },
     async statementCreate(body) {
       return client.post<Id>('/api/v1/bank/statements', body)

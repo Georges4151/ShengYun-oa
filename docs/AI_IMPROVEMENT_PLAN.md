@@ -1,6 +1,6 @@
 # CEAMS AI 智能化升级方案（本地 Ollama）
 
-> 版本：v1.3 ｜ 生成时间：2026-11-06 ｜ 更新：2026-11-07 ｜ 适用分支：`dev` ｜ 状态：M3 已实施（T9–T12 实测通过）
+> 版本：v1.4 ｜ 生成时间：2026-11-06 ｜ 更新：2026-11-07 ｜ 适用分支：`dev` ｜ 状态：M4 已实施（T13–T14 实测通过）
 
 ---
 
@@ -135,6 +135,8 @@ Ollama（本机 11434，可选依赖）
 | GET | `/api/v1/ai/conversations` | 我的会话列表（分页） | 本人 |
 | GET | `/api/v1/ai/conversations/{id}/messages` | 会话消息 | 本人 |
 | POST | `/api/v1/ai/feedback` | 提交评价 | 本人 |
+| GET | `/api/v1/bank/statements/{id}/match-candidates` | 银行流水匹配候选 + 匹配分 + 理由（只读，不自动对账） | SYS_ADMIN/FINANCE |
+| GET | `/api/v1/ai/contracts/{id}/risk-hints` | 合同条款要点与风险提示（只读，不写回合同） | 登录用户 |
 
 请求体：
 
@@ -176,6 +178,7 @@ data: {"messageId":"...","latencyMs":5230}
 | `queryBankUnmatched` | 期间未匹配银行流水数与金额 | `biz_bank_statement`、`biz_reconciliation_result` | FINANCE/SYS_ADMIN |
 | `queryBudgetUsage` | 项目预算使用率与超支预警 | `biz_budget`、`biz_project` | 全员（本人可见范围） |
 | `querySealUsage` | 期间用印次数与用印人分布 | `biz_electronic_seal_usage` | SYS_ADMIN/FINANCE |
+| `queryBankMatchCandidates`（M4 扩展，共 9 个） | 单条银行流水的系统侧匹配候选：来源、金额差异、日期差、匹配分、理由 | `biz_bank_statement`、`biz_payment_transaction`、`biz_general_ledger` | SYS_ADMIN/FINANCE |
 
 工具实现硬约束：
 
@@ -217,10 +220,11 @@ data: {"messageId":"...","latencyMs":5230}
 
 本期落地：日报（周报暂不做）；推送渠道为站内通知 + AI 抽屉（不接外部 IM）。
 
-### M4 对账与合同（按需）
+### M4 对账与合同（已实施）
 
-- 银行流水匹配候选 + 理由
-- 合同条款抽取与风险提示
+- 银行流水匹配候选 + 理由（只读，候选仅供人工复核，不自动确认对账）
+- 合同条款要点与风险提示（只读，不写回合同）
+- 合同文档解析（PDF/Word/扫描件）**本期不做**：`biz_subcontractor_contract` 无合同正文字段、无附件上传/列表接口、无文本抽取能力，待补齐合同附件能力后再评估；本期以结构化字段 + 确定性规则覆盖
 
 ---
 
@@ -355,5 +359,24 @@ ceams:
 | 已知限制 | ① 宿主库业务表为空，日报数字仅覆盖「无数据」口径，真实金额需在有数据环境复测；② 越权 403 未实测（种子仅 admin/SYS_ADMIN，未新建 STAFF 账号）；③ 小程序仅 typecheck，未真机验证 |
 
 实施期修复：① 润色数字护栏由单向升级为双向（拦截模型新增数字）；② 历史补录默认不发通知，避免首次部署通知轰炸；③ 改为先落库摘要再建通知，避免孤立通知。
+
+### M4（2026-11-07，`dev`）
+
+| 任务 | 结果 |
+|---|---|
+| T13 后端 | `GET /api/v1/bank/statements/{id}/match-candidates`（`hasAnyRole('SYS_ADMIN','FINANCE')`；`daysTolerance` 默认 3 / 范围 0..30，`limit` 默认 5 / 范围 1..10）；`ReconciliationService.matchCandidates` 为纯只读：候选池 = 同账户付款交易 + `accountName` 对齐的总账，且 `abs(日期差) <= daysTolerance`；评分 = 金额（一致 50 / ≤1% 30 / ≤5% 15）+ 日期（同日 25，否则 max(0, 15-5*diff)）+ 摘要（完全相同 15 / 包含 10 / 均空 5）；排序 score↓→dateDiff↑→sourceId↑，返回 `candidateCount`/`truncated`；总账账号掩码 `****+末 4`；`match()` 语义未改动，全程不写库 |
+| T13 AI 工具 | 新增第 9 个只读工具 `queryBankMatchCandidates`（仅 FINANCE/SYS_ADMIN，STAFF 直接拒绝；流水不存在返回空结果），首行 summary + 候选行，`reasons` 以「；」拼接；`ToolRegistry.ALLOWED_TOOL_NAMES` 扩至 9，启动校验与 `ToolRegistryTest` 同步通过 |
+| T14 后端 | `GET /api/v1/ai/contracts/{id}/risk-hints`（登录用户）；ai 模块零 SQL/零 Mapper，经 `SubcontractorContractService.detail` 取数；输出 10 项 `clausePoints` 与 8 条确定性规则：OVERPAID / EXPIRED_ACTIVE / ENDING_SOON / MISSING_END_DATE / MISSING_ATTACHMENT / HIGH_PAYMENT_RATIO / ZERO_AMOUNT / MISSING_DESCRIPTION；等级降序、`riskLevel` 取最高（无风险 NONE）、固定免责声明「AI 建议，请核实；仅提示，不修改合同」 |
+| T14 AI 复述 | 仅当 `ceams.ai.enabled=true` 且 `ceams.ai.contract-risk.ai-note-enabled=true`（默认 true）时调用；强制双向数字保全校验（剔除日期、去千分位逗号），失败/异常/超时一律 `aiNote=null` 并 warn，不阻断接口 |
+| T13/T14 前端 | `packages/types` 新增 bank/ai 两组类型；`packages/api-client` 新增 `statementMatchCandidates`、`contractRiskHints`；银行流水列表新增「匹配建议」弹窗（流水摘要 + 免责声明 + 候选表：来源/日期/金额/差异/分数/理由标签、空候选与截断提示）；分包合同列表新增「风险提示」弹窗（条款要点 + 风险等级标签 + AI 说明 + 免责声明） |
+| 数据表 | 无新增迁移：两项能力均为实时只读计算，不落库、不缓存 |
+| 单测 | 153 例全绿（M4 新增 23 例：匹配候选 8 + 工具 4 + 合同风险 11） |
+| 格式 | `mvn spotless:check` 仅 file 模块历史 4 处，本次代码零违规 |
+| 前端验证 | types / api-client / web typecheck 通过；web build 通过；`eslint --quiet` 0 error |
+| 实测 | 8082 冒烟：`/api/v1/ai/status` 返回 `enabled=false`/`reachable=false`；`GET /bank/statements/1/match-candidates` 与 `GET /ai/contracts/1/risk-hints` 路由与权限生效（空库无记录返回 `404001 BIZ_NOT_FOUND`）；既有列表接口正常 |
+| 已知限制 | ① 宿主库业务表为空，候选评分与合同风险的成功路径仅由单测覆盖，未做有数据端到端；② 越权 403 未实测（种子仅 admin/SYS_ADMIN）；③ 合同无正文/附件，未做文档解析（见 §7 M4）；④ 合同风险接口按登录用户开放，与既有分包合同查询口径一致（未做数据范围过滤） |
+
+实施期注意：AI 复述采用严格字面双向数字比对，事实为 `90.00%` 而模型输出 `90%` 时会判不一致并回退 `aiNote=null`，属「宁缺勿编造」预期行为。
+
 
 

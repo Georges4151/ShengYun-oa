@@ -41,6 +41,9 @@ public class AiProperties {
     /** 预审配置（M3-B 使用，本阶段仅定义）。 */
     private PreAudit preaudit = new PreAudit();
 
+    /** 合同风险提示配置（M4 使用）。 */
+    private ContractRisk contractRisk = new ContractRisk();
+
     /** 经营日报摘要配置（{@code ceams.ai.summary.*}）。 */
     @Data
     public static class Summary {
@@ -70,5 +73,13 @@ public class AiProperties {
 
         /** 预算使用率高危百分比。 */
         private int budgetUsageHighPercent = 100;
+    }
+
+    /** 合同风险提示配置（{@code ceams.ai.contract-risk.*}）。 */
+    @Data
+    public static class ContractRisk {
+
+        /** 是否允许 AI 复述合同要点与风险（仍需 {@code ceams.ai.enabled=true}）。 */
+        private boolean aiNoteEnabled = true;
     }
 }

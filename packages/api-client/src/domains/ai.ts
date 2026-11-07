@@ -23,7 +23,8 @@ import type {
   AiSummaryGeneratePayload,
   AiSummaryListQuery,
   PreAuditListQuery,
-  ReceiptPreAuditVO
+  ReceiptPreAuditVO,
+  ContractRiskHintVO
 } from '@ceams/types'
 
 export interface AiApi {
@@ -53,6 +54,10 @@ export interface AiApi {
   preAuditList(params?: PreAuditListQuery): Promise<ReceiptPreAuditVO[]>
   /** 指定票据的 AI 预审提示 */
   preAudit(receiptId: Id): Promise<ReceiptPreAuditVO>
+
+  // ---------- 合同要点与风险提示（只读提示） ----------
+  /** 分包合同的条款要点与风险提示（含免责声明） */
+  contractRiskHints(contractId: Id): Promise<ContractRiskHintVO>
 }
 
 export function createAiApi(client: HttpClient): AiApi {
@@ -99,6 +104,10 @@ export function createAiApi(client: HttpClient): AiApi {
     },
     async preAudit(receiptId) {
       return client.get<ReceiptPreAuditVO>(`/api/v1/ai/preaudit/receipts/${receiptId}`)
+    },
+
+    async contractRiskHints(contractId) {
+      return client.get<ContractRiskHintVO>(`/api/v1/ai/contracts/${contractId}/risk-hints`)
     }
   }
 }
