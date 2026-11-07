@@ -131,6 +131,7 @@ Ollama（本机 11434，可选依赖）
 |---|---|---|---|
 | GET | `/api/v1/ai/status` | 返回 `{enabled, model, reachable, latencyMs}` | 登录用户 |
 | POST | `/api/v1/ai/chat` | SSE 流式对话，事件：`meta` / `delta` / `tool` / `done` / `error` | 登录用户 |
+| POST | `/api/v1/ai/chat/sync` | 非流式对话（小程序用），一次性返回 `answer` / `toolCalls` / `latencyMs` | 登录用户 |
 | GET | `/api/v1/ai/conversations` | 我的会话列表（分页） | 本人 |
 | GET | `/api/v1/ai/conversations/{id}/messages` | 会话消息 | 本人 |
 | POST | `/api/v1/ai/feedback` | 提交评价 | 本人 |
@@ -324,6 +325,7 @@ ceams:
 | T6 安全护栏 | 数据类问题（报销/项目/预算/流水/审批/用印/金额/期间等关键词或 `yyyy-MM`）首轮若未调用工具即输出数字，服务端直接替换为固定安全提示，杜绝幻觉金额外泄；首轮 delta 先缓冲、校验后再回放 |
 | T7 Web | 右侧 420px「AI 助手」抽屉（`modal=false` + 穿透遮罩）、悬浮入口、停止生成、新建会话、`context.page` 透传、未启用/不可达禁用输入；`packages/types` 与 `packages/api-client` 新增 ai 域，`services/ai.ts` 用 `fetch` + `ReadableStream` 解析 SSE，401 复用单飞刷新后重试一次 |
 | 实测 | 实测会话「本月报销一共多少钱？」→ `event:tool(queryExpenseSummary, period=2026-11)` → 多帧 `delta` → `done`（latency ≈ 8.3s）；「上月报销多少钱？」→ `period=2026-10`；「今年报销多少钱？」→ `2026-01-01~2026-11-07`；无工具问候走纯文本；会话/消息/评价接口与 `ai_conversation`/`ai_message`/`ai_feedback` 落库均验证通过 |
+| T8 小程序 | 首页「常用功能」新增「智能助手」卡片，新增 `pages/ai/assistant` 只读问答页（服务探活、对话气泡、工具调用折叠、失败回填、新会话）；移动端改用 `POST /api/v1/ai/chat/sync` 一次性返回，`packages/types`/`packages/api-client` 同步新增 `AiChatSyncPayload`/`AiChatSyncResult`/`chatSync` |
 | 已知限制 | ① qwen2.5:7b 对「那上月呢」这类省略式追问可能不调用工具，已由护栏兜底（不再输出未溯源金额，改为提示明确期间）；② 宿主库业务表为空，数字核对仅覆盖「无数据→0/空」场景，真实金额需在有数据环境复测 |
 
 后续口径备注：Web 端 `lint` 存在既有约 3150 条样式类 warning（非本次引入），本次以 `typecheck` + `build` + `eslint --quiet` 为通过判据；Spotless 全量检查仍有 `module/file` 4 个历史遗留文件违规，`module/ai` 为零告警。

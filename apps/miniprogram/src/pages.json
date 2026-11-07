@@ -7,6 +7,12 @@
       }
     },
     {
+      "path": "pages/ai/assistant",
+      "style": {
+        "navigationBarTitleText": "智能助手"
+      }
+    },
+    {
       "path": "pages/login/login",
       "style": {
         "navigationBarTitleText": "登录"

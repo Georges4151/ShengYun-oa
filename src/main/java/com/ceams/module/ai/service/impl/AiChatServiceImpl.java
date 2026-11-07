@@ -23,6 +23,7 @@ import com.ceams.module.ai.service.AiChatService;
 import com.ceams.module.ai.tool.ReadOnlyTool;
 import com.ceams.module.ai.tool.ToolRegistry;
 import com.ceams.module.ai.tool.ToolResult;
+import com.ceams.module.ai.vo.AiChatSyncVO;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Clock;
 import java.time.LocalDate;
@@ -162,6 +163,36 @@ public class AiChatServiceImpl implements AiChatService {
             sink.error(ErrorCode.SYSTEM_RATE_LIMITED.name(), "当前咨询人数较多，请稍后重试");
             sink.complete();
         }
+    }
+
+    /**
+     * 非流式对话：同步收集 {@link AiChatEventSink} 的全部事件后一次性返回。
+     *
+     * <p>开关校验在调用编排前同步抛出，避免小程序拿到一个「空回答」的成功响应。
+     */
+    @Override
+    public AiChatSyncVO chatSync(AiChatRequest request) {
+        if (!aiProperties.isEnabled()) {
+            throw BusinessException.of(ErrorCode.BIZ_STATE_CONFLICT, "AI 功能未启用");
+        }
+        CollectingEventSink sink = new CollectingEventSink();
+        process(request, sink);
+        if (sink.hasError()) {
+            ErrorCode errorCode = resolveErrorCode(sink.getErrorCode());
+            String message =
+                    StringUtils.hasText(sink.getErrorMessage())
+                            ? sink.getErrorMessage()
+                            : errorCode.getDescription();
+            throw BusinessException.of(errorCode, message);
+        }
+        AiChatSyncVO result = new AiChatSyncVO();
+        result.setConversationId(parseNullableId(sink.getConversationId()));
+        result.setMessageId(parseNullableId(sink.getMessageId()));
+        result.setAnswer(sink.getAnswer());
+        result.setModel(sink.getModel());
+        result.setLatencyMs(Math.max(0L, sink.getLatencyMs()));
+        result.setToolCalls(sink.getToolCalls());
+        return result;
     }
 
     /**
@@ -513,6 +544,31 @@ public class AiChatServiceImpl implements AiChatService {
             return Long.parseLong(rawId.trim());
         } catch (NumberFormatException e) {
             throw BusinessException.of(ErrorCode.VALID_ILLEGAL_ARGUMENT, label + "非法：" + rawId);
+        }
+    }
+
+    /** 服务端自己产出的 ID 转 Long：空串（落库失败）与非法值都降级为 null，不阻断响应。 */
+    private static Long parseNullableId(String rawId) {
+        if (!StringUtils.hasText(rawId)) {
+            return null;
+        }
+        try {
+            return Long.parseLong(rawId.trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    /** 事件错误码转枚举：编排层正常只输出枚举内名称，但历史/外部码可能不在枚举内， 此处回退为通用业务错误码，避免 500 或编译期新增枚举。 */
+    private static ErrorCode resolveErrorCode(String code) {
+        if (!StringUtils.hasText(code)) {
+            return ErrorCode.SYSTEM_INTERNAL_ERROR;
+        }
+        try {
+            return ErrorCode.valueOf(code.trim());
+        } catch (IllegalArgumentException e) {
+            log.debug("未知 AI 错误码，回退为通用业务错误：{}", code);
+            return ErrorCode.BIZ_UNPROCESSABLE;
         }
     }
 

@@ -33,6 +33,36 @@ export interface AiChatRequest {
   context?: AiChatContext
 }
 
+// ---------- 同步对话（小程序只读问答） ----------
+export interface AiChatSyncPayload {
+  /** 已有会话 ID；null 或省略表示新建会话 */
+  conversationId?: string | null
+  message: string
+  context?: AiChatContext
+}
+
+export interface AiChatSyncToolCall {
+  /** 只读工具名，如 queryExpenseSummary */
+  name: string
+  /** 工具调用参数 */
+  args: Record<string, unknown>
+  /** 工具返回行数 */
+  rows: number
+}
+
+/** `POST /ai/chat/sync` 响应体（非流式，一次性返回完整答案） */
+export interface AiChatSyncResult {
+  conversationId: string
+  messageId: string
+  /** 完整回答文本 */
+  answer: string
+  /** 本次使用的模型，如 qwen2.5:7b */
+  model: string
+  /** 端到端耗时（毫秒） */
+  latencyMs: number
+  toolCalls: AiChatSyncToolCall[]
+}
+
 // ---------- SSE 事件 ----------
 export interface AiChatMetaData {
   conversationId: string

@@ -37,6 +37,12 @@ const menus: MenuItem[] = [
     path: '/pages/notification/list',
     icon: '▣',
     desc: '接收系统与审批通知'
+  },
+  {
+    title: '智能助手',
+    path: '/pages/ai/assistant',
+    icon: '✦',
+    desc: '用自然语言查账与解释待办'
   }
 ]
 

@@ -1,8 +1,10 @@
 package com.ceams.module.ai.controller;
 
+import com.ceams.common.response.ApiResponse;
 import com.ceams.module.ai.config.AiProperties;
 import com.ceams.module.ai.dto.AiChatRequest;
 import com.ceams.module.ai.service.AiChatService;
+import com.ceams.module.ai.vo.AiChatSyncVO;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
@@ -33,5 +35,11 @@ public class AiChatController {
         SseEmitter emitter = new SseEmitter(timeoutMillis);
         aiChatService.chat(request, emitter);
         return emitter;
+    }
+
+    /** 非流式对话：小程序端一次性拿到完整回答（默认 {@code application/json}）。 */
+    @PostMapping("/chat/sync")
+    public ApiResponse<AiChatSyncVO> chatSync(@Valid @RequestBody AiChatRequest request) {
+        return ApiResponse.success(aiChatService.chatSync(request));
     }
 }

@@ -32,6 +32,8 @@ import com.ceams.module.ai.service.AiChatEventSink;
 import com.ceams.module.ai.tool.ReadOnlyTool;
 import com.ceams.module.ai.tool.ToolRegistry;
 import com.ceams.module.ai.tool.ToolResult;
+import com.ceams.module.ai.vo.AiChatSyncVO;
+import com.ceams.module.ai.vo.AiToolCallVO;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Clock;
 import java.time.Instant;
@@ -337,6 +339,75 @@ class AiChatServiceImplTest {
         assertNull(sink.errorCode);
         assertTrue(sink.completed);
         assertEquals(String.valueOf(ASSISTANT_MESSAGE_ID), sink.doneMessageId);
+    }
+
+    // ---------- 非流式（chatSync） ----------
+
+    @Test
+    void 同步对话_单轮无工具_一次性返回完整回答与字符串化ID() throws Exception {
+        stubNewConversation();
+        stubChatSequence(answer("本月暂无报销记录。", 10, 20));
+
+        AiChatSyncVO vo = service.chatSync(request(QUESTION));
+
+        assertEquals("本月暂无报销记录。", vo.getAnswer());
+        assertEquals(CONVERSATION_ID, vo.getConversationId());
+        assertEquals(ASSISTANT_MESSAGE_ID, vo.getMessageId());
+        assertEquals("qwen2.5:7b", vo.getModel());
+        assertTrue(vo.getLatencyMs() >= 0L);
+        assertTrue(vo.getToolCalls().isEmpty());
+
+        String json = new ObjectMapper().writeValueAsString(vo);
+        assertTrue(json.contains("\"conversationId\":\"" + CONVERSATION_ID + "\""));
+        assertTrue(json.contains("\"messageId\":\"" + ASSISTANT_MESSAGE_ID + "\""));
+    }
+
+    @Test
+    void 同步对话_包含工具调用_返回toolCalls明细() {
+        stubNewConversation();
+        ReadOnlyTool tool = org.mockito.Mockito.mock(ReadOnlyTool.class);
+        when(toolRegistry.find("queryExpenseSummary")).thenReturn(Optional.of(tool));
+        when(tool.execute(anyMap()))
+                .thenReturn(new ToolResult(List.of(Map.of("totalAmount", 3000)), 1, false));
+        stubChatSequence(
+                toolCall("queryExpenseSummary", Map.of("period", "2026-11"), 9, 5),
+                answer("本月报销合计 3000 元", 12, 30));
+
+        AiChatSyncVO vo = service.chatSync(request(QUESTION));
+
+        assertEquals("本月报销合计 3000 元", vo.getAnswer());
+        assertEquals(1, vo.getToolCalls().size());
+        AiToolCallVO toolCall = vo.getToolCalls().get(0);
+        assertEquals("queryExpenseSummary", toolCall.getName());
+        assertEquals("2026-11", toolCall.getArgs().get("period"));
+        assertEquals(1, toolCall.getRows());
+        assertTrue(vo.getLatencyMs() >= 0L);
+    }
+
+    @Test
+    void 同步对话_未启用_抛出业务异常且不调用模型() {
+        properties.setEnabled(false);
+
+        BusinessException exception =
+                assertThrows(BusinessException.class, () -> service.chatSync(request(QUESTION)));
+
+        assertEquals(ErrorCode.BIZ_STATE_CONFLICT, exception.getErrorCode());
+        verify(ollamaClient, never()).chatStream(anyList(), anyList(), any());
+    }
+
+    @Test
+    void 同步对话_会话无权访问_抛出BIZ_NOT_FOUND() {
+        AiConversation conversation = new AiConversation();
+        conversation.setId(7001L);
+        conversation.setUserId(OTHER_USER_ID);
+        when(conversationMapper.selectById(7001L)).thenReturn(conversation);
+
+        BusinessException exception =
+                assertThrows(
+                        BusinessException.class, () -> service.chatSync(request(QUESTION, 7001L)));
+
+        assertEquals(ErrorCode.BIZ_NOT_FOUND, exception.getErrorCode());
+        verify(ollamaClient, never()).chatStream(anyList(), anyList(), any());
     }
 
     // ---------- 测试支撑 ----------

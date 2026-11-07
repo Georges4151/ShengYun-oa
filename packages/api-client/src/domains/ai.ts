@@ -4,6 +4,7 @@
  * 本域仅普通 Bearer 鉴权（无高危写接口）；流式对话 `POST /ai/chat` 由前端
  * `apps/web/src/services/ai.ts` 直接使用 fetch + ReadableStream 解析 SSE，
  * 不经 HttpClient（HttpClient 会等待完整响应体，无法承载流式事件）。
+ * 小程序只读问答走非流式 `POST /ai/chat/sync`，可直接使用 HttpClient。
  */
 
 import type { HttpClient } from '../http-client'
@@ -15,12 +16,16 @@ import type {
   AiConversationPageQuery,
   AiMessageVO,
   AiMessagePageQuery,
-  AiFeedbackPayload
+  AiFeedbackPayload,
+  AiChatSyncPayload,
+  AiChatSyncResult
 } from '@ceams/types'
 
 export interface AiApi {
   /** 查询 AI 服务状态（enabled / model / reachable / latencyMs） */
   status(): Promise<AiStatusVO>
+  /** 同步对话（非流式）：一次性返回完整回答与工具调用记录 */
+  chatSync(body: AiChatSyncPayload): Promise<AiChatSyncResult>
   /** 我的会话列表（分页） */
   conversations(params?: AiConversationPageQuery): Promise<PageResult<AiConversationVO>>
   /** 指定会话的消息列表（分页） */
@@ -33,6 +38,9 @@ export function createAiApi(client: HttpClient): AiApi {
   return {
     async status() {
       return client.get<AiStatusVO>('/api/v1/ai/status')
+    },
+    async chatSync(body) {
+      return client.post<AiChatSyncResult>('/api/v1/ai/chat/sync', body)
     },
     async conversations(params = {}) {
       return client.get<PageResult<AiConversationVO>>('/api/v1/ai/conversations', {
