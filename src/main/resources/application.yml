@@ -85,6 +85,16 @@ ceams:
     max-context-messages: 10
     max-tool-rows: 200
     stream: true
+    summary:
+      schedule-enabled: ${AI_SUMMARY_SCHEDULE_ENABLED:true}
+      # 经营日报定时生成表达式，默认每天 08:00。
+      cron: "${AI_SUMMARY_CRON:0 0 8 * * ?}"
+      max-catch-up-days: ${AI_SUMMARY_MAX_CATCH_UP_DAYS:7}
+      polish-enabled: ${AI_SUMMARY_POLISH_ENABLED:true}
+    preaudit:
+      amount-threshold: ${AI_PREAUDIT_AMOUNT_THRESHOLD:5000}
+      budget-usage-warn-percent: 90
+      budget-usage-high-percent: 100
 
   # 备份加密说明（占位）：
   #   数据库备份必须在运维层加密，例如 mysqldump 管道加密（openssl/gpg）或使用托管数据库的自动备份加密；

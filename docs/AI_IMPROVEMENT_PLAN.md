@@ -1,6 +1,6 @@
 # CEAMS AI 智能化升级方案（本地 Ollama）
 
-> 版本：v1.2 ｜ 生成时间：2026-11-06 ｜ 更新：2026-11-07 ｜ 适用分支：`dev` ｜ 状态：M2 已实施（T5–T7 实测通过，T8 小程序待做）
+> 版本：v1.3 ｜ 生成时间：2026-11-06 ｜ 更新：2026-11-07 ｜ 适用分支：`dev` ｜ 状态：M3 已实施（T9–T12 实测通过）
 
 ---
 
@@ -208,8 +208,14 @@ data: {"messageId":"...","latencyMs":5230}
 
 ### M3 摘要与预审（2 个迭代）
 
-- 日报/周报摘要：定时任务 + 人工确认发送
-- 报销预审：金额比对、重复报销检测、要件缺失提示（不做自动驳回）
+| 任务 | 交付 | 验收 |
+|---|---|---|
+| T9 | 日报摘要生成（报表聚合 → 固定口径文字 + 可选 AI 润色 + 数字保全校验） | 数字与库内一致；润色新增数字即回退模板 |
+| T10 | 每日 08:00 定时生成 + 手动「立即生成」+ 漏跑补录 | 定时/手动均可产出；历史补录不发通知 |
+| T11 | 报销预审（金额异常 / 重复报销 / 要件缺失） | 只输出提示，不自动驳回；规则单测覆盖 |
+| T12 | Web 通知页 + AI 抽屉日报入口 + 报销页预审面板 + 小程序通知展示 | typecheck/build 通过，失败降级不阻断主流程 |
+
+本期落地：日报（周报暂不做）；推送渠道为站内通知 + AI 抽屉（不接外部 IM）。
 
 ### M4 对账与合同（按需）
 
@@ -329,5 +335,25 @@ ceams:
 | 已知限制 | ① qwen2.5:7b 对「那上月呢」这类省略式追问可能不调用工具，已由护栏兜底（不再输出未溯源金额，改为提示明确期间）；② 宿主库业务表为空，数字核对仅覆盖「无数据→0/空」场景，真实金额需在有数据环境复测 |
 
 后续口径备注：Web 端 `lint` 存在既有约 3150 条样式类 warning（非本次引入），本次以 `typecheck` + `build` + `eslint --quiet` 为通过判据；Spotless 全量检查仍有 `module/file` 4 个历史遗留文件违规，`module/ai` 为零告警。
+
+### M3（2026-11-07，`dev`）
+
+| 任务 | 结果 |
+|---|---|
+| T9 摘要生成 | `V13__ai_daily_summary.sql` 建 `ai_daily_summary`（`summary_date + period_type` 唯一键、审计列/version）；`AiDailySummaryService` 聚合报销汇总、待审批、资金收支（财务明细按日过滤 ACCOUNT/PAYMENT_TRANSACTION）、未对账流水、用印次数，输出固定口径模板；可选 Ollama 润色仅做文字排版，双向数字保全校验（模板数字必须全在、润色不得新增数字），失败/超时/空结果回退 `TEMPLATE` |
+| T9 口径 | 指标键固定 10 个；金额 ¥ + 千分位两位小数、净额带符号；分布按固定中文标签输出，无数据为「暂无」；统计日按 Asia/Shanghai 昨日 |
+| T10 调度 | `AiSummarySchedulingConfiguration` 条件启用 `@EnableScheduling`；`AiSummaryScheduler` 每日 08:00（`ceams.ai.summary.cron`，zone=Asia/Shanghai）生成昨日并补录窗口内缺失；补录历史只落库不发通知，异常只记 warn |
+| T10 接口 | `GET /api/v1/ai/summaries`、`GET /latest`、`GET /{date}`、`POST /generate`；统一 `hasAnyRole('SYS_ADMIN','FINANCE')`；无数据 404；同日重复生成覆盖更新且不重复通知 |
+| 通知 | `NotificationService.createAndPublishToUsers` 定向发布（SYSTEM/SENT、幂等）；`UserService.listActiveUserIdsByRoleCodes` 解析 FINANCE/SYS_ADMIN 活跃用户；`UserNotificationVO` 增加 title/content/linkUrl/notificationType/priority/publishTime，批量回填无 N+1；深链 `ceams://ai/summary?date=...` |
+| T11 预审 | `ExpensePreAuditService` 只读规则：金额超阈值（`ceams.ai.preaudit.amount-threshold`，默认 5000）、项目预算使用率（≥90% 中、≥100% 高）、同票号重复（高）、同金额同日重复（中）、缺发票附件（高）、核验驳回（高）/待核验（中）；`ReceiptService.findPotentialDuplicates` 领域只读查询（排除自身、限 5 条）；单规则异常只记 warn；只输出提示，绝不自动驳回 |
+| T11 接口 | `GET /api/v1/ai/preaudit/receipts?limit=20`、`GET /api/v1/ai/preaudit/receipts/{id}`，`hasAnyRole('SYS_ADMIN','FINANCE')` |
+| T12 Web | 通知占位页替换为 `NotificationView`（分页/未读/全部已读/正文折叠/日报深链）；AI 抽屉新增「日报摘要」视图（最新/按日期、刷新、FINANCE/SYS_ADMIN 可立即生成、404 空态）；报销页新增 AI 预审面板（风险标签、免责声明、失败降级不阻断列表） |
+| T12 小程序 | 通知列表展示 title/content/publishTime，旧数据回退通知编号；未新增路由 |
+| 单测 | 后端 130 例全绿（M3 新增 25 例：摘要 10 + 通知 3 + 预审 12）；Spotless `module/ai` 零违规（仅 file 模块 4 处历史遗留） |
+| 前端验证 | types/api-client/web/miniprogram typecheck 通过；web build 通过；eslint --quiet 通过 |
+| 实测 | Flyway 迁移至 v13；AI 关闭下 `POST /summaries/generate` 返回 200（昨日、TEMPLATE、10 项 metrics）；重复生成不重复通知；通知 mine 接口返回「经营日报｜昨日」未读 1 条；预审接口 200（空库返回 `[]`）；8082 冒烟后进程已停止 |
+| 已知限制 | ① 宿主库业务表为空，日报数字仅覆盖「无数据」口径，真实金额需在有数据环境复测；② 越权 403 未实测（种子仅 admin/SYS_ADMIN，未新建 STAFF 账号）；③ 小程序仅 typecheck，未真机验证 |
+
+实施期修复：① 润色数字护栏由单向升级为双向（拦截模型新增数字）；② 历史补录默认不发通知，避免首次部署通知轰炸；③ 改为先落库摘要再建通知，避免孤立通知。
 
 

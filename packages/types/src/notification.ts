@@ -75,6 +75,14 @@ export interface UserNotificationVO {
   channel?: PushChannel
   pushTime?: DateTime | null
   createTime?: DateTime
+  // ---------- 通知内容快照（后端扩展的可选只读字段，缺失时前端回退旧展示） ----------
+  title?: string | null
+  content?: string | null
+  /** 业务跳转链接，如 ceams://ai/summary?date=yyyy-MM-dd */
+  linkUrl?: string | null
+  notificationType?: NotificationType
+  priority?: NotificationPriority
+  publishTime?: DateTime | null
 }
 
 export interface UserNotificationMineVO {

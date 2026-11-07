@@ -25,7 +25,9 @@ import com.ceams.module.notification.util.PageUtil;
 import com.ceams.module.notification.vo.NotificationVO;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -79,6 +81,35 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public String create(NotificationCreateRequest request) {
+        Notification notification = fromRequest(request);
+        notification.setStatus(NotificationStatus.DRAFT);
+        notificationMapper.insert(notification);
+        return String.valueOf(notification.getId());
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public String createAndPublishToUsers(
+            NotificationCreateRequest request, Collection<Long> targetUserIds) {
+        LocalDateTime now = LocalDateTime.now();
+        Notification notification = fromRequest(request);
+        notification.setStatus(NotificationStatus.PUBLISHED);
+        notification.setPublishTime(now);
+        notificationMapper.insert(notification);
+
+        for (Long userId : distinctUserIds(targetUserIds)) {
+            if (existsSystemNotification(notification.getId(), userId)) {
+                log.info("通知 {} 已定向投递过用户 {}，跳过重复写入", notification.getId(), userId);
+                continue;
+            }
+            insertUserNotification(
+                    notification.getId(), userId, PushChannel.SYSTEM, PushStatus.SENT, now);
+        }
+        return String.valueOf(notification.getId());
+    }
+
+    /** 按请求组装通知字段（不含状态）。 */
+    private Notification fromRequest(NotificationCreateRequest request) {
         Notification notification = new Notification();
         notification.setTitle(request.getTitle());
         notification.setContentType(request.getContentType());
@@ -93,9 +124,25 @@ public class NotificationServiceImpl implements NotificationService {
         notification.setSenderName(request.getSenderName());
         notification.setValidStartTime(request.getValidStartTime());
         notification.setValidEndTime(request.getValidEndTime());
-        notification.setStatus(NotificationStatus.DRAFT);
-        notificationMapper.insert(notification);
-        return String.valueOf(notification.getId());
+        return notification;
+    }
+
+    /** 目标用户去重并忽略空值。 */
+    private List<Long> distinctUserIds(Collection<Long> targetUserIds) {
+        if (targetUserIds == null || targetUserIds.isEmpty()) {
+            return List.of();
+        }
+        return targetUserIds.stream().filter(Objects::nonNull).distinct().toList();
+    }
+
+    /** 同一通知 + 用户 + SYSTEM 渠道是否已存在（幂等判断）。 */
+    private boolean existsSystemNotification(Long notificationId, Long userId) {
+        LambdaQueryWrapper<UserNotification> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(UserNotification::getNotificationId, notificationId)
+                .eq(UserNotification::getUserId, userId)
+                .eq(UserNotification::getChannel, PushChannel.SYSTEM);
+        Long count = userNotificationMapper.selectCount(wrapper);
+        return count != null && count > 0;
     }
 
     @Override

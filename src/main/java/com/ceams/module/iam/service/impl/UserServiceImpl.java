@@ -14,6 +14,7 @@ import com.ceams.module.iam.dto.user.UserUpdateRequest;
 import com.ceams.module.iam.entity.SysRole;
 import com.ceams.module.iam.entity.SysUser;
 import com.ceams.module.iam.entity.UserRole;
+import com.ceams.module.iam.enums.RoleStatus;
 import com.ceams.module.iam.enums.UserStatus;
 import com.ceams.module.iam.mapper.RoleMapper;
 import com.ceams.module.iam.mapper.UserMapper;
@@ -23,6 +24,7 @@ import com.ceams.module.iam.util.PageUtil;
 import com.ceams.module.iam.vo.RoleVO;
 import com.ceams.module.iam.vo.UserVO;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -183,6 +185,54 @@ public class UserServiceImpl implements UserService {
         List<Long> roleIds = links.stream().map(UserRole::getRoleId).distinct().toList();
         List<SysRole> roles = roleMapper.selectBatchIds(roleIds);
         return roleConverter.toVOList(roles);
+    }
+
+    @Override
+    public List<Long> listActiveUserIdsByRoleCodes(Collection<String> roleCodes) {
+        if (roleCodes == null || roleCodes.isEmpty()) {
+            return List.of();
+        }
+        Set<String> codes =
+                roleCodes.stream()
+                        .filter(code -> StringUtils.isNotBlank(code))
+                        .map(String::trim)
+                        .collect(Collectors.toSet());
+        if (codes.isEmpty()) {
+            return List.of();
+        }
+        List<SysRole> roles =
+                roleMapper.selectList(
+                        new LambdaQueryWrapper<SysRole>()
+                                .in(SysRole::getCode, codes)
+                                .eq(SysRole::getStatus, RoleStatus.ACTIVE));
+        if (roles.isEmpty()) {
+            return List.of();
+        }
+        List<Long> roleIds =
+                roles.stream().map(SysRole::getId).filter(Objects::nonNull).distinct().toList();
+        if (roleIds.isEmpty()) {
+            return List.of();
+        }
+        List<UserRole> links =
+                userRoleMapper.selectList(
+                        new LambdaQueryWrapper<UserRole>().in(UserRole::getRoleId, roleIds));
+        if (links.isEmpty()) {
+            return List.of();
+        }
+        Set<Long> userIds =
+                links.stream()
+                        .map(UserRole::getUserId)
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toSet());
+        if (userIds.isEmpty()) {
+            return List.of();
+        }
+        List<SysUser> users =
+                userMapper.selectList(
+                        new LambdaQueryWrapper<SysUser>()
+                                .in(SysUser::getId, userIds)
+                                .eq(SysUser::getStatus, UserStatus.ACTIVE));
+        return users.stream().map(SysUser::getId).filter(Objects::nonNull).distinct().toList();
     }
 
     private void fillRoles(List<UserVO> vos) {

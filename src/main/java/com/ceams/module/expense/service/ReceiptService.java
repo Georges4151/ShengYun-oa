@@ -31,6 +31,14 @@ public interface ReceiptService {
 
     ReceiptVO detail(Long id);
 
+    /** 重复报销候选（只读）：排除自身，命中「同票号」或「同金额且同日」。 */
+    List<ReceiptVO> findPotentialDuplicates(
+            Long excludeId,
+            String receiptNumber,
+            BigDecimal amount,
+            LocalDateTime dayStart,
+            LocalDateTime dayEnd);
+
     String create(ReceiptCreateRequest request);
 
     void update(Long id, ReceiptUpdateRequest request);

@@ -31,7 +31,8 @@ import type {
   StorageType,
   ApplicationStatus,
   SealApprovalStatus,
-  FinancialSourceType
+  FinancialSourceType,
+  PushChannel
 } from '@ceams/types'
 
 /** 枚举值 -> 中文标签映射（与三域类型字段一致）。 */
@@ -263,6 +264,14 @@ export const financialSourceTypeLabels: Record<FinancialSourceType, string> = {
   PAYMENT_TRANSACTION: '付款交易',
   BANK_STATEMENT: '银行流水',
   GENERAL_LEDGER: '总账'
+}
+
+// ---------- 通知域（notification） ----------
+
+export const pushChannelLabels: Record<PushChannel, string> = {
+  SYSTEM: '系统',
+  EMAIL: '邮件',
+  SMS: '短信'
 }
 
 /** 将枚举标签映射转换为 el-select 可用的 options 数组。 */

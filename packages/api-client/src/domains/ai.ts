@@ -18,7 +18,12 @@ import type {
   AiMessagePageQuery,
   AiFeedbackPayload,
   AiChatSyncPayload,
-  AiChatSyncResult
+  AiChatSyncResult,
+  AiDailySummaryVO,
+  AiSummaryGeneratePayload,
+  AiSummaryListQuery,
+  PreAuditListQuery,
+  ReceiptPreAuditVO
 } from '@ceams/types'
 
 export interface AiApi {
@@ -32,6 +37,22 @@ export interface AiApi {
   messages(id: Id, params?: AiMessagePageQuery): Promise<PageResult<AiMessageVO>>
   /** 提交消息评价（score: 1 点赞 / -1 点踩） */
   feedback(body: AiFeedbackPayload): Promise<void>
+
+  // ---------- 日报摘要（仅 FINANCE / SYS_ADMIN） ----------
+  /** 最新一期日报摘要（无数据后端返回 404） */
+  summaryLatest(): Promise<AiDailySummaryVO>
+  /** 日报摘要列表（按日期倒序） */
+  summaries(params?: AiSummaryListQuery): Promise<AiDailySummaryVO[]>
+  /** 指定日期（yyyy-MM-dd）的日报摘要（无数据后端返回 404） */
+  summaryByDate(date: string): Promise<AiDailySummaryVO>
+  /** 手动生成日报摘要（date 省略表示昨日） */
+  generateSummary(body?: AiSummaryGeneratePayload): Promise<AiDailySummaryVO>
+
+  // ---------- 报销预审（仅 FINANCE / SYS_ADMIN，只读提示） ----------
+  /** 待审批票据的 AI 预审提示列表 */
+  preAuditList(params?: PreAuditListQuery): Promise<ReceiptPreAuditVO[]>
+  /** 指定票据的 AI 预审提示 */
+  preAudit(receiptId: Id): Promise<ReceiptPreAuditVO>
 }
 
 export function createAiApi(client: HttpClient): AiApi {
@@ -54,6 +75,30 @@ export function createAiApi(client: HttpClient): AiApi {
     },
     async feedback(body) {
       return client.post<void>('/api/v1/ai/feedback', body)
+    },
+
+    async summaryLatest() {
+      return client.get<AiDailySummaryVO>('/api/v1/ai/summaries/latest')
+    },
+    async summaries(params = {}) {
+      return client.get<AiDailySummaryVO[]>('/api/v1/ai/summaries', {
+        query: { limit: params.limit ?? 10 }
+      })
+    },
+    async summaryByDate(date) {
+      return client.get<AiDailySummaryVO>(`/api/v1/ai/summaries/${encodeURIComponent(date)}`)
+    },
+    async generateSummary(body) {
+      return client.post<AiDailySummaryVO>('/api/v1/ai/summaries/generate', body ?? {})
+    },
+
+    async preAuditList(params = {}) {
+      return client.get<ReceiptPreAuditVO[]>('/api/v1/ai/preaudit/receipts', {
+        query: { limit: params.limit ?? 20 }
+      })
+    },
+    async preAudit(receiptId) {
+      return client.get<ReceiptPreAuditVO>(`/api/v1/ai/preaudit/receipts/${receiptId}`)
     }
   }
 }

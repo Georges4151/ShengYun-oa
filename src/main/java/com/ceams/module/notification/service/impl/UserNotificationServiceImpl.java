@@ -8,12 +8,19 @@ import com.ceams.common.exception.BusinessException;
 import com.ceams.common.exception.ErrorCode;
 import com.ceams.common.security.SecurityUtils;
 import com.ceams.module.notification.converter.UserNotificationConverter;
+import com.ceams.module.notification.entity.Notification;
 import com.ceams.module.notification.entity.UserNotification;
+import com.ceams.module.notification.mapper.NotificationMapper;
 import com.ceams.module.notification.mapper.UserNotificationMapper;
 import com.ceams.module.notification.service.UserNotificationService;
 import com.ceams.module.notification.util.PageUtil;
 import com.ceams.module.notification.vo.UserNotificationMineVO;
+import com.ceams.module.notification.vo.UserNotificationVO;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -27,6 +34,7 @@ public class UserNotificationServiceImpl implements UserNotificationService {
 
     private final UserNotificationMapper userNotificationMapper;
     private final UserNotificationConverter userNotificationConverter;
+    private final NotificationMapper notificationMapper;
 
     @Override
     public UserNotificationMineVO mine(long page, long size) {
@@ -37,13 +45,50 @@ public class UserNotificationServiceImpl implements UserNotificationService {
         wrapper.orderByDesc(UserNotification::getCreateTime);
         IPage<UserNotification> result = userNotificationMapper.selectPage(p, wrapper);
 
+        List<UserNotificationVO> records = userNotificationConverter.toVOList(result.getRecords());
+        fillNotificationFields(records);
         UserNotificationMineVO vo = new UserNotificationMineVO();
-        vo.setRecords(userNotificationConverter.toVOList(result.getRecords()));
+        vo.setRecords(records);
         vo.setTotal(result.getTotal());
         vo.setPage(result.getCurrent());
         vo.setSize(result.getSize());
         vo.setUnreadCount(countUnread(userId));
         return vo;
+    }
+
+    /** 批量回填通知展示字段，避免 N+1 查询。 */
+    private void fillNotificationFields(List<UserNotificationVO> records) {
+        if (records == null || records.isEmpty()) {
+            return;
+        }
+        List<Long> notificationIds =
+                records.stream()
+                        .map(UserNotificationVO::getNotificationId)
+                        .filter(Objects::nonNull)
+                        .distinct()
+                        .toList();
+        if (notificationIds.isEmpty()) {
+            return;
+        }
+        List<Notification> notifications = notificationMapper.selectBatchIds(notificationIds);
+        if (notifications == null || notifications.isEmpty()) {
+            return;
+        }
+        Map<Long, Notification> notificationMap =
+                notifications.stream()
+                        .collect(Collectors.toMap(Notification::getId, item -> item, (a, b) -> a));
+        for (UserNotificationVO record : records) {
+            Notification notification = notificationMap.get(record.getNotificationId());
+            if (notification == null) {
+                continue;
+            }
+            record.setTitle(notification.getTitle());
+            record.setContent(notification.getContent());
+            record.setLinkUrl(notification.getLinkUrl());
+            record.setNotificationType(notification.getNotificationType());
+            record.setPriority(notification.getPriority());
+            record.setPublishTime(notification.getPublishTime());
+        }
     }
 
     @Override

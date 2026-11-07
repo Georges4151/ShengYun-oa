@@ -1,5 +1,6 @@
 package com.ceams.module.ai.config;
 
+import java.math.BigDecimal;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
@@ -33,4 +34,41 @@ public class AiProperties {
 
     /** 是否以流式方式调用 Ollama（默认 true）。 */
     private boolean stream = true;
+
+    /** 经营日报摘要配置。 */
+    private Summary summary = new Summary();
+
+    /** 预审配置（M3-B 使用，本阶段仅定义）。 */
+    private PreAudit preaudit = new PreAudit();
+
+    /** 经营日报摘要配置（{@code ceams.ai.summary.*}）。 */
+    @Data
+    public static class Summary {
+
+        /** 是否启用定时生成。 */
+        private boolean scheduleEnabled = true;
+
+        /** 定时生成表达式（默认每天 08:00）。 */
+        private String cron = "0 0 8 * * ?";
+
+        /** 最多补录天数（从昨日往前）。 */
+        private int maxCatchUpDays = 7;
+
+        /** 是否允许 AI 润色（仍需 {@code ceams.ai.enabled=true}）。 */
+        private boolean polishEnabled = true;
+    }
+
+    /** 预审配置（{@code ceams.ai.preaudit.*}）。 */
+    @Data
+    public static class PreAudit {
+
+        /** 需要预审的金额阈值。 */
+        private BigDecimal amountThreshold = new BigDecimal("5000");
+
+        /** 预算使用率预警百分比。 */
+        private int budgetUsageWarnPercent = 90;
+
+        /** 预算使用率高危百分比。 */
+        private int budgetUsageHighPercent = 100;
+    }
 }

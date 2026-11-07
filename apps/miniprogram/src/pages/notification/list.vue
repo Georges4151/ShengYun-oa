@@ -55,6 +55,22 @@ async function markAllRead(): Promise<void> {
   }
 }
 
+/** 标题：优先使用通知内容快照，旧数据回退到渠道通知名 */
+function displayTitle(item: UserNotificationVO): string {
+  return item.title || `${pushChannelLabels[item.channel ?? 'SYSTEM']}通知`
+}
+
+/** 正文：缺失时回退到旧的推送状态 + 通知编号展示，兼容历史数据 */
+function displayContent(item: UserNotificationVO): string {
+  if (item.content) return item.content
+  return `${pushStatusLabels[item.pushStatus]} · 通知编号 ${item.notificationId}`
+}
+
+/** 时间：优先发布时间，旧数据回退创建时间 */
+function displayTime(item: UserNotificationVO): string {
+  return formatDateTime(item.publishTime ?? item.createTime)
+}
+
 onShow(() => {
   void load(true)
 })
@@ -99,14 +115,14 @@ onReachBottom(() => {
         <view class="notification-list__body">
           <view class="notification-list__head">
             <text class="notification-list__title">
-              {{ pushChannelLabels[item.channel ?? 'SYSTEM'] }}通知
+              {{ displayTitle(item) }}
             </text>
             <text class="notification-list__time">
-              {{ formatDateTime(item.pushTime ?? item.createTime) }}
+              {{ displayTime(item) }}
             </text>
           </view>
           <text class="notification-list__summary">
-            {{ pushStatusLabels[item.pushStatus] }} · 通知编号 {{ item.notificationId }}
+            {{ displayContent(item) }}
           </text>
           <text
             v-if="item.isRead === 0"
@@ -253,6 +269,8 @@ onReachBottom(() => {
   color: var(--ceams-text-secondary);
   font-size: var(--ceams-font-size-caption);
   line-height: var(--ceams-line-height-normal);
+  white-space: pre-wrap;
+  word-break: break-word;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }

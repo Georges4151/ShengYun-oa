@@ -1,15 +1,27 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import { ElAlert, ElButton, ElCollapse, ElCollapseItem, ElDrawer, ElInput, ElTag } from 'element-plus'
-import type { AiChatRequest, AiChatToolData, AiStatusVO } from '@ceams/types'
+import {
+  ElAlert,
+  ElButton,
+  ElCollapse,
+  ElCollapseItem,
+  ElDrawer,
+  ElInput,
+  ElMessage,
+  ElTag
+} from 'element-plus'
+import { ApiError } from '@ceams/api-client'
+import type { AiChatRequest, AiChatToolData, AiDailySummaryVO, AiStatusVO } from '@ceams/types'
 import { ceamsApi } from '@/services/http'
 import { isAbortError, streamChat } from '@/services/ai'
+import { useAuthStore } from '@/stores/auth'
 import { apiErrorMessage } from '@/utils/error'
 
 defineOptions({ name: 'AiAssistant' })
 
 const route = useRoute()
+const auth = useAuthStore()
 
 /** 工具调用轨迹（仅展示工具名 / 行数 / 参数摘要，不向用户暴露原始 JSON）。 */
 interface ToolTrace {
@@ -41,6 +53,88 @@ const statusError = ref('')
 const statusLoaded = ref(false)
 const model = ref('')
 
+// ---------- 视图切换：对话 / 日报摘要 ----------
+/** 当前面板视图；切换只影响展示，不销毁聊天会话与流式状态 */
+const view = ref<'chat' | 'summary'>('chat')
+
+const summary = ref<AiDailySummaryVO | null>(null)
+const summaryLoading = ref(false)
+const summaryError = ref('')
+const summaryEmpty = ref(false)
+const generating = ref(false)
+
+/** 仅财务 / 系统管理员可生成日报摘要 */
+const canGenerateSummary = computed(() =>
+  auth.roles.some((role) => role.code === 'FINANCE' || role.code === 'SYS_ADMIN')
+)
+
+/** 判定 404：日报无数据时后端返回 404，界面提示「暂无日报摘要」而非报错 */
+function isNotFound(err: unknown): boolean {
+  return err instanceof ApiError && (err.status === 404 || err.code === 404)
+}
+
+/**
+ * 加载日报摘要：date 为空时取最新一期，否则取指定日期。
+ * 无数据（404）静默转为空态，其余失败展示错误提示。
+ */
+async function loadSummary(date?: string): Promise<void> {
+  if (summaryLoading.value) return
+  summaryLoading.value = true
+  summaryError.value = ''
+  try {
+    summary.value = date ? await ceamsApi.ai.summaryByDate(date) : await ceamsApi.ai.summaryLatest()
+    summaryEmpty.value = false
+  } catch (err) {
+    summary.value = null
+    if (isNotFound(err)) {
+      summaryEmpty.value = true
+    } else {
+      summaryError.value = apiErrorMessage(err, '日报摘要加载失败')
+    }
+  } finally {
+    summaryLoading.value = false
+  }
+}
+
+/** 打开抽屉并切换到摘要视图（可选指定日期） */
+function showSummary(date?: string): void {
+  open.value = true
+  view.value = 'summary'
+  void loadSummary(date)
+}
+
+/** 头部入口按钮：对话 ↔ 摘要 切换 */
+function toggleView(): void {
+  if (view.value === 'summary') {
+    view.value = 'chat'
+    return
+  }
+  showSummary()
+}
+
+/** 手动生成日报摘要（不传 date 表示昨日） */
+async function generateSummary(): Promise<void> {
+  if (generating.value) return
+  generating.value = true
+  try {
+    summary.value = await ceamsApi.ai.generateSummary()
+    summaryEmpty.value = false
+    summaryError.value = ''
+    ElMessage.success('日报摘要已生成')
+  } catch (err) {
+    ElMessage.error(apiErrorMessage(err, '生成日报失败'))
+  } finally {
+    generating.value = false
+  }
+}
+
+/** 通知页「查看日报摘要」的跨组件入口 */
+function onOpenAiSummary(event: Event): void {
+  const detail = (event as CustomEvent<{ date?: unknown }>).detail
+  const date = typeof detail?.date === 'string' && detail.date ? detail.date : undefined
+  showSummary(date)
+}
+
 /**
  * 首次打开时探测一次 AI 服务状态（不做定时轮询，避免打爆 Ollama 探活）。
  * 探测失败允许手动「重新检测」。
@@ -63,6 +157,10 @@ async function ensureStatus(): Promise<void> {
 
 function openPanel(): void {
   open.value = true
+  if (view.value === 'summary') {
+    void loadSummary()
+    return
+  }
   void ensureStatus()
 }
 
@@ -75,6 +173,7 @@ function endSession(): void {
   // 关闭：结束当前会话（中断流式输出并清空会话上下文）
   stopGenerating()
   open.value = false
+  view.value = 'chat'
   resetConversation()
 }
 
@@ -246,7 +345,12 @@ function resetConversation(): void {
   input.value = ''
 }
 
+onMounted(() => {
+  window.addEventListener('ceams:open-ai-summary', onOpenAiSummary)
+})
+
 onBeforeUnmount(() => {
+  window.removeEventListener('ceams:open-ai-summary', onOpenAiSummary)
   controller?.abort()
 })
 </script>
@@ -284,12 +388,20 @@ onBeforeUnmount(() => {
             <el-tag v-if="model" size="small" type="success" effect="plain">{{ model }}</el-tag>
           </div>
           <div class="ai-panel__actions">
+            <el-button
+              link
+              size="small"
+              :title="view === 'chat' ? '查看最新日报摘要' : '返回对话'"
+              @click="toggleView"
+            >
+              {{ view === 'chat' ? '日报摘要' : '返回对话' }}
+            </el-button>
             <el-button link size="small" title="收起抽屉，保留当前会话" @click="minimize">最小化</el-button>
             <el-button link size="small" title="结束当前会话并收起抽屉" @click="endSession">关闭</el-button>
           </div>
         </header>
 
-        <div v-if="statusLoading || statusError || blocker" class="ai-panel__status">
+        <div v-if="view === 'chat' && (statusLoading || statusError || blocker)" class="ai-panel__status">
           <el-alert v-if="statusLoading" type="info" :closable="false" show-icon title="正在检测 AI 服务…" />
           <el-alert v-else-if="statusError" type="error" :closable="false" show-icon :title="statusError">
             <el-button link type="primary" size="small" @click="ensureStatus">重新检测</el-button>
@@ -297,7 +409,7 @@ onBeforeUnmount(() => {
           <el-alert v-else-if="blocker" type="warning" :closable="false" show-icon :title="blocker" />
         </div>
 
-        <div ref="listRef" class="ai-panel__messages">
+        <div v-if="view === 'chat'" ref="listRef" class="ai-panel__messages">
           <div v-if="messages.length === 0" class="ai-panel__empty">
             <p class="ai-panel__empty-title">可以这样问：</p>
             <ul>
@@ -331,7 +443,42 @@ onBeforeUnmount(() => {
           </div>
         </div>
 
-        <footer class="ai-panel__footer">
+        <div v-else class="ai-panel__summary">
+          <div class="ai-summary__toolbar">
+            <span class="ai-summary__title">日报摘要</span>
+            <div class="ai-summary__buttons">
+              <el-button size="small" :loading="summaryLoading" @click="loadSummary()">刷新</el-button>
+              <el-button
+                v-if="canGenerateSummary"
+                size="small"
+                type="primary"
+                :loading="generating"
+                @click="generateSummary"
+              >
+                立即生成
+              </el-button>
+            </div>
+          </div>
+
+          <el-alert v-if="summaryError" type="error" :closable="false" show-icon :title="summaryError" />
+
+          <div v-if="summaryLoading" class="ai-summary__empty">正在加载日报摘要…</div>
+          <div v-else-if="summaryError" class="ai-summary__empty">加载失败，可点击「刷新」重试</div>
+          <div v-else-if="summaryEmpty || !summary" class="ai-summary__empty">暂无日报摘要</div>
+          <div v-else class="ai-summary__card">
+            <div class="ai-summary__meta">
+              <el-tag size="small" type="info" effect="plain">{{ summary.summaryDate }}</el-tag>
+              <span class="ai-summary__meta-text">
+                {{ summary.triggerType === 'MANUAL' ? '手动生成' : '定时生成' }}
+              </span>
+              <span v-if="summary.model" class="ai-summary__meta-text">{{ summary.model }}</span>
+            </div>
+            <div class="ai-summary__content">{{ summary.content }}</div>
+            <div class="ai-summary__hint">AI 生成，请核实</div>
+          </div>
+        </div>
+
+        <footer v-if="view === 'chat'" class="ai-panel__footer">
           <el-input
             v-model="input"
             type="textarea"
@@ -349,6 +496,9 @@ onBeforeUnmount(() => {
               <el-button size="small" type="primary" :disabled="!canSend" @click="send">发送</el-button>
             </div>
           </div>
+        </footer>
+        <footer v-else class="ai-panel__footer ai-panel__footer--summary">
+          <span class="ai-panel__disclaimer">AI 生成内容仅供参考，请核实后再使用</span>
         </footer>
       </div>
     </el-drawer>
@@ -523,6 +673,70 @@ onBeforeUnmount(() => {
   margin-top: 8px;
   color: #f56c6c;
   font-size: 13px;
+}
+
+.ai-panel__summary {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  background: #f5f7fa;
+}
+.ai-summary__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.ai-summary__title {
+  color: #303133;
+  font-size: 14px;
+  font-weight: 600;
+}
+.ai-summary__buttons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ai-summary__empty {
+  padding: 24px 0;
+  color: #909399;
+  font-size: 13px;
+  text-align: center;
+}
+.ai-summary__card {
+  padding: 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+}
+.ai-summary__meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.ai-summary__meta-text {
+  color: #909399;
+  font-size: 12px;
+}
+.ai-summary__content {
+  color: #303133;
+  font-size: 14px;
+  line-height: 1.8;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.ai-summary__hint {
+  margin-top: 12px;
+  color: #909399;
+  font-size: 12px;
+}
+.ai-panel__footer--summary {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
 }
 
 .ai-panel__footer {

@@ -107,6 +107,42 @@ public class ReceiptServiceImpl implements ReceiptService {
     }
 
     @Override
+    public List<ReceiptVO> findPotentialDuplicates(
+            Long excludeId,
+            String receiptNumber,
+            BigDecimal amount,
+            LocalDateTime dayStart,
+            LocalDateTime dayEnd) {
+        boolean byNumber = StringUtils.isNotBlank(receiptNumber);
+        boolean byAmountDay = amount != null && dayStart != null && dayEnd != null;
+        if (!byNumber && !byAmountDay) {
+            return List.of();
+        }
+        LambdaQueryWrapper<Receipt> wrapper = new LambdaQueryWrapper<>();
+        if (excludeId != null) {
+            wrapper.ne(Receipt::getId, excludeId);
+        }
+        if (byNumber && byAmountDay) {
+            wrapper.and(
+                    w ->
+                            w.eq(Receipt::getReceiptNumber, receiptNumber)
+                                    .or(
+                                            inner ->
+                                                    inner.eq(Receipt::getAmount, amount)
+                                                            .ge(Receipt::getReceiptDate, dayStart)
+                                                            .le(Receipt::getReceiptDate, dayEnd)));
+        } else if (byNumber) {
+            wrapper.eq(Receipt::getReceiptNumber, receiptNumber);
+        } else {
+            wrapper.eq(Receipt::getAmount, amount)
+                    .ge(Receipt::getReceiptDate, dayStart)
+                    .le(Receipt::getReceiptDate, dayEnd);
+        }
+        wrapper.orderByDesc(Receipt::getCreateTime).last("LIMIT 5");
+        return receiptConverter.toVOList(receiptMapper.selectList(wrapper));
+    }
+
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public String create(ReceiptCreateRequest request) {
         if (receiptNumberExists(request.getReceiptNumber())) {

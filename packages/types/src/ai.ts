@@ -140,3 +140,78 @@ export interface AiMessagePageQuery {
   page?: number
   size?: number
 }
+
+// ---------- 日报摘要（仅 FINANCE / SYS_ADMIN） ----------
+/** 摘要触发方式：定时任务 / 手动生成 */
+export type AiSummaryTriggerType = 'SCHEDULED' | 'MANUAL'
+
+export interface AiDailySummaryVO {
+  id: Id
+  /** 摘要日期，yyyy-MM-dd */
+  summaryDate: string
+  /** 周期类型，当前固定 DAILY */
+  periodType: string
+  /** 摘要正文（可能包含换行） */
+  content: string
+  /** TEMPLATE 或模型名 */
+  model?: string | null
+  triggerType: AiSummaryTriggerType
+  /** 关联的通知 ID（生成后推送通知时回填） */
+  notificationId?: Id | null
+  /** 生成摘要时使用的指标快照（字段随实现演进，保持宽松） */
+  metrics?: Record<string, unknown>
+  createTime?: DateTime
+  updateTime?: DateTime
+}
+
+export interface AiSummaryGeneratePayload {
+  /** 目标日期 yyyy-MM-dd；省略表示昨日 */
+  date?: string
+}
+
+export interface AiSummaryListQuery {
+  /** 返回条数，缺省沿用后端默认值 */
+  limit?: number
+}
+
+// ---------- 报销预审（仅 FINANCE / SYS_ADMIN，只读提示） ----------
+/** 预审综合风险等级 */
+export type PreAuditRiskLevel = 'HIGH' | 'MEDIUM' | 'LOW' | 'NONE'
+
+/** 预审命中规则 */
+export type PreAuditRule =
+  | 'AMOUNT_THRESHOLD'
+  | 'BUDGET_USAGE'
+  | 'DUPLICATE_NUMBER'
+  | 'DUPLICATE_AMOUNT'
+  | 'MISSING_INVOICE'
+  | 'VERIFICATION_PENDING'
+  | 'VERIFICATION_REJECTED'
+
+/** 单条规则预警级别 */
+export type PreAuditWarningLevel = 'HIGH' | 'MEDIUM'
+
+export interface ReceiptPreAuditWarning {
+  rule: PreAuditRule
+  level: PreAuditWarningLevel
+  /** 可直接展示的中文提示 */
+  message: string
+}
+
+export interface ReceiptPreAuditVO {
+  receiptId: Id
+  receiptNumber: string
+  reporterName?: string | null
+  projectId?: Id | null
+  /** 票据金额（后端以数值返回） */
+  amount?: number | null
+  /** 票据日期，yyyy-MM-dd */
+  receiptDate?: DateTime | null
+  riskLevel: PreAuditRiskLevel
+  warnings: ReceiptPreAuditWarning[]
+}
+
+export interface PreAuditListQuery {
+  /** 返回条数，缺省沿用后端默认值 */
+  limit?: number
+}
