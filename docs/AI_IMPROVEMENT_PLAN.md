@@ -1,13 +1,13 @@
 # CEAMS AI 智能化升级方案（本地 Ollama）
 
-> 版本：v1.0 ｜ 生成时间：2026-11-06 ｜ 适用分支：`dev` ｜ 状态：待评审
+> 版本：v1.1 ｜ 生成时间：2026-11-06 ｜ 更新：2026-11-07 ｜ 适用分支：`dev` ｜ 状态：M1 已实施并实测通过
 
 ---
 
 ## 0. 结论摘要
 
 - **定位**：AI 只做「理解、检索、生成建议」，**不做任何写操作**；审批、付款、盖章必须人工确认后由既有接口执行。
-- **模型**：本机 Ollama + `qwen2.5:7b-instruct`（q4_K_M），纯 CPU/8GB 显存均可运行。
+- **模型**：本机 Ollama + `qwen2.5:7b`（q4_K_M，Ollama 的 7B 即指令微调版），纯 CPU/8GB 显存均可运行。
 - **架构**：新增 `ai` 模块，自写轻量 `OllamaClient`（Spring `RestClient` + SSE），**不引入 Spring AI**（其要求 Boot 3.4+，与当前 3.2.5 不兼容）。
 - **关键约束**：不把用户问题拼成 SQL 交给模型执行，只允许调用**预注册只读工具**（内部走现有 Service + 权限校验）。
 - **降级**：`ceams.ai.enabled=false` 或 Ollama 不可用时，AI 接口返回「未启用」，**主系统所有功能不受影响**。
@@ -40,7 +40,7 @@
 
 | 机器条件 | 可跑模型 | 实测预期 |
 |---|---|---|
-| 纯 CPU + 16GB 内存 | `qwen2.5:7b-instruct` q4_K_M | 首字 3~6s，生成约 4~6 tok/s |
+| 纯 CPU + 16GB 内存 | `qwen2.5:7b` q4_K_M | 首字 3~6s，生成约 4~6 tok/s |
 | 8GB 显存（如 RTX 3060/4060） | 同上 | 首字 <1s，20~30 tok/s |
 | 16GB 显存 | `qwen2.5:14b-instruct` | 效果更好，速度减半 |
 
@@ -48,7 +48,7 @@
 
 | 模型 | 用途 | 何时引入 |
 |---|---|---|
-| `qwen2.5:7b-instruct` | 问答、摘要、审批意见草稿 | **M1 即引入** |
+| `qwen2.5:7b`（本机已安装 4.7GB） | 问答、摘要、审批意见草稿 | **M1 即引入** |
 | `qwen2.5:14b-instruct` | 对账分析、风险归因 | M3（显存 ≥16GB 时） |
 | `qwen2.5-vl:7b` | 票据/合同图像理解（替代 OCR 链路） | M4 单独评估 |
 | `bge-m3` | 知识库检索向量化 | 仅在引入规章制度知识库时 |
@@ -61,7 +61,7 @@ winget install Ollama.Ollama
 # 或从 https://ollama.com/download 下载安装包
 
 # 拉取模型
-ollama pull qwen2.5:7b-instruct
+ollama pull qwen2.5:7b
 
 # 常驻服务默认监听 127.0.0.1:11434
 ollama serve
@@ -149,7 +149,7 @@ SSE 事件示例：
 
 ```
 event: meta
-data: {"conversationId":"...","model":"qwen2.5:7b-instruct"}
+data: {"conversationId":"...","model":"qwen2.5:7b"}
 
 event: delta
 data: {"text":"本月报销合计 "}
@@ -238,7 +238,7 @@ ceams:
   ai:
     enabled: ${AI_ENABLED:false}
     base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
-    model: ${OLLAMA_MODEL:qwen2.5:7b-instruct}
+    model: ${OLLAMA_MODEL:qwen2.5:7b}
     timeout-seconds: ${AI_TIMEOUT_SECONDS:120}
     max-context-messages: 10
     max-tool-rows: 200
@@ -252,7 +252,7 @@ ceams:
 | 失败率 | 调用异常计数（Ollama 超时/连接拒绝） |
 | 显存/内存 | Ollama 日志 + `OLLAMA_MAX_LOADED_MODELS=1` |
 
-降级策略：连续 3 次探活失败 → 状态缓存标记不可用 60s，前端入口提示「AI 服务暂不可用」，主流程不受影响。
+降级策略：探活结果缓存 60s（成功与失败均缓存，避免前端轮询打爆 Ollama）；失败时 `/api/v1/ai/status` 仍返回 HTTP 200 且 `reachable=false`，前端入口提示「AI 服务暂不可用」，主流程不受影响。探活使用独立短超时（连接 2s / 读取 3s），不会拖慢状态接口。
 
 ---
 
@@ -285,7 +285,29 @@ ceams:
 
 ## 12. 评审关注点（需你确认）
 
-1. **硬件**：本机是否有独立显卡/显存容量？决定 M1 就上 7B 还是直接 14B。
+1. **硬件（已确认）**：本机为 RTX 4060 Laptop 8GB 显存，按 7B（`qwen2.5:7b`）运行；14B 留待后续换机或独立推理机。
 2. **首批场景**：是否认可 P0 只做「只读问答」，P2 报销预审放到 M3。
 3. **可见范围**：STAFF 角色是否只能问本人数据（当前方案按此设计）。
 4. **审计保留期**：180 天是否满足财务要求。
+
+---
+
+## 13. 实施记录
+
+### M1（2026-11-07，`dev`）
+
+| 项 | 结果 |
+|---|---|
+| 配置开关 | `ceams.ai.enabled/base-url/model/timeout-seconds/max-context-messages/max-tool-rows/stream`，默认关闭、默认模型 `qwen2.5:7b` |
+| OllamaClient | `/api/tags` 探活（连接 2s / 读取 3s）+ `/api/chat` NDJSON 流式，解析逻辑独立可单测 |
+| 状态接口 | `GET /api/v1/ai/status` → `{enabled, model, reachable, latencyMs}`，未登录返回 401 |
+| 数据表 | Flyway V12 建立 `ai_conversation` / `ai_message` / `ai_feedback`，实测库版本推进到 v12 |
+| 审计落库 | `AiAuditService` 创建会话 + 追加消息（`@Transactional`），单测覆盖 |
+| 单测 | 22 例全部通过（OllamaClient 11 / AiStatusServiceImpl 5 / AiAuditServiceImpl 6） |
+| 实测 | Ollama 停止：HTTP 200 + `reachable=false`；Ollama 运行：HTTP 200 + `reachable=true`（43ms） |
+| 格式 | Spotless 对 `module/ai` 零告警（剩余 4 个为 file 模块历史遗留） |
+
+已修复的两个实施期缺陷：① `OllamaClient` 双构造器导致 Spring 无法注入（生产构造器补 `@Autowired`）；② 默认模型名与本机已装模型不一致（改为 `qwen2.5:7b`，避免探活恒为 false）。
+
+下一步 M2：8 个只读工具 + `POST /api/v1/ai/chat`（SSE）+ Web 助手抽屉 + 小程序入口。
+

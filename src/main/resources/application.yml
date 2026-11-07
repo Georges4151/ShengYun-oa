@@ -75,6 +75,16 @@ ceams:
   file:
     # 轻量文件上传/下载落盘目录（票据附件等），生产可用 FILE_UPLOAD_DIR 覆盖。
     upload-dir: ${FILE_UPLOAD_DIR:./data/files}
+  ai:
+    # 本地 Ollama 智能化开关，默认关闭；置 true 且 Ollama 可达后才对外提供 AI 能力。
+    enabled: ${AI_ENABLED:false}
+    base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
+    # 本机已安装 qwen2.5:7b（即指令微调版）；可通过 OLLAMA_MODEL 覆盖（如 qwen2.5:14b-instruct）。
+    model: ${OLLAMA_MODEL:qwen2.5:7b}
+    timeout-seconds: ${AI_TIMEOUT_SECONDS:120}
+    max-context-messages: 10
+    max-tool-rows: 200
+    stream: true
 
   # 备份加密说明（占位）：
   #   数据库备份必须在运维层加密，例如 mysqldump 管道加密（openssl/gpg）或使用托管数据库的自动备份加密；
