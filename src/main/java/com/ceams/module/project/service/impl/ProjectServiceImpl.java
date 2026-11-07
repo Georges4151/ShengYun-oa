@@ -25,6 +25,7 @@ import com.ceams.module.project.util.PageUtil;
 import com.ceams.module.project.vo.ProjectVO;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -70,6 +71,34 @@ public class ProjectServiceImpl implements ProjectService {
     @Override
     public ProjectVO detail(Long id) {
         return projectConverter.toVO(requireProject(id));
+    }
+
+    @Override
+    public PageResult<ProjectVO> pageForManager(
+            long page, long size, String keyword, ProjectStatus status, Long managerId) {
+        if (managerId == null) {
+            return new PageResult<>(List.of(), 0L, page, size);
+        }
+        Page<Project> p = PageUtil.resolve(page, size);
+        LambdaQueryWrapper<Project> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Project::getManagerId, managerId);
+        if (StringUtils.isNotBlank(keyword)) {
+            wrapper.and(
+                    w ->
+                            w.like(Project::getProjectName, keyword)
+                                    .or()
+                                    .like(Project::getClientName, keyword));
+        }
+        if (status != null) {
+            wrapper.eq(Project::getStatus, status);
+        }
+        wrapper.orderByDesc(Project::getCreateTime);
+        IPage<Project> result = projectMapper.selectPage(p, wrapper);
+        return new PageResult<>(
+                projectConverter.toVOList(result.getRecords()),
+                result.getTotal(),
+                result.getCurrent(),
+                result.getSize());
     }
 
     @Override

@@ -5,10 +5,10 @@ import { useAuthStore } from '@/stores/auth'
 import { getOrCreateDeviceId } from '@/utils/device'
 
 /**
- * 统一请求客户端：业务代码只经这里访问接口，组件内禁止直接 axios/fetch。
- * 三端复用同一套 @ceams/api-client，仅注入不同的平台适配器（默认 fetchAdapter）。
+ * 统一 API 基础地址：Web 开发态留空走 Vite 代理（/api），生产由 VITE_API_BASE_URL 注入。
+ * 导出供需要自建 fetch 的流式请求（如 AI SSE）复用同一地址。
  */
-let apiClient!: CeamsApiClient
+export const apiBaseUrl: string = import.meta.env.VITE_API_BASE_URL ?? 'https://api.example.com'
 
 /**
  * 刷新令牌轮换：用 refreshToken 换取新的令牌对并写回 auth store，
@@ -18,7 +18,7 @@ let apiClient!: CeamsApiClient
  */
 let refreshPromise: Promise<string> | null = null
 
-function refreshAccessToken(): Promise<string> {
+export function refreshAccessToken(): Promise<string> {
   if (refreshPromise) {
     return refreshPromise
   }
@@ -63,8 +63,13 @@ async function getSignSecret(): Promise<string | null> {
   }
 }
 
-apiClient = createCeamsApiClient({
-  baseUrl: import.meta.env.VITE_API_BASE_URL ?? 'https://api.example.com',
+/**
+ * 统一请求客户端：业务代码只经这里访问接口，组件内禁止直接 axios/fetch。
+ * 三端复用同一套 @ceams/api-client，仅注入不同的平台适配器（默认 fetchAdapter）。
+ * 说明：factory 调用位于文件末尾，上方函数体内的引用在模块初始化完成后才会执行。
+ */
+const apiClient: CeamsApiClient = createCeamsApiClient({
+  baseUrl: apiBaseUrl,
   timeoutMs: 15000,
   getAccessToken: () => useAuthStore(pinia).token,
   refreshAccessToken,

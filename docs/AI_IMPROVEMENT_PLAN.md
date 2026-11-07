@@ -1,6 +1,6 @@
 # CEAMS AI 智能化升级方案（本地 Ollama）
 
-> 版本：v1.1 ｜ 生成时间：2026-11-06 ｜ 更新：2026-11-07 ｜ 适用分支：`dev` ｜ 状态：M1 已实施并实测通过
+> 版本：v1.2 ｜ 生成时间：2026-11-06 ｜ 更新：2026-11-07 ｜ 适用分支：`dev` ｜ 状态：M2 已实施（T5–T7 实测通过，T8 小程序待做）
 
 ---
 
@@ -310,4 +310,22 @@ ceams:
 已修复的两个实施期缺陷：① `OllamaClient` 双构造器导致 Spring 无法注入（生产构造器补 `@Autowired`）；② 默认模型名与本机已装模型不一致（改为 `qwen2.5:7b`，避免探活恒为 false）。
 
 下一步 M2：8 个只读工具 + `POST /api/v1/ai/chat`（SSE）+ Web 助手抽屉 + 小程序入口。
+
+### M2（2026-11-07，`dev`）
+
+| 任务 | 结果 |
+|---|---|
+| T5 工具层 | `module/ai/tool/` 落地 `ReadOnlyTool` / `ToolResult` / `ToolRegistry` / `ToolSecurity` / `ToolArgs` / `ToolPeriod` / `ToolSchemas` / `PageCollector`；8 个只读工具全部注册，启动时校验「非空、唯一、必须在白名单内」，越权工具直接启动失败 |
+| T5 口径 | ai 模块内零 SQL、零 Mapper；只复用业务 Service 新增的只读方法（项目、进度款、预算、报销汇总与待办、银行未匹配、用印汇总），返回统一限行（每页 100、最多 2 页，超过 `maxToolRows` 截断） |
+| T6 聊天链路 | `POST /api/v1/ai/chat`（`text/event-stream`）：`meta` / `delta` / `tool` / `done` / `error`，`data` 强制单行 JSON；最多 2 轮工具调用，超出后不再下发 `tools` 强制作答 |
+| T6 会话 | `GET /api/v1/ai/conversations`、`GET /api/v1/ai/conversations/{id}/messages`、`POST /api/v1/ai/feedback`，均校验会话归属；落库失败不阻断 `done` |
+| T6 异步 | `AiChatExecutorConfiguration`：`core=4/max=8/queue=32`，`DelegatingSecurityContextAsyncTaskExecutor` 透传 `SecurityContext`（ThreadLocal 不跨线程） |
+| T6 时间语义 | 系统提示注入 `Asia/Shanghai` 当前日期与本月/上月/今年换算；`ToolPeriod.resolve()` 兜底：缺失→当前月、越界→当前月并标记 `periodFallback`、格式非法仍报参数错误 |
+| T6 安全护栏 | 数据类问题（报销/项目/预算/流水/审批/用印/金额/期间等关键词或 `yyyy-MM`）首轮若未调用工具即输出数字，服务端直接替换为固定安全提示，杜绝幻觉金额外泄；首轮 delta 先缓冲、校验后再回放 |
+| T7 Web | 右侧 420px「AI 助手」抽屉（`modal=false` + 穿透遮罩）、悬浮入口、停止生成、新建会话、`context.page` 透传、未启用/不可达禁用输入；`packages/types` 与 `packages/api-client` 新增 ai 域，`services/ai.ts` 用 `fetch` + `ReadableStream` 解析 SSE，401 复用单飞刷新后重试一次 |
+| 实测 | 实测会话「本月报销一共多少钱？」→ `event:tool(queryExpenseSummary, period=2026-11)` → 多帧 `delta` → `done`（latency ≈ 8.3s）；「上月报销多少钱？」→ `period=2026-10`；「今年报销多少钱？」→ `2026-01-01~2026-11-07`；无工具问候走纯文本；会话/消息/评价接口与 `ai_conversation`/`ai_message`/`ai_feedback` 落库均验证通过 |
+| 已知限制 | ① qwen2.5:7b 对「那上月呢」这类省略式追问可能不调用工具，已由护栏兜底（不再输出未溯源金额，改为提示明确期间）；② 宿主库业务表为空，数字核对仅覆盖「无数据→0/空」场景，真实金额需在有数据环境复测 |
+
+后续口径备注：Web 端 `lint` 存在既有约 3150 条样式类 warning（非本次引入），本次以 `typecheck` + `build` + `eslint --quiet` 为通过判据；Spotless 全量检查仍有 `module/file` 4 个历史遗留文件违规，`module/ai` 为零告警。
+
 

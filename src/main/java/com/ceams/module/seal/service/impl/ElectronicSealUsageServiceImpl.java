@@ -12,6 +12,10 @@ import com.ceams.module.seal.mapper.ElectronicSealUsageMapper;
 import com.ceams.module.seal.service.ElectronicSealUsageService;
 import com.ceams.module.seal.util.PageUtil;
 import com.ceams.module.seal.vo.ElectronicSealUsageVO;
+import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -43,6 +47,23 @@ public class ElectronicSealUsageServiceImpl implements ElectronicSealUsageServic
     @Override
     public ElectronicSealUsageVO detail(Long id) {
         return electronicSealUsageConverter.toVO(requireUsage(id));
+    }
+
+    @Override
+    public UsageSummary summary(LocalDateTime start, LocalDateTime end, Long sealId, Long userId) {
+        LambdaQueryWrapper<ElectronicSealUsage> wrapper = new LambdaQueryWrapper<>();
+        wrapper.ge(ElectronicSealUsage::getUsageTime, start)
+                .le(ElectronicSealUsage::getUsageTime, end)
+                .eq(sealId != null, ElectronicSealUsage::getSealId, sealId)
+                .eq(userId != null, ElectronicSealUsage::getUserId, userId);
+        List<ElectronicSealUsage> usages = electronicSealUsageMapper.selectList(wrapper);
+        Map<String, Long> userDistribution = new LinkedHashMap<>();
+        for (ElectronicSealUsage usage : usages) {
+            String userName = usage.getUserName();
+            String key = userName == null || userName.isBlank() ? "未知用户" : userName;
+            userDistribution.merge(key, 1L, Long::sum);
+        }
+        return new UsageSummary(usages.size(), userDistribution);
     }
 
     private ElectronicSealUsage requireUsage(Long id) {

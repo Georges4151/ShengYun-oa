@@ -24,6 +24,8 @@ import { createNotificationApi } from './domains/notification'
 import type { NotificationApi } from './domains/notification'
 import { createReportApi } from './domains/report'
 import type { ReportApi } from './domains/report'
+import { createAiApi } from './domains/ai'
+import type { AiApi } from './domains/ai'
 
 export interface CeamsApiClient {
   iam: IamApi
@@ -35,6 +37,7 @@ export interface CeamsApiClient {
   seal: SealApi
   notification: NotificationApi
   report: ReportApi
+  ai: AiApi
 }
 
 export function createCeamsApiClient(options: HttpClientOptions): CeamsApiClient {
@@ -48,6 +51,7 @@ export function createCeamsApiClient(options: HttpClientOptions): CeamsApiClient
     bank: createBankApi(client),
     seal: createSealApi(client),
     notification: createNotificationApi(client),
-    report: createReportApi(client)
+    report: createReportApi(client),
+    ai: createAiApi(client)
   }
 }

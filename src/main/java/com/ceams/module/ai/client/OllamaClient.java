@@ -1,6 +1,7 @@
 package com.ceams.module.ai.client;
 
 import com.ceams.module.ai.config.AiProperties;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.BufferedReader;
@@ -125,27 +126,47 @@ public class OllamaClient {
     }
 
     /**
-     * 流式对话：逐行解析 NDJSON，每拿到一段 {@code message.content} 增量就回调 {@code onDelta}。
+     * 流式对话（无工具，兼容 M1 两参调用）。
      *
      * @param messages 完整上下文消息（含 system 提示）
      * @param onDelta 增量文本回调，允许为 null（只关心最终结果时）
-     * @return 汇总后的回答文本、token 用量与耗时
+     * @return 汇总后的回答文本、工具调用、token 用量与耗时
      */
     public OllamaChatResult chatStream(List<ChatMessage> messages, Consumer<String> onDelta) {
+        return chatStream(messages, List.of(), onDelta);
+    }
+
+    /**
+     * 流式对话：逐行解析 NDJSON，每拿到一段 {@code message.content} 增量就回调 {@code onDelta}， 同时累积 {@code
+     * message.tool_calls}。
+     *
+     * @param messages 完整上下文消息（含 system 提示）
+     * @param tools Ollama {@code tools} 数组；为空时不向请求体写入该字段
+     * @param onDelta 增量文本回调，允许为 null（只关心最终结果时）
+     * @return 汇总后的回答文本、工具调用、token 用量与耗时
+     */
+    public OllamaChatResult chatStream(
+            List<ChatMessage> messages, List<Map<String, Object>> tools, Consumer<String> onDelta) {
         if (messages == null || messages.isEmpty()) {
             throw new IllegalArgumentException("messages 不能为空");
         }
 
         Map<String, Object> requestBody = new LinkedHashMap<>();
         requestBody.put("model", aiProperties.getModel());
-        List<Map<String, String>> payloadMessages = new ArrayList<>(messages.size());
+        List<Map<String, Object>> payloadMessages = new ArrayList<>(messages.size());
         for (ChatMessage message : messages) {
-            Map<String, String> item = new LinkedHashMap<>(2);
+            Map<String, Object> item = new LinkedHashMap<>(3);
             item.put("role", message.role());
             item.put("content", message.content());
+            if (!message.toolCalls().isEmpty()) {
+                item.put("tool_calls", toPayloadToolCalls(message.toolCalls()));
+            }
             payloadMessages.add(item);
         }
         requestBody.put("messages", payloadMessages);
+        if (tools != null && !tools.isEmpty()) {
+            requestBody.put("tools", tools);
+        }
         requestBody.put("stream", aiProperties.isStream());
 
         long startNanos = System.nanoTime();
@@ -182,6 +203,37 @@ public class OllamaClient {
             return content.isEmpty() ? Optional.empty() : Optional.of(content);
         } catch (Exception e) {
             return Optional.empty();
+        }
+    }
+
+    /**
+     * 解析单行 NDJSON 的 {@code message.tool_calls}。
+     *
+     * <p>Ollama 的 {@code arguments} 可能是 JSON 对象，也可能是 JSON 字符串（不同版本/模型模板行为不一致）， 两种形态都统一解析为 Map。
+     *
+     * @return 本行请求的工具调用；无字段、非法 JSON、缺工具名均返回空列表
+     */
+    public static List<OllamaToolCall> parseToolCalls(String line) {
+        if (line == null || line.isBlank()) {
+            return List.of();
+        }
+        try {
+            JsonNode calls = JSON.readTree(line).path("message").path("tool_calls");
+            if (!calls.isArray() || calls.isEmpty()) {
+                return List.of();
+            }
+            List<OllamaToolCall> parsed = new ArrayList<>(calls.size());
+            for (JsonNode call : calls) {
+                JsonNode function = call.path("function");
+                String name = function.path("name").asText("").trim();
+                if (name.isEmpty()) {
+                    continue;
+                }
+                parsed.add(new OllamaToolCall(name, parseArguments(function.path("arguments"))));
+            }
+            return parsed;
+        } catch (Exception e) {
+            return List.of();
         }
     }
 
@@ -230,6 +282,7 @@ public class OllamaClient {
 
         OllamaChatResult result = new OllamaChatResult();
         StringBuilder content = new StringBuilder();
+        List<OllamaToolCall> toolCalls = new ArrayList<>();
         InputStream body = response.getBody();
         if (body == null) {
             return result;
@@ -249,6 +302,7 @@ public class OllamaClient {
                                         onDelta.accept(delta);
                                     }
                                 });
+                toolCalls.addAll(parseToolCalls(line));
                 if (isDone(line)) {
                     parseUsage(line)
                             .ifPresent(
@@ -261,7 +315,48 @@ public class OllamaClient {
             }
         }
         result.setContent(content.toString());
+        result.setToolCalls(toolCalls);
         return result;
+    }
+
+    /** 将工具调用转换为 Ollama 请求体格式（{@code [{"function":{"name":..,"arguments":..}}]}）。 */
+    private static List<Map<String, Object>> toPayloadToolCalls(List<OllamaToolCall> toolCalls) {
+        List<Map<String, Object>> payload = new ArrayList<>(toolCalls.size());
+        for (OllamaToolCall call : toolCalls) {
+            Map<String, Object> function = new LinkedHashMap<>(2);
+            function.put("name", call.name());
+            function.put("arguments", call.arguments());
+            Map<String, Object> item = new LinkedHashMap<>(1);
+            item.put("function", function);
+            payload.add(item);
+        }
+        return payload;
+    }
+
+    /** 兼容 arguments 的两种形态：JSON 对象 / JSON 字符串；无法解析时返回空参数。 */
+    private static Map<String, Object> parseArguments(JsonNode node) {
+        if (node == null || node.isMissingNode() || node.isNull()) {
+            return Map.of();
+        }
+        try {
+            if (node.isTextual()) {
+                String text = node.asText("").trim();
+                if (text.isEmpty()) {
+                    return Map.of();
+                }
+                JsonNode parsed = JSON.readTree(text);
+                if (!parsed.isObject()) {
+                    return Map.of();
+                }
+                return JSON.convertValue(parsed, new TypeReference<Map<String, Object>>() {});
+            }
+            if (node.isObject()) {
+                return JSON.convertValue(node, new TypeReference<Map<String, Object>>() {});
+            }
+        } catch (Exception e) {
+            return Map.of();
+        }
+        return Map.of();
     }
 
     /** 模型名匹配：精确相等；配置未带 tag 时允许匹配同名模型（如 qwen2.5 → qwen2.5:7b）。 */

@@ -21,6 +21,7 @@ import com.ceams.module.project.vo.BudgetVO;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -57,6 +58,36 @@ public class BudgetServiceImpl implements BudgetService {
     @Override
     public BudgetVO detail(Long id) {
         return budgetConverter.toVO(requireBudget(id));
+    }
+
+    @Override
+    public PageResult<BudgetVO> pageForManager(
+            long page, long size, Long projectId, Long managerId) {
+        if (managerId == null) {
+            return new PageResult<>(List.of(), 0L, page, size);
+        }
+        List<Project> projects =
+                projectMapper.selectList(
+                        new LambdaQueryWrapper<Project>().eq(Project::getManagerId, managerId));
+        if (projects.isEmpty()) {
+            return new PageResult<>(List.of(), 0L, page, size);
+        }
+        List<Long> projectIds = projects.stream().map(Project::getId).toList();
+        if (projectId != null) {
+            if (!projectIds.contains(projectId)) {
+                return new PageResult<>(List.of(), 0L, page, size);
+            }
+            projectIds = List.of(projectId);
+        }
+        Page<Budget> p = PageUtil.resolve(page, size);
+        LambdaQueryWrapper<Budget> wrapper = new LambdaQueryWrapper<>();
+        wrapper.in(Budget::getProjectId, projectIds).orderByDesc(Budget::getCreateTime);
+        IPage<Budget> result = budgetMapper.selectPage(p, wrapper);
+        return new PageResult<>(
+                budgetConverter.toVOList(result.getRecords()),
+                result.getTotal(),
+                result.getCurrent(),
+                result.getSize());
     }
 
     @Override

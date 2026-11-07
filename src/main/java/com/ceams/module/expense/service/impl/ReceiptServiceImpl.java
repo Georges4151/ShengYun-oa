@@ -32,7 +32,9 @@ import com.ceams.module.expense.vo.ReceiptVerificationVO;
 import com.ceams.module.payment.service.PaymentAccountQueryService;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -304,6 +306,77 @@ public class ReceiptServiceImpl implements ReceiptService {
         wrapper.eq(ReceiptVerification::getReceiptId, id)
                 .orderByDesc(ReceiptVerification::getVerificationTime);
         return receiptVerificationConverter.toVOList(receiptVerificationMapper.selectList(wrapper));
+    }
+
+    @Override
+    public ExpenseSummary summary(
+            LocalDateTime start, LocalDateTime end, Long userId, String keyword) {
+        LambdaQueryWrapper<Receipt> wrapper = new LambdaQueryWrapper<>();
+        wrapper.ge(Receipt::getReceiptDate, start)
+                .le(Receipt::getReceiptDate, end)
+                .eq(userId != null, Receipt::getUserId, userId);
+        applyKeyword(wrapper, keyword);
+        List<Receipt> receipts = receiptMapper.selectList(wrapper);
+
+        BigDecimal totalAmount = BigDecimal.ZERO;
+        Map<String, Long> approvalStatusDistribution = new LinkedHashMap<>();
+        Map<String, Long> paymentStatusDistribution = new LinkedHashMap<>();
+        Map<String, Long> verificationStatusDistribution = new LinkedHashMap<>();
+        Map<String, Long> typeDistribution = new LinkedHashMap<>();
+        for (Receipt receipt : receipts) {
+            totalAmount = totalAmount.add(nvl(receipt.getAmount()));
+            merge(approvalStatusDistribution, receipt.getApprovalStatus());
+            merge(paymentStatusDistribution, receipt.getPaymentStatus());
+            merge(verificationStatusDistribution, receipt.getVerificationStatus());
+            merge(typeDistribution, receipt.getType());
+        }
+        return new ExpenseSummary(
+                totalAmount,
+                receipts.size(),
+                approvalStatusDistribution,
+                paymentStatusDistribution,
+                verificationStatusDistribution,
+                typeDistribution);
+    }
+
+    @Override
+    public PendingApprovalPage pendingApprovals(
+            Long userId, String keyword, Long projectId, int limit) {
+        LambdaQueryWrapper<Receipt> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Receipt::getApprovalStatus, ReceiptApprovalStatus.PENDING)
+                .eq(userId != null, Receipt::getUserId, userId)
+                .eq(projectId != null, Receipt::getProjectId, projectId);
+        applyKeyword(wrapper, keyword);
+        wrapper.orderByDesc(Receipt::getCreateTime);
+        List<Receipt> receipts = receiptMapper.selectList(wrapper);
+        BigDecimal totalAmount = BigDecimal.ZERO;
+        for (Receipt receipt : receipts) {
+            totalAmount = totalAmount.add(nvl(receipt.getAmount()));
+        }
+        int safeLimit = Math.max(1, limit);
+        List<Receipt> limited =
+                receipts.size() <= safeLimit ? receipts : receipts.subList(0, safeLimit);
+        return new PendingApprovalPage(
+                receipts.size(), totalAmount, receiptConverter.toVOList(limited));
+    }
+
+    private void applyKeyword(LambdaQueryWrapper<Receipt> wrapper, String keyword) {
+        if (StringUtils.isNotBlank(keyword)) {
+            wrapper.and(
+                    w ->
+                            w.like(Receipt::getReceiptNumber, keyword)
+                                    .or()
+                                    .like(Receipt::getDescription, keyword));
+        }
+    }
+
+    private static void merge(Map<String, Long> distribution, Enum<?> value) {
+        String key = value == null ? "UNKNOWN" : value.name();
+        distribution.merge(key, 1L, Long::sum);
+    }
+
+    private static BigDecimal nvl(BigDecimal value) {
+        return value == null ? BigDecimal.ZERO : value;
     }
 
     private Receipt requireReceipt(Long id) {

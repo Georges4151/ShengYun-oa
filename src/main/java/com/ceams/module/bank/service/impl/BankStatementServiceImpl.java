@@ -17,7 +17,9 @@ import com.ceams.module.bank.service.BankStatementService;
 import com.ceams.module.bank.util.PageUtil;
 import com.ceams.module.bank.vo.BankStatementVO;
 import com.ceams.module.payment.service.PaymentAccountQueryService;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -132,6 +134,24 @@ public class BankStatementServiceImpl implements BankStatementService {
     public void delete(Long id) {
         requireStatement(id);
         bankStatementMapper.deleteById(id);
+    }
+
+    @Override
+    public UnmatchedSummary unmatchedSummary(
+            LocalDateTime startDate, LocalDateTime endDate, Long accountId) {
+        LambdaQueryWrapper<BankStatement> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(BankStatement::getStatus, BankStatementStatus.UNRECONCILED)
+                .eq(accountId != null, BankStatement::getAccountId, accountId)
+                .ge(startDate != null, BankStatement::getTransactionDate, startDate)
+                .le(endDate != null, BankStatement::getTransactionDate, endDate);
+        List<BankStatement> statements = bankStatementMapper.selectList(wrapper);
+        BigDecimal totalAmount = BigDecimal.ZERO;
+        for (BankStatement statement : statements) {
+            if (statement.getAmount() != null) {
+                totalAmount = totalAmount.add(statement.getAmount());
+            }
+        }
+        return new UnmatchedSummary(statements.size(), totalAmount);
     }
 
     private BankStatement requireStatement(Long id) {

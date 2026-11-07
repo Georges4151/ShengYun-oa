@@ -11,6 +11,10 @@ public interface ProjectService {
 
     PageResult<ProjectVO> page(long page, long size, String keyword, ProjectStatus status);
 
+    /** 按项目经理查询项目（AI 只读工具使用，确保 STAFF 只能看到本人负责的项目）。 */
+    PageResult<ProjectVO> pageForManager(
+            long page, long size, String keyword, ProjectStatus status, Long managerId);
+
     ProjectVO detail(Long id);
 
     String create(ProjectCreateRequest request);

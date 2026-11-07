@@ -20,6 +20,7 @@ import com.ceams.module.project.util.PageUtil;
 import com.ceams.module.project.vo.ProgressPaymentVO;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -59,6 +60,30 @@ public class ProgressPaymentServiceImpl implements ProgressPaymentService {
     @Override
     public ProgressPaymentVO detail(Long id) {
         return progressPaymentConverter.toVO(requireProgressPayment(id));
+    }
+
+    @Override
+    public PageResult<ProgressPaymentVO> pageForApplicant(
+            long page, long size, Long projectId, ApprovalStatus status, Long applicantId) {
+        if (applicantId == null) {
+            return new PageResult<>(List.of(), 0L, page, size);
+        }
+        Page<ProgressPayment> p = PageUtil.resolve(page, size);
+        LambdaQueryWrapper<ProgressPayment> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(ProgressPayment::getApplicationBy, applicantId);
+        if (projectId != null) {
+            wrapper.eq(ProgressPayment::getProjectId, projectId);
+        }
+        if (status != null) {
+            wrapper.eq(ProgressPayment::getStatus, status);
+        }
+        wrapper.orderByDesc(ProgressPayment::getCreateTime);
+        IPage<ProgressPayment> result = progressPaymentMapper.selectPage(p, wrapper);
+        return new PageResult<>(
+                progressPaymentConverter.toVOList(result.getRecords()),
+                result.getTotal(),
+                result.getCurrent(),
+                result.getSize());
     }
 
     @Override

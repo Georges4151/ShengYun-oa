@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElAvatar, ElDropdown, ElDropdownItem, ElDropdownMenu, ElMenu, ElMenuItem } from 'element-plus'
 import { AppShell } from '@ceams/ui-web'
+import AiAssistant from '@/components/AiAssistant.vue'
 import { useAuthStore } from '@/stores/auth'
 
 const route = useRoute()
@@ -61,6 +62,9 @@ function onCommand(command: unknown): void {
     </template>
 
     <RouterView />
+
+    <!-- AI 助手抽屉：仅登录后的主布局挂载，登录页不出现 -->
+    <AiAssistant />
   </AppShell>
 </template>
 
