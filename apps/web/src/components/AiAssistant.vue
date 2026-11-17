@@ -12,7 +12,13 @@ import {
   ElTag
 } from 'element-plus'
 import { ApiError } from '@ceams/api-client'
-import type { AiChatRequest, AiChatToolData, AiDailySummaryVO, AiStatusVO } from '@ceams/types'
+import type {
+  AiChatRequest,
+  AiChatToolData,
+  AiDailySummaryVO,
+  AiStatusVO,
+  AiTodoSummaryVO
+} from '@ceams/types'
 import { ceamsApi } from '@/services/http'
 import { isAbortError, streamChat } from '@/services/ai'
 import { useAuthStore } from '@/stores/auth'
@@ -53,9 +59,9 @@ const statusError = ref('')
 const statusLoaded = ref(false)
 const model = ref('')
 
-// ---------- 视图切换：对话 / 日报摘要 ----------
+// ---------- 视图切换：对话 / 日报摘要 / 待办摘要 ----------
 /** 当前面板视图；切换只影响展示，不销毁聊天会话与流式状态 */
-const view = ref<'chat' | 'summary'>('chat')
+const view = ref<'chat' | 'summary' | 'todo'>('chat')
 
 const summary = ref<AiDailySummaryVO | null>(null)
 const summaryLoading = ref(false)
@@ -112,6 +118,42 @@ function toggleView(): void {
   showSummary()
 }
 
+// ---------- 待办摘要（登录即可查看，数据范围与待办列表一致） ----------
+const todo = ref<AiTodoSummaryVO | null>(null)
+const todoLoading = ref(false)
+const todoError = ref('')
+
+/** 加载待办摘要：失败仅展示错误，不影响对话能力 */
+async function loadTodoSummary(): Promise<void> {
+  if (todoLoading.value) return
+  todoLoading.value = true
+  todoError.value = ''
+  try {
+    todo.value = await ceamsApi.ai.todoSummary()
+  } catch (err) {
+    todo.value = null
+    todoError.value = apiErrorMessage(err, '待办摘要加载失败')
+  } finally {
+    todoLoading.value = false
+  }
+}
+
+/** 打开抽屉并切换到待办摘要视图 */
+function showTodo(): void {
+  open.value = true
+  view.value = 'todo'
+  void loadTodoSummary()
+}
+
+/** 待办到期时间展示（MM-dd HH:mm，解析失败原样返回） */
+function formatDue(value?: string | null): string {
+  if (!value) return '未设置'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  const pad = (num: number) => String(num).padStart(2, '0')
+  return `${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`
+}
+
 /** 手动生成日报摘要（不传 date 表示昨日） */
 async function generateSummary(): Promise<void> {
   if (generating.value) return
@@ -159,6 +201,10 @@ function openPanel(): void {
   open.value = true
   if (view.value === 'summary') {
     void loadSummary()
+    return
+  }
+  if (view.value === 'todo') {
+    void loadTodoSummary()
     return
   }
   void ensureStatus()
@@ -388,14 +434,11 @@ onBeforeUnmount(() => {
             <el-tag v-if="model" size="small" type="success" effect="plain">{{ model }}</el-tag>
           </div>
           <div class="ai-panel__actions">
-            <el-button
-              link
-              size="small"
-              :title="view === 'chat' ? '查看最新日报摘要' : '返回对话'"
-              @click="toggleView"
-            >
-              {{ view === 'chat' ? '日报摘要' : '返回对话' }}
-            </el-button>
+            <template v-if="view === 'chat'">
+              <el-button link size="small" title="查看最新日报摘要" @click="toggleView">日报摘要</el-button>
+              <el-button link size="small" title="查看我的待办摘要" @click="showTodo">待办摘要</el-button>
+            </template>
+            <el-button v-else link size="small" title="返回对话" @click="view = 'chat'">返回对话</el-button>
             <el-button link size="small" title="收起抽屉，保留当前会话" @click="minimize">最小化</el-button>
             <el-button link size="small" title="结束当前会话并收起抽屉" @click="endSession">关闭</el-button>
           </div>
@@ -443,7 +486,7 @@ onBeforeUnmount(() => {
           </div>
         </div>
 
-        <div v-else class="ai-panel__summary">
+        <div v-else-if="view === 'summary'" class="ai-panel__summary">
           <div class="ai-summary__toolbar">
             <span class="ai-summary__title">日报摘要</span>
             <div class="ai-summary__buttons">
@@ -475,6 +518,74 @@ onBeforeUnmount(() => {
             </div>
             <div class="ai-summary__content">{{ summary.content }}</div>
             <div class="ai-summary__hint">AI 生成，请核实</div>
+          </div>
+        </div>
+
+        <div v-else class="ai-panel__summary">
+          <div class="ai-summary__toolbar">
+            <span class="ai-summary__title">待办摘要</span>
+            <el-button size="small" :loading="todoLoading" @click="loadTodoSummary()">刷新</el-button>
+          </div>
+
+          <el-alert v-if="todoError" type="error" :closable="false" show-icon :title="todoError" />
+
+          <div v-if="todoLoading" class="ai-summary__empty">正在加载待办摘要…</div>
+          <div v-else-if="todoError" class="ai-summary__empty">加载失败，可点击「刷新」重试</div>
+          <div v-else-if="!todo" class="ai-summary__empty">暂无待办摘要</div>
+          <div v-else class="ai-todo">
+            <div class="ai-todo__stats">
+              <div class="ai-todo__stat">
+                <span class="ai-todo__num">{{ todo.totalPending }}</span>
+                <span class="ai-todo__label">待办总数</span>
+              </div>
+              <div class="ai-todo__stat ai-todo__stat--danger">
+                <span class="ai-todo__num">{{ todo.overdue }}</span>
+                <span class="ai-todo__label">已超时</span>
+              </div>
+              <div class="ai-todo__stat">
+                <span class="ai-todo__num">{{ todo.dueToday }}</span>
+                <span class="ai-todo__label">今日到期</span>
+              </div>
+            </div>
+
+            <div class="ai-todo__section">
+              <p class="ai-todo__section-title">业务类型分布</p>
+              <div v-if="todo.byBizType.length === 0" class="ai-todo__muted">暂无</div>
+              <div v-else class="ai-todo__tags">
+                <el-tag
+                  v-for="item in todo.byBizType"
+                  :key="item.bizType"
+                  size="small"
+                  effect="plain"
+                >
+                  {{ item.label }} {{ item.count }}
+                </el-tag>
+              </div>
+            </div>
+
+            <div class="ai-todo__section">
+              <p class="ai-todo__section-title">最近到期</p>
+              <div v-if="todo.upcoming.length === 0" class="ai-todo__muted">暂无</div>
+              <ul v-else class="ai-todo__list">
+                <li v-for="item in todo.upcoming" :key="item.taskId" class="ai-todo__item">
+                  <span class="ai-todo__item-title">{{ item.label }}（任务#{{ item.taskId }}）</span>
+                  <span class="ai-todo__item-meta">
+                    <template v-if="item.initiatorName">发起人 {{ item.initiatorName }} · </template>
+                    <span :class="{ 'ai-todo__overdue': item.overdue }">
+                      {{ formatDue(item.dueAt) }}{{ item.overdue ? '（已超时）' : '' }}
+                    </span>
+                  </span>
+                </li>
+              </ul>
+            </div>
+
+            <div class="ai-summary__card">
+              <div class="ai-summary__content">{{ todo.content }}</div>
+              <div class="ai-summary__hint">
+                {{ todo.model === 'TEMPLATE' ? '规则汇总' : `AI 润色 · ${todo.model}` }}
+              </div>
+            </div>
+            <div class="ai-summary__hint">{{ todo.disclaimer }}</div>
           </div>
         </div>
 
@@ -732,6 +843,81 @@ onBeforeUnmount(() => {
   margin-top: 12px;
   color: #909399;
   font-size: 12px;
+}
+.ai-todo__stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.ai-todo__stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 8px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+}
+.ai-todo__stat--danger .ai-todo__num {
+  color: #f56c6c;
+}
+.ai-todo__num {
+  color: #303133;
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1;
+}
+.ai-todo__label {
+  color: #909399;
+  font-size: 12px;
+}
+.ai-todo__section {
+  margin-bottom: 12px;
+}
+.ai-todo__section-title {
+  margin: 0 0 8px;
+  color: #303133;
+  font-size: 13px;
+  font-weight: 600;
+}
+.ai-todo__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ai-todo__muted {
+  color: #909399;
+  font-size: 12px;
+}
+.ai-todo__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ai-todo__item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 12px;
+  border: 1px solid #ebeef5;
+  border-radius: 6px;
+  background: #fff;
+}
+.ai-todo__item + .ai-todo__item {
+  margin-top: 8px;
+}
+.ai-todo__item-title {
+  color: #303133;
+  font-size: 13px;
+}
+.ai-todo__item-meta {
+  color: #909399;
+  font-size: 12px;
+}
+.ai-todo__overdue {
+  color: #f56c6c;
 }
 .ai-panel__footer--summary {
   display: flex;

@@ -20,6 +20,7 @@ public interface ChangeRequestConverter {
         vo.setDescription(request.getDescription());
         vo.setEstimatedCost(request.getEstimatedCost());
         vo.setStatus(request.getStatus());
+        vo.setBpmInstanceId(request.getBpmInstanceId());
         vo.setRequestedBy(request.getRequestedBy());
         vo.setApprovedBy(request.getApprovedBy());
         vo.setApprovedAt(request.getApprovedAt());

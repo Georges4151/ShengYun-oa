@@ -15,7 +15,7 @@ import type { PaymentStatus } from './masterdata'
 export type ReceiptType = 'TRANSPORTATION' | 'ACCOMMODATION' | 'MEAL' | 'OFFICE' | 'OTHER'
 export type VerificationStatus = 'PENDING' | 'VERIFIED' | 'REJECTED'
 export type PaymentMethod = 'CASH' | 'BANK_TRANSFER' | 'WECHAT' | 'ALIPAY' | 'OTHER'
-export type ReceiptApprovalStatus = 'DRAFT' | 'PENDING' | 'APPROVED' | 'REJECTED'
+export type ReceiptApprovalStatus = 'DRAFT' | 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED'
 export type ApprovalRecordStatus = 'PENDING' | 'APPROVED' | 'REJECTED'
 
 // ---------- 票据 ----------
@@ -43,6 +43,8 @@ export interface ReceiptVO {
   paymentMethod?: PaymentMethod | null
   currentApprovalLevel?: number | null
   approvalStatus: ReceiptApprovalStatus
+  /** 关联的 BPM 流程实例 ID（审批状态的唯一来源）。 */
+  bpmInstanceId?: Id | null
   createTime?: DateTime
 }
 

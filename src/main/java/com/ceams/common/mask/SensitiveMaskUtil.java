@@ -48,6 +48,18 @@ public final class SensitiveMaskUtil {
         return value.substring(0, 4) + MASK + value.substring(value.length() - 4);
     }
 
+    /** 身份证脱敏：null/blank 原样返回；trim 后长度 &lt;= 10 返回 {@code "****"}； 否则保留前 6 后 4，中间打码。 */
+    public static String maskIdCard(String idCard) {
+        if (idCard == null || idCard.isBlank()) {
+            return idCard;
+        }
+        String value = idCard.trim();
+        if (value.length() <= 10) {
+            return MASK;
+        }
+        return value.substring(0, 6) + MASK + value.substring(value.length() - 4);
+    }
+
     /** 邮箱脱敏：null/blank 原样返回；无 @ 或 @ 在首位时原样返回； 否则保留账号首字符与完整域名，账号其余部分打码。 */
     public static String maskEmail(String email) {
         if (email == null || email.isBlank()) {

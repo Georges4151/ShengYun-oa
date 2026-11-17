@@ -25,6 +25,10 @@ public class ChangeRequestVO {
 
     private ApprovalStatus status;
 
+    /** 关联的 BPM 流程实例 ID（审批状态的唯一来源）。 */
+    @JsonSerialize(using = ToStringSerializer.class)
+    private Long bpmInstanceId;
+
     @JsonSerialize(using = ToStringSerializer.class)
     private Long requestedBy;
 

@@ -13,7 +13,7 @@ import type { DateTime, Id, Money } from './common'
 // ---------- 枚举 ----------
 export type ProjectStatus = 'PLANNING' | 'IN_PROGRESS' | 'PAUSED' | 'COMPLETED' | 'CLOSED'
 export type BudgetStatus = 'DRAFT' | 'ACTIVE' | 'CLOSED'
-export type ApprovalStatus = 'DRAFT' | 'PENDING' | 'APPROVED' | 'REJECTED'
+export type ApprovalStatus = 'DRAFT' | 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED'
 export type ContractStatus = 'DRAFT' | 'ACTIVE' | 'COMPLETED' | 'TERMINATED'
 
 // ---------- 项目 ----------
@@ -106,6 +106,8 @@ export interface ChangeRequestVO {
   description?: string | null
   estimatedCost?: Money
   status: ApprovalStatus
+  /** 关联的 BPM 流程实例 ID（审批状态的唯一来源）。 */
+  bpmInstanceId?: Id | null
   requestedBy?: string | null
   approvedBy?: string | null
   approvedAt?: DateTime | null

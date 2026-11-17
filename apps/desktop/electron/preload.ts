@@ -19,6 +19,7 @@ import type {
  * - seal:list-usb-drives      → listUsbDrives
  * - seal:read-seal-image      → readSealImage
  * - seal:stamp-local          → stampLocal
+ * - nav:deep-link             → onDeepLink（主进程 → 渲染层单向事件）
  */
 const desktopApi = {
   platform: 'desktop' as const,
@@ -39,7 +40,19 @@ const desktopApi = {
   readSealImage: (request: ReadSealImageRequest): Promise<SealImageInfo> =>
     ipcRenderer.invoke('seal:read-seal-image', request) as Promise<SealImageInfo>,
   stampLocal: (request: StampLocalRequest): Promise<StampLocalResult> =>
-    ipcRenderer.invoke('seal:stamp-local', request) as Promise<StampLocalResult>
+    ipcRenderer.invoke('seal:stamp-local', request) as Promise<StampLocalResult>,
+
+  /**
+   * 订阅 ceams:// 深链（主进程转发），返回取消订阅函数。
+   * 渲染层据此把深链转换为应用内路由或业务动作。
+   */
+  onDeepLink: (handler: (deepLink: string) => void): (() => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, link: string): void => handler(link)
+    ipcRenderer.on('nav:deep-link', listener)
+    return () => {
+      ipcRenderer.removeListener('nav:deep-link', listener)
+    }
+  }
 }
 
 export type CeamsDesktopApi = typeof desktopApi

@@ -175,6 +175,41 @@ export interface AiSummaryListQuery {
   limit?: number
 }
 
+// ---------- AI 待办摘要（登录即可访问，数据范围与待办列表一致） ----------
+export interface AiTodoBizTypeCount {
+  /** 业务类型编码，如 EXPENSE */
+  bizType: string
+  /** 业务类型中文名 */
+  label: string
+  /** 待办数量 */
+  count: number
+}
+
+export interface AiTodoUpcomingItem {
+  taskId: Id
+  instanceId: Id
+  bizType: string
+  label: string
+  initiatorName?: string | null
+  dueAt?: DateTime | null
+  overdue: boolean
+}
+
+export interface AiTodoSummaryVO {
+  generatedAt: DateTime
+  totalPending: number
+  overdue: number
+  dueToday: number
+  byBizType: AiTodoBizTypeCount[]
+  upcoming: AiTodoUpcomingItem[]
+  /** 规则模板或 AI 润色后的摘要正文 */
+  content: string
+  /** TEMPLATE 或模型名 */
+  model?: string | null
+  aiEnabled: boolean
+  disclaimer: string
+}
+
 // ---------- 报销预审（仅 FINANCE / SYS_ADMIN，只读提示） ----------
 /** 预审综合风险等级 */
 export type PreAuditRiskLevel = 'HIGH' | 'MEDIUM' | 'LOW' | 'NONE'

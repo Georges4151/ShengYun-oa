@@ -1,5 +1,6 @@
 package com.ceams.module.iam.vo;
 
+import com.ceams.module.iam.enums.RoleDataScope;
 import com.ceams.module.iam.enums.RoleStatus;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
@@ -20,6 +21,9 @@ public class RoleVO {
     private String description;
 
     private RoleStatus status;
+
+    /** 数据范围：ALL/DEPT/SELF。 */
+    private RoleDataScope dataScope;
 
     private LocalDateTime createTime;
 }

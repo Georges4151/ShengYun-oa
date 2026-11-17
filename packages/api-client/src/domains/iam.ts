@@ -18,6 +18,7 @@ import type {
   RoleVO,
   RoleCreateRequest,
   RoleUpdateRequest,
+  DeptVO,
   AssignPermissionsRequest,
   PermissionVO,
   PermissionCreatePayload,
@@ -54,6 +55,9 @@ export interface IamApi {
   roleUpdate(id: Id, body: RoleUpdateRequest): Promise<void>
   roleRemove(id: Id): Promise<void>
   roleAssignPermissions(id: Id, body: AssignPermissionsRequest): Promise<void>
+
+  /** 部门组织树（供人事等页面选择部门） */
+  deptTree(): Promise<DeptVO[]>
 
   permissionTree(): Promise<PermissionVO[]>
   permissionMine(): Promise<string[]>
@@ -139,6 +143,10 @@ export function createIamApi(client: HttpClient): IamApi {
     },
     async roleAssignPermissions(id, body) {
       return client.put<void>(`/api/v1/roles/${id}/permissions`, body)
+    },
+
+    async deptTree() {
+      return client.get<DeptVO[]>('/api/v1/iam/depts/tree')
     },
 
     async permissionTree() {

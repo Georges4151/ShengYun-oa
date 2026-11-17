@@ -83,4 +83,7 @@ public class Receipt extends BaseEntity {
 
     /** 审批状态（V5 补充列）。 */
     private ReceiptApprovalStatus approvalStatus;
+
+    /** 关联的 BPM 流程实例 ID（逻辑引用 bpm_instance.id，灰度期可为空）。 */
+    private Long bpmInstanceId;
 }

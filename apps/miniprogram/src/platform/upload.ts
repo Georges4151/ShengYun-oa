@@ -28,6 +28,33 @@ export function chooseImage(count = 1): Promise<string[]> {
   })
 }
 
+/** 选择本地文件（PDF 等）；微信环境走会话文件选择，其余环境走系统文件选择。 */
+export function chooseFile(): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const chooser = (uni as unknown as {
+      chooseFile?: (opts: Record<string, unknown>) => void
+      chooseMessageFile?: (opts: Record<string, unknown>) => void
+    }).chooseFile
+      ? (uni as unknown as { chooseFile: (opts: Record<string, unknown>) => void }).chooseFile
+      : (uni as unknown as { chooseMessageFile: (opts: Record<string, unknown>) => void }).chooseMessageFile
+    if (!chooser) {
+      reject(new Error('当前环境不支持选择文件'))
+      return
+    }
+    chooser({
+      count: 1,
+      type: 'all',
+      success: (res: { tempFilePaths?: string[]; tempFiles?: { path: string }[] }) => {
+        const path = res.tempFilePaths?.[0] ?? res.tempFiles?.[0]?.path ?? ''
+        resolve(path)
+      },
+      fail: (err: UniApp.GeneralCallbackResult) => {
+        reject(new Error(err.errMsg ?? '选择文件失败'))
+      }
+    })
+  })
+}
+
 export function uploadFile(url: string, filePath: string, options: UploadOptions = {}): Promise<string> {
   return new Promise((resolve, reject) => {
     uni.uploadFile({

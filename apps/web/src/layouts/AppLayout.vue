@@ -12,8 +12,13 @@ const auth = useAuthStore()
 
 // 页面地图菜单（与 routes.ts 一一对应）
 const menus = [
+  { path: '/todo', title: '待办中心' },
   { path: '/masterdata', title: '主数据' },
   { path: '/project', title: '项目合同' },
+  { path: '/hr', title: '人事' },
+  { path: '/admin', title: '行政后勤' },
+  { path: '/doc', title: '文档知识库' },
+  { path: '/integration/wecom', title: '企业微信集成' },
   { path: '/expense', title: '报销' },
   { path: '/payment', title: '资金' },
   { path: '/bank', title: '对账' },

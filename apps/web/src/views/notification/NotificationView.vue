@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElButton, ElCard, ElEmpty, ElMessage, ElPagination, ElTag } from 'element-plus'
 import type { UserNotificationVO } from '@ceams/types'
 import { formatDateTime } from '@ceams/utils'
 import { PageContainer } from '@ceams/ui-web'
 import { ceamsApi } from '@/services/http'
+import { deepLinkToPath } from '@/services/desktop'
 import { apiErrorMessage } from '@/utils/error'
 import { pushChannelLabels } from '@/utils/labels'
 
@@ -25,6 +27,8 @@ const loading = ref(false)
 const expanded = ref<Record<string, boolean>>({})
 
 const hasRecords = computed(() => records.value.length > 0)
+
+const router = useRouter()
 
 async function load(): Promise<void> {
   loading.value = true
@@ -59,6 +63,17 @@ function channelLabel(item: UserNotificationVO): string {
 
 function isSummaryLink(item: UserNotificationVO): boolean {
   return (item.linkUrl ?? '').startsWith(SUMMARY_DEEP_LINK)
+}
+
+/** 业务深链（非日报摘要）：标记已读后跳转到对应页面 */
+function isNavigableLink(item: UserNotificationVO): boolean {
+  return deepLinkToPath(item.linkUrl ?? '') !== null && !isSummaryLink(item)
+}
+
+async function openLink(item: UserNotificationVO): Promise<void> {
+  await markRead(item)
+  const path = deepLinkToPath(item.linkUrl ?? '')
+  if (path) void router.push(path)
 }
 
 /** 从 linkUrl 查询串解析 date；缺失返回空串 */
@@ -184,6 +199,9 @@ onMounted(() => {
                 </el-button>
                 <el-button v-if="isSummaryLink(item)" link type="primary" size="small" @click="openSummary(item)">
                   查看日报摘要
+                </el-button>
+                <el-button v-if="isNavigableLink(item)" link type="primary" size="small" @click="openLink(item)">
+                  查看详情
                 </el-button>
               </div>
             </div>

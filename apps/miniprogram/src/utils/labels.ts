@@ -3,15 +3,30 @@ import type {
   AccountType,
   AllocationStatus,
   ApprovalStatus,
+  AssetCategory,
+  AssetStatus,
+  HrApprovalStatus,
+  HrCheckinStatus,
+  HrCheckinType,
+  HrContractStatus,
+  HrContractType,
+  HrEmployeeStatus,
+  HrEmploymentType,
+  HrLeaveType,
+  HrPerformanceReviewStatus,
+  HrSalarySlipReadStatus,
   NotificationPriority,
   NotificationType,
+  PaymentMethod,
   PaymentStatus,
   ProjectStatus,
   PushChannel,
   PushStatus,
   ReceiptApprovalStatus,
   ReceiptType,
-  VerificationStatus
+  RepairCategory,
+  VerificationStatus,
+  VehicleStatus
 } from '@ceams/types'
 
 export const projectStatusLabels: Record<ProjectStatus, string> = {
@@ -24,9 +39,10 @@ export const projectStatusLabels: Record<ProjectStatus, string> = {
 
 export const approvalStatusLabels: Record<ApprovalStatus, string> = {
   DRAFT: '草稿',
-  PENDING: '待审批',
+  PENDING: '审批中',
   APPROVED: '已通过',
-  REJECTED: '已驳回'
+  REJECTED: '已驳回',
+  CANCELLED: '已终止'
 }
 
 export const receiptTypeLabels: Record<ReceiptType, string> = {
@@ -43,11 +59,57 @@ export const verificationStatusLabels: Record<VerificationStatus, string> = {
   REJECTED: '已驳回'
 }
 
+export const paymentMethodLabels: Record<PaymentMethod, string> = {
+  CASH: '现金',
+  BANK_TRANSFER: '银行转账',
+  WECHAT: '微信',
+  ALIPAY: '支付宝',
+  OTHER: '其他'
+}
+
 export const receiptApprovalStatusLabels: Record<ReceiptApprovalStatus, string> = {
   DRAFT: '草稿',
-  PENDING: '待审批',
+  PENDING: '审批中',
   APPROVED: '已通过',
-  REJECTED: '已驳回'
+  REJECTED: '已驳回',
+  CANCELLED: '已终止'
+}
+
+// ---------- 流程域（bpm） ----------
+
+export const bpmBizTypeLabels: Record<string, string> = {
+  EXPENSE: '报销',
+  CHANGE_REQUEST: '项目变更',
+  HR_REGULAR: '转正',
+  HR_TRANSFER: '调岗',
+  HR_RESIGN: '离职',
+  HR_LEAVE: '请假',
+  HR_CHECKIN_SUPPLEMENT: '补卡'
+}
+
+export const bpmInstanceStatusLabels: Record<string, string> = {
+  DRAFT: '草稿',
+  RUNNING: '审批中',
+  APPROVED: '已通过',
+  REJECTED: '已驳回',
+  WITHDRAWN: '已撤回',
+  TERMINATED: '已终止'
+}
+
+export const bpmTaskStatusLabels: Record<string, string> = {
+  PENDING: '待处理',
+  PENDING_ASSIGNEE: '待分配审批人',
+  APPROVED: '已同意',
+  REJECTED: '已驳回',
+  CLOSED: '已关闭'
+}
+
+export const bpmNodeStatusLabels: Record<string, string> = {
+  PENDING: '未到达',
+  ACTIVE: '处理中',
+  COMPLETED: '已完成',
+  REJECTED: '已驳回',
+  CLOSED: '已关闭'
 }
 
 export const paymentStatusLabels: Record<PaymentStatus, string> = {
@@ -96,4 +158,102 @@ export const pushStatusLabels: Record<PushStatus, string> = {
   PENDING: '待发送',
   SENT: '已发送',
   FAILED: '发送失败'
+}
+
+// ---------- 人事域（hr） ----------
+
+export const hrEmployeeStatusLabels: Record<HrEmployeeStatus, string> = {
+  PROBATION: '试用期',
+  ACTIVE: '在职',
+  LEAVE: '休假中',
+  TERMINATED: '已离职'
+}
+
+export const hrEmploymentTypeLabels: Record<HrEmploymentType, string> = {
+  FULL_TIME: '全职',
+  PART_TIME: '兼职',
+  INTERN: '实习',
+  CONTRACTOR: '外包'
+}
+
+export const hrContractTypeLabels: Record<HrContractType, string> = {
+  FIXED: '固定期限',
+  UNFIXED: '无固定期限',
+  INTERN: '实习协议'
+}
+
+export const hrContractStatusLabels: Record<HrContractStatus, string> = {
+  ACTIVE: '履行中',
+  EXPIRED: '已到期',
+  TERMINATED: '已终止'
+}
+
+export const hrLeaveTypeLabels: Record<HrLeaveType, string> = {
+  ANNUAL: '年假',
+  SICK: '病假',
+  PERSONAL: '事假'
+}
+
+export const hrApprovalStatusLabels: Record<HrApprovalStatus, string> = {
+  PENDING: '审批中',
+  APPROVED: '已通过',
+  REJECTED: '已驳回',
+  WITHDRAWN: '已撤回',
+  CANCELLED: '已取消',
+  TERMINATED: '已终止'
+}
+
+export const hrCheckinTypeLabels: Record<HrCheckinType, string> = {
+  IN: '上班',
+  OUT: '下班'
+}
+
+export const hrCheckinStatusLabels: Record<HrCheckinStatus, string> = {
+  NORMAL: '正常',
+  LATE: '迟到',
+  EARLY: '早退',
+  ABSENT: '缺卡'
+}
+
+export const hrSalarySlipReadStatusLabels: Record<HrSalarySlipReadStatus, string> = {
+  PENDING: '未读',
+  READ: '已读'
+}
+
+export const hrPerformanceReviewStatusLabels: Record<HrPerformanceReviewStatus, string> = {
+  DRAFT: '待自评',
+  SELF_SUBMITTED: '自评已提交',
+  LEADER_DONE: '上级已评分',
+  APPROVED: '已通过',
+  REJECTED: '已驳回'
+}
+
+// ---------- 行政后勤域（admin） ----------
+
+export const assetCategoryLabels: Record<AssetCategory, string> = {
+  ELECTRONIC: '电子设备',
+  FURNITURE: '办公家具',
+  VEHICLE_TOOL: '车辆工具',
+  OTHER: '其他'
+}
+
+export const assetStatusLabels: Record<AssetStatus, string> = {
+  IN_STOCK: '在库',
+  BORROWED: '已借出',
+  REPAIRING: '维修中',
+  SCRAPPED: '已报废'
+}
+
+export const vehicleStatusLabels: Record<VehicleStatus, string> = {
+  IDLE: '空闲',
+  USING: '使用中',
+  MAINTENANCE: '维修保养'
+}
+
+export const repairCategoryLabels: Record<RepairCategory, string> = {
+  ELECTRIC: '电气维修',
+  WATER: '给排水维修',
+  FURNITURE: '家具维修',
+  IT: '信息技术',
+  OTHER: '其他'
 }

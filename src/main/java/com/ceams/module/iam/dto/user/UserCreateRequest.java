@@ -32,4 +32,10 @@ public class UserCreateRequest {
 
     /** 初始角色 ID 集合。 */
     private List<Long> roleIds;
+
+    /** 所属部门 ID（可空）。 */
+    private Long deptId;
+
+    /** 直属上级用户 ID（可空）。 */
+    private Long leaderId;
 }

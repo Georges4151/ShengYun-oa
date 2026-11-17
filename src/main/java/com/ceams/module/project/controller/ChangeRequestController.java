@@ -2,7 +2,6 @@ package com.ceams.module.project.controller;
 
 import com.ceams.common.response.ApiResponse;
 import com.ceams.common.response.PageResult;
-import com.ceams.module.project.dto.changerequest.ApprovalActionRequest;
 import com.ceams.module.project.dto.changerequest.ChangeRequestCreateRequest;
 import com.ceams.module.project.dto.changerequest.ChangeRequestUpdateRequest;
 import com.ceams.module.project.enums.ApprovalStatus;
@@ -66,19 +65,10 @@ public class ChangeRequestController {
         return ApiResponse.success();
     }
 
-    @PostMapping("/{id}/approve")
+    @PostMapping("/{id}/submit")
     @PreAuthorize("hasAnyRole('SYS_ADMIN','FINANCE')")
-    public ApiResponse<Void> approve(
-            @PathVariable Long id, @RequestBody(required = false) ApprovalActionRequest request) {
-        changeRequestService.approve(id, request);
-        return ApiResponse.success();
-    }
-
-    @PostMapping("/{id}/reject")
-    @PreAuthorize("hasAnyRole('SYS_ADMIN','FINANCE')")
-    public ApiResponse<Void> reject(
-            @PathVariable Long id, @RequestBody(required = false) ApprovalActionRequest request) {
-        changeRequestService.reject(id, request);
+    public ApiResponse<Void> submit(@PathVariable Long id) {
+        changeRequestService.submit(id);
         return ApiResponse.success();
     }
 }

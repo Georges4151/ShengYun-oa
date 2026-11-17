@@ -23,6 +23,7 @@ import type { ApprovalStatus, ChangeRequestVO } from '@ceams/types'
 import { usePage } from '@/composables/usePage'
 import { apiErrorMessage } from '@/utils/error'
 import { approvalStatusLabels, toOptions } from '@/utils/labels'
+import BpmInstanceDrawer from '@/views/bpm/components/BpmInstanceDrawer.vue'
 
 defineOptions({ name: 'ChangeRequestList' })
 
@@ -137,26 +138,29 @@ async function onRemove(row: ChangeRequestVO): Promise<void> {
   }
 }
 
-/** 审批 / 驳回共用：先输入审批意见，再调用对应动作接口。 */
-async function doApproval(row: ChangeRequestVO, action: 'approve' | 'reject'): Promise<void> {
+/** 提交审批：发起 BPM 项目变更流程（部门审批 → 结束）。 */
+async function submitChange(row: ChangeRequestVO): Promise<void> {
   try {
-    const { value } = await ElMessageBox.prompt('请输入审批意见', action === 'approve' ? '审批通过' : '审批驳回', {
-      confirmButtonText: action === 'approve' ? '通过' : '驳回',
-      cancelButtonText: '取消',
-      inputType: 'textarea'
-    })
-    if (action === 'approve') {
-      await ceamsApi.project.changeApprove(row.id, { comment: value || null })
-      ElMessage.success('审批通过')
-    } else {
-      await ceamsApi.project.changeReject(row.id, { comment: value || null })
-      ElMessage.success('已驳回')
-    }
+    await ElMessageBox.confirm('提交后进入部门审批，确定提交吗？', '提交变更', { type: 'warning' })
+  } catch {
+    return
+  }
+  try {
+    await ceamsApi.project.changeSubmit(row.id)
+    ElMessage.success('已提交，请到待办中心跟进审批')
     await load()
   } catch (err) {
-    if (err === 'cancel' || err === 'close') return
-    ElMessage.error(apiErrorMessage(err, '审批操作失败'))
+    ElMessage.error(apiErrorMessage(err, '提交失败'))
   }
+}
+
+const drawerVisible = ref(false)
+const drawerInstanceId = ref<string | null>(null)
+
+function openInstance(instanceId?: string | null): void {
+  if (!instanceId) return
+  drawerInstanceId.value = instanceId
+  drawerVisible.value = true
 }
 
 onMounted(load)
@@ -190,22 +194,22 @@ onMounted(load)
           <el-button link type="primary" size="small" @click="openDetail(row as ChangeRequestVO)">详情</el-button>
           <el-button link type="primary" size="small" @click="openEdit(row as ChangeRequestVO)">编辑</el-button>
           <el-button
-            v-if="row.status === 'PENDING'"
+            v-if="(row as ChangeRequestVO).status === 'DRAFT' || (row as ChangeRequestVO).status === 'REJECTED'"
             link
             type="success"
             size="small"
-            @click="doApproval(row as ChangeRequestVO, 'approve')"
+            @click="submitChange(row as ChangeRequestVO)"
           >
-            审批
+            提交审批
           </el-button>
           <el-button
-            v-if="row.status === 'PENDING'"
+            v-if="(row as ChangeRequestVO).bpmInstanceId"
             link
-            type="warning"
+            type="primary"
             size="small"
-            @click="doApproval(row as ChangeRequestVO, 'reject')"
+            @click="openInstance((row as ChangeRequestVO).bpmInstanceId)"
           >
-            驳回
+            查看流程
           </el-button>
           <el-button link type="danger" size="small" @click="onRemove(row as ChangeRequestVO)">删除</el-button>
         </template>
@@ -257,6 +261,8 @@ onMounted(load)
         <el-descriptions-item label="创建时间">{{ detail.createTime ?? '-' }}</el-descriptions-item>
       </el-descriptions>
     </el-dialog>
+
+    <BpmInstanceDrawer v-model="drawerVisible" :instance-id="drawerInstanceId" />
   </div>
 </template>
 

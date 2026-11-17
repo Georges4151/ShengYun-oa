@@ -14,6 +14,12 @@ import type {
 /** Web 开发服务器地址（apps/web 默认 5173） */
 const WEB_DEV_URL = 'http://localhost:5173'
 
+/** 自定义协议名：ceams://todo、ceams://ai/summary?date=... 等深链统一交给渲染层路由 */
+const PROTOCOL = 'ceams'
+
+/** 窗口未就绪时暂存的深链，加载完成后补发 */
+let pendingDeepLink: string | null = null
+
 /** dev 模式下 Vite HMR 的 WebSocket 地址（由 WEB_DEV_URL 推导为 ws://） */
 const WEB_DEV_WS_URL = WEB_DEV_URL.replace(/^http/, 'ws')
 
@@ -58,6 +64,34 @@ function isDev(): boolean {
   return !app.isPackaged && process.env.NODE_ENV !== 'production'
 }
 
+/** 从启动参数中提取 ceams:// 深链（Windows/Linux 通过 argv 传入） */
+function extractDeepLink(argv: string[]): string | null {
+  const prefix = `${PROTOCOL}://`
+  return argv.find((arg) => arg.toLowerCase().startsWith(prefix)) ?? null
+}
+
+/** 把深链转发给渲染层；无窗口时暂存，等待首次加载完成补发 */
+function dispatchDeepLink(link: string): void {
+  const win = BrowserWindow.getAllWindows()[0]
+  if (!win) {
+    pendingDeepLink = link
+    return
+  }
+  if (win.isMinimized()) win.restore()
+  win.show()
+  win.focus()
+  win.webContents.send('nav:deep-link', link)
+}
+
+/** 注册 ceams:// 协议；dev 模式需把启动脚本一并写入注册项 */
+function registerProtocol(): void {
+  if (process.defaultApp && process.argv.length >= 2) {
+    app.setAsDefaultProtocolClient(PROTOCOL, process.execPath, [path.resolve(process.argv[1])])
+    return
+  }
+  app.setAsDefaultProtocolClient(PROTOCOL)
+}
+
 /** dev server 未启动 / 生产产物缺失时的兜底提示页（data URL，避免额外文件） */
 function loadFallback(win: BrowserWindow, message: string): void {
   const html = [
@@ -88,6 +122,14 @@ function createWindow(): BrowserWindow {
   })
 
   win.once('ready-to-show', () => win.show())
+
+  // 首屏加载完成后补发启动参数里的深链（此时渲染层路由与监听已就绪）
+  win.webContents.on('did-finish-load', () => {
+    if (!pendingDeepLink) return
+    const link = pendingDeepLink
+    pendingDeepLink = null
+    win.webContents.send('nav:deep-link', link)
+  })
 
   // 安全边界：拦截新窗口，外部链接一律交给系统浏览器
   win.webContents.setWindowOpenHandler(({ url }) => {
@@ -155,16 +197,46 @@ function registerCsp(): void {
   })
 }
 
-app.whenReady().then(() => {
-  registerCsp()
-  registerIpc()
-  createWindow()
-
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow()
+// 单实例：再次启动（例如点击 ceams:// 链接）时复用已有窗口，把深链交给渲染层
+if (!app.requestSingleInstanceLock()) {
+  app.quit()
+} else {
+  app.on('second-instance', (_event, argv) => {
+    const link = extractDeepLink(argv)
+    if (link) {
+      dispatchDeepLink(link)
+      return
+    }
+    const win = BrowserWindow.getAllWindows()[0]
+    if (win) {
+      if (win.isMinimized()) win.restore()
+      win.show()
+      win.focus()
+    }
   })
-})
 
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit()
-})
+  // macOS 通过 open-url 事件传递深链
+  app.on('open-url', (event, url) => {
+    event.preventDefault()
+    dispatchDeepLink(url)
+  })
+
+  app.whenReady().then(() => {
+    registerCsp()
+    registerProtocol()
+    registerIpc()
+    createWindow()
+
+    // 冷启动时深链在 argv 中，窗口尚未创建好，先缓存
+    const startupLink = extractDeepLink(process.argv)
+    if (startupLink) pendingDeepLink = startupLink
+
+    app.on('activate', () => {
+      if (BrowserWindow.getAllWindows().length === 0) createWindow()
+    })
+  })
+
+  app.on('window-all-closed', () => {
+    if (process.platform !== 'darwin') app.quit()
+  })
+}

@@ -9,5 +9,7 @@ public enum ApprovalStatus {
     DRAFT,
     PENDING,
     APPROVED,
-    REJECTED
+    REJECTED,
+    /** 流程被管理员终止。 */
+    CANCELLED
 }

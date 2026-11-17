@@ -12,6 +12,7 @@ import com.ceams.module.iam.dto.role.RoleUpdateRequest;
 import com.ceams.module.iam.entity.RolePermission;
 import com.ceams.module.iam.entity.SysRole;
 import com.ceams.module.iam.entity.UserRole;
+import com.ceams.module.iam.enums.RoleDataScope;
 import com.ceams.module.iam.enums.RoleStatus;
 import com.ceams.module.iam.mapper.RoleMapper;
 import com.ceams.module.iam.mapper.RolePermissionMapper;
@@ -75,6 +76,8 @@ public class RoleServiceImpl implements RoleService {
         role.setName(request.getName());
         role.setDescription(request.getDescription());
         role.setStatus(RoleStatus.ACTIVE);
+        role.setDataScope(
+                request.getDataScope() == null ? RoleDataScope.SELF : request.getDataScope());
         roleMapper.insert(role);
         return String.valueOf(role.getId());
     }
@@ -91,6 +94,9 @@ public class RoleServiceImpl implements RoleService {
         }
         if (request.getStatus() != null) {
             role.setStatus(request.getStatus());
+        }
+        if (request.getDataScope() != null) {
+            role.setDataScope(request.getDataScope());
         }
         roleMapper.updateById(role);
     }

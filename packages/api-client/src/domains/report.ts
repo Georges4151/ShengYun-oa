@@ -6,9 +6,17 @@
 
 import type { HttpClient } from '../http-client'
 import type {
+  AdminAssetReportQuery,
+  AdminAssetReportVO,
+  BpmEfficiencyQuery,
+  BpmEfficiencyReportVO,
   DashboardVO,
   FinancialReportQuery,
   FinancialReportVO,
+  HrCostQuery,
+  HrCostReportVO,
+  HrPerformanceQuery,
+  HrPerformanceReportVO,
   MaterialReportQuery,
   MaterialReportVO,
   ProjectCostReportQuery,
@@ -20,6 +28,10 @@ export interface ReportApi {
   projectCost(query?: ProjectCostReportQuery): Promise<ProjectCostReportVO>
   material(query?: MaterialReportQuery): Promise<MaterialReportVO>
   dashboard(): Promise<DashboardVO>
+  hrCost(query: HrCostQuery): Promise<HrCostReportVO>
+  hrPerformance(query: HrPerformanceQuery): Promise<HrPerformanceReportVO>
+  adminAssets(query?: AdminAssetReportQuery): Promise<AdminAssetReportVO>
+  bpmEfficiency(query?: BpmEfficiencyQuery): Promise<BpmEfficiencyReportVO>
 }
 
 export function createReportApi(client: HttpClient): ReportApi {
@@ -48,6 +60,36 @@ export function createReportApi(client: HttpClient): ReportApi {
     },
     async dashboard() {
       return client.get<DashboardVO>('/api/v1/reports/dashboard')
+    },
+    async hrCost(query) {
+      return client.get<HrCostReportVO>('/api/v1/reports/hr-cost', {
+        query: {
+          month: query.month,
+          deptId: query.deptId
+        }
+      })
+    },
+    async hrPerformance(query) {
+      return client.get<HrPerformanceReportVO>('/api/v1/reports/hr-performance', {
+        query: {
+          period: query.period,
+          deptId: query.deptId
+        }
+      })
+    },
+    async adminAssets(query = {}) {
+      return client.get<AdminAssetReportVO>('/api/v1/reports/admin-assets', {
+        query: { category: query.category }
+      })
+    },
+    async bpmEfficiency(query = {}) {
+      return client.get<BpmEfficiencyReportVO>('/api/v1/reports/bpm-efficiency', {
+        query: {
+          start: query.start,
+          end: query.end,
+          bizType: query.bizType
+        }
+      })
     }
   }
 }

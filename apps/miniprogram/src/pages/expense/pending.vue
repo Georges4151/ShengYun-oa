@@ -1,23 +1,14 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { onReachBottom, onShow } from '@dcloudio/uni-app'
-import type { ReceiptApprovalStatus, ReceiptVO } from '@ceams/types'
+import type { TaskVO } from '@ceams/types'
 import { formatDate } from '@ceams/utils'
 import { apiClient } from '../../platform/http'
-import { receiptApprovalStatusLabels, receiptTypeLabels } from '../../utils/labels'
+import { bpmBizTypeLabels, bpmTaskStatusLabels } from '../../utils/labels'
 import { apiErrorMessage } from '../../utils/error'
 
-/** 审批状态 → 状态标签语义（仅用于展示配色） */
-type TagType = 'pending' | 'approved' | 'rejected' | 'neutral'
-
-const approvalTagTypes: Record<ReceiptApprovalStatus, TagType> = {
-  DRAFT: 'neutral',
-  PENDING: 'pending',
-  APPROVED: 'approved',
-  REJECTED: 'rejected'
-}
-
-const list = ref<ReceiptVO[]>([])
+/** 统一待办：数据源为 bpm_task，与 Web 待办中心同源。 */
+const list = ref<TaskVO[]>([])
 const page = ref(1)
 const total = ref(0)
 const size = 20
@@ -28,11 +19,7 @@ async function load(reset = false): Promise<void> {
   if (loading.value) return
   loading.value = true
   try {
-    const res = await apiClient.expense.receiptPage({
-      page: page.value,
-      size,
-      approvalStatus: 'PENDING'
-    })
+    const res = await apiClient.bpm.pendingTasks({ page: page.value, size })
     list.value = reset ? res.records : list.value.concat(res.records)
     total.value = res.total
   } catch (err) {
@@ -42,8 +29,15 @@ async function load(reset = false): Promise<void> {
   }
 }
 
-function openDetail(id: string): void {
-  uni.navigateTo({ url: `/pages/expense/detail?id=${id}` })
+function openDetail(item: TaskVO): void {
+  uni.navigateTo({
+    url: `/pages/bpm/detail?taskId=${item.id}&instanceId=${item.instanceId}`
+  })
+}
+
+function isOverdue(item: TaskVO): boolean {
+  if (!item.dueAt) return false
+  return new Date(item.dueAt).getTime() < Date.now()
 }
 
 onShow(() => {
@@ -61,40 +55,37 @@ onReachBottom(() => {
   <view class="ceams-page">
     <view v-if="list.length > 0" class="ceams-card summary">
       <view class="summary__main">
-        <text class="summary__title">待办审批</text>
-        <text class="summary__hint">审批完成后会移出待办列表</text>
+        <text class="summary__title">我的待办</text>
+        <text class="summary__hint">与 Web 待办中心同源，处理后会移出列表</text>
       </view>
       <view class="summary__count">
-        <text class="summary__number">{{ list.length }}</text>
+        <text class="summary__number">{{ total }}</text>
         <text class="summary__unit">条</text>
       </view>
     </view>
 
     <view v-if="loading && list.length === 0" class="state">加载中...</view>
-    <empty-state
-      v-else-if="list.length === 0"
-      title="暂无待办"
-      description="审批完成后会在此显示"
-    />
+    <empty-state v-else-if="list.length === 0" title="暂无待办" description="有新的审批任务时会在此显示" />
 
-    <view v-for="item in list" :key="item.id" class="item" @click="openDetail(item.id)">
+    <view v-for="item in list" :key="item.id" class="item" @click="openDetail(item)">
       <list-card>
         <template #left>
           <view class="item__main">
-            <text class="item__title ceams-ellipsis">{{ item.receiptNumber }}</text>
-            <text class="item__subtitle ceams-ellipsis">{{ item.reporterName || '-' }} · {{ receiptTypeLabels[item.type] }}</text>
-            <text class="item__date">{{ formatDate(item.receiptDate) }}</text>
+            <text class="item__title ceams-ellipsis">
+              {{ bpmBizTypeLabels[item.bizType ?? ''] ?? item.bizType }} · {{ item.currentNodeName || '审批' }}
+            </text>
+            <text class="item__subtitle ceams-ellipsis">
+              发起人 {{ item.initiatorName || item.initiatorId || '-' }} · 单据 {{ item.bizId ?? '-' }}
+            </text>
+            <text class="item__date">到期 {{ formatDate(item.dueAt) }}</text>
           </view>
         </template>
         <template #right>
           <view class="item__extra">
             <status-tag
-              :label="receiptApprovalStatusLabels[item.approvalStatus]"
-              :type="approvalTagTypes[item.approvalStatus]"
+              :label="isOverdue(item) ? '已超时' : bpmTaskStatusLabels[item.status]"
+              :type="isOverdue(item) ? 'rejected' : 'pending'"
             />
-            <view class="item__amount">
-              <amount-text :value="item.amount" size="md" color="var(--ceams-color-primary)" />
-            </view>
           </view>
         </template>
       </list-card>
@@ -188,10 +179,6 @@ onReachBottom(() => {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-}
-
-.item__amount {
-  margin-top: var(--ceams-space-xs);
 }
 
 .state {

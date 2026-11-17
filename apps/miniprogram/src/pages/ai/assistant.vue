@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
-import type { AiChatSyncResult, AiChatSyncToolCall } from '@ceams/types'
+import type { AiChatSyncResult, AiChatSyncToolCall, AiTodoSummaryVO } from '@ceams/types'
 import { apiClient } from '../../platform/http'
 import { isLoggedIn } from '../../platform/auth'
 import { apiErrorMessage } from '../../utils/error'
@@ -26,8 +26,44 @@ const statusChecked = ref(false)
 /** 工具调用明细展开状态（按消息 id 记录） */
 const toolsOpen = ref<Record<string, boolean>>({})
 
+// ---------- 待办摘要（只读，登录即可加载，失败不影响对话） ----------
+const todo = ref<AiTodoSummaryVO | null>(null)
+const todoLoading = ref(false)
+const todoError = ref('')
+const todoExpanded = ref(false)
+let todoRequested = false
+
 let localSeq = 0
 let statusRequested = false
+
+/** 加载待办摘要（force=true 用于加载失败后重试） */
+async function loadTodoSummary(force = false): Promise<void> {
+  if (todoLoading.value) return
+  if (!force && todoRequested && todo.value) return
+  todoLoading.value = true
+  todoError.value = ''
+  try {
+    todo.value = await apiClient.ai.todoSummary()
+    todoRequested = true
+  } catch (err) {
+    todoError.value = apiErrorMessage(err, '待办摘要加载失败')
+  } finally {
+    todoLoading.value = false
+  }
+}
+
+function toggleTodoExpanded(): void {
+  todoExpanded.value = !todoExpanded.value
+}
+
+/** 到期时间展示（MM-dd HH:mm，解析失败原样返回） */
+function formatTodoDue(value?: string | null): string {
+  if (!value) return '未设置'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  const pad = (num: number) => String(num).padStart(2, '0')
+  return `${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`
+}
 
 const inputPlaceholder = computed(() => {
   if (!statusChecked.value) return '正在检测 AI 服务…'
@@ -129,6 +165,7 @@ onShow(() => {
     statusRequested = true
     void loadStatus()
   }
+  void loadTodoSummary()
 })
 </script>
 
@@ -137,6 +174,71 @@ onShow(() => {
     <!-- 顶部提示条：固定免责说明 -->
     <view class="ai-page__notice">
       <text class="ai-page__notice-text">AI 建议，请核实；仅支持只读查询</text>
+    </view>
+
+    <!-- 待办摘要卡片：只读汇总，失败不影响下方对话 -->
+    <view class="ai-page__todo">
+      <view class="ai-page__todo-head" @click="toggleTodoExpanded">
+        <text class="ai-page__todo-title">我的待办摘要</text>
+        <text class="ai-page__todo-toggle">{{ todoExpanded ? '收起' : '展开' }}</text>
+      </view>
+
+      <view v-if="todoLoading" class="ai-page__todo-hint">正在加载…</view>
+      <view v-else-if="todoError" class="ai-page__todo-hint ai-page__todo-hint--error">
+        <text>{{ todoError }}</text>
+        <text class="ai-page__todo-retry" @click.stop="loadTodoSummary(true)">重试</text>
+      </view>
+      <view v-else-if="!todo" class="ai-page__todo-hint">暂无待办摘要</view>
+      <template v-else>
+        <view class="ai-page__todo-stats">
+          <view class="ai-page__todo-stat">
+            <text class="ai-page__todo-num">{{ todo.totalPending }}</text>
+            <text class="ai-page__todo-label">待办</text>
+          </view>
+          <view class="ai-page__todo-stat">
+            <text class="ai-page__todo-num ai-page__todo-num--danger">{{ todo.overdue }}</text>
+            <text class="ai-page__todo-label">已超时</text>
+          </view>
+          <view class="ai-page__todo-stat">
+            <text class="ai-page__todo-num">{{ todo.dueToday }}</text>
+            <text class="ai-page__todo-label">今日到期</text>
+          </view>
+        </view>
+
+        <view v-if="todo.byBizType.length > 0" class="ai-page__todo-tags">
+          <text
+            v-for="item in todo.byBizType"
+            :key="item.bizType"
+            class="ai-page__todo-tag"
+          >
+            {{ item.label }} {{ item.count }}
+          </text>
+        </view>
+
+        <view v-if="todoExpanded" class="ai-page__todo-detail">
+          <view v-if="todo.upcoming.length === 0" class="ai-page__todo-hint">暂无最近到期任务</view>
+          <view
+            v-for="item in todo.upcoming"
+            :key="item.taskId"
+            class="ai-page__todo-item"
+          >
+            <text class="ai-page__todo-item-title">
+              {{ item.label }}（任务#{{ item.taskId }}）
+            </text>
+            <text
+              :class="[
+                'ai-page__todo-item-meta',
+                item.overdue ? 'ai-page__todo-item-meta--danger' : ''
+              ]"
+            >
+              {{ item.initiatorName ? '发起人 ' + item.initiatorName + ' · ' : ''
+              }}{{ formatTodoDue(item.dueAt) }}{{ item.overdue ? '（已超时）' : '' }}
+            </text>
+          </view>
+          <text class="ai-page__todo-content">{{ todo.content }}</text>
+          <text class="ai-page__todo-disclaimer">{{ todo.disclaimer }}</text>
+        </view>
+      </template>
     </view>
 
     <!-- 会话工具栏：新会话入口 -->
@@ -248,6 +350,144 @@ onShow(() => {
 .ai-page__notice-text {
   color: var(--ceams-color-warning-deep);
   font-size: var(--ceams-font-size-caption);
+  line-height: var(--ceams-line-height-normal);
+}
+
+/* ---------------- 待办摘要卡片 ---------------- */
+.ai-page__todo {
+  margin-top: var(--ceams-space-md);
+  padding: var(--ceams-space-md);
+  background-color: var(--ceams-bg-card);
+  border-radius: var(--ceams-radius-md);
+  box-shadow: var(--ceams-shadow-card);
+  box-sizing: border-box;
+}
+
+.ai-page__todo-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ai-page__todo-title {
+  color: var(--ceams-text-primary);
+  font-size: var(--ceams-font-size-body);
+  font-weight: var(--ceams-font-weight-semibold);
+  line-height: var(--ceams-line-height-tight);
+}
+
+.ai-page__todo-toggle {
+  color: var(--ceams-color-primary);
+  font-size: var(--ceams-font-size-caption);
+  line-height: var(--ceams-line-height-normal);
+}
+
+.ai-page__todo-hint {
+  display: block;
+  margin-top: var(--ceams-space-sm);
+  color: var(--ceams-text-secondary);
+  font-size: var(--ceams-font-size-caption);
+  line-height: var(--ceams-line-height-normal);
+}
+
+.ai-page__todo-hint--error {
+  color: var(--ceams-color-danger-deep);
+}
+
+.ai-page__todo-retry {
+  margin-left: var(--ceams-space-sm);
+  color: var(--ceams-color-primary);
+}
+
+.ai-page__todo-stats {
+  display: flex;
+  margin-top: var(--ceams-space-sm);
+}
+
+.ai-page__todo-stat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.ai-page__todo-num {
+  color: var(--ceams-text-primary);
+  font-size: var(--ceams-font-size-heading);
+  font-weight: var(--ceams-font-weight-semibold);
+  line-height: var(--ceams-line-height-tight);
+}
+
+.ai-page__todo-num--danger {
+  color: var(--ceams-color-danger-deep);
+}
+
+.ai-page__todo-label {
+  margin-top: var(--ceams-space-2xs);
+  color: var(--ceams-text-secondary);
+  font-size: var(--ceams-font-size-mini);
+  line-height: var(--ceams-line-height-normal);
+}
+
+.ai-page__todo-tags {
+  display: flex;
+  flex-wrap: wrap;
+  margin-top: var(--ceams-space-sm);
+}
+
+.ai-page__todo-tag {
+  margin: 0 var(--ceams-space-xs) var(--ceams-space-xs) 0;
+  padding: var(--ceams-space-2xs) var(--ceams-space-sm);
+  color: var(--ceams-color-primary);
+  font-size: var(--ceams-font-size-mini);
+  line-height: var(--ceams-line-height-normal);
+  background-color: var(--ceams-bg-subtle);
+  border-radius: var(--ceams-radius-pill);
+}
+
+.ai-page__todo-detail {
+  margin-top: var(--ceams-space-sm);
+  padding-top: var(--ceams-space-sm);
+  border-top: var(--ceams-border-width) solid var(--ceams-border);
+}
+
+.ai-page__todo-item {
+  display: flex;
+  flex-direction: column;
+  padding: var(--ceams-space-xs) 0;
+}
+
+.ai-page__todo-item-title {
+  color: var(--ceams-text-primary);
+  font-size: var(--ceams-font-size-caption);
+  line-height: var(--ceams-line-height-normal);
+}
+
+.ai-page__todo-item-meta {
+  color: var(--ceams-text-secondary);
+  font-size: var(--ceams-font-size-mini);
+  line-height: var(--ceams-line-height-normal);
+}
+
+.ai-page__todo-item-meta--danger {
+  color: var(--ceams-color-danger-deep);
+}
+
+.ai-page__todo-content {
+  display: block;
+  margin-top: var(--ceams-space-sm);
+  color: var(--ceams-text-primary);
+  font-size: var(--ceams-font-size-caption);
+  line-height: var(--ceams-line-height-loose);
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.ai-page__todo-disclaimer {
+  display: block;
+  margin-top: var(--ceams-space-xs);
+  color: var(--ceams-text-placeholder);
+  font-size: var(--ceams-font-size-mini);
   line-height: var(--ceams-line-height-normal);
 }
 

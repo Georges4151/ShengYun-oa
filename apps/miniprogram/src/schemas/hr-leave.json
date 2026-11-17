@@ -1,0 +1,51 @@
+{
+  "bizType": "HR_LEAVE",
+  "sections": [
+    {
+      "title": "请假信息",
+      "fields": [
+        {
+          "key": "leaveType",
+          "label": "请假类型",
+          "type": "string",
+          "required": true,
+          "enum": ["ANNUAL", "SICK", "PERSONAL"],
+          "enumNames": ["年假", "病假", "事假"],
+          "default": "ANNUAL"
+        },
+        {
+          "key": "startDate",
+          "label": "开始日期",
+          "type": "string",
+          "format": "date",
+          "required": true
+        },
+        {
+          "key": "endDate",
+          "label": "结束日期",
+          "type": "string",
+          "format": "date",
+          "required": true
+        },
+        {
+          "key": "days",
+          "label": "请假天数",
+          "type": "number",
+          "required": true,
+          "minimum": 0.5,
+          "maximum": 365,
+          "multipleOf": 0.5,
+          "placeholder": "请输入请假天数"
+        },
+        {
+          "key": "reason",
+          "label": "请假事由",
+          "type": "string",
+          "format": "textarea",
+          "maxLength": 500,
+          "placeholder": "请填写请假事由（可选）"
+        }
+      ]
+    }
+  ]
+}

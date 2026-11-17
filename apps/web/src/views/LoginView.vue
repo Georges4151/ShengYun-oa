@@ -1,9 +1,19 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElButton, ElCard, ElForm, ElFormItem, ElInput, ElMessage } from 'element-plus'
+import {
+  ElButton,
+  ElCard,
+  ElDivider,
+  ElForm,
+  ElFormItem,
+  ElInput,
+  ElMessage
+} from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
+import { ApiError } from '@ceams/api-client'
 import type { LoginRequest } from '@ceams/types'
+import { ceamsApi } from '@/services/http'
 import { useAuthStore } from '@/stores/auth'
 import { apiErrorMessage } from '@/utils/error'
 import { getOrCreateDeviceId } from '@/utils/device'
@@ -46,6 +56,30 @@ async function handleLogin(): Promise<void> {
     loading.value = false
   }
 }
+
+// ---------- 企业微信扫码登录 ----------
+
+const wecomLoading = ref(false)
+
+/** 获取授权地址后整页跳转到企业微信；回调由 /login/wecom 处理。 */
+async function handleWecomLogin(): Promise<void> {
+  wecomLoading.value = true
+  try {
+    const data = await ceamsApi.integration.getWecomQrcode(getOrCreateDeviceId())
+    if (!data.loginUrl) {
+      ElMessage.error('企业微信授权地址为空，请联系管理员')
+      return
+    }
+    window.location.href = data.loginUrl
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 503) {
+      ElMessage.warning('企业微信扫码登录未启用')
+    } else {
+      ElMessage.error(apiErrorMessage(err, '企业微信扫码登录暂不可用'))
+    }
+    wecomLoading.value = false
+  }
+}
 </script>
 
 <template>
@@ -67,6 +101,10 @@ async function handleLogin(): Promise<void> {
         </el-form-item>
         <el-button type="primary" class="login-btn" :loading="loading" @click="handleLogin">
           登录
+        </el-button>
+        <el-divider>或</el-divider>
+        <el-button class="login-btn" :loading="wecomLoading" @click="handleWecomLogin">
+          企业微信扫码登录
         </el-button>
       </el-form>
     </el-card>

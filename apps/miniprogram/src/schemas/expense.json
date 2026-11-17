@@ -1,0 +1,83 @@
+{
+  "bizType": "EXPENSE",
+  "sections": [
+    {
+      "title": "报销信息",
+      "fields": [
+        {
+          "key": "receiptNumber",
+          "label": "票据编号",
+          "type": "string",
+          "required": true,
+          "maxLength": 100,
+          "placeholder": "请输入票据编号"
+        },
+        {
+          "key": "amount",
+          "label": "报销金额",
+          "type": "number",
+          "required": true,
+          "minimum": 0.01,
+          "placeholder": "请输入金额"
+        },
+        {
+          "key": "type",
+          "label": "票据类型",
+          "type": "string",
+          "required": true,
+          "enum": ["TRANSPORTATION", "ACCOMMODATION", "MEAL", "OFFICE", "OTHER"],
+          "enumNames": ["交通", "住宿", "餐饮", "办公", "其他"],
+          "default": "TRANSPORTATION"
+        },
+        {
+          "key": "receiptDate",
+          "label": "报销日期",
+          "type": "string",
+          "format": "date",
+          "required": true
+        },
+        {
+          "key": "paymentMethod",
+          "label": "支付方式",
+          "type": "string",
+          "enum": ["CASH", "BANK_TRANSFER", "WECHAT", "ALIPAY", "OTHER"],
+          "enumNames": ["现金", "银行转账", "微信", "支付宝", "其他"],
+          "placeholder": "请选择（可选）"
+        },
+        {
+          "key": "reporterName",
+          "label": "报销人",
+          "type": "string",
+          "maxLength": 50,
+          "placeholder": "默认为本人（可选）"
+        },
+        {
+          "key": "projectId",
+          "label": "归属项目",
+          "type": "integer",
+          "placeholder": "项目 ID（可选）"
+        },
+        {
+          "key": "description",
+          "label": "说明",
+          "type": "string",
+          "format": "textarea",
+          "maxLength": 500,
+          "placeholder": "费用说明（可选）"
+        }
+      ]
+    },
+    {
+      "title": "票据附件",
+      "fields": [
+        {
+          "key": "filePath",
+          "label": "附件",
+          "type": "string",
+          "format": "attachment",
+          "help": "支持 jpg / png / pdf，单文件不超过 20MB"
+        }
+      ]
+    }
+  ]
+}

@@ -22,7 +22,8 @@ const approvalStatusTagTypes: Record<ApprovalStatus, TagType> = {
   DRAFT: 'neutral',
   PENDING: 'pending',
   APPROVED: 'approved',
-  REJECTED: 'rejected'
+  REJECTED: 'rejected',
+  CANCELLED: 'neutral'
 }
 
 const id = ref('')
@@ -62,6 +63,11 @@ onLoad((query) => {
   void loadPayments(true)
 })
 
+/** 携带当前项目 ID 进入变更单创建页 */
+function openChangeCreate(): void {
+  uni.navigateTo({ url: `/pages/project/change-create?projectId=${id.value}` })
+}
+
 onReachBottom(() => {
   if (loading.value || payments.value.length >= total.value) return
   page.value += 1
@@ -88,6 +94,9 @@ onReachBottom(() => {
       <text class="detail__overview-meta">
         {{ project.projectType }} · {{ project.clientName || '-' }}
       </text>
+      <view class="detail__overview-actions">
+        <text class="detail__overview-action" @click="openChangeCreate">发起项目变更 ›</text>
+      </view>
     </view>
 
     <view v-if="project" class="ceams-card detail__info">
@@ -226,6 +235,18 @@ onReachBottom(() => {
   margin-top: var(--ceams-space-xs);
   color: var(--ceams-text-secondary);
   font-size: var(--ceams-font-size-caption);
+}
+
+.detail__overview-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--ceams-space-sm);
+}
+
+.detail__overview-action {
+  color: var(--ceams-color-primary);
+  font-size: var(--ceams-font-size-body);
+  font-weight: var(--ceams-font-weight-semibold);
 }
 
 .detail__section-title {

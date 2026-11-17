@@ -1,7 +1,6 @@
 package com.ceams.module.project.service;
 
 import com.ceams.common.response.PageResult;
-import com.ceams.module.project.dto.changerequest.ApprovalActionRequest;
 import com.ceams.module.project.dto.changerequest.ChangeRequestCreateRequest;
 import com.ceams.module.project.dto.changerequest.ChangeRequestUpdateRequest;
 import com.ceams.module.project.enums.ApprovalStatus;
@@ -20,7 +19,6 @@ public interface ChangeRequestService {
 
     void delete(Long id);
 
-    void approve(Long id, ApprovalActionRequest request);
-
-    void reject(Long id, ApprovalActionRequest request);
+    /** 提交：发起 BPM 项目变更流程（部门审批 → 结束）。 */
+    void submit(Long id);
 }

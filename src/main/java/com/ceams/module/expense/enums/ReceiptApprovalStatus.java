@@ -9,5 +9,7 @@ public enum ReceiptApprovalStatus {
     DRAFT,
     PENDING,
     APPROVED,
-    REJECTED
+    REJECTED,
+    /** 流程被管理员终止，单据不可再提交，需重新创建。 */
+    CANCELLED
 }

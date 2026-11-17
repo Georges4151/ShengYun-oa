@@ -18,7 +18,6 @@ import type {
   ChangeRequestCreateRequest,
   ChangeRequestUpdateRequest,
   ChangeRequestPageQuery,
-  ApprovalActionRequest,
   ProgressPaymentVO,
   ProgressPaymentCreateRequest,
   ProgressPaymentUpdateRequest,
@@ -56,8 +55,8 @@ export interface ProjectApi {
   changeCreate(body: ChangeRequestCreateRequest): Promise<Id>
   changeUpdate(id: Id, body: ChangeRequestUpdateRequest): Promise<void>
   changeRemove(id: Id): Promise<void>
-  changeApprove(id: Id, body: ApprovalActionRequest): Promise<void>
-  changeReject(id: Id, body: ApprovalActionRequest): Promise<void>
+  /** 提交变更单：发起 BPM 项目变更流程（部门审批 → 结束）。 */
+  changeSubmit(id: Id): Promise<void>
 
   paymentPage(query?: ProgressPaymentPageQuery): Promise<PageResult<ProgressPaymentVO>>
   paymentDetail(id: Id): Promise<ProgressPaymentVO>
@@ -149,11 +148,8 @@ export function createProjectApi(client: HttpClient): ProjectApi {
     async changeRemove(id) {
       return client.delete<void>(`/api/v1/change-requests/${id}`)
     },
-    async changeApprove(id, body) {
-      return client.post<void>(`/api/v1/change-requests/${id}/approve`, body)
-    },
-    async changeReject(id, body) {
-      return client.post<void>(`/api/v1/change-requests/${id}/reject`, body)
+    async changeSubmit(id) {
+      return client.post<void>(`/api/v1/change-requests/${id}/submit`)
     },
 
     async paymentPage(query = {}) {

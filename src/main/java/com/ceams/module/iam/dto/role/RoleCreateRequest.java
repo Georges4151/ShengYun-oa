@@ -1,5 +1,6 @@
 package com.ceams.module.iam.dto.role;
 
+import com.ceams.module.iam.enums.RoleDataScope;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -18,4 +19,7 @@ public class RoleCreateRequest {
     private String name;
 
     private String description;
+
+    /** 数据范围：ALL/DEPT/SELF，不传默认 SELF；非法值由参数反序列化拒绝。 */
+    private RoleDataScope dataScope;
 }

@@ -21,10 +21,52 @@ const menus: MenuItem[] = [
     desc: '查看项目进度与进度款'
   },
   {
-    title: '报销待办审批',
+    title: '我的待办',
     path: '/pages/expense/pending',
+    icon: '✓',
+    desc: '处理报销与变更审批'
+  },
+  {
+    title: '发起报销',
+    path: '/pages/expense/create',
     icon: '¥',
-    desc: '处理待审批报销单据'
+    desc: '填写报销单并上传票据'
+  },
+  {
+    title: '打卡',
+    path: '/pages/hr/checkin',
+    icon: '◷',
+    desc: '定位打卡与补卡申请'
+  },
+  {
+    title: '请假申请',
+    path: '/pages/hr/leave-create',
+    icon: '◑',
+    desc: '提交请假进入审批'
+  },
+  {
+    title: '我的档案',
+    path: '/pages/hr/profile',
+    icon: '☰',
+    desc: '档案、合同与假期额度'
+  },
+  {
+    title: '工资条',
+    path: '/pages/hr/salary-slip',
+    icon: '¥',
+    desc: '查看每月实发与明细'
+  },
+  {
+    title: '绩效自评',
+    path: '/pages/hr/performance-self',
+    icon: '★',
+    desc: '填写本月绩效自评'
+  },
+  {
+    title: '项目变更',
+    path: '/pages/project/change-create',
+    icon: '⇄',
+    desc: '发起项目变更审批'
   },
   {
     title: '只读账目',
@@ -43,6 +85,40 @@ const menus: MenuItem[] = [
     path: '/pages/ai/assistant',
     icon: '✦',
     desc: '用自然语言查账与解释待办'
+  }
+]
+
+/** 行政服务入口：资产、用车、会议室、报修、访客核销 */
+const adminMenus: MenuItem[] = [
+  {
+    title: '资产领用',
+    path: '/pages/admin/asset-apply',
+    icon: '▢',
+    desc: '申请领用办公资产'
+  },
+  {
+    title: '用车申请',
+    path: '/pages/admin/vehicle-apply',
+    icon: '◎',
+    desc: '申请公务用车'
+  },
+  {
+    title: '会议室预定',
+    path: '/pages/admin/meeting-apply',
+    icon: '◫',
+    desc: '预定会议室并查看占用'
+  },
+  {
+    title: '报修申请',
+    path: '/pages/admin/repair-create',
+    icon: '✚',
+    desc: '提交设施报修工单'
+  },
+  {
+    title: '访客核销',
+    path: '/pages/admin/visitor-checkin',
+    icon: '⌗',
+    desc: '扫描访客二维码核销'
   }
 ]
 
@@ -95,6 +171,29 @@ function logout(): void {
       <view class="home__menu">
         <view
           v-for="item in menus"
+          :key="item.path"
+          class="home__card"
+          hover-class="home__card--pressed"
+          @click="open(item.path)"
+        >
+          <view class="home__icon">
+            <text class="home__icon-symbol">{{ item.icon }}</text>
+          </view>
+          <view class="home__card-text">
+            <text class="home__card-title">{{ item.title }}</text>
+            <text class="home__card-desc ceams-ellipsis">{{ item.desc }}</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="home__section home__section--spaced">
+        <view class="home__section-bar"></view>
+        <text class="home__section-title">行政服务</text>
+      </view>
+
+      <view class="home__menu">
+        <view
+          v-for="item in adminMenus"
           :key="item.path"
           class="home__card"
           hover-class="home__card--pressed"
@@ -204,6 +303,10 @@ function logout(): void {
   font-size: var(--ceams-font-size-heading);
   font-weight: var(--ceams-font-weight-semibold);
   line-height: var(--ceams-line-height-tight);
+}
+
+.home__section--spaced {
+  margin-top: var(--ceams-space-lg);
 }
 
 /* ---------------- 功能入口卡片（2 列） ---------------- */

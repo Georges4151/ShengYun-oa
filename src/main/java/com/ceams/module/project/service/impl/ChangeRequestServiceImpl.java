@@ -7,8 +7,10 @@ import com.ceams.common.exception.BusinessException;
 import com.ceams.common.exception.ErrorCode;
 import com.ceams.common.response.PageResult;
 import com.ceams.common.security.SecurityUtils;
+import com.ceams.module.bpm.dto.InstanceStartRequest;
+import com.ceams.module.bpm.enums.BpmBizType;
+import com.ceams.module.bpm.service.BpmInstanceService;
 import com.ceams.module.project.converter.ChangeRequestConverter;
-import com.ceams.module.project.dto.changerequest.ApprovalActionRequest;
 import com.ceams.module.project.dto.changerequest.ChangeRequestCreateRequest;
 import com.ceams.module.project.dto.changerequest.ChangeRequestUpdateRequest;
 import com.ceams.module.project.entity.ChangeRequest;
@@ -19,7 +21,8 @@ import com.ceams.module.project.mapper.ProjectMapper;
 import com.ceams.module.project.service.ChangeRequestService;
 import com.ceams.module.project.util.PageUtil;
 import com.ceams.module.project.vo.ChangeRequestVO;
-import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -32,9 +35,13 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class ChangeRequestServiceImpl implements ChangeRequestService {
 
+    /** 项目变更默认流程模板编码。 */
+    private static final String TEMPLATE_CODE = "CHANGE_REQUEST";
+
     private final ChangeRequestMapper changeRequestMapper;
     private final ProjectMapper projectMapper;
     private final ChangeRequestConverter changeRequestConverter;
+    private final BpmInstanceService bpmInstanceService;
 
     @Override
     public PageResult<ChangeRequestVO> page(
@@ -70,8 +77,8 @@ public class ChangeRequestServiceImpl implements ChangeRequestService {
         changeRequest.setRequestType(request.getRequestType());
         changeRequest.setDescription(request.getDescription());
         changeRequest.setEstimatedCost(request.getEstimatedCost());
-        changeRequest.setStatus(
-                request.getStatus() == null ? ApprovalStatus.PENDING : request.getStatus());
+        // 新建一律为草稿态，提交后才发起 BPM 流程（审批状态唯一来源是实例）
+        changeRequest.setStatus(ApprovalStatus.DRAFT);
         changeRequest.setRequestedBy(SecurityUtils.getCurrentUserId());
         changeRequestMapper.insert(changeRequest);
         return String.valueOf(changeRequest.getId());
@@ -109,32 +116,37 @@ public class ChangeRequestServiceImpl implements ChangeRequestService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void approve(Long id, ApprovalActionRequest request) {
+    public void submit(Long id) {
         ChangeRequest changeRequest = requireChangeRequest(id);
-        if (changeRequest.getStatus() != ApprovalStatus.PENDING) {
-            throw BusinessException.of(ErrorCode.BIZ_STATE_CONFLICT, "仅待审批状态的变更请求可审批");
+        ApprovalStatus status = changeRequest.getStatus();
+        if (status != ApprovalStatus.DRAFT && status != ApprovalStatus.REJECTED) {
+            throw BusinessException.of(ErrorCode.BIZ_STATE_CONFLICT, "仅草稿态或驳回态的变更请求可提交");
         }
-        changeRequest.setStatus(ApprovalStatus.APPROVED);
-        changeRequest.setApprovedBy(SecurityUtils.getCurrentUserId());
-        changeRequest.setApprovedAt(LocalDateTime.now());
-        changeRequest.setApprovalComment(request == null ? null : request.getComment());
-        changeRequestMapper.updateById(changeRequest);
-        log.info("变更请求 {} 已审批通过，意见：{}", id, request == null ? null : request.getComment());
-    }
+        InstanceStartRequest request = new InstanceStartRequest();
+        request.setTemplateCode(TEMPLATE_CODE);
+        request.setBizType(BpmBizType.CHANGE_REQUEST.name());
+        request.setBizId(changeRequest.getId());
+        Map<String, String> variables = new LinkedHashMap<>();
+        variables.put(
+                "projectId",
+                changeRequest.getProjectId() == null
+                        ? ""
+                        : String.valueOf(changeRequest.getProjectId()));
+        variables.put(
+                "estimatedCost",
+                changeRequest.getEstimatedCost() == null
+                        ? "0"
+                        : changeRequest.getEstimatedCost().toPlainString());
+        variables.put(
+                "requestType",
+                changeRequest.getRequestType() == null ? "" : changeRequest.getRequestType());
+        request.setVariables(variables);
 
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void reject(Long id, ApprovalActionRequest request) {
-        ChangeRequest changeRequest = requireChangeRequest(id);
-        if (changeRequest.getStatus() != ApprovalStatus.PENDING) {
-            throw BusinessException.of(ErrorCode.BIZ_STATE_CONFLICT, "仅待审批状态的变更请求可审批");
-        }
-        changeRequest.setStatus(ApprovalStatus.REJECTED);
-        changeRequest.setApprovedBy(SecurityUtils.getCurrentUserId());
-        changeRequest.setApprovedAt(LocalDateTime.now());
-        changeRequest.setApprovalComment(request == null ? null : request.getComment());
+        String instanceId = bpmInstanceService.start(request);
+        changeRequest.setBpmInstanceId(Long.valueOf(instanceId));
+        changeRequest.setStatus(ApprovalStatus.PENDING);
         changeRequestMapper.updateById(changeRequest);
-        log.info("变更请求 {} 已驳回，意见：{}", id, request == null ? null : request.getComment());
+        log.info("变更请求 {} 已提交并发起 BPM 实例 {}", id, instanceId);
     }
 
     private ChangeRequest requireChangeRequest(Long id) {

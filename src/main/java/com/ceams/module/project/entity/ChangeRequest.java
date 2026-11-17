@@ -40,4 +40,7 @@ public class ChangeRequest extends BaseEntity {
 
     /** 审批意见。 */
     private String approvalComment;
+
+    /** 关联的 BPM 流程实例 ID（逻辑引用 bpm_instance.id，灰度期可为空）。 */
+    private Long bpmInstanceId;
 }

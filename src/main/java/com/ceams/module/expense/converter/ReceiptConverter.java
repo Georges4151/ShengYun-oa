@@ -37,6 +37,7 @@ public interface ReceiptConverter {
         vo.setPaymentMethod(receipt.getPaymentMethod());
         vo.setCurrentApprovalLevel(receipt.getCurrentApprovalLevel());
         vo.setApprovalStatus(receipt.getApprovalStatus());
+        vo.setBpmInstanceId(receipt.getBpmInstanceId());
         vo.setCreateTime(receipt.getCreateTime());
         return vo;
     }

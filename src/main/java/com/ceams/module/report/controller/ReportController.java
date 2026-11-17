@@ -1,12 +1,20 @@
 package com.ceams.module.report.controller;
 
 import com.ceams.common.response.ApiResponse;
+import com.ceams.module.report.dto.AdminAssetReportQuery;
+import com.ceams.module.report.dto.BpmEfficiencyQuery;
 import com.ceams.module.report.dto.FinancialReportQuery;
+import com.ceams.module.report.dto.HrCostQuery;
+import com.ceams.module.report.dto.HrPerformanceQuery;
 import com.ceams.module.report.dto.MaterialReportQuery;
 import com.ceams.module.report.dto.ProjectCostReportQuery;
 import com.ceams.module.report.service.ReportService;
+import com.ceams.module.report.vo.AdminAssetReportVO;
+import com.ceams.module.report.vo.BpmEfficiencyReportVO;
 import com.ceams.module.report.vo.DashboardVO;
 import com.ceams.module.report.vo.FinancialReportVO;
+import com.ceams.module.report.vo.HrCostReportVO;
+import com.ceams.module.report.vo.HrPerformanceReportVO;
 import com.ceams.module.report.vo.MaterialReportVO;
 import com.ceams.module.report.vo.ProjectCostReportVO;
 import jakarta.validation.Valid;
@@ -46,5 +54,29 @@ public class ReportController {
     @PreAuthorize("isAuthenticated()")
     public ApiResponse<DashboardVO> dashboard() {
         return ApiResponse.success(reportService.dashboard());
+    }
+
+    @GetMapping("/hr-cost")
+    @PreAuthorize("hasAnyRole('SYS_ADMIN')")
+    public ApiResponse<HrCostReportVO> hrCost(@Valid HrCostQuery query) {
+        return ApiResponse.success(reportService.hrCost(query));
+    }
+
+    @GetMapping("/hr-performance")
+    @PreAuthorize("hasAnyRole('SYS_ADMIN')")
+    public ApiResponse<HrPerformanceReportVO> hrPerformance(@Valid HrPerformanceQuery query) {
+        return ApiResponse.success(reportService.hrPerformance(query));
+    }
+
+    @GetMapping("/admin-assets")
+    @PreAuthorize("hasAnyRole('SYS_ADMIN')")
+    public ApiResponse<AdminAssetReportVO> adminAssets(@Valid AdminAssetReportQuery query) {
+        return ApiResponse.success(reportService.adminAssets(query));
+    }
+
+    @GetMapping("/bpm-efficiency")
+    @PreAuthorize("hasAnyRole('SYS_ADMIN','FINANCE')")
+    public ApiResponse<BpmEfficiencyReportVO> bpmEfficiency(@Valid BpmEfficiencyQuery query) {
+        return ApiResponse.success(reportService.bpmEfficiency(query));
     }
 }

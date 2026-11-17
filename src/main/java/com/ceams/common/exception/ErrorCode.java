@@ -32,6 +32,14 @@ public enum ErrorCode {
     BIZ_REFERENCED(409_003, HttpStatus.CONFLICT, "存在关联数据，无法删除"),
     BIZ_UNPROCESSABLE(422_001, HttpStatus.UNPROCESSABLE_ENTITY, "业务处理失败"),
 
+    // ---------- BPM 流程内核 ----------
+    BPM_SCHEMA_INVALID(400_010, HttpStatus.BAD_REQUEST, "流程模板 JSON 非法"),
+    BPM_TASK_NOT_OWNED(403_012, HttpStatus.FORBIDDEN, "非本人待办，无权操作"),
+    BPM_TEMPLATE_NOT_ENABLED(409_010, HttpStatus.CONFLICT, "BPM 模板未启用"),
+    BPM_TASK_CONFLICT(409_011, HttpStatus.CONFLICT, "任务已被处理或版本冲突，请刷新后重试"),
+    BPM_INSTANCE_CONFLICT(409_012, HttpStatus.CONFLICT, "流程实例状态或版本冲突，请刷新后重试"),
+    BPM_ASSIGNEE_EMPTY(422_010, HttpStatus.UNPROCESSABLE_ENTITY, "审批人解析为空"),
+
     // ---------- SIGN 签名 ----------
     SIGN_TIMESTAMP_EXPIRED(400_005, HttpStatus.BAD_REQUEST, "签名时间戳超出 ±5min 窗口"),
     SIGN_NONCE_REPLAY(400_006, HttpStatus.BAD_REQUEST, "nonce 重复（防重放拦截）"),
@@ -39,6 +47,8 @@ public enum ErrorCode {
 
     // ---------- 系统 ----------
     SYSTEM_INTERNAL_ERROR(500_001, HttpStatus.INTERNAL_SERVER_ERROR, "系统内部错误"),
+    /** 依赖的外部服务不可用（如 OnlyOffice Document Server 未启用或探活失败）。 */
+    SYSTEM_SERVICE_UNAVAILABLE(503_001, HttpStatus.SERVICE_UNAVAILABLE, "依赖服务暂不可用"),
     SYSTEM_RATE_LIMITED(429_001, HttpStatus.TOO_MANY_REQUESTS, "请求过于频繁");
 
     /** 数值业务码（响应体 code）。 */

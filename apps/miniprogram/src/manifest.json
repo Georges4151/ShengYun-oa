@@ -13,6 +13,12 @@
       "es6": true,
       "minified": true
     },
+    "permission": {
+      "scope.userLocation": {
+        "desc": "用于考勤打卡时记录定位信息"
+      }
+    },
+    "requiredPrivateInfos": ["getLocation"],
     "usingComponents": true
   },
   "h5": {

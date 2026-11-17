@@ -7,17 +7,17 @@ import com.ceams.common.exception.BusinessException;
 import com.ceams.common.exception.ErrorCode;
 import com.ceams.common.response.PageResult;
 import com.ceams.common.security.SecurityUtils;
+import com.ceams.module.bpm.dto.InstanceStartRequest;
+import com.ceams.module.bpm.enums.BpmBizType;
+import com.ceams.module.bpm.service.BpmInstanceService;
 import com.ceams.module.expense.converter.ApprovalRecordConverter;
 import com.ceams.module.expense.converter.ReceiptConverter;
 import com.ceams.module.expense.converter.ReceiptVerificationConverter;
-import com.ceams.module.expense.dto.ApprovalActionRequest;
 import com.ceams.module.expense.dto.ReceiptCreateRequest;
 import com.ceams.module.expense.dto.ReceiptUpdateRequest;
-import com.ceams.module.expense.dto.ReceiptVerifyRequest;
 import com.ceams.module.expense.entity.ApprovalRecord;
 import com.ceams.module.expense.entity.Receipt;
 import com.ceams.module.expense.entity.ReceiptVerification;
-import com.ceams.module.expense.enums.ApprovalRecordStatus;
 import com.ceams.module.expense.enums.PaymentStatus;
 import com.ceams.module.expense.enums.ReceiptApprovalStatus;
 import com.ceams.module.expense.enums.VerificationStatus;
@@ -29,7 +29,6 @@ import com.ceams.module.expense.util.PageUtil;
 import com.ceams.module.expense.vo.ApprovalRecordVO;
 import com.ceams.module.expense.vo.ReceiptVO;
 import com.ceams.module.expense.vo.ReceiptVerificationVO;
-import com.ceams.module.payment.service.PaymentAccountQueryService;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
@@ -44,15 +43,16 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * 票据（报销）服务实现。
  *
- * <p>三级审批状态机：approval_status + current_approval_level 表达。
+ * <p>审批链路已全部迁移到 BPM：本服务只负责业务数据维护与发起流程，
+ * 审批状态与核验结论由 {@code ExpenseBpmCallback} 依据实例状态写回。
  */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class ReceiptServiceImpl implements ReceiptService {
 
-    /** 三级审批总级数。 */
-    private static final int MAX_APPROVAL_LEVEL = 3;
+    /** 报销默认流程模板编码。 */
+    private static final String TEMPLATE_CODE = "EXPENSE";
 
     private final ReceiptMapper receiptMapper;
     private final ApprovalRecordMapper approvalRecordMapper;
@@ -60,7 +60,7 @@ public class ReceiptServiceImpl implements ReceiptService {
     private final ReceiptConverter receiptConverter;
     private final ApprovalRecordConverter approvalRecordConverter;
     private final ReceiptVerificationConverter receiptVerificationConverter;
-    private final PaymentAccountQueryService paymentAccountQueryService;
+    private final BpmInstanceService bpmInstanceService;
 
     @Override
     public PageResult<ReceiptVO> page(
@@ -231,100 +231,24 @@ public class ReceiptServiceImpl implements ReceiptService {
         if (status != ReceiptApprovalStatus.DRAFT && status != ReceiptApprovalStatus.REJECTED) {
             throw BusinessException.of(ErrorCode.BIZ_STATE_CONFLICT, "仅草稿态或驳回态的票据可上报");
         }
+        InstanceStartRequest request = new InstanceStartRequest();
+        request.setTemplateCode(TEMPLATE_CODE);
+        request.setBizType(BpmBizType.EXPENSE.name());
+        request.setBizId(receipt.getId());
+        // 条件变量：金额、票据类型、归属项目，供模板条件分支求值
+        Map<String, String> variables = new LinkedHashMap<>();
+        variables.put("amount", receipt.getAmount() == null ? "0" : receipt.getAmount().toPlainString());
+        variables.put(
+                "receiptType", receipt.getType() == null ? "" : receipt.getType().name());
+        variables.put(
+                "projectId", receipt.getProjectId() == null ? "" : String.valueOf(receipt.getProjectId()));
+        request.setVariables(variables);
+
+        String instanceId = bpmInstanceService.start(request);
+        receipt.setBpmInstanceId(Long.valueOf(instanceId));
         receipt.setApprovalStatus(ReceiptApprovalStatus.PENDING);
-        receipt.setCurrentApprovalLevel(1);
         receiptMapper.updateById(receipt);
-
-        ApprovalRecord record = new ApprovalRecord();
-        record.setReceiptId(receipt.getId());
-        record.setApprovalLevel(1);
-        record.setStatus(ApprovalRecordStatus.PENDING);
-        approvalRecordMapper.insert(record);
-        log.info("票据 {} 已上报，进入三级审批第 1 级", id);
-    }
-
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void approve(Long id, ApprovalActionRequest request) {
-        Receipt receipt = requireReceipt(id);
-        if (receipt.getApprovalStatus() != ReceiptApprovalStatus.PENDING) {
-            throw BusinessException.of(ErrorCode.BIZ_STATE_CONFLICT, "仅待审批状态的票据可审批");
-        }
-        int level = receipt.getCurrentApprovalLevel();
-        if (level < 1 || level > MAX_APPROVAL_LEVEL) {
-            throw BusinessException.of(ErrorCode.BIZ_STATE_CONFLICT, "当前审批级别非法");
-        }
-        ApprovalRecord record = requirePendingApprovalRecord(receipt.getId(), level);
-        record.setStatus(ApprovalRecordStatus.APPROVED);
-        record.setApprovalTime(LocalDateTime.now());
-        record.setApprovalComment(request == null ? null : request.getComment());
-        record.setApproverId(SecurityUtils.getCurrentUserId());
-        approvalRecordMapper.updateById(record);
-
-        if (level < MAX_APPROVAL_LEVEL) {
-            receipt.setCurrentApprovalLevel(level + 1);
-            receiptMapper.updateById(receipt);
-            ApprovalRecord next = new ApprovalRecord();
-            next.setReceiptId(receipt.getId());
-            next.setApprovalLevel(level + 1);
-            next.setStatus(ApprovalRecordStatus.PENDING);
-            approvalRecordMapper.insert(next);
-        } else {
-            receipt.setApprovalStatus(ReceiptApprovalStatus.APPROVED);
-            receiptMapper.updateById(receipt);
-        }
-        log.info("票据 {} 第 {} 级审批通过", id, level);
-    }
-
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void reject(Long id, ApprovalActionRequest request) {
-        Receipt receipt = requireReceipt(id);
-        if (receipt.getApprovalStatus() != ReceiptApprovalStatus.PENDING) {
-            throw BusinessException.of(ErrorCode.BIZ_STATE_CONFLICT, "仅待审批状态的票据可驳回");
-        }
-        int level = receipt.getCurrentApprovalLevel();
-        ApprovalRecord record = requirePendingApprovalRecord(receipt.getId(), level);
-        record.setStatus(ApprovalRecordStatus.REJECTED);
-        record.setApprovalTime(LocalDateTime.now());
-        record.setApprovalComment(request == null ? null : request.getComment());
-        record.setApproverId(SecurityUtils.getCurrentUserId());
-        approvalRecordMapper.updateById(record);
-
-        receipt.setApprovalStatus(ReceiptApprovalStatus.REJECTED);
-        receipt.setCurrentApprovalLevel(0);
-        receiptMapper.updateById(receipt);
-        log.info("票据 {} 第 {} 级审批驳回", id, level);
-    }
-
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void verify(Long id, ReceiptVerifyRequest request) {
-        Receipt receipt = requireReceipt(id);
-        if (receipt.getApprovalStatus() != ReceiptApprovalStatus.APPROVED) {
-            throw BusinessException.of(ErrorCode.BIZ_STATE_CONFLICT, "仅审批通过的票据可进行财务核验");
-        }
-        if (!paymentAccountQueryService.exists(request.getPaymentAccountId())) {
-            throw BusinessException.of(ErrorCode.BIZ_NOT_FOUND, "付款账户不存在");
-        }
-        if (request.getAmount().compareTo(receipt.getAmount()) > 0) {
-            throw BusinessException.of(ErrorCode.BIZ_UNPROCESSABLE, "核验金额不能超过票据金额");
-        }
-        ReceiptVerification verification = new ReceiptVerification();
-        verification.setReceiptId(receipt.getId());
-        verification.setPaymentAccountId(request.getPaymentAccountId());
-        verification.setAmount(request.getAmount());
-        verification.setPaymentMethod(request.getPaymentMethod());
-        verification.setVerificationTime(LocalDateTime.now());
-        verification.setVerifiedBy(SecurityUtils.getCurrentUserId());
-        verification.setRemark(request.getRemark());
-        receiptVerificationMapper.insert(verification);
-
-        receipt.setVerificationStatus(VerificationStatus.VERIFIED);
-        receipt.setVerifiedBy(SecurityUtils.getCurrentUserId());
-        receipt.setVerifiedAt(LocalDateTime.now());
-        receiptMapper.updateById(receipt);
-        log.info("票据 {} 财务核验通过，核验金额 {}", id, request.getAmount());
+        log.info("票据 {} 已上报并发起 BPM 实例 {}", id, instanceId);
     }
 
     @Override
@@ -434,17 +358,5 @@ public class ReceiptServiceImpl implements ReceiptService {
         LambdaQueryWrapper<Receipt> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Receipt::getReceiptNumber, receiptNumber);
         return receiptMapper.selectCount(wrapper) > 0;
-    }
-
-    private ApprovalRecord requirePendingApprovalRecord(Long receiptId, int level) {
-        LambdaQueryWrapper<ApprovalRecord> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(ApprovalRecord::getReceiptId, receiptId)
-                .eq(ApprovalRecord::getApprovalLevel, level)
-                .eq(ApprovalRecord::getStatus, ApprovalRecordStatus.PENDING);
-        List<ApprovalRecord> records = approvalRecordMapper.selectList(wrapper);
-        if (records.isEmpty()) {
-            throw BusinessException.of(ErrorCode.BIZ_STATE_CONFLICT, "当前审批级别不存在待审批记录或已越级");
-        }
-        return records.get(0);
     }
 }

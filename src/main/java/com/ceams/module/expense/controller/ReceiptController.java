@@ -2,11 +2,8 @@ package com.ceams.module.expense.controller;
 
 import com.ceams.common.response.ApiResponse;
 import com.ceams.common.response.PageResult;
-import com.ceams.common.sign.HmacSigned;
-import com.ceams.module.expense.dto.ApprovalActionRequest;
 import com.ceams.module.expense.dto.ReceiptCreateRequest;
 import com.ceams.module.expense.dto.ReceiptUpdateRequest;
-import com.ceams.module.expense.dto.ReceiptVerifyRequest;
 import com.ceams.module.expense.enums.PaymentStatus;
 import com.ceams.module.expense.enums.ReceiptApprovalStatus;
 import com.ceams.module.expense.enums.VerificationStatus;
@@ -90,33 +87,6 @@ public class ReceiptController {
     @PreAuthorize("isAuthenticated()")
     public ApiResponse<Void> submit(@PathVariable Long id) {
         receiptService.submit(id);
-        return ApiResponse.success();
-    }
-
-    @HmacSigned
-    @PostMapping("/{id}/approve")
-    @PreAuthorize("hasAnyRole('SYS_ADMIN','FINANCE')")
-    public ApiResponse<Void> approve(
-            @PathVariable Long id, @RequestBody(required = false) ApprovalActionRequest request) {
-        receiptService.approve(id, request);
-        return ApiResponse.success();
-    }
-
-    @HmacSigned
-    @PostMapping("/{id}/reject")
-    @PreAuthorize("hasAnyRole('SYS_ADMIN','FINANCE')")
-    public ApiResponse<Void> reject(
-            @PathVariable Long id, @RequestBody(required = false) ApprovalActionRequest request) {
-        receiptService.reject(id, request);
-        return ApiResponse.success();
-    }
-
-    @HmacSigned
-    @PostMapping("/{id}/verify")
-    @PreAuthorize("hasAnyRole('SYS_ADMIN','FINANCE')")
-    public ApiResponse<Void> verify(
-            @PathVariable Long id, @Valid @RequestBody ReceiptVerifyRequest request) {
-        receiptService.verify(id, request);
         return ApiResponse.success();
     }
 

@@ -32,6 +32,11 @@ public class SecurityConfig {
 
     private static final String[] PERMIT_ALL = {
         "/api/v1/auth/**",
+        // 文档一次性下载：鉴权完全依赖短时 token（scope=download）与 Redis 一次性标记，无需登录态
+        "/api/v1/doc/files/*/download",
+        // OnlyOffice：取件走短时 token，保存回调用 JWT 校验，二者均无用户登录态
+        "/api/v1/doc/onlyoffice/file",
+        "/api/v1/doc/onlyoffice/callback",
         "/v3/api-docs/**",
         "/swagger-ui/**",
         "/swagger-ui.html",

@@ -14,6 +14,13 @@ export const routes: RouteRecordRaw[] = [
     meta: { title: '登录' }
   },
   {
+    // 企业微信扫码登录回调：匿名可访问，由 router/index.ts 的 PUBLIC_PATHS 放行
+    path: '/login/wecom',
+    name: 'wecom-callback',
+    component: () => import('@/views/auth/WeComCallbackView.vue'),
+    meta: { title: '企业微信登录' }
+  },
+  {
     path: '/',
     component: AppLayout,
     redirect: '/masterdata',
@@ -30,6 +37,35 @@ export const routes: RouteRecordRaw[] = [
         component: () => import('@/views/project/ProjectView.vue'),
         meta: { title: '项目合同' }
       },
+      {
+        path: 'hr',
+        name: 'hr',
+        component: () => import('@/views/hr/HrView.vue'),
+        meta: { title: '人事' }
+      },
+      {
+        path: 'admin',
+        name: 'admin',
+        component: () => import('@/views/admin/AdminView.vue'),
+        meta: { title: '行政后勤', icon: 'Box' }
+      },
+      {
+        path: 'doc',
+        name: 'doc',
+        component: () => import('@/views/doc/DocView.vue'),
+        meta: { title: '文档知识库', icon: 'Document', permission: 'doc' }
+      },
+      {
+        path: 'integration/wecom',
+        name: 'integration-wecom',
+        component: () => import('@/views/integration/WeComView.vue'),
+        meta: {
+          title: '企业微信集成',
+          icon: 'ChatDotRound',
+          permission: 'integration:wecom:view'
+        }
+      },
+      { path: 'todo', name: 'todo', component: () => import('@/views/bpm/BpmView.vue'), meta: { title: '待办中心' } },
       { path: 'expense', name: 'expense', component: () => import('@/views/expense/ExpenseView.vue'), meta: { title: '报销' } },
       { path: 'payment', name: 'payment', component: () => import('@/views/payment/PaymentView.vue'), meta: { title: '资金' } },
       { path: 'bank', name: 'bank', component: () => import('@/views/bank/BankView.vue'), meta: { title: '对账' } },

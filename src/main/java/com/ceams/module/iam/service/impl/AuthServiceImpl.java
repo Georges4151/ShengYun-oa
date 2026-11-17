@@ -19,6 +19,7 @@ import com.ceams.module.iam.entity.SysUserDevice;
 import com.ceams.module.iam.entity.UserRole;
 import com.ceams.module.iam.enums.DeviceStatus;
 import com.ceams.module.iam.enums.OperationType;
+import com.ceams.module.iam.enums.Platform;
 import com.ceams.module.iam.enums.UserStatus;
 import com.ceams.module.iam.mapper.OperationLogMapper;
 import com.ceams.module.iam.mapper.RefreshTokenMapper;
@@ -35,6 +36,8 @@ import com.ceams.module.iam.vo.SignSecretVO;
 import com.ceams.module.iam.vo.TokenPair;
 import com.ceams.module.iam.vo.UserSessionVO;
 import com.ceams.module.iam.vo.UserVO;
+import com.ceams.module.integration.service.WeComLoginResult;
+import com.ceams.module.integration.service.WeComLoginService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
@@ -82,6 +85,7 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final UserConverter userConverter;
     private final UserService userService;
+    private final WeComLoginService weComLoginService;
 
     @Value("${ceams.jwt.access-ttl-seconds:900}")
     private long accessTtlSeconds;
@@ -128,6 +132,52 @@ public class AuthServiceImpl implements AuthService {
                 user.getUsername(),
                 OperationType.LOGIN,
                 "用户登录",
+                null,
+                null,
+                httpRequest);
+        return response;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public LoginResponse loginByWeCom(
+            String code,
+            String state,
+            String deviceId,
+            String deviceName,
+            HttpServletRequest httpRequest) {
+        WeComLoginResult resolved = weComLoginService.resolveUser(code, state);
+        SysUser user = resolved.user();
+
+        // deviceId 优先取调用方显式传入，其次取扫码 state 中记录值，最后回落到用户维度的兜底设备号
+        String effectiveDeviceId =
+                StringUtils.isNotBlank(deviceId) ? deviceId : resolved.deviceId();
+        if (StringUtils.isBlank(effectiveDeviceId)) {
+            effectiveDeviceId = "wecom-" + user.getId();
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        String ip = resolveIp(httpRequest);
+        // 更新登录痕迹
+        user.setLastLoginTime(now);
+        user.setLastLoginIp(ip);
+        userMapper.updateById(user);
+
+        bindDevice(
+                user.getId(),
+                effectiveDeviceId,
+                StringUtils.isBlank(deviceName) ? "企业微信扫码" : deviceName,
+                Platform.WEB,
+                ip,
+                now);
+
+        List<RoleVO> roles = userService.listRolesByUser(user.getId());
+        LoginResponse response = issueTokens(user, roles, effectiveDeviceId, newJti());
+        logOperation(
+                user.getId(),
+                user.getUsername(),
+                OperationType.LOGIN,
+                "企业微信扫码登录",
                 null,
                 null,
                 httpRequest);

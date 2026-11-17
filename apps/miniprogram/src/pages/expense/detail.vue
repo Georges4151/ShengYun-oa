@@ -23,16 +23,18 @@ const approvalTagTypes: Record<ReceiptApprovalStatus, TagType> = {
   DRAFT: 'neutral',
   PENDING: 'pending',
   APPROVED: 'approved',
-  REJECTED: 'rejected'
+  REJECTED: 'rejected',
+  CANCELLED: 'neutral'
 }
 
 const id = ref('')
 const detail = ref<ReceiptVO | null>(null)
-const comment = ref('')
 const submitting = ref(false)
 
-/** 审批中才展示审批意见与底部操作条 */
-const hasPendingActions = computed<boolean>(() => detail.value?.approvalStatus === 'PENDING')
+/** 草稿或驳回态可再次上报审批 */
+const canSubmit = computed<boolean>(
+  () => detail.value?.approvalStatus === 'DRAFT' || detail.value?.approvalStatus === 'REJECTED'
+)
 
 /** 附件展示名：取路径最后一段 */
 const attachmentName = computed<string>(() => {
@@ -60,24 +62,29 @@ async function load(): Promise<void> {
   }
 }
 
-async function doApproval(action: 'approve' | 'reject'): Promise<void> {
+/** 上报审批：发起 BPM 报销流程（部门审批 → 财务核验 → 结束）。 */
+async function submitApproval(): Promise<void> {
   if (submitting.value) return
   submitting.value = true
   try {
-    const body = { comment: comment.value || null }
-    if (action === 'approve') {
-      await apiClient.expense.receiptApprove(id.value, body)
-      uni.showToast({ title: '审批通过', icon: 'success' })
-    } else {
-      await apiClient.expense.receiptReject(id.value, body)
-      uni.showToast({ title: '已驳回', icon: 'success' })
-    }
+    await apiClient.expense.receiptSubmit(id.value)
+    uni.showToast({ title: '已上报', icon: 'success' })
     await load()
   } catch (err) {
-    uni.showToast({ title: apiErrorMessage(err, '审批操作失败'), icon: 'none' })
+    uni.showToast({ title: apiErrorMessage(err, '上报失败'), icon: 'none' })
   } finally {
     submitting.value = false
   }
+}
+
+/** 查看审批流程：仅已发起过 BPM 实例的单据可跳转。 */
+function openProcess(): void {
+  const instanceId = detail.value?.bpmInstanceId
+  if (!instanceId) {
+    uni.showToast({ title: '尚未发起审批', icon: 'none' })
+    return
+  }
+  uni.navigateTo({ url: `/pages/bpm/detail?instanceId=${instanceId}` })
 }
 
 async function takePhoto(): Promise<void> {
@@ -113,7 +120,7 @@ onLoad((query) => {
 </script>
 
 <template>
-  <view class="ceams-page" :class="{ 'page--with-bar': hasPendingActions }">
+  <view class="ceams-page" :class="{ 'page--with-bar': canSubmit }">
     <template v-if="detail">
       <view class="bill">
         <view class="bill__head">
@@ -206,38 +213,19 @@ onLoad((query) => {
         </view>
       </view>
 
-      <view v-if="hasPendingActions" class="ceams-card">
-        <view class="section">
-          <view class="section__bar"></view>
-          <text class="section__title">审批意见</text>
+      <view v-if="detail.bpmInstanceId" class="ceams-card">
+        <view class="ceams-list-item ceams-list-item--last row" @click="openProcess">
+          <text class="row__label">审批流程</text>
+          <text class="row__value row__value--link">查看流程 ›</text>
         </view>
-        <textarea
-          v-model="comment"
-          class="comment"
-          placeholder="请输入审批意见（可选）"
-          maxlength="500"
-        />
       </view>
     </template>
 
     <view v-else class="state">加载中...</view>
 
-    <view v-if="hasPendingActions" class="action ceams-safe-bottom">
-      <button
-        class="ceams-btn action__reject"
-        :class="{ 'action__reject--disabled': submitting }"
-        :disabled="submitting"
-        @click="doApproval('reject')"
-      >
-        驳回
-      </button>
-      <button
-        class="ceams-btn ceams-btn--primary action__approve"
-        :class="{ 'action__approve--disabled': submitting }"
-        :disabled="submitting"
-        @click="doApproval('approve')"
-      >
-        通过
+    <view v-if="canSubmit" class="action ceams-safe-bottom">
+      <button class="ceams-btn ceams-btn--primary action__submit" :disabled="submitting" @click="submitApproval">
+        提交审批
       </button>
     </view>
   </view>
@@ -357,6 +345,10 @@ onLoad((query) => {
   justify-content: flex-end;
 }
 
+.row__value--link {
+  color: var(--ceams-color-primary);
+}
+
 .attach__head {
   display: flex;
   align-items: center;
@@ -450,19 +442,6 @@ onLoad((query) => {
   line-height: var(--ceams-line-height-normal);
 }
 
-.comment {
-  width: 100%;
-  height: 160rpx;
-  padding: var(--ceams-space-md);
-  background-color: var(--ceams-bg-subtle);
-  border: var(--ceams-border-width) solid var(--ceams-border);
-  border-radius: var(--ceams-radius-md);
-  color: var(--ceams-text-primary);
-  font-size: var(--ceams-font-size-caption);
-  line-height: var(--ceams-line-height-normal);
-  box-sizing: border-box;
-}
-
 .action {
   position: fixed;
   left: 0;
@@ -480,24 +459,9 @@ onLoad((query) => {
   box-sizing: border-box;
 }
 
-.action__reject {
-  flex-shrink: 0;
-  width: 220rpx;
-  margin: 0;
-  color: var(--ceams-color-danger);
-  background-color: var(--ceams-bg-card);
-  border: var(--ceams-border-width) solid var(--ceams-color-danger);
-}
-
-.action__approve {
+.action__submit {
   flex: 1;
   margin: 0;
-  margin-left: var(--ceams-space-sm);
-}
-
-.action__reject--disabled,
-.action__approve--disabled {
-  opacity: 0.6;
 }
 
 .state {

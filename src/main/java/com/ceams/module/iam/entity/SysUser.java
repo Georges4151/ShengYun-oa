@@ -39,4 +39,13 @@ public class SysUser extends BaseEntity {
 
     /** 最后登录 IP。 */
     private String lastLoginIp;
+
+    /** 所属部门 ID（逻辑引用 sys_dept.id，可空）。 */
+    private Long deptId;
+
+    /** 直属上级用户 ID（逻辑引用 sys_user.id，可空）。 */
+    private Long leaderId;
+
+    /** 企业微信成员账号（唯一；手工本地账号为空，由组织同步回填）。 */
+    private String wecomUserid;
 }

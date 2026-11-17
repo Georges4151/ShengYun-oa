@@ -13,8 +13,8 @@ export const router = createRouter({
   routes
 })
 
-/** 无需鉴权的公开路径（登录页白名单）。 */
-const PUBLIC_PATHS = ['/login']
+/** 无需鉴权的公开路径（登录页白名单；含企业微信扫码登录回调页）。 */
+const PUBLIC_PATHS = ['/login', '/login/wecom']
 
 router.beforeEach((to) => {
   const auth = useAuthStore()

@@ -103,6 +103,20 @@ export interface ResetPasswordRequest {
   password: string
 }
 
+// ---------- 部门 ----------
+export interface DeptVO {
+  id: Id
+  name: string
+  /** 上级部门 ID（根部门为 null） */
+  parentId?: Id | null
+  leaderId?: Id | null
+  leaderName?: string | null
+  sortOrder?: number | null
+  createTime?: DateTime
+  /** 子部门（仅树接口填充） */
+  children?: DeptVO[]
+}
+
 // ---------- 角色 ----------
 export interface RoleVO {
   id: Id

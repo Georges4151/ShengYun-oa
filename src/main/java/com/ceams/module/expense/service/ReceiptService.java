@@ -1,10 +1,8 @@
 package com.ceams.module.expense.service;
 
 import com.ceams.common.response.PageResult;
-import com.ceams.module.expense.dto.ApprovalActionRequest;
 import com.ceams.module.expense.dto.ReceiptCreateRequest;
 import com.ceams.module.expense.dto.ReceiptUpdateRequest;
-import com.ceams.module.expense.dto.ReceiptVerifyRequest;
 import com.ceams.module.expense.enums.PaymentStatus;
 import com.ceams.module.expense.enums.ReceiptApprovalStatus;
 import com.ceams.module.expense.enums.VerificationStatus;
@@ -45,14 +43,10 @@ public interface ReceiptService {
 
     void delete(Long id);
 
+    /** 上报：发起 BPM 报销流程（部门审批 → 财务核验 → 结束）。 */
     void submit(Long id);
 
-    void approve(Long id, ApprovalActionRequest request);
-
-    void reject(Long id, ApprovalActionRequest request);
-
-    void verify(Long id, ReceiptVerifyRequest request);
-
+    /** 历史审批记录（只读，旧审批链路已下线，仅用于存量追溯）。 */
     List<ApprovalRecordVO> listApprovals(Long id);
 
     List<ReceiptVerificationVO> listVerifications(Long id);

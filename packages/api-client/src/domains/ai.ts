@@ -22,6 +22,7 @@ import type {
   AiDailySummaryVO,
   AiSummaryGeneratePayload,
   AiSummaryListQuery,
+  AiTodoSummaryVO,
   PreAuditListQuery,
   ReceiptPreAuditVO,
   ContractRiskHintVO
@@ -48,6 +49,10 @@ export interface AiApi {
   summaryByDate(date: string): Promise<AiDailySummaryVO>
   /** 手动生成日报摘要（date 省略表示昨日） */
   generateSummary(body?: AiSummaryGeneratePayload): Promise<AiDailySummaryVO>
+
+  // ---------- AI 待办摘要（登录即可访问） ----------
+  /** 当前用户数据范围内的待办摘要 */
+  todoSummary(): Promise<AiTodoSummaryVO>
 
   // ---------- 报销预审（仅 FINANCE / SYS_ADMIN，只读提示） ----------
   /** 待审批票据的 AI 预审提示列表 */
@@ -95,6 +100,10 @@ export function createAiApi(client: HttpClient): AiApi {
     },
     async generateSummary(body) {
       return client.post<AiDailySummaryVO>('/api/v1/ai/summaries/generate', body ?? {})
+    },
+
+    async todoSummary() {
+      return client.get<AiTodoSummaryVO>('/api/v1/ai/todo-summary')
     },
 
     async preAuditList(params = {}) {

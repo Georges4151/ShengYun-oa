@@ -13,6 +13,23 @@ public interface AuthService {
 
     LoginResponse login(LoginRequest request, HttpServletRequest httpRequest);
 
+    /**
+     * 企业微信扫码登录：复用账号密码登录的令牌签发、设备绑定与审计链路。
+     *
+     * @param code 企业微信授权码
+     * @param state 扫码时下发的一次性 state（内部记录 deviceId）
+     * @param deviceId 显式设备指纹（可为空，为空时取 state 中记录值）
+     * @param deviceName 设备名（为空时缺省「企业微信扫码」）
+     * @param httpRequest 当前请求（用于 IP 与审计）
+     * @return 登录响应（access + refresh 令牌与用户信息）
+     */
+    LoginResponse loginByWeCom(
+            String code,
+            String state,
+            String deviceId,
+            String deviceName,
+            HttpServletRequest httpRequest);
+
     LoginResponse refresh(RefreshRequest request);
 
     void logout(HttpServletRequest httpRequest);

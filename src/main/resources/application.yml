@@ -98,6 +98,110 @@ ceams:
     contract-risk:
       # 是否允许 AI 复述合同要点与风险提示（仍需 AI_ENABLED=true）。
       ai-note-enabled: ${AI_CONTRACT_RISK_NOTE_ENABLED:true}
+    todo-summary:
+      # 是否允许 AI 润色待办摘要（仍需 AI_ENABLED=true，失败自动回退规则模板）。
+      polish-enabled: ${AI_TODO_SUMMARY_POLISH_ENABLED:true}
+      # 最近到期清单条数（1~20）
+      upcoming-limit: ${AI_TODO_SUMMARY_UPCOMING_LIMIT:5}
+  bpm:
+    # 节点未配置 dueHours 时的默认超时时长（小时）
+    default-due-hours: ${BPM_DEFAULT_DUE_HOURS:24}
+    # 已废弃：DEPT_LEADER 改为按 sys_dept.leader_id -> sys_user.leader_id 解析，保留该配置仅为兼容
+    dept-leader-role-code: ${BPM_DEPT_LEADER_ROLE_CODE:}
+    timeout:
+      # 是否启用超时提醒定时任务（默认开启）
+      enabled: ${BPM_TIMEOUT_ENABLED:true}
+      # 超时提醒定时表达式，默认每 30 分钟扫描一次（同一任务仅提醒一次）
+      cron: "${BPM_TIMEOUT_CRON:0 0/30 * * * ?}"
+      # 单批查询条数上限，禁止一次全表扫描
+      batch-size: ${BPM_TIMEOUT_BATCH_SIZE:200}
+      # 定时/外部调度按片拉取时的分片总数
+      shard-total: ${BPM_TIMEOUT_SHARD_TOTAL:4}
+  hr:
+    checkin:
+      # 无排班时的默认上班/下班时间
+      default-start: "${HR_CHECKIN_DEFAULT_START:09:00}"
+      default-end: "${HR_CHECKIN_DEFAULT_END:18:00}"
+      # 迟到/早退宽限分钟数
+      grace-minutes: ${HR_CHECKIN_GRACE_MINUTES:10}
+      # 是否要求先排班才能打卡（默认 false：非排班日允许打卡）
+      require-schedule: ${HR_CHECKIN_REQUIRE_SCHEDULE:false}
+    # 月度工资核算规则（M2 P4）：金额统一 BigDecimal，禁止 double
+    payroll:
+      # 月计薪天数：日工资 = (基本工资 + 岗位工资) / working-days
+      working-days: ${HR_PAYROLL_WORKING_DAYS:21.75}
+      # 社保个人比例（基数取基本工资 + 岗位工资并夹在上下限之间）
+      social-insurance-rate: ${HR_SOCIAL_INSURANCE_RATE:0.105}
+      # 公积金个人比例
+      housing-fund-rate: ${HR_HOUSING_FUND_RATE:0.07}
+      # 社保 / 公积金缴费基数下限与上限
+      social-base-min: ${HR_SOCIAL_BASE_MIN:0}
+      social-base-max: ${HR_SOCIAL_BASE_MAX:999999}
+      # 个税起征点（每月）
+      tax-threshold: ${HR_TAX_THRESHOLD:5000}
+      # 每次迟到 / 早退扣款金额
+      late-deduction: ${HR_LATE_DEDUCTION:50}
+      # 病假扣款比例（病假扣款 = 日工资 × 病假天数 × 该比例）
+      sick-deduction-rate: ${HR_SICK_DEDUCTION_RATE:0.4}
+  doc:
+    # 单文件上传上限（字节），默认 200MB；超出直接拒绝
+    max-file-size: ${DOC_MAX_FILE_SIZE:209715200}
+    # 分片大小（字节），默认 5MB；分片数上限 1000
+    chunk-size: ${DOC_CHUNK_SIZE:5242880}
+    # 编辑锁有效期（分钟），过期后自动可用
+    lock-ttl-minutes: ${DOC_LOCK_TTL_MINUTES:30}
+    # 一次性下载 token 有效期（秒）
+    download-token-ttl-seconds: ${DOC_DOWNLOAD_TOKEN_TTL_SECONDS:300}
+    # 分片临时目录与上传 meta 的保留时长（小时）
+    upload-temp-ttl-hours: ${DOC_UPLOAD_TEMP_TTL_HOURS:24}
+    # OnlyOffice 在线编辑（不可用时 editor-config 返回 503，上传/下载/版本不受影响）
+    onlyoffice:
+      # 在线编辑总开关，默认关闭
+      enabled: ${ONLYOFFICE_ENABLED:false}
+      # Document Server 地址（服务端探活与回调来源校验）
+      document-server-url: ${ONLYOFFICE_URL:http://onlyoffice}
+      # Document Server 的浏览器可达地址（前端据此加载 api.js，不能填容器内服务名）
+      browser-document-server-url: ${ONLYOFFICE_BROWSER_URL:http://localhost:8081}
+      # CEAMS 对 Document Server 暴露的基地址。
+      # 注意：public-base-url 必须是 Document Server 容器可达的地址（本地 compose 为 http://app:9095），
+      # 不能填 localhost，否则 Document Server 无法拉取原件与回调保存。
+      public-base-url: ${CEAMS_PUBLIC_URL:http://app:9095}
+      # 与 Document Server 的 JWT_SECRET 保持一致；为空时在线编辑不可用
+      jwt-secret: ${ONLYOFFICE_JWT_SECRET:}
+      # 保存回调路径（与 OnlyOfficeController 映射一致）
+      callback-path: ${ONLYOFFICE_CALLBACK_PATH:/api/v1/doc/onlyoffice/callback}
+      # 连接超时（毫秒），探活与回调下载共用
+      connect-timeout-millis: ${ONLYOFFICE_CONNECT_TIMEOUT_MILLIS:2000}
+      # 读取超时（毫秒），保存回调下载文档体
+      read-timeout-millis: ${ONLYOFFICE_READ_TIMEOUT_MILLIS:30000}
+  wecom:
+    # 企业微信应用集成（组织同步 / 扫码登录 / 应用消息）；与群机器人 ceams.notification.wecom.* 相互独立
+    enabled: ${WECOM_APP_ENABLED:false}
+    corp-id: ${WECOM_APP_CORP_ID:}
+    agent-id: ${WECOM_APP_AGENT_ID:}
+    secret: ${WECOM_APP_SECRET:}
+    api-base-url: ${WECOM_APP_API_BASE_URL:https://qyapi.weixin.qq.com}
+    login-base-url: ${WECOM_APP_LOGIN_BASE_URL:https://login.work.weixin.qq.com}
+    redirect-uri: ${WECOM_APP_REDIRECT_URI:http://localhost:5173/login/wecom}
+    # 组织同步定时表达式，默认每天 02:00
+    sync-cron: "${WECOM_APP_SYNC_CRON:0 0 2 * * ?}"
+    dispatch-interval-ms: ${WECOM_APP_DISPATCH_INTERVAL_MS:30000}
+    message-retry-max: ${WECOM_APP_MESSAGE_RETRY_MAX:5}
+    timeout-millis: ${WECOM_APP_TIMEOUT_MILLIS:5000}
+  admin:
+    # 到期类预警窗口（天），用于车辆保险 / 年检等后续功能
+    alert-days: ${ADMIN_ALERT_DAYS:30}
+    # 访客二维码核销有效期（小时），预留给后续访客模块
+    qr-checkin-window-hours: ${ADMIN_QR_CHECKIN_WINDOW_HOURS:24}
+  notification:
+    wecom:
+      # 企业微信群机器人推送开关，默认关闭；配置 WECOM_WEBHOOK_URL 后再开启。
+      enabled: ${WECOM_ENABLED:false}
+      webhook-url: ${WECOM_WEBHOOK_URL:}
+      # 单次请求连接/读取超时（毫秒）
+      timeout-millis: ${WECOM_TIMEOUT_MILLIS:3000}
+      # 单条消息正文最大长度，超出截断
+      max-content-length: ${WECOM_MAX_CONTENT_LENGTH:800}
 
   # 备份加密说明（占位）：
   #   数据库备份必须在运维层加密，例如 mysqldump 管道加密（openssl/gpg）或使用托管数据库的自动备份加密；

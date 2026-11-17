@@ -106,6 +106,8 @@ public class UserServiceImpl implements UserService {
         user.setEmail(request.getEmail());
         user.setPhone(request.getPhone());
         user.setStatus(request.getStatus() == null ? UserStatus.ACTIVE : request.getStatus());
+        user.setDeptId(request.getDeptId());
+        user.setLeaderId(request.getLeaderId());
         String rawPassword =
                 StringUtils.isBlank(request.getPassword())
                         ? DEFAULT_PASSWORD
@@ -132,6 +134,12 @@ public class UserServiceImpl implements UserService {
         }
         if (request.getStatus() != null) {
             user.setStatus(request.getStatus());
+        }
+        if (request.getDeptId() != null) {
+            user.setDeptId(request.getDeptId());
+        }
+        if (request.getLeaderId() != null) {
+            user.setLeaderId(request.getLeaderId());
         }
         userMapper.updateById(user);
     }

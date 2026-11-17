@@ -9,5 +9,9 @@ declare module 'vue-router' {
   interface RouteMeta {
     title?: string
     requiresAuth?: boolean
+    /** 页面访问所需的权限码（与 V39 等权限种子一致，供守卫/菜单按需判断） */
+    permission?: string
+    /** 菜单图标标识（Element Plus 图标名，当前菜单未渲染图标，仅作约定保留） */
+    icon?: string
   }
 }

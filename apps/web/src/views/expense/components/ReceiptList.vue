@@ -37,6 +37,7 @@ import {
   toOptions,
   verificationStatusLabels
 } from '@/utils/labels'
+import BpmInstanceDrawer from '@/views/bpm/components/BpmInstanceDrawer.vue'
 
 defineOptions({ name: 'ReceiptList' })
 
@@ -56,12 +57,11 @@ const loading = ref(false)
 
 const dialogVisible = ref(false)
 const detailVisible = ref(false)
-const verifyVisible = ref(false)
 const editingId = ref<string | null>(null)
 const detail = ref<ReceiptVO | null>(null)
 const formRef = ref<FormInstance>()
-const verifyFormRef = ref<FormInstance>()
-const verifyId = ref('')
+const drawerVisible = ref(false)
+const drawerInstanceId = ref<string | null>(null)
 
 const form = reactive({
   receiptNumber: '',
@@ -75,22 +75,10 @@ const form = reactive({
   description: ''
 })
 
-const verifyForm = reactive({
-  paymentAccountId: '',
-  amount: '',
-  paymentMethod: '' as PaymentMethod | '',
-  remark: ''
-})
-
 const rules: FormRules<typeof form> = {
   receiptNumber: [{ required: true, message: '请输入票据编号', trigger: 'blur' }],
   amount: [{ required: true, message: '请输入金额', trigger: 'blur' }],
   type: [{ required: true, message: '请选择票据类型', trigger: 'change' }]
-}
-
-const verifyRules: FormRules<typeof verifyForm> = {
-  paymentAccountId: [{ required: true, message: '请输入付款账户 ID', trigger: 'blur' }],
-  amount: [{ required: true, message: '请输入核验金额', trigger: 'blur' }]
 }
 
 async function load(): Promise<void> {
@@ -205,51 +193,28 @@ async function onRemove(row: ReceiptVO): Promise<void> {
   }
 }
 
-async function doApproval(row: ReceiptVO, action: 'approve' | 'reject'): Promise<void> {
+/** 提交审批：发起 BPM 报销流程（部门审批 → 财务核验 → 结束）。 */
+async function submitReceipt(row: ReceiptVO): Promise<void> {
   try {
-    const { value } = await ElMessageBox.prompt('请输入审批意见', action === 'approve' ? '审批通过' : '审批驳回', {
-      confirmButtonText: action === 'approve' ? '通过' : '驳回',
-      cancelButtonText: '取消',
-      inputType: 'textarea'
+    await ElMessageBox.confirm('提交后进入部门审批与财务核验，确定上报吗？', '上报审批', {
+      type: 'warning'
     })
-    if (action === 'approve') {
-      await ceamsApi.expense.receiptApprove(row.id, { comment: value || null })
-      ElMessage.success('审批通过')
-    } else {
-      await ceamsApi.expense.receiptReject(row.id, { comment: value || null })
-      ElMessage.success('已驳回')
-    }
+  } catch {
+    return
+  }
+  try {
+    await ceamsApi.expense.receiptSubmit(row.id)
+    ElMessage.success('已上报，请到待办中心跟进审批')
     await load()
   } catch (err) {
-    if (err === 'cancel' || err === 'close') return
-    ElMessage.error(apiErrorMessage(err, '审批操作失败'))
+    ElMessage.error(apiErrorMessage(err, '上报失败'))
   }
 }
 
-function openVerify(row: ReceiptVO): void {
-  verifyId.value = row.id
-  Object.assign(verifyForm, { paymentAccountId: '', amount: row.amount, paymentMethod: '', remark: '' })
-  verifyVisible.value = true
-}
-
-async function submitVerify(): Promise<void> {
-  if (!verifyFormRef.value) return
-  const valid = await verifyFormRef.value.validate().catch(() => false)
-  if (!valid) return
-
-  try {
-    await ceamsApi.expense.receiptVerify(verifyId.value, {
-      paymentAccountId: verifyForm.paymentAccountId,
-      amount: verifyForm.amount,
-      paymentMethod: verifyForm.paymentMethod || null,
-      remark: verifyForm.remark || null
-    })
-    ElMessage.success('核验成功')
-    verifyVisible.value = false
-    await load()
-  } catch (err) {
-    ElMessage.error(apiErrorMessage(err, '核验失败'))
-  }
+function openInstance(instanceId?: string | null): void {
+  if (!instanceId) return
+  drawerInstanceId.value = instanceId
+  drawerVisible.value = true
 }
 
 onMounted(load)
@@ -294,36 +259,27 @@ onMounted(load)
         </template>
       </el-table-column>
       <el-table-column prop="receiptDate" label="票据日期" width="120" />
-      <el-table-column label="操作" width="320" fixed="right">
+      <el-table-column label="操作" width="300" fixed="right">
         <template #default="{ row }">
           <el-button link type="primary" size="small" @click="openDetail(row as ReceiptVO)">详情</el-button>
           <el-button link type="primary" size="small" @click="openEdit(row as ReceiptVO)">编辑</el-button>
           <el-button
-            v-if="(row as ReceiptVO).approvalStatus === 'PENDING'"
+            v-if="(row as ReceiptVO).approvalStatus === 'DRAFT' || (row as ReceiptVO).approvalStatus === 'REJECTED'"
             link
             type="success"
             size="small"
-            @click="doApproval(row as ReceiptVO, 'approve')"
+            @click="submitReceipt(row as ReceiptVO)"
           >
-            通过
+            提交审批
           </el-button>
           <el-button
-            v-if="(row as ReceiptVO).approvalStatus === 'PENDING'"
-            link
-            type="warning"
-            size="small"
-            @click="doApproval(row as ReceiptVO, 'reject')"
-          >
-            驳回
-          </el-button>
-          <el-button
-            v-if="(row as ReceiptVO).verificationStatus === 'PENDING'"
+            v-if="(row as ReceiptVO).bpmInstanceId"
             link
             type="primary"
             size="small"
-            @click="openVerify(row as ReceiptVO)"
+            @click="openInstance((row as ReceiptVO).bpmInstanceId)"
           >
-            核验
+            查看流程
           </el-button>
           <el-button link type="danger" size="small" @click="onRemove(row as ReceiptVO)">删除</el-button>
         </template>
@@ -395,32 +351,12 @@ onMounted(load)
         <el-descriptions-item label="支付方式">{{ detail.paymentMethod ? paymentMethodLabels[detail.paymentMethod] : '-' }}</el-descriptions-item>
         <el-descriptions-item label="项目 ID">{{ detail.projectId ?? '-' }}</el-descriptions-item>
         <el-descriptions-item label="用户 ID">{{ detail.userId }}</el-descriptions-item>
+        <el-descriptions-item label="流程实例">{{ detail.bpmInstanceId ?? '-' }}</el-descriptions-item>
         <el-descriptions-item label="描述" :span="2">{{ detail.description ?? '-' }}</el-descriptions-item>
       </el-descriptions>
     </el-dialog>
 
-    <el-dialog v-model="verifyVisible" title="财务核验" width="520px">
-      <el-form ref="verifyFormRef" :model="verifyForm" :rules="verifyRules" label-width="110px">
-        <el-form-item label="付款账户 ID" prop="paymentAccountId">
-          <el-input v-model="verifyForm.paymentAccountId" placeholder="请输入付款账户 ID" />
-        </el-form-item>
-        <el-form-item label="核验金额" prop="amount">
-          <el-input v-model="verifyForm.amount" placeholder="核验金额（字符串）" />
-        </el-form-item>
-        <el-form-item label="支付方式">
-          <el-select v-model="verifyForm.paymentMethod" placeholder="请选择" style="width: 100%">
-            <el-option v-for="opt in paymentMethodOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="备注">
-          <el-input v-model="verifyForm.remark" type="textarea" :rows="2" placeholder="备注（可选）" />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="verifyVisible = false">取消</el-button>
-        <el-button type="primary" @click="submitVerify">确定</el-button>
-      </template>
-    </el-dialog>
+    <BpmInstanceDrawer v-model="drawerVisible" :instance-id="drawerInstanceId" />
   </div>
 </template>
 

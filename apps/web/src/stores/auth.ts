@@ -1,6 +1,6 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
-import type { LoginData, LoginRequest, UserVO } from '@ceams/types'
+import type { LoginData, LoginRequest, UserVO, WecomLoginBody } from '@ceams/types'
 import { ceamsApi } from '@/services/http'
 
 const ACCESS_TOKEN_KEY = 'ceams.access_token'
@@ -83,6 +83,15 @@ export const useAuthStore = defineStore('auth', () => {
     setSession(data)
   }
 
+  /**
+   * 企业微信扫码登录：用回调页拿到的 code/state 换取令牌对，
+   * 之后复用 setSession 落库（与账号密码登录共享同一套会话存储逻辑）。
+   */
+  async function loginByWecom(body: WecomLoginBody): Promise<void> {
+    const data = await ceamsApi.integration.loginByWecom(body)
+    setSession(data)
+  }
+
   /** 登出：调用后端注销接口并清空本地会话。 */
   async function logout(): Promise<void> {
     try {
@@ -104,6 +113,7 @@ export const useAuthStore = defineStore('auth', () => {
     setUser,
     clear,
     login,
+    loginByWecom,
     logout
   }
 })

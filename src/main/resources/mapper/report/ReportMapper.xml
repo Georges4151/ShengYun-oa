@@ -195,4 +195,187 @@
              WHERE deleted = 0 AND status != 'CANCELLED' AND type = 'EXPENSE') AS total_expense
     </select>
 
+    <!-- ======================================================================
+         绩效考核报表：hr_performance_review 左连 hr_employee（取 dept_id）与 sys_dept（取名称）。
+         口径：period 字符串等值匹配（'yyyy-MM' 或 'yyyy-Qn'）；定稿状态为 APPROVED；
+         平均分与分数分布仅统计 APPROVED 且 final_score 非空的记录。
+    ====================================================================== -->
+    <select id="selectHrPerformanceByDept"
+            resultType="com.ceams.module.report.vo.HrPerformanceDeptRowVO">
+        SELECT
+            he.dept_id AS dept_id,
+            d.name AS dept_name,
+            COUNT(*) AS review_count,
+            IFNULL(SUM(CASE WHEN r.status = 'APPROVED' THEN 1 ELSE 0 END), 0) AS finalized_count,
+            IFNULL(SUM(CASE WHEN r.status = 'APPROVED' AND r.final_score IS NOT NULL
+                            THEN r.final_score ELSE 0 END), 0) AS sum_final_score,
+            IFNULL(SUM(CASE WHEN r.status = 'APPROVED' AND r.final_score &gt;= 90
+                            THEN 1 ELSE 0 END), 0) AS bucket_a,
+            IFNULL(SUM(CASE WHEN r.status = 'APPROVED' AND r.final_score &gt;= 80 AND r.final_score &lt; 90
+                            THEN 1 ELSE 0 END), 0) AS bucket_b,
+            IFNULL(SUM(CASE WHEN r.status = 'APPROVED' AND r.final_score &gt;= 70 AND r.final_score &lt; 80
+                            THEN 1 ELSE 0 END), 0) AS bucket_c,
+            IFNULL(SUM(CASE WHEN r.status = 'APPROVED' AND r.final_score IS NOT NULL AND r.final_score &lt; 70
+                            THEN 1 ELSE 0 END), 0) AS bucket_d
+        FROM hr_performance_review r
+        LEFT JOIN hr_employee he ON he.id = r.employee_id AND he.deleted = 0
+        LEFT JOIN sys_dept d ON d.id = he.dept_id AND d.deleted = 0
+        WHERE r.deleted = 0
+          AND r.period = #{period}
+        <if test="deptId != null">
+            AND he.dept_id = #{deptId}
+        </if>
+        GROUP BY he.dept_id, d.name
+        ORDER BY he.dept_id
+    </select>
+
+    <!-- ======================================================================
+         行政资产报表：总量 / 购置金额 / 状态分布（admin_asset 单表聚合）。
+         purchase_price 为明文金额，可直接 SUM。
+    ====================================================================== -->
+    <select id="selectAdminAssetStats"
+            resultType="com.ceams.module.report.vo.AdminAssetStatsRowVO">
+        SELECT
+            COUNT(*) AS total_count,
+            IFNULL(SUM(a.purchase_price), 0) AS total_value,
+            IFNULL(SUM(CASE WHEN a.status = 'IN_STOCK' THEN 1 ELSE 0 END), 0) AS in_stock_count,
+            IFNULL(SUM(CASE WHEN a.status = 'BORROWED' THEN 1 ELSE 0 END), 0) AS borrowed_count,
+            IFNULL(SUM(CASE WHEN a.status = 'REPAIRING' THEN 1 ELSE 0 END), 0) AS repairing_count,
+            IFNULL(SUM(CASE WHEN a.status = 'SCRAPPED' THEN 1 ELSE 0 END), 0) AS scrapped_count
+        FROM admin_asset a
+        WHERE a.deleted = 0
+        <if test="category != null and category != ''">
+            AND a.category = #{category}
+        </if>
+    </select>
+
+    <!-- 行政资产报表：按分类分组统计数量与购置金额。 -->
+    <select id="selectAdminAssetByCategory"
+            resultType="com.ceams.module.report.vo.AdminAssetCategoryRowVO">
+        SELECT
+            a.category AS category,
+            COUNT(*) AS `count`,
+            IFNULL(SUM(a.purchase_price), 0) AS total_value
+        FROM admin_asset a
+        WHERE a.deleted = 0
+        <if test="category != null and category != ''">
+            AND a.category = #{category}
+        </if>
+        GROUP BY a.category
+        ORDER BY a.category
+    </select>
+
+    <!-- ======================================================================
+         行政资产报表：借用中 / 逾期未还记录数。
+         逾期定义：status = BORROWING 且 expected_return_date 非空且早于今天。
+         按分类过滤时 JOIN admin_asset 限定分类。
+    ====================================================================== -->
+    <select id="selectAdminBorrowStats"
+            resultType="com.ceams.module.report.vo.AdminBorrowStatsRowVO">
+        SELECT
+            IFNULL(SUM(CASE WHEN b.status = 'BORROWING' THEN 1 ELSE 0 END), 0) AS borrowing_count,
+            IFNULL(SUM(CASE WHEN b.status = 'BORROWING'
+                              AND b.expected_return_date IS NOT NULL
+                              AND b.expected_return_date &lt; CURDATE()
+                            THEN 1 ELSE 0 END), 0) AS overdue_count
+        FROM admin_asset_borrow b
+        <if test="category != null and category != ''">
+            JOIN admin_asset a ON a.id = b.asset_id AND a.deleted = 0 AND a.category = #{category}
+        </if>
+        WHERE b.deleted = 0
+    </select>
+
+    <!-- ======================================================================
+         审批效率报表：实例集合过滤条件（bpm_instance 别名固定为 i）。
+         时间范围按 DATE(COALESCE(started_at, create_time)) 闭区间过滤。
+    ====================================================================== -->
+    <sql id="bpmInstanceFilter">
+        <if test="bizType != null and bizType != ''">
+            AND i.biz_type = #{bizType}
+        </if>
+        <if test="start != null and start != ''">
+            AND DATE(COALESCE(i.started_at, i.create_time)) &gt;= #{start}
+        </if>
+        <if test="end != null and end != ''">
+            AND DATE(COALESCE(i.started_at, i.create_time)) &lt;= #{end}
+        </if>
+    </sql>
+
+    <!-- 审批效率汇总：实例量 / 通过量 / 已通过实例平均时长（秒）/ 任务量 / 超时任务量。 -->
+    <select id="selectBpmEfficiencySummary"
+            resultType="com.ceams.module.report.vo.BpmEfficiencySummaryRowVO">
+        SELECT
+            COUNT(*) AS instance_count,
+            IFNULL(SUM(CASE WHEN i.status = 'APPROVED' THEN 1 ELSE 0 END), 0) AS approved_count,
+            IFNULL(AVG(CASE WHEN i.status = 'APPROVED'
+                             AND i.started_at IS NOT NULL
+                             AND i.ended_at IS NOT NULL
+                            THEN TIMESTAMPDIFF(SECOND, i.started_at, i.ended_at) END), 0)
+                AS avg_duration_seconds,
+            (
+                SELECT COUNT(*)
+                FROM bpm_task t
+                WHERE t.deleted = 0
+                  AND t.instance_id IN (
+                      SELECT i.id FROM bpm_instance i
+                      WHERE i.deleted = 0
+                      <include refid="bpmInstanceFilter"/>
+                  )
+            ) AS task_count,
+            (
+                SELECT COUNT(*)
+                FROM bpm_task t
+                WHERE t.deleted = 0
+                  AND t.status = 'PENDING'
+                  AND t.due_at IS NOT NULL
+                  AND t.due_at &lt; NOW()
+                  AND t.instance_id IN (
+                      SELECT i.id FROM bpm_instance i
+                      WHERE i.deleted = 0
+                      <include refid="bpmInstanceFilter"/>
+                  )
+            ) AS overdue_task_count
+        FROM bpm_instance i
+        WHERE i.deleted = 0
+        <include refid="bpmInstanceFilter"/>
+    </select>
+
+    <!-- 审批效率报表：按业务类型分组统计实例量 / 通过量与平均时长（秒）。 -->
+    <select id="selectBpmEfficiencyByBizType"
+            resultType="com.ceams.module.report.vo.BpmBizTypeRowVO">
+        SELECT
+            i.biz_type AS biz_type,
+            COUNT(*) AS instance_count,
+            IFNULL(SUM(CASE WHEN i.status = 'APPROVED' THEN 1 ELSE 0 END), 0) AS approved_count,
+            IFNULL(AVG(CASE WHEN i.status = 'APPROVED'
+                             AND i.started_at IS NOT NULL
+                             AND i.ended_at IS NOT NULL
+                            THEN TIMESTAMPDIFF(SECOND, i.started_at, i.ended_at) END), 0)
+                AS avg_duration_seconds
+        FROM bpm_instance i
+        WHERE i.deleted = 0
+        <include refid="bpmInstanceFilter"/>
+        GROUP BY i.biz_type
+        ORDER BY i.biz_type
+    </select>
+
+    <!-- ======================================================================
+         审批效率报表：待办任务按节点编码分组。
+         bpm_task 无节点名称列，JOIN bpm_node 取 node_key 作为节点标识。
+    ====================================================================== -->
+    <select id="selectBpmBacklogByNode"
+            resultType="com.ceams.module.report.vo.BpmNodeBacklogVO">
+        SELECT
+            bn.node_key AS node_key,
+            COUNT(*) AS pending_count
+        FROM bpm_task t
+        JOIN bpm_node bn ON bn.id = t.node_id AND bn.deleted = 0
+        JOIN bpm_instance i ON i.id = t.instance_id AND i.deleted = 0
+        WHERE t.deleted = 0
+          AND t.status = 'PENDING'
+        <include refid="bpmInstanceFilter"/>
+        GROUP BY bn.node_key
+        ORDER BY pending_count DESC, bn.node_key ASC
+    </select>
+
 </mapper>

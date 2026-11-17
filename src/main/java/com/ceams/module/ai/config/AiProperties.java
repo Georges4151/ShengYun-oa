@@ -44,6 +44,9 @@ public class AiProperties {
     /** 合同风险提示配置（M4 使用）。 */
     private ContractRisk contractRisk = new ContractRisk();
 
+    /** AI 待办摘要配置。 */
+    private TodoSummary todoSummary = new TodoSummary();
+
     /** 经营日报摘要配置（{@code ceams.ai.summary.*}）。 */
     @Data
     public static class Summary {
@@ -81,5 +84,16 @@ public class AiProperties {
 
         /** 是否允许 AI 复述合同要点与风险（仍需 {@code ceams.ai.enabled=true}）。 */
         private boolean aiNoteEnabled = true;
+    }
+
+    /** AI 待办摘要配置（{@code ceams.ai.todo-summary.*}）。 */
+    @Data
+    public static class TodoSummary {
+
+        /** 是否允许 AI 润色待办摘要（仍需 {@code ceams.ai.enabled=true}，失败回退规则模板）。 */
+        private boolean polishEnabled = true;
+
+        /** 最近到期清单条数。 */
+        private int upcomingLimit = 5;
     }
 }

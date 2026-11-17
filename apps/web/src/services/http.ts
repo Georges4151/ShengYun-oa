@@ -84,3 +84,32 @@ const apiClient: CeamsApiClient = createCeamsApiClient({
 
 /** 统一 CEAMS API 客户端（iam / masterdata / project / expense / payment / bank / seal 六域类型化工厂）。 */
 export const ceamsApi = apiClient
+
+/**
+ * 认证态二进制拉取：文档预览接口要求 Authorization 头，无法用 `<img src>` / `window.open` 直接访问，
+ * 故统一在此处携带令牌取回 Blob，由调用方生成 object URL 后展示。
+ */
+export async function fetchBlob(path: string): Promise<Blob> {
+  const token = useAuthStore(pinia).token
+  const response = await fetch(`${apiBaseUrl}${path}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {}
+  })
+  if (!response.ok) {
+    throw new Error(await readErrorMessage(response))
+  }
+  return response.blob()
+}
+
+/** 从统一响应包裹中取后端 message，取不到按 HTTP 状态码兜底。 */
+async function readErrorMessage(response: Response): Promise<string> {
+  try {
+    const text = await response.text()
+    const parsed = JSON.parse(text) as { message?: unknown }
+    if (typeof parsed.message === 'string' && parsed.message) {
+      return parsed.message
+    }
+  } catch {
+    // 非 JSON 响应（如网关错误页）按状态码提示
+  }
+  return `请求失败（HTTP ${response.status}）`
+}
