@@ -49,6 +49,11 @@ Thumbs.db
 # ===== 已归档的旧仓库 =====
 **/.git.archived/
 
+# ===== 本地缓存 / 代理工作区（不纳入版本库） =====
+.localappdata/
+.pnpm-store/
+.trae/
+
 # ===== Node / pnpm / 前端构建产物（CEAMS monorepo） =====
 node_modules/
 dist/
