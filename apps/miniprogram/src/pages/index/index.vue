@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
-import { clearSession, getUserName, isLoggedIn } from '../../platform/auth'
+import { clearSession, getUserName, isLoggedIn, rolesOf } from '../../platform/auth'
 
 interface MenuItem {
   title: string
@@ -13,6 +13,8 @@ interface MenuItem {
 }
 
 const name = ref('')
+/** 行政服务入口仅 SYS_ADMIN 可见（角色来自登录会话） */
+const canAdmin = ref(false)
 const menus: MenuItem[] = [
   {
     title: '项目与进度款',
@@ -22,9 +24,9 @@ const menus: MenuItem[] = [
   },
   {
     title: '我的待办',
-    path: '/pages/expense/pending',
+    path: '/pages/bpm/todo?tab=pending',
     icon: '✓',
-    desc: '处理报销与变更审批'
+    desc: '处理各业务审批任务'
   },
   {
     title: '发起报销',
@@ -81,6 +83,12 @@ const menus: MenuItem[] = [
     desc: '接收系统与审批通知'
   },
   {
+    title: '知识库',
+    path: '/pages/doc/list',
+    icon: '▥',
+    desc: '浏览公开文档与版本'
+  },
+  {
     title: '智能助手',
     path: '/pages/ai/assistant',
     icon: '✦',
@@ -128,6 +136,7 @@ onShow(() => {
     return
   }
   name.value = getUserName()
+  canAdmin.value = rolesOf().includes('SYS_ADMIN')
 })
 
 function open(path: string): void {
@@ -186,28 +195,30 @@ function logout(): void {
         </view>
       </view>
 
-      <view class="home__section home__section--spaced">
-        <view class="home__section-bar"></view>
-        <text class="home__section-title">行政服务</text>
-      </view>
+      <template v-if="canAdmin">
+        <view class="home__section home__section--spaced">
+          <view class="home__section-bar"></view>
+          <text class="home__section-title">行政服务</text>
+        </view>
 
-      <view class="home__menu">
-        <view
-          v-for="item in adminMenus"
-          :key="item.path"
-          class="home__card"
-          hover-class="home__card--pressed"
-          @click="open(item.path)"
-        >
-          <view class="home__icon">
-            <text class="home__icon-symbol">{{ item.icon }}</text>
-          </view>
-          <view class="home__card-text">
-            <text class="home__card-title">{{ item.title }}</text>
-            <text class="home__card-desc ceams-ellipsis">{{ item.desc }}</text>
+        <view class="home__menu">
+          <view
+            v-for="item in adminMenus"
+            :key="item.path"
+            class="home__card"
+            hover-class="home__card--pressed"
+            @click="open(item.path)"
+          >
+            <view class="home__icon">
+              <text class="home__icon-symbol">{{ item.icon }}</text>
+            </view>
+            <view class="home__card-text">
+              <text class="home__card-title">{{ item.title }}</text>
+              <text class="home__card-desc ceams-ellipsis">{{ item.desc }}</text>
+            </view>
           </view>
         </view>
-      </view>
+      </template>
 
       <text class="home__footer">数据来自 CEAMS 服务端 · v1.0.0</text>
     </view>

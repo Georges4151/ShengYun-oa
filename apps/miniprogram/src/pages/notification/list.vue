@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { onReachBottom, onShow } from '@dcloudio/uni-app'
-import type { PushChannel, UserNotificationVO } from '@ceams/types'
+import type { NotificationType, PushChannel, UserNotificationPageQuery, UserNotificationVO } from '@ceams/types'
 import { formatDateTime } from '@ceams/utils'
 import { apiClient } from '../../platform/http'
-import { pushChannelLabels, pushStatusLabels } from '../../utils/labels'
+import { notificationTypeLabels, pushChannelLabels, pushStatusLabels } from '../../utils/labels'
 import { apiErrorMessage } from '../../utils/error'
 
 /** 渠道 -> 几何字符标识（不使用 emoji / 图标库） */
@@ -14,27 +14,57 @@ const channelMarks: Record<PushChannel, string> = {
   SMS: '≡'
 }
 
+/** 通知类型筛选项的值：空字符串表示「全部」，其余与后端 NotificationType 枚举名一致 */
+type NotificationFilterValue = NotificationType | ''
+
+/** 顶部横向 chips：仅暴露业务域（审批 / 人力 / 行政 / 文档），系统与公告归入「全部」 */
+const filterOptions: Array<{ value: NotificationFilterValue; label: string }> = [
+  { value: '', label: '全部' },
+  { value: 'APPROVAL', label: '审批' },
+  { value: 'HR', label: '人力' },
+  { value: 'ADMIN', label: '行政' },
+  { value: 'DOC', label: '文档' }
+]
+
 const records = ref<UserNotificationVO[]>([])
 const page = ref(1)
 const total = ref(0)
 const unreadCount = ref(0)
 const size = 20
 const loading = ref(false)
+/** 当前选中的通知类型过滤（空串 = 全部） */
+const filterType = ref<NotificationFilterValue>('')
+/** 请求序号：切换筛选后丢弃旧请求的响应，避免列表串数据 */
+let requestSeq = 0
 
 async function load(reset = false): Promise<void> {
   if (reset) page.value = 1
-  if (loading.value) return
+  const seq = ++requestSeq
   loading.value = true
   try {
-    const res = await apiClient.notification.userNotificationMine({ page: page.value, size })
+    // type 为空时保持原有两参请求行为（不向后端传 type 查询参数）
+    const query: UserNotificationPageQuery = { page: page.value, size }
+    if (filterType.value) query.type = filterType.value
+    const res = await apiClient.notification.userNotificationMine(query)
+    if (seq !== requestSeq) return
     records.value = reset ? res.records : records.value.concat(res.records)
     total.value = res.total
     unreadCount.value = res.unreadCount
   } catch (err) {
+    if (seq !== requestSeq) return
     uni.showToast({ title: apiErrorMessage(err, '加载通知失败'), icon: 'none' })
   } finally {
-    loading.value = false
+    if (seq === requestSeq) loading.value = false
   }
+}
+
+/** 切换类型筛选：重置分页与列表后按 type 重新查询 */
+function onFilterChange(value: NotificationFilterValue): void {
+  if (filterType.value === value) return
+  filterType.value = value
+  records.value = []
+  total.value = 0
+  void load(true)
 }
 
 async function markRead(id: string): Promise<void> {
@@ -55,9 +85,95 @@ async function markAllRead(): Promise<void> {
   }
 }
 
+// ---------- 深链解析（小程序无现成工具，此处保持简单，不做通用路由框架） ----------
+
+const DEEP_LINK_PREFIX = 'ceams://'
+
+/** decodeURIComponent 的安全版本：非法转义时原样返回，避免解析抛错 */
+function safeDecode(value: string): string {
+  try {
+    return decodeURIComponent(value)
+  } catch {
+    return value
+  }
+}
+
+/** 解析查询串为键值表 */
+function parseQuery(query: string): Record<string, string> {
+  const result: Record<string, string> = {}
+  if (!query) return result
+  for (const pair of query.split('&')) {
+    if (!pair) continue
+    const eqIndex = pair.indexOf('=')
+    const key = safeDecode(eqIndex === -1 ? pair : pair.slice(0, eqIndex))
+    const value = eqIndex === -1 ? '' : safeDecode(pair.slice(eqIndex + 1))
+    if (key) result[key] = value
+  }
+  return result
+}
+
+/**
+ * 把 ceams:// 深链解析为小程序页面地址（含查询串）。
+ * 支持的深链：
+ * - ceams://hr/salary-slip(?month=yyyy-MM) → /pages/hr/salary-slip
+ * - ceams://todo?tab=&taskId=&instanceId= → /pages/bpm/todo（页面由 P5 创建）
+ * 其余返回 null，由调用方兜底提示「请前往 Web 端查看」。
+ */
+function resolveDeepLink(linkUrl: string): string | null {
+  const link = linkUrl.trim()
+  if (!link.toLowerCase().startsWith(DEEP_LINK_PREFIX)) return null
+  const rest = link.slice(DEEP_LINK_PREFIX.length)
+  if (!rest) return null
+
+  const queryIndex = rest.indexOf('?')
+  const rawPath = queryIndex === -1 ? rest : rest.slice(0, queryIndex)
+  const query = queryIndex === -1 ? '' : rest.slice(queryIndex + 1)
+  const path = rawPath.replace(/^\/+/, '').toLowerCase()
+
+  if (path === 'hr/salary-slip') {
+    const month = parseQuery(query).month
+    return month
+      ? `/pages/hr/salary-slip?month=${encodeURIComponent(month)}`
+      : '/pages/hr/salary-slip'
+  }
+
+  if (path === 'todo') {
+    const params = parseQuery(query)
+    const parts = ['tab', 'taskId', 'instanceId']
+      .filter((key) => params[key])
+      .map((key) => `${key}=${encodeURIComponent(params[key])}`)
+    return parts.length > 0 ? `/pages/bpm/todo?${parts.join('&')}` : '/pages/bpm/todo'
+  }
+
+  return null
+}
+
+/** 点击通知：能识别的深链直接跳转，未识别的仅标记已读并提示前往 Web 端 */
+function openItem(item: UserNotificationVO): void {
+  const url = resolveDeepLink(item.linkUrl ?? '')
+  if (!url) {
+    if (item.isRead === 0) void markRead(item.id)
+    uni.showToast({ title: '请前往 Web 端查看', icon: 'none' })
+    return
+  }
+  if (item.isRead === 0) void markRead(item.id)
+  uni.navigateTo({
+    url,
+    fail: () => {
+      // 目标页面尚未上线（如 P5 的 bpm/todo）时给出兜底提示，不报错中断
+      uni.showToast({ title: '请前往 Web 端查看', icon: 'none' })
+    }
+  })
+}
+
 /** 标题：优先使用通知内容快照，旧数据回退到渠道通知名 */
 function displayTitle(item: UserNotificationVO): string {
   return item.title || `${pushChannelLabels[item.channel ?? 'SYSTEM']}通知`
+}
+
+/** 通知类型标签；旧数据缺少 notificationType 时返回空串（不渲染标签） */
+function typeLabel(item: UserNotificationVO): string {
+  return item.notificationType ? notificationTypeLabels[item.notificationType] : ''
 }
 
 /** 正文：缺失时回退到旧的推送状态 + 通知编号展示，兼容历史数据 */
@@ -84,6 +200,18 @@ onReachBottom(() => {
 
 <template>
   <view class="ceams-page notification-list">
+    <view class="notification-list__filters">
+      <view
+        v-for="opt in filterOptions"
+        :key="opt.value"
+        class="notification-list__chip"
+        :class="{ 'notification-list__chip--active': filterType === opt.value }"
+        @click="onFilterChange(opt.value)"
+      >
+        {{ opt.label }}
+      </view>
+    </view>
+
     <view class="notification-list__toolbar">
       <view class="notification-list__toolbar-info">
         <text class="notification-list__toolbar-label">未读</text>
@@ -107,6 +235,8 @@ onReachBottom(() => {
           item.isRead === 0 ? 'notification-list__item--unread' : 'notification-list__item--read',
           index === records.length - 1 ? 'ceams-list-item--last' : ''
         ]"
+        hover-class="notification-list__item--pressed"
+        @click="openItem(item)"
       >
         <view v-if="item.isRead === 0" class="notification-list__bar" />
         <view class="notification-list__mark">
@@ -117,6 +247,7 @@ onReachBottom(() => {
             <text class="notification-list__title">
               {{ displayTitle(item) }}
             </text>
+            <text v-if="typeLabel(item)" class="notification-list__type">{{ typeLabel(item) }}</text>
             <text class="notification-list__time">
               {{ displayTime(item) }}
             </text>
@@ -127,7 +258,7 @@ onReachBottom(() => {
           <text
             v-if="item.isRead === 0"
             class="notification-list__action"
-            @click="markRead(item.id)"
+            @click.stop="markRead(item.id)"
           >
             标记已读
           </text>
@@ -138,6 +269,33 @@ onReachBottom(() => {
 </template>
 
 <style scoped>
+.notification-list__filters {
+  display: flex;
+  align-items: center;
+  gap: var(--ceams-space-xs);
+  margin-bottom: var(--ceams-space-md);
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.notification-list__chip {
+  flex-shrink: 0;
+  padding: var(--ceams-space-2xs) var(--ceams-space-md);
+  color: var(--ceams-text-secondary);
+  font-size: var(--ceams-font-size-caption);
+  line-height: var(--ceams-line-height-tight);
+  background-color: var(--ceams-bg-card);
+  border: var(--ceams-border-width) solid var(--ceams-border);
+  border-radius: var(--ceams-radius-pill);
+  box-sizing: border-box;
+}
+
+.notification-list__chip--active {
+  color: var(--ceams-color-primary);
+  background-color: var(--ceams-color-primary-tint);
+  border-color: var(--ceams-color-primary);
+}
+
 .notification-list__toolbar {
   display: flex;
   align-items: center;
@@ -194,6 +352,10 @@ onReachBottom(() => {
   display: flex;
   align-items: flex-start;
   padding-left: var(--ceams-space-lg);
+}
+
+.notification-list__item--pressed {
+  background-color: var(--ceams-bg-subtle);
 }
 
 .notification-list__bar {
@@ -260,6 +422,22 @@ onReachBottom(() => {
   color: var(--ceams-text-placeholder);
   font-size: var(--ceams-font-size-caption);
   line-height: var(--ceams-line-height-tight);
+}
+
+.notification-list__type {
+  flex-shrink: 0;
+  margin-right: var(--ceams-space-sm);
+  padding: 0 var(--ceams-space-xs);
+  color: var(--ceams-color-primary);
+  font-size: var(--ceams-font-size-mini);
+  line-height: var(--ceams-line-height-tight);
+  background-color: var(--ceams-color-primary-tint);
+  border-radius: var(--ceams-radius-xs);
+}
+
+.notification-list__item--read .notification-list__type {
+  color: var(--ceams-color-neutral);
+  background-color: var(--ceams-color-neutral-tint);
 }
 
 .notification-list__summary {

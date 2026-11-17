@@ -23,12 +23,18 @@ class ToolRegistryTest {
                     "queryBankUnmatched",
                     "queryBankMatchCandidates",
                     "queryBudgetUsage",
-                    "querySealUsage");
+                    "querySealUsage",
+                    "queryHrHeadcount",
+                    "queryAttendanceSummary",
+                    "queryPayrollSummary",
+                    "queryAssetInventory",
+                    "queryVehicleUsage",
+                    "queryRepairStats");
 
     @Test
     void registersAllAllowedTools() {
         ToolRegistry registry = registryForAllAllowedTools();
-        assertEquals(9, registry.all().size());
+        assertEquals(15, registry.all().size());
         for (String name : EXPECTED_NAMES) {
             assertTrue(registry.find(name).isPresent(), "缺少工具：" + name);
         }
@@ -38,7 +44,7 @@ class ToolRegistryTest {
     void definitionsHaveOllamaFunctionStructure() {
         ToolRegistry registry = registryForAllAllowedTools();
         List<Map<String, Object>> definitions = registry.definitions();
-        assertEquals(9, definitions.size());
+        assertEquals(15, definitions.size());
         for (Map<String, Object> definition : definitions) {
             assertEquals("function", definition.get("type"));
             @SuppressWarnings("unchecked")

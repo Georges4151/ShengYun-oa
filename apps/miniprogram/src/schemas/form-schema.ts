@@ -1,11 +1,15 @@
 /**
  * 小程序 JSON-Schema 表单引擎的 schema 定义与注册表。
  * schema 使用 JSON Schema 的子集：type/enum/required/maxLength/minimum/maximum，
- * 通过 format 指定 date/textarea/attachment 控件，enumNames 提供中文选项文案。
+ * 通过 format 指定 date/time/textarea/attachment 控件，enumNames 提供中文选项文案。
  */
+import assetBorrowSchema from './asset-borrow.json'
 import changeRequestSchema from './change-request.json'
+import checkinSupplementSchema from './checkin-supplement.json'
 import expenseSchema from './expense.json'
 import hrLeaveSchema from './hr-leave.json'
+import meetingApplySchema from './meeting-apply.json'
+import vehicleApplySchema from './vehicle-apply.json'
 
 export type FormFieldType = 'string' | 'number' | 'integer'
 
@@ -15,7 +19,7 @@ export interface FormField {
   label: string
   type: FormFieldType
   /** 控件形态；缺省按 type 推断为单行文本或数字输入 */
-  format?: 'textarea' | 'date' | 'attachment'
+  format?: 'textarea' | 'date' | 'time' | 'attachment'
   /** 枚举值列表，存在时渲染为下拉选择 */
   enum?: string[]
   /** 与 enum 一一对应的中文文案 */
@@ -48,7 +52,12 @@ export type FormModel = Record<string, string>
 const SCHEMAS: Record<string, FormSchema> = {
   EXPENSE: expenseSchema as unknown as FormSchema,
   CHANGE_REQUEST: changeRequestSchema as unknown as FormSchema,
-  HR_LEAVE: hrLeaveSchema as unknown as FormSchema
+  HR_LEAVE: hrLeaveSchema as unknown as FormSchema,
+  // M6 行政域与 HR 补卡表单：页面级资源选择器保留，仅字段由 schema 渲染
+  ADMIN_ASSET_BORROW: assetBorrowSchema as unknown as FormSchema,
+  ADMIN_VEHICLE_APPLY: vehicleApplySchema as unknown as FormSchema,
+  ADMIN_MEETING_APPLY: meetingApplySchema as unknown as FormSchema,
+  HR_CHECKIN_SUPPLEMENT: checkinSupplementSchema as unknown as FormSchema
 }
 
 /** 按业务类型获取表单 schema；未注册时返回 undefined。 */

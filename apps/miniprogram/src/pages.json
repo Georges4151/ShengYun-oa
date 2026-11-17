@@ -43,6 +43,19 @@
       }
     },
     {
+      "path": "pages/bpm/todo",
+      "style": {
+        "navigationBarTitleText": "待办中心",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/doc/list",
+      "style": {
+        "navigationBarTitleText": "知识库"
+      }
+    },
+    {
       "path": "pages/expense/create",
       "style": {
         "navigationBarTitleText": "发起报销"

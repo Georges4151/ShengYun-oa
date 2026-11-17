@@ -1,22 +1,31 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { ApiError } from '@ceams/api-client'
 import type { MeetingAvailabilityVO, MeetingRoomVO } from '@ceams/types'
 import { apiClient } from '../../platform/http'
+import SchemaForm from '../../components/schema-form/schema-form.vue'
+import type { FormModel } from '../../schemas/form-schema'
+import { createFormModel, getFormSchema } from '../../schemas/form-schema'
 import { apiErrorMessage } from '../../utils/error'
 
-interface ValueEvent {
-  detail?: { value?: string }
-}
-
-function eventValue(event: unknown): string {
-  const detail = (event as ValueEvent).detail
-  return detail && typeof detail.value === 'string' ? detail.value : ''
+/** 会议室预定：会议室选择器与时段占用查询保留在页面级，其余字段由 schema 渲染 */
+const schema = getFormSchema('ADMIN_MEETING_APPLY')
+if (!schema) {
+  throw new Error('缺少 ADMIN_MEETING_APPLY 表单 schema')
 }
 
 function today(): string {
   return new Date().toISOString().slice(0, 10)
+}
+
+function defaultForm(): FormModel {
+  return {
+    ...createFormModel(schema!),
+    useDate: today(),
+    startClock: '09:00',
+    endClock: '10:00'
+  }
 }
 
 function timeText(value: string): string {
@@ -27,11 +36,13 @@ const loading = ref(false)
 const submitting = ref(false)
 const rooms = ref<MeetingRoomVO[]>([])
 const activeRoom = ref<MeetingRoomVO | null>(null)
-const subject = ref('')
-const date = ref(today())
-const startTime = ref('09:00')
-const endTime = ref('10:00')
+const form = ref<FormModel>(defaultForm())
+const formRef = ref<InstanceType<typeof SchemaForm> | null>(null)
 const availability = ref<MeetingAvailabilityVO | null>(null)
+
+function text(key: string): string {
+  return String(form.value[key] ?? '').trim()
+}
 
 async function loadRooms(): Promise<void> {
   if (loading.value) return
@@ -47,12 +58,12 @@ async function loadRooms(): Promise<void> {
 }
 
 async function loadAvailability(): Promise<void> {
-  if (!activeRoom.value || !date.value) {
+  if (!activeRoom.value || !text('useDate')) {
     availability.value = null
     return
   }
   try {
-    availability.value = await apiClient.admin.meetingAvailability(activeRoom.value.id, date.value)
+    availability.value = await apiClient.admin.meetingAvailability(activeRoom.value.id, text('useDate'))
   } catch (err) {
     availability.value = null
     uni.showToast({ title: apiErrorMessage(err, '加载占用情况失败'), icon: 'none' })
@@ -64,25 +75,27 @@ function selectRoom(room: MeetingRoomVO): void {
   void loadAvailability()
 }
 
-function onDateChange(event: unknown): void {
-  date.value = eventValue(event)
-  void loadAvailability()
-}
+/** 日期由 SchemaForm 更新，需同步刷新当日占用 */
+watch(
+  () => form.value.useDate,
+  () => {
+    void loadAvailability()
+  }
+)
 
 async function submit(): Promise<void> {
   if (!activeRoom.value) {
     uni.showToast({ title: '请先选择会议室', icon: 'none' })
     return
   }
-  if (!subject.value.trim()) {
-    uni.showToast({ title: '请输入会议主题', icon: 'none' })
+  const error = formRef.value?.validate()
+  if (error) {
+    uni.showToast({ title: error, icon: 'none' })
     return
   }
-  if (!date.value) {
-    uni.showToast({ title: '请选择会议日期', icon: 'none' })
-    return
-  }
-  if (startTime.value >= endTime.value) {
+  const start = `${text('useDate')}T${text('startClock')}:00`
+  const end = `${text('useDate')}T${text('endClock')}:00`
+  if (start >= end) {
     uni.showToast({ title: '结束时间必须晚于开始时间', icon: 'none' })
     return
   }
@@ -90,13 +103,13 @@ async function submit(): Promise<void> {
   try {
     await apiClient.admin.meetingApply({
       roomId: activeRoom.value.id,
-      subject: subject.value.trim(),
-      startTime: `${date.value}T${startTime.value}:00`,
-      endTime: `${date.value}T${endTime.value}:00`
+      subject: text('subject'),
+      startTime: start,
+      endTime: end
     })
-    uni.showToast({ title: '预定申请已提交', icon: 'success' })
-    subject.value = ''
-    await loadAvailability()
+    uni.showToast({ title: '已提交审批', icon: 'success' })
+    form.value = defaultForm()
+    setTimeout(() => uni.navigateTo({ url: '/pages/bpm/todo?tab=initiated' }), 500)
   } catch (err) {
     if (err instanceof ApiError && (err.status === 409 || err.code === 409001)) {
       void loadAvailability()
@@ -107,7 +120,7 @@ async function submit(): Promise<void> {
       })
       return
     }
-    uni.showToast({ title: apiErrorMessage(err, '提交预定失败'), icon: 'none' })
+    uni.showToast({ title: apiErrorMessage(err, '提交失败'), icon: 'none' })
   } finally {
     submitting.value = false
   }
@@ -139,39 +152,9 @@ onShow(() => {
       <text v-if="item.equipment" class="room__meta">设备 {{ item.equipment }}</text>
     </view>
 
-    <view v-if="activeRoom" class="ceams-card form">
+    <view v-if="activeRoom" class="form">
       <text class="form__title">预定：{{ activeRoom.name }}</text>
-
-      <view class="field">
-        <text class="field__label">会议日期</text>
-        <picker mode="date" :value="date" @change="onDateChange($event)">
-          <view class="field__value">{{ date || '请选择' }}</view>
-        </picker>
-      </view>
-
-      <view class="field">
-        <text class="field__label">开始时间</text>
-        <picker mode="time" :value="startTime" @change="startTime = eventValue($event)">
-          <view class="field__value">{{ startTime }}</view>
-        </picker>
-      </view>
-
-      <view class="field">
-        <text class="field__label">结束时间</text>
-        <picker mode="time" :value="endTime" @change="endTime = eventValue($event)">
-          <view class="field__value">{{ endTime }}</view>
-        </picker>
-      </view>
-
-      <view class="field field--column">
-        <text class="field__label">会议主题</text>
-        <input
-          class="field__input"
-          :value="subject"
-          placeholder="请输入会议主题"
-          @input="subject = eventValue($event)"
-        />
-      </view>
+      <SchemaForm ref="formRef" v-model="form" :schema="schema" :disabled="submitting" />
 
       <view class="occupied">
         <text class="occupied__title">当日占用</text>
@@ -184,7 +167,7 @@ onShow(() => {
         </view>
       </view>
 
-      <button class="ceams-btn ceams-btn--primary" :disabled="submitting" @click="submit">
+      <button class="ceams-btn ceams-btn--primary form__submit" :disabled="submitting" @click="submit">
         {{ submitting ? '提交中...' : '提交预定申请' }}
       </button>
       <text class="form__hint">提交后进入审批流程，可在待办中心查看进度</text>
@@ -252,40 +235,6 @@ onShow(() => {
   font-weight: var(--ceams-font-weight-semibold);
 }
 
-.field {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--ceams-space-sm) 0;
-  border-bottom: var(--ceams-border-width) solid var(--ceams-divider);
-}
-
-.field--column {
-  flex-direction: column;
-  align-items: flex-start;
-}
-
-.field__label {
-  color: var(--ceams-text-secondary);
-  font-size: var(--ceams-font-size-caption);
-}
-
-.field__value {
-  color: var(--ceams-text-primary);
-  font-size: var(--ceams-font-size-caption);
-}
-
-.field__input {
-  width: 100%;
-  margin-top: var(--ceams-space-xs);
-  padding: var(--ceams-space-sm);
-  background-color: var(--ceams-bg-subtle);
-  border-radius: var(--ceams-radius-md);
-  color: var(--ceams-text-primary);
-  font-size: var(--ceams-font-size-caption);
-  box-sizing: border-box;
-}
-
 .occupied {
   padding: var(--ceams-space-md) 0;
 }
@@ -316,6 +265,10 @@ onShow(() => {
 .occupied__subject {
   color: var(--ceams-text-secondary);
   font-size: var(--ceams-font-size-mini);
+}
+
+.form__submit {
+  margin-top: var(--ceams-space-lg);
 }
 
 .form__hint {

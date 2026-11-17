@@ -3,31 +3,41 @@ import { ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import type { VehicleVO } from '@ceams/types'
 import { apiClient } from '../../platform/http'
+import SchemaForm from '../../components/schema-form/schema-form.vue'
+import type { FormModel } from '../../schemas/form-schema'
+import { createFormModel, getFormSchema } from '../../schemas/form-schema'
 import { apiErrorMessage } from '../../utils/error'
 import { vehicleStatusLabels } from '../../utils/labels'
 
-interface ValueEvent {
-  detail?: { value?: string }
-}
-
-function eventValue(event: unknown): string {
-  const detail = (event as ValueEvent).detail
-  return detail && typeof detail.value === 'string' ? detail.value : ''
+/** 用车申请：车辆选择器留在页面级（需状态过滤），日期/时间/目的地/事由由 schema 渲染 */
+const schema = getFormSchema('ADMIN_VEHICLE_APPLY')
+if (!schema) {
+  throw new Error('缺少 ADMIN_VEHICLE_APPLY 表单 schema')
 }
 
 function today(): string {
   return new Date().toISOString().slice(0, 10)
 }
 
+function defaultForm(): FormModel {
+  return {
+    ...createFormModel(schema!),
+    useDate: today(),
+    startClock: '09:00',
+    endClock: '10:00'
+  }
+}
+
 const loading = ref(false)
 const submitting = ref(false)
 const vehicles = ref<VehicleVO[]>([])
 const activeVehicle = ref<VehicleVO | null>(null)
-const purpose = ref('')
-const destination = ref('')
-const date = ref(today())
-const startTime = ref('09:00')
-const endTime = ref('10:00')
+const form = ref<FormModel>(defaultForm())
+const formRef = ref<InstanceType<typeof SchemaForm> | null>(null)
+
+function text(key: string): string {
+  return String(form.value[key] ?? '').trim()
+}
 
 async function load(): Promise<void> {
   if (loading.value) return
@@ -47,6 +57,7 @@ async function load(): Promise<void> {
 
 function selectVehicle(vehicle: VehicleVO): void {
   activeVehicle.value = vehicle
+  form.value = defaultForm()
 }
 
 async function submit(): Promise<void> {
@@ -55,12 +66,13 @@ async function submit(): Promise<void> {
     uni.showToast({ title: '请先选择车辆', icon: 'none' })
     return
   }
-  if (!date.value) {
-    uni.showToast({ title: '请选择用车日期', icon: 'none' })
+  const error = formRef.value?.validate()
+  if (error) {
+    uni.showToast({ title: error, icon: 'none' })
     return
   }
-  const start = `${date.value}T${startTime.value}:00`
-  const end = `${date.value}T${endTime.value}:00`
+  const start = `${text('useDate')}T${text('startClock')}:00`
+  const end = `${text('useDate')}T${text('endClock')}:00`
   if (start >= end) {
     uni.showToast({ title: '结束时间必须晚于开始时间', icon: 'none' })
     return
@@ -69,18 +81,17 @@ async function submit(): Promise<void> {
   try {
     await apiClient.admin.vehicleApply({
       vehicleId: vehicle.id,
-      purpose: purpose.value.trim() || undefined,
-      destination: destination.value.trim() || undefined,
+      destination: text('destination'),
+      purpose: text('purpose'),
       startTime: start,
       endTime: end
     })
-    uni.showToast({ title: '用车申请已提交', icon: 'success' })
+    uni.showToast({ title: '已提交审批', icon: 'success' })
     activeVehicle.value = null
-    purpose.value = ''
-    destination.value = ''
-    await load()
+    form.value = defaultForm()
+    setTimeout(() => uni.navigateTo({ url: '/pages/bpm/todo?tab=initiated' }), 500)
   } catch (err) {
-    uni.showToast({ title: apiErrorMessage(err, '提交用车申请失败'), icon: 'none' })
+    uni.showToast({ title: apiErrorMessage(err, '提交失败'), icon: 'none' })
   } finally {
     submitting.value = false
   }
@@ -112,52 +123,11 @@ onShow(() => {
       <text v-if="item.insuranceExpire" class="vehicle__meta">保险到期 {{ item.insuranceExpire }}</text>
     </view>
 
-    <view v-if="activeVehicle" class="ceams-card form">
+    <view v-if="activeVehicle" class="form">
       <text class="form__title">用车申请：{{ activeVehicle.plateNo }}</text>
+      <SchemaForm ref="formRef" v-model="form" :schema="schema" :disabled="submitting" />
 
-      <view class="field">
-        <text class="field__label">用车日期</text>
-        <picker mode="date" :value="date" @change="date = eventValue($event)">
-          <view class="field__value">{{ date || '请选择' }}</view>
-        </picker>
-      </view>
-
-      <view class="field">
-        <text class="field__label">开始时间</text>
-        <picker mode="time" :value="startTime" @change="startTime = eventValue($event)">
-          <view class="field__value">{{ startTime }}</view>
-        </picker>
-      </view>
-
-      <view class="field">
-        <text class="field__label">结束时间</text>
-        <picker mode="time" :value="endTime" @change="endTime = eventValue($event)">
-          <view class="field__value">{{ endTime }}</view>
-        </picker>
-      </view>
-
-      <view class="field">
-        <text class="field__label">目的地</text>
-        <input
-          class="field__input"
-          :value="destination"
-          placeholder="目的地（可选）"
-          @input="destination = eventValue($event)"
-        />
-      </view>
-
-      <view class="field field--column">
-        <text class="field__label">用车事由</text>
-        <textarea
-          class="field__textarea"
-          :value="purpose"
-          placeholder="用车事由（可选）"
-          maxlength="200"
-          @input="purpose = eventValue($event)"
-        />
-      </view>
-
-      <button class="ceams-btn ceams-btn--primary" :disabled="submitting" @click="submit">
+      <button class="ceams-btn ceams-btn--primary form__submit" :disabled="submitting" @click="submit">
         {{ submitting ? '提交中...' : '提交用车申请' }}
       </button>
       <text class="form__hint">提交后进入审批流程，审批通过后可按时用车</text>
@@ -225,47 +195,8 @@ onShow(() => {
   font-weight: var(--ceams-font-weight-semibold);
 }
 
-.field {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--ceams-space-sm) 0;
-  border-bottom: var(--ceams-border-width) solid var(--ceams-divider);
-}
-
-.field--column {
-  flex-direction: column;
-  align-items: flex-start;
-}
-
-.field__label {
-  color: var(--ceams-text-secondary);
-  font-size: var(--ceams-font-size-caption);
-}
-
-.field__value {
-  color: var(--ceams-text-primary);
-  font-size: var(--ceams-font-size-caption);
-}
-
-.field__input {
-  flex: 1;
-  margin-left: var(--ceams-space-md);
-  color: var(--ceams-text-primary);
-  font-size: var(--ceams-font-size-caption);
-  text-align: right;
-}
-
-.field__textarea {
-  width: 100%;
-  min-height: 120px;
-  margin-top: var(--ceams-space-xs);
-  padding: var(--ceams-space-sm);
-  background-color: var(--ceams-bg-subtle);
-  border-radius: var(--ceams-radius-md);
-  color: var(--ceams-text-primary);
-  font-size: var(--ceams-font-size-caption);
-  box-sizing: border-box;
+.form__submit {
+  margin-top: var(--ceams-space-lg);
 }
 
 .form__hint {

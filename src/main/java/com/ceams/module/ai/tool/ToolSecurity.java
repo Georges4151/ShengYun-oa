@@ -26,6 +26,16 @@ public final class ToolSecurity {
         return SecurityUtils.getCurrentUserId();
     }
 
+    /** 是否为系统管理员（可查看全量人力、行政等管理数据）。 */
+    public static boolean isAdmin() {
+        return hasAnyRole("SYS_ADMIN");
+    }
+
+    /** 是否为财务角色（不含系统管理员，便于区分口径）。 */
+    public static boolean isFinance() {
+        return hasAnyRole("FINANCE");
+    }
+
     /** 是否为财务或系统管理员（可查看全量资金、银行、印章数据）。 */
     public static boolean isFinanceOrAdmin() {
         return hasAnyRole(FINANCE_ROLES);

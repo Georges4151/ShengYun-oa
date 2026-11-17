@@ -108,6 +108,21 @@ public class NotificationServiceImpl implements NotificationService {
         return String.valueOf(notification.getId());
     }
 
+    @Override
+    public boolean existsRecent(NotificationType type, String linkUrl, LocalDateTime since) {
+        if (type == null || linkUrl == null) {
+            return false;
+        }
+        LambdaQueryWrapper<Notification> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Notification::getNotificationType, type)
+                .eq(Notification::getLinkUrl, linkUrl);
+        if (since != null) {
+            wrapper.ge(Notification::getCreateTime, since);
+        }
+        Long count = notificationMapper.selectCount(wrapper);
+        return count != null && count > 0;
+    }
+
     /** 按请求组装通知字段（不含状态）。 */
     private Notification fromRequest(NotificationCreateRequest request) {
         Notification notification = new Notification();

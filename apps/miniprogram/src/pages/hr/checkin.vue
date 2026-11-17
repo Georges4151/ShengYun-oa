@@ -4,6 +4,9 @@ import { onShow, onUnload } from '@dcloudio/uni-app'
 import type { CheckinVO, HrCheckinStatus, HrCheckinType } from '@ceams/types'
 import { formatDate, formatDateTime } from '@ceams/utils'
 import { apiClient } from '../../platform/http'
+import SchemaForm from '../../components/schema-form/schema-form.vue'
+import type { FormModel } from '../../schemas/form-schema'
+import { createFormModel, getFormSchema } from '../../schemas/form-schema'
 import { apiErrorMessage, isEmployeeUnbound } from '../../utils/error'
 import { hrCheckinStatusLabels, hrCheckinTypeLabels } from '../../utils/labels'
 
@@ -17,10 +20,11 @@ const statusTagTypes: Record<HrCheckinStatus, TagType> = {
   ABSENT: 'rejected'
 }
 
-const supplementTypes: Array<{ value: HrCheckinType; label: string }> = [
-  { value: 'IN', label: '上班卡' },
-  { value: 'OUT', label: '下班卡' }
-]
+/** 补卡面板字段由 schema 渲染，打卡类型仍映射到后端枚举 */
+const supplementSchema = getFormSchema('HR_CHECKIN_SUPPLEMENT')
+if (!supplementSchema) {
+  throw new Error('缺少 HR_CHECKIN_SUPPLEMENT 表单 schema')
+}
 
 const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
 
@@ -33,12 +37,8 @@ const clocking = ref<HrCheckinType | ''>('')
 
 const showSupplement = ref(false)
 const supplementSubmitting = ref(false)
-const supplement = ref({
-  date: formatDate(now.value),
-  time: timeOf(now.value),
-  type: 'IN' as HrCheckinType,
-  reason: ''
-})
+const supplementForm = ref<FormModel>(createFormModel(supplementSchema))
+const supplementFormRef = ref<InstanceType<typeof SchemaForm> | null>(null)
 
 const timer = setInterval(() => {
   now.value = new Date()
@@ -74,12 +74,6 @@ function monthOf(date: Date): string {
 
 function timeOf(date: Date): string {
   return `${pad(date.getHours())}:${pad(date.getMinutes())}`
-}
-
-/** uni-app 事件在 DOM 类型里是 Event，实际携带 detail.value。 */
-function eventValue(event: Event): string {
-  const detail = (event as unknown as { detail?: { value?: string } }).detail
-  return detail?.value ?? ''
 }
 
 function timeOnly(value: string): string {
@@ -158,47 +152,45 @@ async function clock(type: HrCheckinType): Promise<void> {
   }
 }
 
-function toggleSupplement(): void {
-  showSupplement.value = !showSupplement.value
-  if (showSupplement.value) {
-    supplement.value = {
-      date: today.value,
-      time: timeOf(now.value),
-      type: 'IN',
-      reason: ''
-    }
+/** 补卡表单重置：日期默认今天、时间默认当前时刻 */
+function resetSupplement(): void {
+  supplementForm.value = {
+    ...createFormModel(supplementSchema!),
+    checkinDate: today.value,
+    checkinTime: timeOf(now.value)
   }
 }
 
-function selectSupplementType(type: HrCheckinType): void {
-  supplement.value.type = type
-}
-
-function onSupplementDate(event: Event): void {
-  supplement.value.date = eventValue(event)
-}
-
-function onSupplementTime(event: Event): void {
-  supplement.value.time = eventValue(event)
+function toggleSupplement(): void {
+  showSupplement.value = !showSupplement.value
+  if (showSupplement.value) {
+    resetSupplement()
+  }
 }
 
 async function submitSupplement(): Promise<void> {
   if (supplementSubmitting.value) return
-  const form = supplement.value
-  if (!form.date || !form.time) {
-    uni.showToast({ title: '请选择补卡日期与时间', icon: 'none' })
+  const error = supplementFormRef.value?.validate()
+  if (error) {
+    uni.showToast({ title: error, icon: 'none' })
     return
   }
+  const form = supplementForm.value
+  const checkinDate = String(form.checkinDate ?? '').trim()
+  const checkinClock = String(form.checkinTime ?? '').trim()
+  const checkinType = (String(form.checkinType ?? '').trim() || 'IN') as HrCheckinType
+  const reason = String(form.reason ?? '').trim()
   supplementSubmitting.value = true
   try {
     await apiClient.hr.checkinSupplement({
-      checkinDate: form.date,
-      checkinTime: `${form.date}T${form.time}:00`,
-      checkinType: form.type,
-      reason: form.reason.trim() || undefined
+      checkinDate,
+      checkinTime: `${checkinDate}T${checkinClock}:00`,
+      checkinType,
+      reason
     })
     uni.showToast({ title: '补卡申请已提交', icon: 'success' })
     showSupplement.value = false
+    await loadCheckins()
   } catch (err) {
     if (isEmployeeUnbound(err)) {
       unbound.value = true
@@ -306,41 +298,12 @@ onUnload(() => {
         </text>
 
         <view v-else class="supplement">
-          <view class="field">
-            <text class="field__label">补卡日期</text>
-            <picker mode="date" :value="supplement.date" @change="onSupplementDate">
-              <view class="field__value">{{ supplement.date || '请选择日期' }}</view>
-            </picker>
-          </view>
-          <view class="field">
-            <text class="field__label">补卡时间</text>
-            <picker mode="time" :value="supplement.time" @change="onSupplementTime">
-              <view class="field__value">{{ supplement.time || '请选择时间' }}</view>
-            </picker>
-          </view>
-          <view class="field">
-            <text class="field__label">打卡类型</text>
-            <view class="chips">
-              <view
-                v-for="option in supplementTypes"
-                :key="option.value"
-                class="chip"
-                :class="{ 'chip--active': supplement.type === option.value }"
-                @click="selectSupplementType(option.value)"
-              >
-                {{ option.label }}
-              </view>
-            </view>
-          </view>
-          <view class="field field--column">
-            <text class="field__label">补卡事由</text>
-            <textarea
-              v-model="supplement.reason"
-              class="field__textarea"
-              placeholder="请说明补卡原因（可选）"
-              :maxlength="500"
-            />
-          </view>
+          <SchemaForm
+            ref="supplementFormRef"
+            v-model="supplementForm"
+            :schema="supplementSchema"
+            :disabled="supplementSubmitting"
+          />
           <view class="supplement__actions">
             <button
               class="ceams-btn ceams-btn--primary supplement__btn"
@@ -468,66 +431,6 @@ onUnload(() => {
 
 .supplement {
   margin-top: var(--ceams-space-xs);
-}
-
-.field {
-  display: flex;
-  align-items: center;
-  padding: var(--ceams-space-sm) 0;
-  border-bottom: var(--ceams-border-width) solid var(--ceams-divider);
-}
-
-.field--column {
-  flex-direction: column;
-  align-items: stretch;
-  border-bottom: none;
-}
-
-.field__label {
-  width: 160rpx;
-  flex-shrink: 0;
-  color: var(--ceams-text-secondary);
-  font-size: var(--ceams-font-size-caption);
-}
-
-.field__value {
-  color: var(--ceams-text-primary);
-  font-size: var(--ceams-font-size-caption);
-  text-align: right;
-}
-
-.field__textarea {
-  width: 100%;
-  height: 140rpx;
-  margin-top: var(--ceams-space-xs);
-  padding: var(--ceams-space-md);
-  background-color: var(--ceams-bg-subtle);
-  border: var(--ceams-border-width) solid var(--ceams-border);
-  border-radius: var(--ceams-radius-md);
-  color: var(--ceams-text-primary);
-  font-size: var(--ceams-font-size-caption);
-  box-sizing: border-box;
-}
-
-.chips {
-  display: flex;
-  flex: 1;
-  justify-content: flex-end;
-  gap: var(--ceams-space-xs);
-}
-
-.chip {
-  padding: var(--ceams-space-2xs) var(--ceams-space-md);
-  border: var(--ceams-border-width) solid var(--ceams-border);
-  border-radius: var(--ceams-radius-pill);
-  color: var(--ceams-text-secondary);
-  font-size: var(--ceams-font-size-caption);
-}
-
-.chip--active {
-  border-color: var(--ceams-color-primary);
-  background-color: var(--ceams-color-primary-tint);
-  color: var(--ceams-color-primary);
 }
 
 .supplement__actions {

@@ -1,8 +1,18 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElButton, ElCard, ElEmpty, ElMessage, ElPagination, ElTag } from 'element-plus'
-import type { UserNotificationVO } from '@ceams/types'
+import {
+  ElButton,
+  ElCard,
+  ElEmpty,
+  ElMessage,
+  ElPagination,
+  ElRadioButton,
+  ElRadioGroup,
+  ElTag
+} from 'element-plus'
+import { notificationTypeLabels } from '@ceams/types'
+import type { NotificationType, UserNotificationPageQuery, UserNotificationVO } from '@ceams/types'
 import { formatDateTime } from '@ceams/utils'
 import { PageContainer } from '@ceams/ui-web'
 import { ceamsApi } from '@/services/http'
@@ -17,12 +27,26 @@ const SUMMARY_DEEP_LINK = 'ceams://ai/summary'
 /** 正文超过该长度（或超过 3 行）时折叠，避免长通知撑高列表 */
 const CONTENT_CLAMP_LENGTH = 120
 
+/** 通知类型筛选项的值：空字符串表示「全部」，其余与后端 NotificationType 枚举名一致 */
+type NotificationFilterValue = NotificationType | ''
+
+/** 顶部筛选组：仅暴露业务域（审批 / 人力 / 行政 / 文档），系统与公告统一归入「全部」 */
+const filterOptions: Array<{ value: NotificationFilterValue; label: string }> = [
+  { value: '', label: '全部' },
+  { value: 'APPROVAL', label: '审批' },
+  { value: 'HR', label: 'HR' },
+  { value: 'ADMIN', label: '行政' },
+  { value: 'DOC', label: '文档' }
+]
+
 const records = ref<UserNotificationVO[]>([])
 const page = ref(1)
 const size = ref(20)
 const total = ref(0)
 const unreadCount = ref(0)
 const loading = ref(false)
+/** 当前选中的通知类型过滤（空串 = 全部） */
+const filterType = ref<NotificationFilterValue>('')
 /** 正文展开状态（按用户通知 id 记录） */
 const expanded = ref<Record<string, boolean>>({})
 
@@ -33,7 +57,10 @@ const router = useRouter()
 async function load(): Promise<void> {
   loading.value = true
   try {
-    const res = await ceamsApi.notification.userNotificationMine({ page: page.value, size: size.value })
+    // type 为空时保持原有两参请求行为（不向后端传 type 查询参数）
+    const query: UserNotificationPageQuery = { page: page.value, size: size.value }
+    if (filterType.value) query.type = filterType.value
+    const res = await ceamsApi.notification.userNotificationMine(query)
     records.value = res.records
     total.value = res.total
     unreadCount.value = res.unreadCount
@@ -44,9 +71,23 @@ async function load(): Promise<void> {
   }
 }
 
+/** 切换类型筛选：重置到第一页、清空当前列表后重新查询 */
+function onFilterChange(): void {
+  page.value = 1
+  records.value = []
+  total.value = 0
+  expanded.value = {}
+  void load()
+}
+
 function onSearch(): void {
   page.value = 1
   void load()
+}
+
+/** 通知类型标签；旧数据缺少 notificationType 时返回空串（不渲染标签） */
+function typeLabel(item: UserNotificationVO): string {
+  return item.notificationType ? notificationTypeLabels[item.notificationType] : ''
 }
 
 function displayTitle(item: UserNotificationVO): string {
@@ -145,6 +186,12 @@ onMounted(() => {
     </template>
 
     <div class="notification-view">
+      <el-radio-group v-model="filterType" class="notification-view__filter" @change="onFilterChange">
+        <el-radio-button v-for="opt in filterOptions" :key="opt.value" :value="opt.value">
+          {{ opt.label }}
+        </el-radio-button>
+      </el-radio-group>
+
       <div class="notification-view__summary">
         <span class="notification-view__label">未读</span>
         <span class="notification-view__count">{{ unreadCount }}</span>
@@ -167,6 +214,7 @@ onMounted(() => {
               <div class="notification-item__head">
                 <div class="notification-item__title-line">
                   <span class="notification-item__title">{{ displayTitle(item) }}</span>
+                  <el-tag v-if="typeLabel(item)" size="small" effect="plain">{{ typeLabel(item) }}</el-tag>
                   <el-tag size="small" type="info" effect="plain">{{ channelLabel(item) }}</el-tag>
                   <el-tag v-if="item.isRead === 0" size="small" type="warning" effect="plain">未读</el-tag>
                   <el-tag v-else size="small" type="info" effect="plain">已读</el-tag>
@@ -225,6 +273,9 @@ onMounted(() => {
 </template>
 
 <style scoped>
+.notification-view__filter {
+  margin-bottom: 12px;
+}
 .notification-view__summary {
   display: flex;
   align-items: baseline;

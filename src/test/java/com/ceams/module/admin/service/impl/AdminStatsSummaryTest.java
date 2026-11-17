@@ -33,6 +33,8 @@ import com.ceams.module.admin.vo.VehicleUsageSummaryVO;
 import com.ceams.module.bpm.service.BpmAuditService;
 import com.ceams.module.bpm.service.BpmInstanceService;
 import com.ceams.module.iam.mapper.UserMapper;
+import com.ceams.module.notification.service.NotificationService;
+import com.ceams.module.notification.support.NotificationDispatchSupport;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -58,6 +60,8 @@ class AdminStatsSummaryTest {
     @Mock private AdminVehicleExpenseMapper expenseMapper;
     @Mock private AdminConflictGuard conflictGuard;
     @Mock private AdminRepairMapper repairMapper;
+    @Mock private NotificationService notificationService;
+    @Mock private NotificationDispatchSupport notificationDispatchSupport;
 
     private AdminAssetServiceImpl assetService;
     private AdminVehicleServiceImpl vehicleService;
@@ -82,7 +86,13 @@ class AdminStatsSummaryTest {
                         bpmInstanceService,
                         new AdminProperties());
         repairService =
-                new AdminRepairServiceImpl(repairMapper, noGenerator, bpmInstanceService, userMapper);
+                new AdminRepairServiceImpl(
+                        repairMapper,
+                        noGenerator,
+                        bpmInstanceService,
+                        userMapper,
+                        notificationService,
+                        notificationDispatchSupport);
     }
 
     // ------------------------------------------------------------------

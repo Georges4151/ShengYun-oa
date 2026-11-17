@@ -26,6 +26,8 @@ import com.ceams.module.hr.support.SimpleXlsxWriter;
 import com.ceams.module.hr.util.HrPageUtil;
 import com.ceams.module.hr.vo.SalarySlipPublishResultVO;
 import com.ceams.module.hr.vo.SalarySlipVO;
+import com.ceams.module.notification.enums.NotificationType;
+import com.ceams.module.notification.support.NotificationDispatchSupport;
 import java.io.OutputStream;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
@@ -84,6 +86,7 @@ public class HrSalarySlipServiceImpl implements HrSalarySlipService {
     private final HrEmployeeService employeeService;
     private final SalarySlipCodec codec;
     private final BpmAuditService bpmAuditService;
+    private final NotificationDispatchSupport notificationDispatchSupport;
 
     /** 审计目标类型：工资条（按月批量发布，targetId 为空）。 */
     private static final String AUDIT_TARGET = "HR_SALARY_SLIP";
@@ -110,6 +113,8 @@ public class HrSalarySlipServiceImpl implements HrSalarySlipService {
         int lockedCount = 0;
         int published = 0;
         int skipped = 0;
+        // 本次实际新插入工资条的员工 ID，仅对其发送发布通知
+        List<Long> publishedEmployeeIds = new ArrayList<>();
         for (HrSalaryCalc calc : calcs) {
             if (calc.getStatus() != PayrollStatus.CONFIRMED) {
                 skipped++;
@@ -132,6 +137,7 @@ public class HrSalarySlipServiceImpl implements HrSalarySlipService {
             slip.setPublishedAt(now);
             slip.setReadStatus(SalarySlipReadStatus.PENDING);
             slipMapper.insert(slip);
+            publishedEmployeeIds.add(calc.getEmployeeId());
             published++;
         }
 
@@ -161,7 +167,49 @@ public class HrSalarySlipServiceImpl implements HrSalarySlipService {
                 after,
                 null,
                 SecurityUtils.getCurrentUserIdOrDefault());
+        // 仅对本次实际新插入的工资条发送站内通知（重复发布被跳过时不发送）
+        notifyPublished(monthText, publishedEmployeeIds, employees);
         return new SalarySlipPublishResultVO(monthText, calcs.size(), published, skipped, warnings);
+    }
+
+    /**
+     * 工资条发布通知：按员工绑定的系统账号去重后发送，通知失败不影响发布结果。
+     *
+     * @param monthText 核算月（yyyy-MM）
+     * @param publishedEmployeeIds 本次新插入工资条的员工 ID
+     * @param employees 员工档案索引（employeeId -> HrEmployee）
+     */
+    private void notifyPublished(
+            String monthText, List<Long> publishedEmployeeIds, Map<Long, HrEmployee> employees) {
+        if (publishedEmployeeIds.isEmpty()) {
+            return;
+        }
+        List<Long> userIds =
+                publishedEmployeeIds.stream()
+                        .map(employees::get)
+                        .filter(Objects::nonNull)
+                        .map(HrEmployee::getUserId)
+                        .filter(Objects::nonNull)
+                        .distinct()
+                        .toList();
+        if (userIds.isEmpty()) {
+            return;
+        }
+        try {
+            notificationDispatchSupport.send(
+                    NotificationType.HR,
+                    "工资条已发布（" + monthText + "）",
+                    "您 " + monthText + " 的工资条已发布，可前往工资条页面查看明细。",
+                    "ceams://hr/salary-slip?month=" + monthText,
+                    userIds);
+        } catch (Exception e) {
+            log.warn(
+                    "工资条发布通知发送失败（已忽略，不影响发布结果）：月份 {}，接收人数 {}，原因 {}",
+                    monthText,
+                    userIds.size(),
+                    e.getMessage(),
+                    e);
+        }
     }
 
     // ------------------------------------------------------------------

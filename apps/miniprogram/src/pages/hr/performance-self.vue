@@ -36,6 +36,9 @@ const activeReview = computed<PerformanceReviewVO | null>(
   () => reviews.value.find((item) => item.id === activeId.value) ?? null
 )
 
+/** 可编辑判定完全由后端字段决定；旧数据无该字段时视为不可编辑 */
+const editable = computed<boolean>(() => activeReview.value?.canSelfEvaluate === true)
+
 /** 优先取考评单返回的模板指标快照；缺失时回退到已存在的自评明细。 */
 const activeItems = computed<PerformanceItem[]>(() => {
   const review = activeReview.value
@@ -64,13 +67,13 @@ function selectReview(review: PerformanceReviewVO): void {
   comment.value = review.selfComment ?? ''
 }
 
-/** 仅本人 DRAFT 考评单可自评；进入页面即刷新。 */
+/** 仅展示后端标记可自评的考评单；进入页面即刷新。 */
 async function load(): Promise<void> {
   if (loading.value) return
   loading.value = true
   try {
     const res = await apiClient.hr.myPerformanceReviews({ page: 1, size: 50 })
-    reviews.value = res.records.filter((item) => item.status === 'DRAFT')
+    reviews.value = res.records.filter((item) => item.canSelfEvaluate === true)
     if (reviews.value.length > 0) {
       const exists = reviews.value.some((item) => item.id === activeId.value)
       selectReview(exists ? reviews.value.find((item) => item.id === activeId.value)! : reviews.value[0])
@@ -96,7 +99,7 @@ function onCommentInput(event: Event): void {
 
 async function submit(): Promise<void> {
   const review = activeReview.value
-  if (!review) return
+  if (!review || !editable.value) return
   if (activeItems.value.length === 0) {
     uni.showToast({ title: '未能获取绩效指标，请联系 HR', icon: 'none' })
     return
@@ -188,6 +191,7 @@ onShow(() => {
             type="number"
             :value="scores[item.name] ?? ''"
             placeholder="0-100"
+            :disabled="!editable || submitting"
             @input="onScoreInput(item.name, $event)"
           />
         </view>
@@ -204,11 +208,12 @@ onShow(() => {
           :value="comment"
           placeholder="请输入自评评语（可选）"
           maxlength="500"
+          :disabled="!editable || submitting"
           @input="onCommentInput"
         />
       </view>
 
-      <view class="submit">
+      <view v-if="editable" class="submit">
         <button
           class="ceams-btn ceams-btn--primary"
           :disabled="submitting || activeItems.length === 0"

@@ -536,6 +536,8 @@ export interface PerformanceReviewVO {
   finalScore?: Money | null
   coefficient?: Money | null
   status: HrPerformanceReviewStatus
+  /** 后端只读判定：当前登录员工此刻是否可提交自评（草稿、未提交且为本人） */
+  canSelfEvaluate?: boolean
   bpmInstanceId?: Id | null
   createTime?: DateTime
   updateTime?: DateTime

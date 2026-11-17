@@ -1,0 +1,31 @@
+{
+  "bizType": "ADMIN_ASSET_BORROW",
+  "sections": [
+    {
+      "title": "领用信息",
+      "fields": [
+        {
+          "key": "borrowDate",
+          "label": "领用日期",
+          "type": "string",
+          "format": "date",
+          "required": true
+        },
+        {
+          "key": "expectedReturnDate",
+          "label": "预计归还日期",
+          "type": "string",
+          "format": "date"
+        },
+        {
+          "key": "remark",
+          "label": "领用说明",
+          "type": "string",
+          "format": "textarea",
+          "maxLength": 200,
+          "placeholder": "请填写领用说明（可选）"
+        }
+      ]
+    }
+  ]
+}

@@ -19,7 +19,7 @@ const props = defineProps<{
 
 const model = defineModel<FormModel>({ required: true })
 
-type Widget = 'text' | 'number' | 'textarea' | 'date' | 'select' | 'attachment'
+type Widget = 'text' | 'number' | 'textarea' | 'date' | 'time' | 'select' | 'attachment'
 
 const uploading = ref('')
 
@@ -33,6 +33,7 @@ function eventValue(event: Event): string {
 function widgetOf(field: FormField): Widget {
   if (field.enum?.length) return 'select'
   if (field.format === 'date') return 'date'
+  if (field.format === 'time') return 'time'
   if (field.format === 'textarea') return 'textarea'
   if (field.format === 'attachment') return 'attachment'
   return field.type === 'string' ? 'text' : 'number'
@@ -220,6 +221,18 @@ defineExpose({ validate })
         >
           <view class="field__picker" :class="{ 'field__picker--empty': !valueOf(field) }">
             {{ valueOf(field) || '请选择日期' }}
+          </view>
+        </picker>
+
+        <picker
+          v-else-if="widgetOf(field) === 'time'"
+          mode="time"
+          :value="valueOf(field)"
+          :disabled="disabled"
+          @change="onDateChange(field, $event)"
+        >
+          <view class="field__picker" :class="{ 'field__picker--empty': !valueOf(field) }">
+            {{ valueOf(field) || '请选择时间' }}
           </view>
         </picker>
 

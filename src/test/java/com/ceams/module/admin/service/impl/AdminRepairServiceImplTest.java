@@ -21,6 +21,8 @@ import com.ceams.module.admin.support.AdminNoGenerator;
 import com.ceams.module.bpm.dto.InstanceStartRequest;
 import com.ceams.module.bpm.service.BpmInstanceService;
 import com.ceams.module.iam.mapper.UserMapper;
+import com.ceams.module.notification.service.NotificationService;
+import com.ceams.module.notification.support.NotificationDispatchSupport;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -48,6 +50,8 @@ class AdminRepairServiceImplTest {
     @Mock private AdminNoGenerator noGenerator;
     @Mock private BpmInstanceService bpmInstanceService;
     @Mock private UserMapper userMapper;
+    @Mock private NotificationService notificationService;
+    @Mock private NotificationDispatchSupport notificationDispatchSupport;
 
     private AdminRepairServiceImpl repairService;
 
@@ -55,7 +59,12 @@ class AdminRepairServiceImplTest {
     void setUp() {
         repairService =
                 new AdminRepairServiceImpl(
-                        repairMapper, noGenerator, bpmInstanceService, userMapper);
+                        repairMapper,
+                        noGenerator,
+                        bpmInstanceService,
+                        userMapper,
+                        notificationService,
+                        notificationDispatchSupport);
     }
 
     @AfterEach

@@ -3,29 +3,42 @@ import { ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import type { AssetVO } from '@ceams/types'
 import { apiClient } from '../../platform/http'
+import SchemaForm from '../../components/schema-form/schema-form.vue'
+import type { FormModel } from '../../schemas/form-schema'
+import { createFormModel, getFormSchema } from '../../schemas/form-schema'
 import { apiErrorMessage } from '../../utils/error'
 import { assetCategoryLabels, assetStatusLabels } from '../../utils/labels'
 
-interface ValueEvent {
-  detail?: { value?: string }
-}
-
-function eventValue(event: unknown): string {
-  const detail = (event as ValueEvent).detail
-  return detail && typeof detail.value === 'string' ? detail.value : ''
+/** 资产领用：资产选择器留在页面级（需状态过滤），其余字段由 schema 渲染 */
+const schema = getFormSchema('ADMIN_ASSET_BORROW')
+if (!schema) {
+  throw new Error('缺少 ADMIN_ASSET_BORROW 表单 schema')
 }
 
 function today(): string {
   return new Date().toISOString().slice(0, 10)
 }
 
+/** 每次选择资产后重置表单，领用日期默认今天 */
+function defaultForm(): FormModel {
+  return { ...createFormModel(schema!), borrowDate: today() }
+}
+
 const loading = ref(false)
 const submitting = ref(false)
 const assets = ref<AssetVO[]>([])
 const activeAsset = ref<AssetVO | null>(null)
-const borrowDate = ref(today())
-const expectedReturnDate = ref('')
-const remark = ref('')
+const form = ref<FormModel>(defaultForm())
+const formRef = ref<InstanceType<typeof SchemaForm> | null>(null)
+
+function text(key: string): string {
+  return String(form.value[key] ?? '').trim()
+}
+
+function optional(key: string): string | undefined {
+  const value = text(key)
+  return value || undefined
+}
 
 async function load(): Promise<void> {
   if (loading.value) return
@@ -45,37 +58,37 @@ async function load(): Promise<void> {
 
 function selectAsset(asset: AssetVO): void {
   activeAsset.value = asset
-  borrowDate.value = today()
-  expectedReturnDate.value = ''
-  remark.value = ''
+  form.value = defaultForm()
 }
 
 async function submit(): Promise<void> {
   const asset = activeAsset.value
   if (!asset) {
-    uni.showToast({ title: '请先选择要领用的资产', icon: 'none' })
+    uni.showToast({ title: '请选择要领用的资产', icon: 'none' })
     return
   }
-  if (!borrowDate.value) {
-    uni.showToast({ title: '请选择领用日期', icon: 'none' })
+  const error = formRef.value?.validate()
+  if (error) {
+    uni.showToast({ title: error, icon: 'none' })
     return
   }
-  if (expectedReturnDate.value && expectedReturnDate.value < borrowDate.value) {
+  if (text('expectedReturnDate') && text('expectedReturnDate') < text('borrowDate')) {
     uni.showToast({ title: '预计归还日期不能早于领用日期', icon: 'none' })
     return
   }
   submitting.value = true
   try {
     await apiClient.admin.assetBorrow(asset.id, {
-      borrowDate: borrowDate.value,
-      expectedReturnDate: expectedReturnDate.value || undefined,
-      remark: remark.value.trim() || undefined
+      borrowDate: text('borrowDate'),
+      expectedReturnDate: optional('expectedReturnDate'),
+      remark: optional('remark')
     })
-    uni.showToast({ title: '领用申请已提交', icon: 'success' })
+    uni.showToast({ title: '已提交审批', icon: 'success' })
     activeAsset.value = null
-    await load()
+    form.value = defaultForm()
+    setTimeout(() => uni.navigateTo({ url: '/pages/bpm/todo?tab=initiated' }), 500)
   } catch (err) {
-    uni.showToast({ title: apiErrorMessage(err, '提交领用申请失败'), icon: 'none' })
+    uni.showToast({ title: apiErrorMessage(err, '提交失败'), icon: 'none' })
   } finally {
     submitting.value = false
   }
@@ -89,10 +102,7 @@ onShow(() => {
 <template>
   <view class="ceams-page">
     <view v-if="loading && assets.length === 0" class="state">加载中...</view>
-
-    <view v-if="!loading && assets.length === 0" class="state">
-      暂无可领用的在库资产
-    </view>
+    <view v-if="!loading && assets.length === 0" class="state">暂无可领用的在库资产</view>
 
     <view class="section-title">可领用资产</view>
     <view
@@ -114,35 +124,11 @@ onShow(() => {
       <text v-if="item.specification" class="asset__meta">规格 {{ item.specification }}</text>
     </view>
 
-    <view v-if="activeAsset" class="ceams-card form">
+    <view v-if="activeAsset" class="form">
       <text class="form__title">领用申请：{{ activeAsset.name }}</text>
+      <SchemaForm ref="formRef" v-model="form" :schema="schema" :disabled="submitting" />
 
-      <view class="field">
-        <text class="field__label">领用日期</text>
-        <picker mode="date" :value="borrowDate" @change="borrowDate = eventValue($event)">
-          <view class="field__value">{{ borrowDate || '请选择' }}</view>
-        </picker>
-      </view>
-
-      <view class="field">
-        <text class="field__label">预计归还</text>
-        <picker mode="date" :value="expectedReturnDate" @change="expectedReturnDate = eventValue($event)">
-          <view class="field__value">{{ expectedReturnDate || '请选择（可选）' }}</view>
-        </picker>
-      </view>
-
-      <view class="field field--column">
-        <text class="field__label">领用说明</text>
-        <textarea
-          class="field__textarea"
-          :value="remark"
-          placeholder="领用说明（可选）"
-          maxlength="200"
-          @input="remark = eventValue($event)"
-        />
-      </view>
-
-      <button class="ceams-btn ceams-btn--primary" :disabled="submitting" @click="submit">
+      <button class="ceams-btn ceams-btn--primary form__submit" :disabled="submitting" @click="submit">
         {{ submitting ? '提交中...' : '提交领用申请' }}
       </button>
       <text class="form__hint">提交后进入审批流程，可在待办中心查看进度</text>
@@ -210,39 +196,8 @@ onShow(() => {
   font-weight: var(--ceams-font-weight-semibold);
 }
 
-.field {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--ceams-space-sm) 0;
-  border-bottom: var(--ceams-border-width) solid var(--ceams-divider);
-}
-
-.field--column {
-  flex-direction: column;
-  align-items: flex-start;
-}
-
-.field__label {
-  color: var(--ceams-text-secondary);
-  font-size: var(--ceams-font-size-caption);
-}
-
-.field__value {
-  color: var(--ceams-text-primary);
-  font-size: var(--ceams-font-size-caption);
-}
-
-.field__textarea {
-  width: 100%;
-  min-height: 120px;
-  margin-top: var(--ceams-space-xs);
-  padding: var(--ceams-space-sm);
-  background-color: var(--ceams-bg-subtle);
-  border-radius: var(--ceams-radius-md);
-  color: var(--ceams-text-primary);
-  font-size: var(--ceams-font-size-caption);
-  box-sizing: border-box;
+.form__submit {
+  margin-top: var(--ceams-space-lg);
 }
 
 .form__hint {

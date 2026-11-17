@@ -36,6 +36,16 @@ public interface NotificationService {
     String createAndPublishToUsers(
             NotificationCreateRequest request, Collection<Long> targetUserIds);
 
+    /**
+     * 同一类型 + 同一深链在指定时间之后是否已存在通知（业务事件提醒的 24 小时去重判断）。
+     *
+     * @param type 通知类型
+     * @param linkUrl 通知深链（内含业务单据 ID，天然按单据去重）
+     * @param since 统计起点（含），为空表示不限时间
+     * @return 存在则返回 true
+     */
+    boolean existsRecent(NotificationType type, String linkUrl, LocalDateTime since);
+
     void update(Long id, NotificationUpdateRequest request);
 
     void delete(Long id);

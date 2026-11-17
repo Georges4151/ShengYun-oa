@@ -1,6 +1,7 @@
 package com.ceams.module.notification.controller;
 
 import com.ceams.common.response.ApiResponse;
+import com.ceams.module.notification.enums.NotificationType;
 import com.ceams.module.notification.service.UserNotificationService;
 import com.ceams.module.notification.vo.UserNotificationMineVO;
 import lombok.RequiredArgsConstructor;
@@ -24,8 +25,10 @@ public class UserNotificationController {
     @PreAuthorize("isAuthenticated()")
     public ApiResponse<UserNotificationMineVO> mine(
             @RequestParam(defaultValue = "1") long page,
-            @RequestParam(defaultValue = "20") long size) {
-        return ApiResponse.success(userNotificationService.mine(page, size));
+            @RequestParam(defaultValue = "20") long size,
+            @RequestParam(required = false) NotificationType type) {
+        // 非法枚举值由 Spring 参数转换失败返回 400
+        return ApiResponse.success(userNotificationService.mine(page, size, type));
     }
 
     @GetMapping("/unread-count")

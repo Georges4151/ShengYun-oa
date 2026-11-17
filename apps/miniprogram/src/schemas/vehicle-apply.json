@@ -1,0 +1,48 @@
+{
+  "bizType": "ADMIN_VEHICLE_APPLY",
+  "sections": [
+    {
+      "title": "用车信息",
+      "fields": [
+        {
+          "key": "useDate",
+          "label": "用车日期",
+          "type": "string",
+          "format": "date",
+          "required": true
+        },
+        {
+          "key": "startClock",
+          "label": "开始时间",
+          "type": "string",
+          "format": "time",
+          "required": true
+        },
+        {
+          "key": "endClock",
+          "label": "结束时间",
+          "type": "string",
+          "format": "time",
+          "required": true
+        },
+        {
+          "key": "destination",
+          "label": "目的地",
+          "type": "string",
+          "required": true,
+          "maxLength": 100,
+          "placeholder": "请输入目的地"
+        },
+        {
+          "key": "purpose",
+          "label": "用车事由",
+          "type": "string",
+          "format": "textarea",
+          "required": true,
+          "maxLength": 200,
+          "placeholder": "请填写用车事由"
+        }
+      ]
+    }
+  ]
+}

@@ -75,7 +75,9 @@ export function createNotificationApi(client: HttpClient): NotificationApi {
       return client.get<UserNotificationMineVO>('/api/v1/notifications/user-notifications/mine', {
         query: {
           page: query.page ?? 1,
-          size: query.size ?? 20
+          size: query.size ?? 20,
+          // 通知类型过滤：空值由 buildQuery 自动跳过，保持原有「不带 type」的请求行为
+          type: query.type
         }
       })
     },

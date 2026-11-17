@@ -25,6 +25,7 @@ import com.ceams.module.hr.service.HrEmployeeService;
 import com.ceams.module.hr.support.SalarySlipCodec;
 import com.ceams.module.hr.vo.SalarySlipPublishResultVO;
 import com.ceams.module.hr.vo.SalarySlipVO;
+import com.ceams.module.notification.support.NotificationDispatchSupport;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
@@ -70,6 +71,7 @@ class HrSalarySlipServiceImplTest {
     @Mock private HrEmployeeMapper employeeMapper;
     @Mock private HrEmployeeService employeeService;
     @Mock private BpmAuditService bpmAuditService;
+    @Mock private NotificationDispatchSupport notificationDispatchSupport;
 
     private SalarySlipCodec codec;
     private HrSalarySlipServiceImpl slipService;
@@ -79,7 +81,13 @@ class HrSalarySlipServiceImplTest {
         codec = new SalarySlipCodec(new SensitiveEncryptor(SECRET), objectMapper);
         slipService =
                 new HrSalarySlipServiceImpl(
-                        slipMapper, calcMapper, employeeMapper, employeeService, codec, bpmAuditService);
+                        slipMapper,
+                        calcMapper,
+                        employeeMapper,
+                        employeeService,
+                        codec,
+                        bpmAuditService,
+                        notificationDispatchSupport);
     }
 
     @Test

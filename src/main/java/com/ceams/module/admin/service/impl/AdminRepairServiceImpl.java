@@ -27,6 +27,9 @@ import com.ceams.module.bpm.service.BpmInstanceService;
 import com.ceams.module.hr.util.HrPageUtil;
 import com.ceams.module.iam.entity.SysUser;
 import com.ceams.module.iam.mapper.UserMapper;
+import com.ceams.module.notification.enums.NotificationType;
+import com.ceams.module.notification.service.NotificationService;
+import com.ceams.module.notification.support.NotificationDispatchSupport;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Duration;
@@ -70,10 +73,15 @@ public class AdminRepairServiceImpl implements AdminRepairService {
     /** 平均时长保留 2 位小数。 */
     private static final int HOURS_SCALE = 2;
 
+    /** 同一工单派单提醒去重窗口（小时）。 */
+    private static final long DEDUP_HOURS = 24L;
+
     private final AdminRepairMapper repairMapper;
     private final AdminNoGenerator noGenerator;
     private final BpmInstanceService bpmInstanceService;
     private final UserMapper userMapper;
+    private final NotificationService notificationService;
+    private final NotificationDispatchSupport notificationDispatchSupport;
 
     @Override
     @Transactional
@@ -173,6 +181,8 @@ public class AdminRepairServiceImpl implements AdminRepairService {
         if (request == null || request.getAssigneeId() == null) {
             throw BusinessException.of(ErrorCode.VALID_ILLEGAL_ARGUMENT, "维修人不能为空");
         }
+        // 审批回调会先写入 assignedAt，因此首次派单只能以「更新前 assigneeId 为空」判定
+        boolean firstAssign = repair.getAssigneeId() == null;
 
         AdminRepair patch = new AdminRepair();
         // 条件更新已保证并发安全，version 置空避免叠加乐观锁导致条件更新失效
@@ -192,6 +202,36 @@ public class AdminRepairServiceImpl implements AdminRepairService {
             throw BusinessException.of(ErrorCode.BIZ_STATE_CONFLICT, "工单状态已变更，请刷新后重试");
         }
         log.info("报修工单 {} 派单给 {}", id, request.getAssigneeId());
+        if (firstAssign) {
+            notifyAssignee(repair, request.getAssigneeId());
+        }
+    }
+
+    /** 首次派单通知维修人：24 小时内同一工单已提醒过则跳过，通知失败不影响派单结果。 */
+    private void notifyAssignee(AdminRepair repair, Long assigneeId) {
+        if (assigneeId == null) {
+            return;
+        }
+        String linkUrl = "ceams://admin/repair/" + repair.getId();
+        try {
+            if (notificationService.existsRecent(
+                    NotificationType.ADMIN, linkUrl, LocalDateTime.now().minusHours(DEDUP_HOURS))) {
+                return;
+            }
+            String content =
+                    "报修工单 "
+                            + (repair.getRepairNo() == null ? repair.getId() : repair.getRepairNo())
+                            + " 已派给您处理，请及时响应。";
+            notificationDispatchSupport.send(
+                    NotificationType.ADMIN, "新报修工单已派给您", content, linkUrl, List.of(assigneeId));
+        } catch (Exception e) {
+            log.warn(
+                    "报修派单通知发送失败（已忽略，不影响派单结果）：repairId={}，assigneeId={}，原因={}",
+                    repair.getId(),
+                    assigneeId,
+                    e.getMessage(),
+                    e);
+        }
     }
 
     @Override

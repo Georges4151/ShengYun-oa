@@ -38,6 +38,16 @@ export function getUserName(): string {
   return user?.name || user?.username || ''
 }
 
+/**
+ * 当前登录用户的角色编码集合（如 SYS_ADMIN / FINANCE / STAFF）。
+ * 未登录、无角色时返回空数组，调用方据此做入口显隐。
+ */
+export function rolesOf(): string[] {
+  const user = getStoredUser()
+  if (!user?.roles?.length) return []
+  return user.roles.map((role) => role.code).filter((code) => Boolean(code))
+}
+
 /** 保存登录 / 刷新返回的完整会话（令牌对 + 用户）。 */
 export function setSession(data: LoginData): void {
   setStoredAccessToken(data.tokenPair.accessToken)

@@ -94,13 +94,13 @@
 | M3 | 行政后勤：资产、易耗品、车辆、会议室、访客、报修 | 六类业务可闭环，领用/用车/预定/报修接入 BPM | 已完成（V33～V37；11 表、权限 170～177、模板 9011～9015；419 用例；六条全链路冒烟全绿） |
 | M4 | 文档知识库 + OnlyOffice | 目录/文件/版本/权限可用，Office 文档可在线编辑回写 | 已完成（V38～V39；464 用例；OnlyOffice 8.1 容器化；六步冒烟与开/关双跑通过） |
 | M5 | 企业微信完整集成 | 组织同步、扫码登录、应用消息重试可用 | 已完成（V40～V41；490 用例；Web/小程序类型检查与构建通过；未启用态接口冒烟通过；启用态凭证与真机扫码待上线前补验） |
-| M6 | 小程序与存量适配 | 四类待办、HR 自助、AI 工具、报表指标补齐 | 未开始 |
+| M6 | 小程序与存量适配 | 四类待办、HR 自助、AI 工具、报表指标补齐 | 已完成（V42；531 用例；Web/小程序类型检查与构建通过；报表、通知筛选、AI 工具注册冒烟通过） |
 
 实施顺序：M1 → M2 → M3 → M4 → M5 → M6。M6 中的小程序页面随各里程碑同步开发，最后统一联调。
 
 ### 3.1 当前进度与交接（2026-11-17）
 
-**已完成**：M1～M5。后端单测 **490 例 0 失败**；Web `build`（1935 modules）与 `typecheck`、小程序 `typecheck` 均通过；Flyway 已执行到 **v41**。
+**已完成**：M1～M6。后端单测 **531 例 0 失败**；Web `build`（1935 modules）与 `typecheck`、小程序 `typecheck`/`build:mp-weixin` 均通过；Flyway 已执行到 **v42**。
 
 **M5 已落地清单**
 
@@ -112,11 +112,20 @@
 | 前端 | 类型与 API 域 `packages/types/src/integration.ts`、`packages/api-client/src/domains/integration.ts`；页面 `views/integration/WeComView.vue`、`views/auth/WeComCallbackView.vue`；登录页扫码入口；路由 `/integration/wecom`、`/login/wecom`（白名单匿名）；`usePermission` 登记 184/185 |
 | 部署 | `docker-compose.yml` 增加 `WECOM_APP_ENABLED/CORP_ID/AGENT_ID/SECRET/REDIRECT_URI`（默认关闭） |
 
-**待补验（不阻塞 M6）**：①`WECOM_APP_ENABLED=true` + 无效凭证 → `POST /sync` 批次应为 `FAILED` 且 `error_msg` 明确；②真机扫码登录需可信域名与回调白名单。当前 Docker Desktop 守护进程已停止，`sxassist-app-1` 处于停止状态，需先启动 Docker 再补跑。
+**M6 已落地清单**
 
-**下一步（M6）**：第九节目前仍是简版（9.1 小程序补齐、9.2 AI 只读工具、9.3 报表指标、9.4 通知扩展、9.5 验收），需按第八节颗粒度扩写为 9.1～9.11 后再分 P1～P5 实施。M6 若需迁移从 **V42** 起，权限编号从 **186** 起、`sys_role_permission` 从 **1124** 起（以实际库为准）。
+| 项 | 内容 |
+|---|---|
+| 迁移 | `V42__m6_report_permission_seed.sql`（权限 186 `report`、187 `report:hr-cost:view`、188 `report:hr-performance:view`、189 `report:admin-assets:view`；角色权限 1124～1127 授 SYS_ADMIN） |
+| 报表 | `ReportController` 新增 `GET /api/v1/reports/hr-cost`、`/hr-performance`、`/admin-assets`、`/bpm-efficiency`；`ReportView.vue` 第 3 行 4 卡片 + 4 页签按权限显隐 |
+| AI 工具 | 新增 `HrHeadcountTool`、`AttendanceSummaryTool`、`PayrollSummaryTool`、`AssetInventoryTool`、`VehicleUsageTool`、`RepairStatsTool`；`ToolRegistry` 白名单 9→15；`ToolSecurity.isAdmin()/isFinance()`；`AiChatServiceImpl` 增加薪资明细拦截与 HR/行政口径提示 |
+| 通知 | `NotificationType` 增 `HR/ADMIN/DOC`；`mine` 支持 `type` 筛选（`@Select` 联表分页）；`NotificationService.existsRecent` 24h 去重；接入工资条发布、合同到期/资产逾期调度（`HrAdminReminderScheduler`）、报修派单；Web/小程序通知页增加类型筛选与深链跳转 |
+| 小程序 | 新增 `pages/bpm/todo`（四类待办）、`pages/doc/list`（知识库只读）；新增 4 张 schema（资产领用/用车/会议室/补卡）与 `time` 控件；资产/用车/会议室/补卡四页改 SchemaForm；绩效自评改用 `canSelfEvaluate`；首页入口按角色过滤 |
+| 测试 | 新增 `M6ReadOnlyToolSecurityTest`(4)、`UserNotificationTypeFilterTest`(2)、`M6ReminderNotificationTest`(2)、`PerformanceSelfFlagTest`(1)，`ToolRegistryTest` 断言 9→15；全量 **531 例 0 失败** |
 
-**固定约束**：只做增量 Flyway、不改已执行脚本（V23～V41）、不重建库、不 git 提交、中文注释、金额用 `BigDecimal`、薪资/手机号密文存储（`v1:` 前缀）、单测不用 `LambdaQueryWrapper.select(lambda)`、置空用 `UpdateWrapper.set(col, null)`、新建 Mapper 必须带 `@Mapper`。
+**待补验（不阻塞交付）**：①WeCom 启用态凭证与真机扫码（见上）；②小程序真机定位/WiFi 降级与 BPM 待办真机联调需在开发者工具 + 真机各验一次。
+
+**固定约束**：只做增量 Flyway、不改已执行脚本（V23～V42）、不重建库、不 git 提交、中文注释、金额用 `BigDecimal`、薪资/手机号密文存储（`v1:` 前缀）、单测不用 `LambdaQueryWrapper.select(lambda)`、置空用 `UpdateWrapper.set(col, null)`、新建 Mapper 必须带 `@Mapper`。
 
 ---
 

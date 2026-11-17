@@ -84,7 +84,11 @@ export const bpmBizTypeLabels: Record<string, string> = {
   HR_TRANSFER: '调岗',
   HR_RESIGN: '离职',
   HR_LEAVE: '请假',
-  HR_CHECKIN_SUPPLEMENT: '补卡'
+  HR_CHECKIN_SUPPLEMENT: '补卡',
+  // M6 行政域流程（P5 待办页复用，提前补齐避免二次改动）
+  ADMIN_ASSET_BORROW: '资产领用',
+  ADMIN_VEHICLE_APPLY: '用车',
+  ADMIN_MEETING_APPLY: '会议室预定'
 }
 
 export const bpmInstanceStatusLabels: Record<string, string> = {
@@ -138,7 +142,10 @@ export const allocationStatusLabels: Record<AllocationStatus, string> = {
 export const notificationTypeLabels: Record<NotificationType, string> = {
   SYSTEM: '系统',
   APPROVAL: '审批',
-  ANNOUNCEMENT: '公告'
+  ANNOUNCEMENT: '公告',
+  HR: '人力',
+  ADMIN: '行政',
+  DOC: '文档'
 }
 
 export const notificationPriorityLabels: Record<NotificationPriority, string> = {

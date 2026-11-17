@@ -13,10 +13,24 @@ import type { DateTime, Id } from './common'
 // ---------- 枚举 ----------
 export type NotificationStatus = 'DRAFT' | 'PUBLISHED' | 'REVOKED'
 export type NotificationPriority = 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT'
-export type NotificationType = 'SYSTEM' | 'APPROVAL' | 'ANNOUNCEMENT'
+/**
+ * 通知类型：系统 / 审批 / 公告 / 人力 / 行政 / 文档。
+ * M6 新增 HR（工资条发布、合同到期）、ADMIN（资产逾期、报修派单）、DOC（文档共享，预留）。
+ */
+export type NotificationType = 'SYSTEM' | 'APPROVAL' | 'ANNOUNCEMENT' | 'HR' | 'ADMIN' | 'DOC'
 export type ContentType = 'TEXT' | 'LINK'
 export type PushChannel = 'SYSTEM' | 'EMAIL' | 'SMS'
 export type PushStatus = 'PENDING' | 'SENT' | 'FAILED'
+
+/** 通知类型中文标签（穷举 Record：新增枚举值时必须同步补齐，供 Web / 小程序复用）。 */
+export const notificationTypeLabels: Record<NotificationType, string> = {
+  SYSTEM: '系统',
+  APPROVAL: '审批',
+  ANNOUNCEMENT: '公告',
+  HR: '人力',
+  ADMIN: '行政',
+  DOC: '文档'
+}
 
 // ---------- 通知 ----------
 export interface NotificationVO {
@@ -135,4 +149,6 @@ export interface NotificationPageQuery {
 export interface UserNotificationPageQuery {
   page?: number
   size?: number
+  /** 通知类型过滤（可选）：不传则返回全部类型，对应后端 `type` 查询参数 */
+  type?: NotificationType
 }
