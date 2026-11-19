@@ -23,6 +23,12 @@ public interface AdminRepairService {
     /** 本人报修工单。 */
     List<RepairVO> my();
 
+    /** 派给我的工单（当前登录用户作为维修人，按创建时间倒序）。 */
+    List<RepairVO> assigned();
+
+    /** 工单详情（仅报修人、维修人或管理员可查看）。 */
+    RepairVO detail(Long id);
+
     /** 派单 / 改派（仅 ASSIGNED）。 */
     void assign(Long id, RepairAssignRequest request);
 

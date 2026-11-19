@@ -13,6 +13,8 @@ servers:
     description: 本地
 tags:
   - name: expenses
+  - name: ai
+    description: 本地 Ollama 智能化能力（只读提示 / 识别，默认关闭）
 paths:
   /expenses:
     get:
@@ -175,6 +177,29 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ReceiptVerificationListResponse' }
+  /ai/receipt-ocr:
+    post:
+      tags: [ai]
+      summary: 票据图片识别（OCR）
+      description: |
+        读取已上传的票据图片，调用本地 Ollama 视觉模型识别编号 / 金额 / 日期 / 类型 / 支付方式。
+        只读接口：不写库、不修改票据；AI 未启用或模型不可达时返回 422 可读错误，不影响报销主流程。
+        filePath 支持纯文件名或上传接口返回的 `/api/v1/files/...` URL；仅支持 jpg/jpeg/png/webp，PDF 不支持识别。
+        所有字段均为尽力识别结果，未识别或未通过服务端校验的字段为 null，由前端提示用户手动补录。
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ReceiptOcrRequest' }
+      responses:
+        '200':
+          description: 识别结果（未识别字段为 null）
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReceiptOcrResponse' }
+        '422':
+          description: AI 未启用或识别失败（AI 识别失败，请手动填写或稍后重试）
 components:
   securitySchemes:
     bearerAuth:
@@ -379,3 +404,48 @@ components:
             data:
               type: array
               items: { $ref: '#/components/schemas/ReceiptVerificationVO' }
+
+    ReceiptOcrRequest:
+      type: object
+      required: [filePath]
+      properties:
+        filePath:
+          type: string
+          description: 纯文件名或上传接口返回的 /api/v1/files/xxx 形式 URL
+          example: /api/v1/files/1752560000000000001.png
+    ReceiptOcrResult:
+      type: object
+      properties:
+        receiptNumber:
+          type: string
+          nullable: true
+          description: 票据编号 / 发票号码；未识别为 null
+          example: '12345678'
+        amount:
+          type: string
+          nullable: true
+          description: 金额数字字符串（不含货币符号）；未识别或校验不通过为 null
+          example: '128.50'
+        receiptDate:
+          type: string
+          nullable: true
+          description: 票据日期，yyyy-MM-dd；未识别为 null
+          example: '2026-11-01'
+        type:
+          allOf:
+            - $ref: '#/components/schemas/ReceiptType'
+          nullable: true
+        paymentMethod:
+          allOf:
+            - $ref: '#/components/schemas/PaymentMethod'
+          nullable: true
+        raw:
+          type: string
+          nullable: true
+          description: 模型原始输出（截断到 4000 字符），便于排查识别问题
+    ReceiptOcrResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data: { $ref: '#/components/schemas/ReceiptOcrResult' }

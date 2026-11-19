@@ -291,6 +291,7 @@ public final class AdminConverter {
         vo.setCategory(repair.getCategory());
         vo.setDescription(repair.getDescription());
         vo.setImages(parseImages(repair.getImagesJson()));
+        vo.setFinishImages(parseImages(repair.getFinishImagesJson()));
         vo.setAssigneeId(repair.getAssigneeId());
         vo.setStatus(repair.getStatus());
         vo.setAssignedAt(repair.getAssignedAt());

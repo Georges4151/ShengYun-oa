@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import {
+  ElButton,
   ElCard,
   ElCol,
   ElMessage,
@@ -13,8 +14,9 @@ import {
 } from 'element-plus'
 import { ApiError } from '@ceams/api-client'
 import { hasPermission } from '@/composables/usePermission'
-import { ceamsApi } from '@/services/http'
+import { ceamsApi, fetchBlob } from '@/services/http'
 import { apiErrorMessage } from '@/utils/error'
+import { saveBlob } from '@/utils/file'
 import { financialSourceTypeLabels, transactionTypeLabels } from '@/utils/labels'
 import type {
   AdminAssetReportVO,
@@ -80,6 +82,54 @@ const p2Tabs = computed(() =>
 const overdueRatePercent = computed(
   () => `${(Number(bpmEfficiency.value?.overdueRate ?? 0) * 100).toFixed(2)}%`
 )
+
+/** 各页签导出配置：路径、文件名与必要查询参数（与页面加载口径一致）。 */
+const EXPORT_CONFIG: Record<
+  string,
+  { path: string; filename: string; params?: () => Record<string, string> }
+> = {
+  financial: { path: '/api/v1/reports/financial/export', filename: '财务报表.xlsx' },
+  'project-cost': { path: '/api/v1/reports/project-cost/export', filename: '项目成本报表.xlsx' },
+  material: { path: '/api/v1/reports/material/export', filename: '材料报表.xlsx' },
+  'hr-cost': {
+    path: '/api/v1/reports/hr-cost/export',
+    filename: '人力成本报表.xlsx',
+    params: () => ({ month: currentMonth })
+  },
+  'hr-performance': {
+    path: '/api/v1/reports/hr-performance/export',
+    filename: '绩效考核报表.xlsx',
+    params: () => ({ period: currentMonth })
+  },
+  'admin-assets': {
+    path: '/api/v1/reports/admin-assets/export',
+    filename: '行政资产报表.xlsx'
+  },
+  'bpm-efficiency': {
+    path: '/api/v1/reports/bpm-efficiency/export',
+    filename: '审批效率报表.xlsx'
+  }
+}
+
+const exporting = ref(false)
+
+/** 导出当前页签的 Excel（后端按同一权限与查询口径生成）。 */
+async function onExport(): Promise<void> {
+  const config = EXPORT_CONFIG[String(activeTab.value)]
+  if (!config) return
+  exporting.value = true
+  try {
+    const params = new URLSearchParams(config.params?.() ?? {})
+    const search = params.toString()
+    const blob = await fetchBlob(`${config.path}${search ? `?${search}` : ''}`)
+    saveBlob(blob, config.filename)
+    ElMessage.success('导出成功')
+  } catch (err) {
+    ElMessage.error(apiErrorMessage(err, '导出失败'))
+  } finally {
+    exporting.value = false
+  }
+}
 
 function isForbidden(err: unknown): boolean {
   if (err instanceof ApiError) {
@@ -348,6 +398,10 @@ onMounted(() => {
       </el-col>
     </el-row>
 
+    <div class="report-toolbar">
+      <el-button type="primary" :loading="exporting" @click="onExport">导出当前报表</el-button>
+    </div>
+
     <el-tabs v-model="activeTab" @tab-change="onTabChange">
       <el-tab-pane label="财务报表" name="financial">
         <div class="report-summary" v-if="financial">
@@ -493,6 +547,11 @@ onMounted(() => {
 </template>
 
 <style scoped>
+.report-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 8px;
+}
 .card-row {
   margin-bottom: 16px;
 }

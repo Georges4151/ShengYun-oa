@@ -18,8 +18,12 @@ public class SubcontractorContractVO {
     @JsonSerialize(using = ToStringSerializer.class)
     private Long subcontractorId;
 
+    private String subcontractorName;
+
     @JsonSerialize(using = ToStringSerializer.class)
     private Long projectId;
+
+    private String projectName;
 
     private String contractName;
 

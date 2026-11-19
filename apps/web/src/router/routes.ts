@@ -29,25 +29,25 @@ export const routes: RouteRecordRaw[] = [
         path: 'masterdata',
         name: 'masterdata',
         component: () => import('@/views/masterdata/MasterdataView.vue'),
-        meta: { title: '主数据' }
+        meta: { title: '主数据', permission: 'masterdata' }
       },
       {
         path: 'project',
         name: 'project',
         component: () => import('@/views/project/ProjectView.vue'),
-        meta: { title: '项目合同' }
+        meta: { title: '项目合同', permission: 'project' }
       },
       {
         path: 'hr',
         name: 'hr',
         component: () => import('@/views/hr/HrView.vue'),
-        meta: { title: '人事' }
+        meta: { title: '人事', permission: 'hr' }
       },
       {
         path: 'admin',
         name: 'admin',
         component: () => import('@/views/admin/AdminView.vue'),
-        meta: { title: '行政后勤', icon: 'Box' }
+        meta: { title: '行政后勤', icon: 'Box', permission: 'admin' }
       },
       {
         path: 'doc',
@@ -65,23 +65,23 @@ export const routes: RouteRecordRaw[] = [
           permission: 'integration:wecom:view'
         }
       },
-      { path: 'todo', name: 'todo', component: () => import('@/views/bpm/BpmView.vue'), meta: { title: '待办中心' } },
-      { path: 'expense', name: 'expense', component: () => import('@/views/expense/ExpenseView.vue'), meta: { title: '报销' } },
-      { path: 'payment', name: 'payment', component: () => import('@/views/payment/PaymentView.vue'), meta: { title: '资金' } },
-      { path: 'bank', name: 'bank', component: () => import('@/views/bank/BankView.vue'), meta: { title: '对账' } },
-      { path: 'seal', name: 'seal', component: () => import('@/views/seal/SealView.vue'), meta: { title: '印章' } },
-      { path: 'notification', name: 'notification', component: () => import('@/views/notification/NotificationView.vue'), meta: { title: '通知' } },
+      { path: 'todo', name: 'todo', component: () => import('@/views/bpm/BpmView.vue'), meta: { title: '待办中心', permission: 'bpm' } },
+      { path: 'expense', name: 'expense', component: () => import('@/views/expense/ExpenseView.vue'), meta: { title: '报销', permission: 'expense' } },
+      { path: 'payment', name: 'payment', component: () => import('@/views/payment/PaymentView.vue'), meta: { title: '资金', permission: 'payment' } },
+      { path: 'bank', name: 'bank', component: () => import('@/views/bank/BankView.vue'), meta: { title: '对账', permission: 'bank' } },
+      { path: 'seal', name: 'seal', component: () => import('@/views/seal/SealView.vue'), meta: { title: '印章', permission: 'seal' } },
+      { path: 'notification', name: 'notification', component: () => import('@/views/notification/NotificationView.vue'), meta: { title: '通知', permission: 'notification' } },
       {
         path: 'report',
         name: 'report',
         component: () => import('@/views/report/ReportView.vue'),
-        meta: { title: '报表' }
+        meta: { title: '报表', permission: 'report' }
       },
       {
         path: 'account',
         name: 'account',
         component: () => import('@/views/iam/AccountView.vue'),
-        meta: { title: '账号' }
+        meta: { title: '账号', permission: 'iam' }
       }
     ]
   },

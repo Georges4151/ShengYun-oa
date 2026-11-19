@@ -55,6 +55,25 @@ public class AdminRepairController {
         return ApiResponse.success(repairService.my());
     }
 
+    /**
+     * 派给我的工单（当前登录用户为维修人，按创建时间倒序）。
+     *
+     * <p>注意：本方法必须声明在 {@code /{id}} 之前。Spring 路由匹配虽会优先命中字面量路径
+     * {@code /assigned}，但保持声明顺序可避免后续维护时误判路径冲突。
+     */
+    @GetMapping("/assigned")
+    @PreAuthorize("isAuthenticated()")
+    public ApiResponse<List<RepairVO>> assigned() {
+        return ApiResponse.success(repairService.assigned());
+    }
+
+    /** 工单详情（仅报修人、维修人或管理员可查看）。 */
+    @GetMapping("/{id}")
+    @PreAuthorize("isAuthenticated()")
+    public ApiResponse<RepairVO> detail(@PathVariable Long id) {
+        return ApiResponse.success(repairService.detail(id));
+    }
+
     /** 派单 / 改派。 */
     @PutMapping("/{id}/assign")
     @PreAuthorize("hasAnyRole('SYS_ADMIN')")

@@ -22,6 +22,8 @@ public interface HrContractConverter {
         vo.setEndDate(contract.getEndDate());
         vo.setSignDate(contract.getSignDate());
         vo.setFileId(contract.getFileId());
+        vo.setFilePath(contract.getFilePath());
+        vo.setFileName(contract.getFileName());
         vo.setStatus(contract.getStatus());
         vo.setRenewalRemindDate(contract.getRenewalRemindDate());
         vo.setRemark(contract.getRemark());

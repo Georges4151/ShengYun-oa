@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { ElAlert, ElButton, ElDialog } from 'element-plus'
 import { ApiError } from '@ceams/api-client'
 import { ceamsApi, apiBaseUrl } from '@/services/http'
@@ -40,6 +40,8 @@ const visible = computed({
 })
 
 const loading = ref(false)
+/** 全屏模式：弹窗铺满视口，编辑器区域随之放大 */
+const fullscreen = ref(false)
 /** 降级态：503（在线编辑不可用）或任一二义失败时显示提示 + 下载入口，不抛全局错误。 */
 const degraded = ref(false)
 const degradedMessage = ref('')
@@ -150,7 +152,9 @@ async function openEditor(): Promise<void> {
     await waitForContainer()
     editor.value = new namespace.DocEditor(containerId, {
       ...config.config,
-      token: config.token
+      token: config.token,
+      width: '100%',
+      height: '100%'
     })
   } catch (err) {
     degrade(err, '在线编辑暂不可用，可下载后查看')
@@ -171,17 +175,15 @@ async function downloadCurrent(): Promise<void> {
   }
 }
 
-watch(
-  () => [props.modelValue, props.fileId, props.mode] as const,
-  async ([value]) => {
-    if (value) {
-      await openEditor()
-      return
-    }
-    destroyEditor()
-    await releaseLock()
-  }
-)
+async function onDialogOpened(): Promise<void> {
+  await openEditor()
+}
+
+async function onDialogClosed(): Promise<void> {
+  destroyEditor()
+  fullscreen.value = false
+  await releaseLock()
+}
 
 function onClose(): void {
   visible.value = false
@@ -195,8 +197,11 @@ function onClose(): void {
     width="88%"
     top="4vh"
     :close-on-click-modal="false"
+    :fullscreen="fullscreen"
+    @opened="onDialogOpened"
+    @closed="onDialogClosed"
   >
-    <div v-loading="loading" class="editor-wrapper">
+    <div v-loading="loading" class="editor-wrapper" :class="{ 'is-fullscreen': fullscreen }">
       <el-alert
         v-if="degraded"
         type="warning"
@@ -211,6 +216,7 @@ function onClose(): void {
       <div v-show="!degraded" :id="containerId" class="editor-container" />
     </div>
     <template #footer>
+      <el-button @click="fullscreen = !fullscreen">{{ fullscreen ? '还原窗口' : '全屏显示' }}</el-button>
       <el-button @click="onClose">关闭</el-button>
     </template>
   </el-dialog>
@@ -218,10 +224,24 @@ function onClose(): void {
 
 <style scoped>
 .editor-wrapper {
-  min-height: 70vh;
+  height: 70vh;
+  min-height: 320px;
+  /* 允许用户拖拽右下角自行调整高度 */
+  resize: vertical;
+  overflow: hidden;
+}
+.editor-wrapper.is-fullscreen {
+  height: calc(100vh - 168px);
+  min-height: 0;
 }
 .editor-container {
-  height: 70vh;
+  height: 100%;
+}
+.editor-wrapper :deep(iframe) {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  border: 0;
 }
 .degraded-alert {
   margin-bottom: 12px;

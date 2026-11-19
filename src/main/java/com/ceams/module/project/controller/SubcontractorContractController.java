@@ -6,7 +6,9 @@ import com.ceams.module.project.dto.subcontractorcontract.SubcontractorContractC
 import com.ceams.module.project.dto.subcontractorcontract.SubcontractorContractUpdateRequest;
 import com.ceams.module.project.service.SubcontractorContractService;
 import com.ceams.module.project.vo.SubcontractorContractVO;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import java.io.IOException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -43,6 +45,20 @@ public class SubcontractorContractController {
     public ApiResponse<String> create(
             @Valid @RequestBody SubcontractorContractCreateRequest request) {
         return ApiResponse.success(subcontractorContractService.create(request));
+    }
+
+    @GetMapping("/export")
+    @PreAuthorize("isAuthenticated()")
+    public void export(
+            @RequestParam(required = false) Long subcontractorId,
+            @RequestParam(required = false) Long projectId,
+            HttpServletResponse response)
+            throws IOException {
+        response.setContentType(
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        response.setHeader(
+                "Content-Disposition", "attachment; filename=\"subcontractor-contracts.xlsx\"");
+        subcontractorContractService.export(response.getOutputStream(), subcontractorId, projectId);
     }
 
     @GetMapping("/{id}")

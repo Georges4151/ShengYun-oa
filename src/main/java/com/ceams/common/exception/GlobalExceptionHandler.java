@@ -21,7 +21,10 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleBusiness(BusinessException ex) {
         ErrorCode errorCode = ex.getErrorCode();
         log.warn("BusinessException: code={}, message={}", errorCode.getCode(), ex.getMessage());
-        return build(errorCode.getHttpStatus(), errorCode.getCode(), errorCode.name());
+        String message = ex.getMessage() == null || ex.getMessage().isBlank()
+                ? errorCode.name()
+                : ex.getMessage();
+        return build(errorCode.getHttpStatus(), errorCode.getCode(), message);
     }
 
     @ExceptionHandler({MethodArgumentNotValidException.class, BindException.class})

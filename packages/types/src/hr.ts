@@ -184,6 +184,10 @@ export interface ContractVO {
   endDate?: string | null
   signDate?: string | null
   fileId?: Id | null
+  /** 合同原件存储名（文件服务 name） */
+  filePath?: string | null
+  /** 合同原件原始文件名 */
+  fileName?: string | null
   status: HrContractStatus
   renewalRemindDate?: string | null
   remark?: string | null
@@ -198,6 +202,8 @@ export interface ContractCreateRequest {
   endDate?: string
   signDate?: string
   fileId?: Id
+  filePath?: string
+  fileName?: string
   status?: HrContractStatus
   renewalRemindDate?: string
   remark?: string
@@ -210,6 +216,8 @@ export interface ContractUpdateRequest {
   endDate?: string
   signDate?: string
   fileId?: Id
+  filePath?: string
+  fileName?: string
   status?: HrContractStatus
   renewalRemindDate?: string
   remark?: string

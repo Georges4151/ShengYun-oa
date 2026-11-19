@@ -72,6 +72,8 @@ export interface UserVO {
   email?: string | null
   /** 手机号（库内加密，接口脱敏） */
   phone?: string | null
+  /** 头像访问地址（/api/v1/profile/avatars/xxx），可空 */
+  avatar?: string | null
   status: UserStatus
   roles?: RoleVO[]
   createTime?: DateTime

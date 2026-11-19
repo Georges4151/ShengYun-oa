@@ -21,6 +21,7 @@ import java.time.LocalDate;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -70,6 +71,8 @@ public class HrContractServiceImpl implements HrContractService {
         contract.setEndDate(request.getEndDate());
         contract.setSignDate(request.getSignDate());
         contract.setFileId(request.getFileId());
+        contract.setFilePath(request.getFilePath());
+        contract.setFileName(request.getFileName());
         contract.setStatus(request.getStatus() == null ? ContractStatus.ACTIVE : request.getStatus());
         contract.setRenewalRemindDate(request.getRenewalRemindDate());
         contract.setRemark(request.getRemark());
@@ -104,6 +107,12 @@ public class HrContractServiceImpl implements HrContractService {
         }
         if (request.getFileId() != null) {
             contract.setFileId(request.getFileId());
+        }
+        if (StringUtils.isNotBlank(request.getFilePath())) {
+            contract.setFilePath(request.getFilePath());
+        }
+        if (StringUtils.isNotBlank(request.getFileName())) {
+            contract.setFileName(request.getFileName());
         }
         if (request.getStatus() != null) {
             contract.setStatus(request.getStatus());

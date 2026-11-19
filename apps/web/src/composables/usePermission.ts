@@ -42,6 +42,10 @@ import { pinia } from '@/stores'
  *
  * 报表页签（历史权限码，见 BPM 报表）：
  * - bpm:report:view               → SYS_ADMIN、FINANCE
+ *
+ * 流程模板（V46 权限种子 190～191）：
+ * - 190 bpm:template:create       → SYS_ADMIN
+ * - 191 bpm:template:delete       → SYS_ADMIN
  */
 const PERMISSION_ROLES: Record<string, string[]> = {
   'hr:salary:view': ['SYS_ADMIN', 'FINANCE'],
@@ -68,13 +72,18 @@ const PERMISSION_ROLES: Record<string, string[]> = {
   'report:hr-cost:view': ['SYS_ADMIN'],
   'report:hr-performance:view': ['SYS_ADMIN'],
   'report:admin-assets:view': ['SYS_ADMIN'],
-  'bpm:report:view': ['SYS_ADMIN', 'FINANCE']
+  'bpm:report:view': ['SYS_ADMIN', 'FINANCE'],
+  'bpm:template:create': ['SYS_ADMIN'],
+  'bpm:template:delete': ['SYS_ADMIN']
 }
 
-/** 当前登录用户是否具备指定权限码（未登记的权限码一律不通过）。 */
+/** 当前登录用户是否具备指定权限码（优先使用后端下发的权限码，未加载时回退角色映射）。 */
 export function hasPermission(code: string): boolean {
+  const auth = useAuthStore(pinia)
+  if (auth.permissionsLoaded) {
+    return auth.permissions.includes(code)
+  }
   const allowed = PERMISSION_ROLES[code]
   if (!allowed) return false
-  const auth = useAuthStore(pinia)
   return auth.roles.some((role) => allowed.includes(role.code))
 }

@@ -183,7 +183,7 @@ export class HttpClient {
       if (deviceId) request.headers['X-Device-Id'] = deviceId
     }
 
-    let response = await this.transport(request)
+    let response = await this.transport(request, init.timeoutMs)
     for (const interceptor of this.responseInterceptors) {
       response = await interceptor(response)
     }
@@ -191,10 +191,12 @@ export class HttpClient {
     return this.unwrap<T>(response, init)
   }
 
-  private async transport(request: HttpRequest): Promise<HttpResponse> {
+  private async transport(request: HttpRequest, timeoutOverride?: number): Promise<HttpResponse> {
     const adapter = this.options.adapter ?? fetchAdapter
-    const timeoutMs = this.options.timeoutMs ?? DEFAULT_TIMEOUT_MS
+    const timeoutMs = timeoutOverride ?? this.options.timeoutMs ?? DEFAULT_TIMEOUT_MS
     if (timeoutMs <= 0) return adapter.send(request)
+    // 同步本次超时给平台适配器：wx.request 等自带默认 60s 超时，不设置会先于客户端中断
+    const timedRequest: HttpRequest = { ...request, timeoutMs }
 
     let timer: ReturnType<typeof setTimeout> | undefined
     const timeout = new Promise<never>((_, reject) => {
@@ -203,7 +205,7 @@ export class HttpClient {
       }, timeoutMs)
     })
     try {
-      return await Promise.race([adapter.send(request), timeout])
+      return await Promise.race([adapter.send(timedRequest), timeout])
     } finally {
       if (timer) clearTimeout(timer)
     }

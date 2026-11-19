@@ -33,6 +33,8 @@ export interface FormField {
   placeholder?: string
   /** 字段下方说明文案 */
   help?: string
+  /** 只读字段：展示但不可编辑，用于由系统自动带出的值 */
+  readonly?: boolean
   default?: string | number
 }
 

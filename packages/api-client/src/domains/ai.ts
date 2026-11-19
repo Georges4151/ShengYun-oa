@@ -25,7 +25,9 @@ import type {
   AiTodoSummaryVO,
   PreAuditListQuery,
   ReceiptPreAuditVO,
-  ContractRiskHintVO
+  ContractRiskHintVO,
+  ReceiptOcrRequest,
+  ReceiptOcrResult
 } from '@ceams/types'
 
 export interface AiApi {
@@ -63,6 +65,10 @@ export interface AiApi {
   // ---------- 合同要点与风险提示（只读提示） ----------
   /** 分包合同的条款要点与风险提示（含免责声明） */
   contractRiskHints(contractId: Id): Promise<ContractRiskHintVO>
+
+  // ---------- 票据图片识别（登录即可访问，只读） ----------
+  /** 识别已上传票据图片的编号 / 金额 / 日期 / 类型 / 支付方式（未识别字段为 null） */
+  receiptOcr(body: ReceiptOcrRequest): Promise<ReceiptOcrResult>
 }
 
 export function createAiApi(client: HttpClient): AiApi {
@@ -117,6 +123,11 @@ export function createAiApi(client: HttpClient): AiApi {
 
     async contractRiskHints(contractId) {
       return client.get<ContractRiskHintVO>(`/api/v1/ai/contracts/${contractId}/risk-hints`)
+    },
+
+    async receiptOcr(body) {
+      // 视觉识别在 CPU 上可能耗时到分钟级，单次放宽超时（默认 15s 太短）
+      return client.post<ReceiptOcrResult>('/api/v1/ai/receipt-ocr', body, { timeoutMs: 180000 })
     }
   }
 }

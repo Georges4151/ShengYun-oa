@@ -32,4 +32,10 @@ public class SettlementProofCreateRequest {
     private BigDecimal settlementAmount;
 
     private String description;
+
+    @Size(max = 500, message = "附件路径长度不能超过 500")
+    private String filePath;
+
+    @Size(max = 255, message = "附件名长度不能超过 255")
+    private String fileName;
 }

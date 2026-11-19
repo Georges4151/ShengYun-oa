@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 身份与访问域（iam）类型化 API 工厂。
  * 所有路径前缀统一 `/api/v1`，与 docs/openapi/iam.openapi.yaml paths 一致。
  */
@@ -48,6 +48,11 @@ export interface IamApi {
   userRemove(id: Id): Promise<void>
   userAssignRoles(id: Id, body: AssignRolesRequest): Promise<void>
   userResetPassword(id: Id, body: ResetPasswordRequest): Promise<void>
+
+  /** 上传当前登录账号的头像（multipart，字段名 file），返回新的头像访问地址 */
+  uploadMyAvatar(file: Blob, filename?: string): Promise<{ avatar: string }>
+  /** 清除当前登录账号的头像，恢复系统默认头像 */
+  clearMyAvatar(): Promise<void>
 
   rolePage(query?: RolePageQuery): Promise<PageResult<RoleVO>>
   roleDetail(id: Id): Promise<RoleVO>
@@ -122,6 +127,16 @@ export function createIamApi(client: HttpClient): IamApi {
     },
     async userResetPassword(id, body) {
       return client.put<void>(`/api/v1/users/${id}/password`, body)
+    },
+
+    async uploadMyAvatar(file, filename) {
+      // multipart 上传：交由 HttpClient 识别 FormData，自动省略 JSON Content-Type
+      const form = new FormData()
+      form.append('file', file, filename ?? 'avatar.png')
+      return client.post<{ avatar: string }>('/api/v1/profile/avatar', form)
+    },
+    async clearMyAvatar() {
+      return client.delete<void>('/api/v1/profile/avatar')
     },
 
     async rolePage(query = {}) {

@@ -1,6 +1,8 @@
 package com.ceams.module.doc.vo;
 
 import com.ceams.module.doc.enums.DocVersionSource;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import java.time.LocalDateTime;
 import lombok.Data;
 
@@ -18,7 +20,11 @@ public class DocVersionVO {
     private String checksum;
 
     /** 上传人 ID。 */
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long uploadedBy;
+
+    /** 上传人姓名（sys_user.name，空则 username）。 */
+    private String uploadedByName;
 
     /** 变更说明。 */
     private String changeNote;

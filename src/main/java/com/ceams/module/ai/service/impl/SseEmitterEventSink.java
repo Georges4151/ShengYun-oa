@@ -4,6 +4,7 @@ import com.ceams.module.ai.service.AiChatEventSink;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.RequiredArgsConstructor;
@@ -47,6 +48,13 @@ public class SseEmitterEventSink implements AiChatEventSink {
         data.put("args", args == null ? Map.of() : args);
         data.put("rows", rows);
         send("tool", data);
+    }
+
+    @Override
+    public void sources(List<Map<String, Object>> sources) {
+        Map<String, Object> data = new LinkedHashMap<>(1);
+        data.put("items", sources == null ? List.of() : sources);
+        send("sources", data);
     }
 
     @Override

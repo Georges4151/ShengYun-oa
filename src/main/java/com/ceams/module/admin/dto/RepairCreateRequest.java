@@ -2,6 +2,7 @@ package com.ceams.module.admin.dto;
 
 import com.ceams.module.admin.enums.RepairCategory;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.util.List;
@@ -24,7 +25,8 @@ public class RepairCreateRequest {
     @Size(max = 1000, message = "故障描述不能超过 1000 字")
     private String description;
 
-    /** 图片文件名列表（最多 6 张）。 */
+    /** 图片文件名列表（必填，1～6 张）。 */
+    @NotEmpty(message = "请至少上传 1 张现场图片")
     @Size(max = 6, message = "图片最多上传 6 张")
     private List<String> images;
 }

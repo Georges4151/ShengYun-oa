@@ -10,12 +10,14 @@ import com.ceams.common.security.SecurityUtils;
 import com.ceams.module.bpm.dto.TemplateCreateRequest;
 import com.ceams.module.bpm.dto.TemplatePublishRequest;
 import com.ceams.module.bpm.dto.TemplateUpdateRequest;
+import com.ceams.module.bpm.entity.BpmInstance;
 import com.ceams.module.bpm.entity.BpmTemplate;
 import com.ceams.module.bpm.entity.BpmTemplateVersion;
 import com.ceams.module.bpm.enums.AuditAction;
 import com.ceams.module.bpm.enums.BpmBizType;
 import com.ceams.module.bpm.enums.TemplateStatus;
 import com.ceams.module.bpm.enums.TemplateVersionStatus;
+import com.ceams.module.bpm.mapper.BpmInstanceMapper;
 import com.ceams.module.bpm.mapper.BpmTemplateMapper;
 import com.ceams.module.bpm.mapper.BpmTemplateVersionMapper;
 import com.ceams.module.bpm.service.BpmAuditService;
@@ -41,11 +43,14 @@ public class BpmTemplateServiceImpl implements BpmTemplateService {
 
     private final BpmTemplateMapper templateMapper;
     private final BpmTemplateVersionMapper versionMapper;
+    private final BpmInstanceMapper instanceMapper;
     private final BpmSchemaParser schemaParser;
     private final BpmAuditService auditService;
     private final BpmSecurityGuard securityGuard;
 
     private static final String PERMISSION_MANAGE = "bpm:template:manage";
+    private static final String PERMISSION_CREATE = "bpm:template:create";
+    private static final String PERMISSION_DELETE = "bpm:template:delete";
 
     @Override
     public PageResult<TemplateVO> page(
@@ -66,7 +71,7 @@ public class BpmTemplateServiceImpl implements BpmTemplateService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public String create(TemplateCreateRequest request) {
-        securityGuard.requireAdminOrPermission(PERMISSION_MANAGE);
+        securityGuard.requireAdminOrPermission(PERMISSION_CREATE);
         requireKnownBizType(request.getBizType());
         long exists =
                 templateMapper.selectCount(
@@ -189,6 +194,45 @@ public class BpmTemplateServiceImpl implements BpmTemplateService {
         BpmTemplate template = requireTemplate(id);
         template.setStatus(TemplateStatus.DISABLED);
         templateMapper.updateById(template);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void delete(Long id) {
+        securityGuard.requireAdminOrPermission(PERMISSION_DELETE);
+        BpmTemplate template = requireTemplate(id);
+        List<BpmTemplateVersion> versions =
+                versionMapper.selectList(
+                        new LambdaQueryWrapper<BpmTemplateVersion>()
+                                .eq(BpmTemplateVersion::getTemplateId, id));
+        if (!versions.isEmpty()) {
+            List<Long> versionIds = versions.stream().map(BpmTemplateVersion::getId).toList();
+            long instanceCount =
+                    instanceMapper.selectCount(
+                            new LambdaQueryWrapper<BpmInstance>()
+                                    .in(BpmInstance::getTemplateVersionId, versionIds));
+            if (instanceCount > 0) {
+                throw BusinessException.of(
+                        ErrorCode.BIZ_STATE_CONFLICT, "该模板已有流程实例，不能删除，可改为停用");
+            }
+            versionMapper.delete(
+                    new LambdaQueryWrapper<BpmTemplateVersion>()
+                            .eq(BpmTemplateVersion::getTemplateId, id));
+        }
+        templateMapper.deleteById(id);
+        auditService.record(
+                BpmAuditService.TARGET_TEMPLATE,
+                id,
+                AuditAction.TEMPLATE_DELETE,
+                template,
+                null,
+                null,
+                SecurityUtils.getCurrentUserId());
+        log.info(
+                "删除流程模板：templateId={}，code={}，版本数={}",
+                id,
+                template.getCode(),
+                versions.size());
     }
 
     /** 业务类型必须是受支持的枚举（EXPENSE/CHANGE_REQUEST），防止脏数据进入模板。 */

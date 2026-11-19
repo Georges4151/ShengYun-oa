@@ -215,7 +215,9 @@ export interface SubcontractorUpdateRequest {
 export interface SubcontractorContractVO {
   id: Id
   subcontractorId: Id
+  subcontractorName?: string | null
   projectId?: Id | null
+  projectName?: string | null
   contractName: string
   contractNumber: string
   contractAmount: Money
@@ -239,6 +241,8 @@ export interface SubcontractorContractCreateRequest {
   endDate?: string | null
   status?: ContractStatus
   description?: string | null
+  filePath?: string | null
+  fileName?: string | null
 }
 
 export interface SubcontractorContractUpdateRequest {
@@ -249,13 +253,17 @@ export interface SubcontractorContractUpdateRequest {
   endDate?: string
   status?: ContractStatus
   description?: string
+  filePath?: string | null
+  fileName?: string | null
 }
 
 // ---------- 结算凭证 ----------
 export interface SettlementProofVO {
   id: Id
   contractId: Id
+  contractName?: string | null
   subcontractorId?: Id | null
+  subcontractorName?: string | null
   proofName: string
   proofNumber: string
   proofDate?: string
@@ -274,6 +282,8 @@ export interface SettlementProofCreateRequest {
   proofDate?: string
   settlementAmount: Money
   description?: string | null
+  filePath?: string | null
+  fileName?: string | null
 }
 
 export interface SettlementProofUpdateRequest {
@@ -282,6 +292,8 @@ export interface SettlementProofUpdateRequest {
   proofDate?: string
   settlementAmount?: Money
   description?: string
+  filePath?: string | null
+  fileName?: string | null
 }
 
 // ---------- 分页查询入参 ----------

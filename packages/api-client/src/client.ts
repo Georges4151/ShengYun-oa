@@ -36,6 +36,8 @@ import { createDocApi } from './domains/doc'
 import type { DocApi } from './domains/doc'
 import { createIntegrationApi } from './domains/integration'
 import type { IntegrationApi } from './domains/integration'
+import { createFileApi } from './domains/file'
+import type { FileApi } from './domains/file'
 
 export interface CeamsApiClient {
   iam: IamApi
@@ -53,6 +55,7 @@ export interface CeamsApiClient {
   bpm: BpmApi
   doc: DocApi
   integration: IntegrationApi
+  file: FileApi
 }
 
 export function createCeamsApiClient(options: HttpClientOptions): CeamsApiClient {
@@ -72,6 +75,7 @@ export function createCeamsApiClient(options: HttpClientOptions): CeamsApiClient
     ai: createAiApi(client),
     bpm: createBpmApi(client),
     doc: createDocApi(client),
-    integration: createIntegrationApi(client)
+    integration: createIntegrationApi(client),
+    file: createFileApi(client)
   }
 }

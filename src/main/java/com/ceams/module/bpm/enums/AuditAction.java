@@ -16,6 +16,8 @@ public enum AuditAction {
     DELEGATE,
     /** 模板发布。 */
     TEMPLATE_PUBLISH,
+    /** 模板删除。 */
+    TEMPLATE_DELETE,
     /** 业务单据手工调整（如月度工资核算单项调整）。 */
     ADJUST,
     /** 业务单据批量确认（如月度工资核算确认）。 */

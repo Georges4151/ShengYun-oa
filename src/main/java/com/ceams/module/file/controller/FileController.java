@@ -2,6 +2,7 @@ package com.ceams.module.file.controller;
 
 import com.ceams.common.response.ApiResponse;
 import com.ceams.module.file.service.FileService;
+import com.ceams.module.file.vo.FileStorageInfoVO;
 import com.ceams.module.file.vo.FileVO;
 import java.util.Locale;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -33,6 +35,20 @@ public class FileController {
         return ApiResponse.success(fileService.upload(file));
     }
 
+    /**
+     * 文件存储目录只读信息（路径、占用统计、所在分区空间）。
+     *
+     * <p>仅系统管理员可查看；路径改动需调整 FILE_UPLOAD_DIR（{@code ceams.file.upload-dir}）或
+     * 容器卷挂载后重启服务生效，本接口不修改任何配置与文件。
+     *
+     * <p>必须声明在 {@code /{name}} 之前，避免被路径变量匹配。
+     */
+    @GetMapping("/storage-info")
+    @PreAuthorize("hasRole('SYS_ADMIN')")
+    public ApiResponse<FileStorageInfoVO> storageInfo() {
+        return ApiResponse.success(fileService.storageInfo());
+    }
+
     @GetMapping("/{name}")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<byte[]> download(@PathVariable String name) {
@@ -41,6 +57,13 @@ public class FileController {
         headers.setContentType(resolveMediaType(name));
         headers.setContentDisposition(ContentDisposition.inline().filename(name).build());
         return new ResponseEntity<>(bytes, headers, HttpStatus.OK);
+    }
+
+    @DeleteMapping("/{name}")
+    @PreAuthorize("isAuthenticated()")
+    public ApiResponse<Void> delete(@PathVariable String name) {
+        fileService.delete(name);
+        return ApiResponse.success();
     }
 
     private MediaType resolveMediaType(String name) {

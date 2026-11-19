@@ -14,6 +14,7 @@ import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -74,6 +75,13 @@ public class BpmTemplateController {
     @PreAuthorize("isAuthenticated()")
     public ApiResponse<TemplateVO> detail(@PathVariable Long id) {
         return ApiResponse.success(templateService.detail(id));
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("isAuthenticated()")
+    public ApiResponse<Void> delete(@PathVariable Long id) {
+        templateService.delete(id);
+        return ApiResponse.success();
     }
 
     @GetMapping("/{id}/versions")

@@ -87,6 +87,9 @@ public class AdminRepairServiceImpl implements AdminRepairService {
     @Transactional
     public String create(RepairCreateRequest request) {
         int imageCount = request.getImages() == null ? 0 : request.getImages().size();
+        if (imageCount == 0) {
+            throw BusinessException.of(ErrorCode.VALID_ILLEGAL_ARGUMENT, "请至少上传 1 张现场图片");
+        }
         if (imageCount > MAX_IMAGES) {
             throw BusinessException.of(
                     ErrorCode.VALID_ILLEGAL_ARGUMENT, "图片最多上传 " + MAX_IMAGES + " 张");
@@ -169,6 +172,26 @@ public class AdminRepairServiceImpl implements AdminRepairService {
                 .stream()
                 .map(AdminConverter::toRepairVO)
                 .toList();
+    }
+
+    @Override
+    public List<RepairVO> assigned() {
+        Long assigneeId = SecurityUtils.getCurrentUserIdOrDefault();
+        return repairMapper
+                .selectList(
+                        new LambdaQueryWrapper<AdminRepair>()
+                                .eq(AdminRepair::getAssigneeId, assigneeId)
+                                .orderByDesc(AdminRepair::getCreateTime))
+                .stream()
+                .map(AdminConverter::toRepairVO)
+                .toList();
+    }
+
+    @Override
+    public RepairVO detail(Long id) {
+        AdminRepair repair = requireRepair(id);
+        requireViewable(repair);
+        return AdminConverter.toRepairVO(repair);
     }
 
     @Override
@@ -270,11 +293,21 @@ public class AdminRepairServiceImpl implements AdminRepairService {
         if (repair.getStatus() != RepairStatus.PROCESSING) {
             throw BusinessException.of(ErrorCode.BIZ_STATE_CONFLICT, "仅处理中的工单可登记完工");
         }
+        int imageCount =
+                request == null || request.getImages() == null ? 0 : request.getImages().size();
+        if (imageCount == 0) {
+            throw BusinessException.of(ErrorCode.VALID_ILLEGAL_ARGUMENT, "请至少上传 1 张完工图片");
+        }
+        if (imageCount > MAX_IMAGES) {
+            throw BusinessException.of(
+                    ErrorCode.VALID_ILLEGAL_ARGUMENT, "完工图片最多上传 " + MAX_IMAGES + " 张");
+        }
 
         AdminRepair patch = new AdminRepair();
         patch.setVersion(null);
         patch.setStatus(RepairStatus.DONE);
         patch.setFinishedAt(LocalDateTime.now());
+        patch.setFinishImagesJson(AdminConverter.joinImages(request.getImages()));
         if (request != null && StringUtils.isNotBlank(request.getRemark())) {
             patch.setRemark(request.getRemark());
         }
@@ -409,6 +442,17 @@ public class AdminRepairServiceImpl implements AdminRepairService {
         Long currentUserId = SecurityUtils.getCurrentUserIdOrDefault();
         if (!Objects.equals(repair.getReporterId(), currentUserId) && !isAdmin()) {
             throw BusinessException.of(ErrorCode.AUTH_ACCESS_DENIED, message);
+        }
+    }
+
+    /** 报修人本人、维修人本人或管理员才可查看工单详情。 */
+    private void requireViewable(AdminRepair repair) {
+        Long currentUserId = SecurityUtils.getCurrentUserIdOrDefault();
+        boolean reporter = Objects.equals(repair.getReporterId(), currentUserId);
+        boolean assignee = Objects.equals(repair.getAssigneeId(), currentUserId);
+        if (!reporter && !assignee && !isAdmin()) {
+            throw BusinessException.of(
+                    ErrorCode.AUTH_ACCESS_DENIED, "仅报修人、维修人或管理员可查看");
         }
     }
 

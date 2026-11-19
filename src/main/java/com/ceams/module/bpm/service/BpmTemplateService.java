@@ -36,4 +36,7 @@ public interface BpmTemplateService {
 
     /** 停用模板（不影响在途实例）。 */
     void disable(Long id);
+
+    /** 删除模板：仅允许删除从未被流程实例引用的模板（含全部版本）。 */
+    void delete(Long id);
 }

@@ -17,10 +17,11 @@ import {
   ElSelect,
   ElTable,
   ElTableColumn,
-  ElTag
+  ElTag,
+  ElUpload
 } from 'element-plus'
-import type { FormInstance, FormRules } from 'element-plus'
-import { ceamsApi } from '@/services/http'
+import type { FormInstance, FormRules, UploadFile } from 'element-plus'
+import { ceamsApi, fetchBlob } from '@/services/http'
 import type {
   ContractRiskHintVO,
   ContractRiskItemVO,
@@ -30,6 +31,7 @@ import type {
 } from '@ceams/types'
 import { usePage } from '@/composables/usePage'
 import { apiErrorMessage } from '@/utils/error'
+import { previewBlob, saveBlob } from '@/utils/file'
 import { contractStatusLabels, toOptions } from '@/utils/labels'
 
 defineOptions({ name: 'SubcontractorContractList' })
@@ -54,6 +56,95 @@ const riskItemLevelMeta: Record<ContractRiskItemVO['level'], { label: string; ty
 
 const statusOptions = toOptions(contractStatusLabels)
 
+/** 下拉选项：id 为雪花 ID 字符串，label 为展示名称。 */
+interface SelectOption {
+  id: string
+  label: string
+}
+
+const subcontractorOptions = ref<SelectOption[]>([])
+const projectOptions = ref<SelectOption[]>([])
+const subcontractorOptionsLoading = ref(false)
+const projectOptionsLoading = ref(false)
+/** 选项加载失败只提示一次，避免远程搜索反复弹窗。 */
+const subcontractorOptionsErrorShown = ref(false)
+const projectOptionsErrorShown = ref(false)
+
+/** 远程搜索后把当前已选中的选项补回列表，避免展示退化成 ID。 */
+function keepSelected(
+  prev: SelectOption[],
+  next: SelectOption[],
+  ids: Array<string | null | undefined>
+): SelectOption[] {
+  for (const id of ids) {
+    if (!id || next.some((item) => item.id === id)) continue
+    const old = prev.find((item) => item.id === id)
+    if (old) next.push(old)
+  }
+  return next
+}
+
+/** 合并兜底选项（行数据里的名称），按 id 去重。 */
+function addFallback(options: SelectOption[], fallback?: SelectOption | null): SelectOption[] {
+  if (!fallback || !fallback.id) return options
+  if (options.some((item) => item.id === fallback.id)) return options
+  return [fallback, ...options]
+}
+
+async function loadSubcontractorOptions(keyword = ''): Promise<void> {
+  subcontractorOptionsLoading.value = true
+  try {
+    const res = await ceamsApi.project.subcontractorPage({
+      page: 1,
+      size: 50,
+      keyword: keyword || undefined
+    })
+    subcontractorOptions.value = keepSelected(
+      subcontractorOptions.value,
+      res.records.map((item) => ({ id: item.id, label: item.name })),
+      [query.subcontractorId, form.subcontractorId]
+    )
+  } catch (err) {
+    if (!subcontractorOptionsErrorShown.value) {
+      subcontractorOptionsErrorShown.value = true
+      ElMessage.error(apiErrorMessage(err, '分包商选项加载失败'))
+    }
+  } finally {
+    subcontractorOptionsLoading.value = false
+  }
+}
+
+function onSubcontractorSearch(keyword: string): void {
+  void loadSubcontractorOptions(keyword)
+}
+
+async function loadProjectOptions(keyword = ''): Promise<void> {
+  projectOptionsLoading.value = true
+  try {
+    const res = await ceamsApi.project.projectPage({
+      page: 1,
+      size: 50,
+      keyword: keyword || undefined
+    })
+    projectOptions.value = keepSelected(
+      projectOptions.value,
+      res.records.map((item) => ({ id: item.id, label: item.projectName })),
+      [query.projectId, form.projectId]
+    )
+  } catch (err) {
+    if (!projectOptionsErrorShown.value) {
+      projectOptionsErrorShown.value = true
+      ElMessage.error(apiErrorMessage(err, '项目选项加载失败'))
+    }
+  } finally {
+    projectOptionsLoading.value = false
+  }
+}
+
+function onProjectSearch(keyword: string): void {
+  void loadProjectOptions(keyword)
+}
+
 const query = reactive<{ subcontractorId?: string; projectId?: string }>({})
 const { page, size, total, resetPage } = usePage()
 const list = ref<SubcontractorContractVO[]>([])
@@ -74,6 +165,8 @@ const form = reactive<{
   endDate: string
   status?: ContractStatus
   description: string
+  filePath: string
+  fileName: string
 }>({
   subcontractorId: '',
   projectId: '',
@@ -83,11 +176,16 @@ const form = reactive<{
   startDate: '',
   endDate: '',
   status: undefined,
-  description: ''
+  description: '',
+  filePath: '',
+  fileName: ''
 })
 
+/** 本次弹窗内新上传、尚未保存到业务记录的文件名，用于取消/失败时补偿删除。 */
+const pendingFilePath = ref('')
+
 const rules: FormRules<typeof form> = {
-  subcontractorId: [{ required: true, message: '请输入分包商 ID', trigger: 'blur' }],
+  subcontractorId: [{ required: true, message: '请选择分包商', trigger: 'change' }],
   contractName: [{ required: true, message: '请输入合同名称', trigger: 'blur' }],
   contractNumber: [{ required: true, message: '请输入合同编号', trigger: 'blur' }],
   contractAmount: [{ required: true, message: '请输入合同金额', trigger: 'blur' }]
@@ -139,6 +237,7 @@ function onSearch(): void {
 
 function openCreate(): void {
   editingId.value = null
+  pendingFilePath.value = ''
   Object.assign(form, {
     subcontractorId: '',
     projectId: '',
@@ -148,13 +247,27 @@ function openCreate(): void {
     startDate: '',
     endDate: '',
     status: undefined,
-    description: ''
+    description: '',
+    filePath: '',
+    fileName: ''
   })
   dialogVisible.value = true
 }
 
 function openEdit(row: SubcontractorContractVO): void {
   editingId.value = row.id
+  pendingFilePath.value = ''
+  // 行数据带名称时作为兜底选项，保证编辑态下拉能显示名称而不是 ID
+  subcontractorOptions.value = addFallback(subcontractorOptions.value, {
+    id: row.subcontractorId,
+    label: row.subcontractorName || row.subcontractorId
+  })
+  if (row.projectId) {
+    projectOptions.value = addFallback(projectOptions.value, {
+      id: row.projectId,
+      label: row.projectName || row.projectId
+    })
+  }
   form.subcontractorId = row.subcontractorId
   form.projectId = row.projectId ?? ''
   form.contractName = row.contractName
@@ -164,7 +277,99 @@ function openEdit(row: SubcontractorContractVO): void {
   form.endDate = row.endDate ?? ''
   form.status = row.status
   form.description = row.description ?? ''
+  form.filePath = row.filePath ?? ''
+  form.fileName = row.fileName ?? ''
   dialogVisible.value = true
+}
+
+/** 合同文件上传：关闭 el-upload 自动上传，选中文件后直接调用上传接口。 */
+async function onContractFileChange(uploadFile: UploadFile): Promise<void> {
+  const raw = uploadFile.raw
+  if (!raw) return
+  if (raw.size > 20 * 1024 * 1024) {
+    ElMessage.error('文件大小不能超过 20MB')
+    return
+  }
+  try {
+    const uploaded = await ceamsApi.file.upload(raw)
+    if (pendingFilePath.value && pendingFilePath.value !== uploaded.name) {
+      // 替换上传：先删掉上一次刚上传但尚未保存的文件
+      await removePendingFile()
+    }
+    pendingFilePath.value = uploaded.name
+    form.filePath = uploaded.name
+    form.fileName = raw.name
+    ElMessage.success('上传成功')
+  } catch (err) {
+    ElMessage.error(apiErrorMessage(err, '上传失败'))
+  }
+}
+
+/** 删除本次弹窗内已上传但未保存到业务表的文件；失败不阻断主流程。 */
+async function removePendingFile(): Promise<void> {
+  if (!pendingFilePath.value) return
+  const name = pendingFilePath.value
+  pendingFilePath.value = ''
+  try {
+    await ceamsApi.file.remove(name)
+  } catch (err) {
+    // 补偿删除失败不阻断主流程，后端还有兜底
+    console.warn('补偿删除文件失败', name, err)
+  }
+}
+
+/** 弹窗关闭（取消按钮、右上角关闭、遮罩、ESC）时补偿删除未保存文件。 */
+function onDialogClose(): void {
+  void removePendingFile()
+}
+
+/** 移除附件：本次新上传的文件需删服务器文件，编辑前已保存的附件仅清空表单引用。 */
+async function removeContractFile(): Promise<void> {
+  if (form.filePath && form.filePath === pendingFilePath.value) {
+    await removePendingFile()
+  }
+  form.filePath = ''
+  form.fileName = ''
+}
+
+// ---------- 附件预览 / 下载 / 导出 ----------
+async function onPreviewFile(row: SubcontractorContractVO): Promise<void> {
+  if (!row.filePath) return
+  try {
+    const blob = await fetchBlob(`/api/v1/files/${encodeURIComponent(row.filePath)}`)
+    previewBlob(blob)
+  } catch (err) {
+    ElMessage.error(apiErrorMessage(err, '附件加载失败'))
+  }
+}
+
+async function onDownloadFile(row: SubcontractorContractVO): Promise<void> {
+  if (!row.filePath) return
+  try {
+    const blob = await fetchBlob(`/api/v1/files/${encodeURIComponent(row.filePath)}`)
+    saveBlob(blob, row.fileName || 'contract')
+  } catch (err) {
+    ElMessage.error(apiErrorMessage(err, '附件加载失败'))
+  }
+}
+
+const exporting = ref(false)
+
+async function onExport(): Promise<void> {
+  const params = new URLSearchParams()
+  if (query.subcontractorId) params.append('subcontractorId', query.subcontractorId)
+  if (query.projectId) params.append('projectId', query.projectId)
+  const search = params.toString()
+  exporting.value = true
+  try {
+    const blob = await fetchBlob(`/api/v1/subcontractor-contracts/export${search ? `?${search}` : ''}`)
+    saveBlob(blob, '分包合同列表.xlsx')
+    ElMessage.success('导出成功')
+  } catch (err) {
+    ElMessage.error(apiErrorMessage(err, '导出失败'))
+  } finally {
+    exporting.value = false
+  }
 }
 
 function openDetail(row: SubcontractorContractVO): void {
@@ -186,7 +391,9 @@ async function submit(): Promise<void> {
         startDate: form.startDate || undefined,
         endDate: form.endDate || undefined,
         status: form.status,
-        description: form.description || undefined
+        description: form.description || undefined,
+        filePath: form.filePath || null,
+        fileName: form.fileName || null
       })
       ElMessage.success('更新成功')
     } else {
@@ -199,13 +406,20 @@ async function submit(): Promise<void> {
         startDate: form.startDate || null,
         endDate: form.endDate || null,
         status: form.status,
-        description: form.description || null
+        description: form.description || null,
+        filePath: form.filePath || null,
+        fileName: form.fileName || null
       })
       ElMessage.success('创建成功')
     }
+    pendingFilePath.value = ''
     dialogVisible.value = false
     await load()
   } catch (err) {
+    // 保存失败：补偿删除本次上传文件，并清空表单中的失效引用
+    await removePendingFile()
+    form.filePath = ''
+    form.fileName = ''
     ElMessage.error(apiErrorMessage(err, '保存失败'))
   }
 }
@@ -225,25 +439,72 @@ async function onRemove(row: SubcontractorContractVO): Promise<void> {
   }
 }
 
-onMounted(load)
+onMounted(() => {
+  void load()
+  void loadSubcontractorOptions()
+  void loadProjectOptions()
+})
 </script>
 
 <template>
   <div>
     <div class="toolbar">
-      <el-input v-model="query.subcontractorId" placeholder="分包商 ID（可选）" clearable style="width: 200px" />
-      <el-input v-model="query.projectId" placeholder="项目 ID（可选）" clearable style="width: 200px" />
+      <el-select
+        v-model="query.subcontractorId"
+        placeholder="分包商（可选）"
+        clearable
+        filterable
+        remote
+        remote-show-suffix
+        :remote-method="onSubcontractorSearch"
+        :loading="subcontractorOptionsLoading"
+        style="width: 200px"
+      >
+        <el-option v-for="opt in subcontractorOptions" :key="opt.id" :label="opt.label" :value="opt.id" />
+      </el-select>
+      <el-select
+        v-model="query.projectId"
+        placeholder="项目（可选）"
+        clearable
+        filterable
+        remote
+        remote-show-suffix
+        :remote-method="onProjectSearch"
+        :loading="projectOptionsLoading"
+        style="width: 200px"
+      >
+        <el-option v-for="opt in projectOptions" :key="opt.id" :label="opt.label" :value="opt.id" />
+      </el-select>
       <el-button type="primary" @click="onSearch">查询</el-button>
       <el-button @click="openCreate">新增合同</el-button>
+      <el-button :loading="exporting" @click="onExport">导出 Excel</el-button>
     </div>
 
     <el-table v-loading="loading" :data="list" border>
       <el-table-column prop="contractName" label="合同名称" min-width="180" />
       <el-table-column prop="contractNumber" label="合同编号" width="160" />
-      <el-table-column prop="subcontractorId" label="分包商 ID" width="180" />
-      <el-table-column prop="projectId" label="项目 ID" width="180" />
+      <el-table-column label="分包商" width="180">
+        <template #default="{ row }">
+          {{ (row as SubcontractorContractVO).subcontractorName || (row as SubcontractorContractVO).subcontractorId || '-' }}
+        </template>
+      </el-table-column>
+      <el-table-column label="项目" width="180">
+        <template #default="{ row }">
+          {{ (row as SubcontractorContractVO).projectName || (row as SubcontractorContractVO).projectId || '-' }}
+        </template>
+      </el-table-column>
       <el-table-column prop="contractAmount" label="合同金额" width="120" />
       <el-table-column prop="paidAmount" label="已付金额" width="120" />
+      <el-table-column label="附件" width="160">
+        <template #default="{ row }">
+          <template v-if="(row as SubcontractorContractVO).filePath">
+            <span class="file-name">{{ (row as SubcontractorContractVO).fileName || '查看' }}</span>
+            <el-button link type="primary" size="small" @click="onPreviewFile(row as SubcontractorContractVO)">预览</el-button>
+            <el-button link type="primary" size="small" @click="onDownloadFile(row as SubcontractorContractVO)">下载</el-button>
+          </template>
+          <span v-else>-</span>
+        </template>
+      </el-table-column>
       <el-table-column label="状态" width="110">
         <template #default="{ row }">
           <el-tag v-if="row.status" size="small">{{ contractStatusLabels[(row as SubcontractorContractVO).status!] }}</el-tag>
@@ -271,13 +532,43 @@ onMounted(load)
       @current-change="load"
     />
 
-    <el-dialog v-model="dialogVisible" :title="editingId ? '编辑分包合同' : '新增分包合同'" width="600px">
+    <el-dialog
+      v-model="dialogVisible"
+      :title="editingId ? '编辑分包合同' : '新增分包合同'"
+      width="600px"
+      @close="onDialogClose"
+    >
       <el-form ref="formRef" :model="form" :rules="rules" label-width="110px">
-        <el-form-item label="分包商 ID" prop="subcontractorId">
-          <el-input v-model="form.subcontractorId" :disabled="!!editingId" placeholder="请输入分包商 ID" />
+        <el-form-item label="分包商" prop="subcontractorId">
+          <el-select
+            v-model="form.subcontractorId"
+            :disabled="!!editingId"
+            filterable
+            remote
+            remote-show-suffix
+            :remote-method="onSubcontractorSearch"
+            :loading="subcontractorOptionsLoading"
+            placeholder="请选择分包商"
+            style="width: 100%"
+          >
+            <el-option v-for="opt in subcontractorOptions" :key="opt.id" :label="opt.label" :value="opt.id" />
+          </el-select>
         </el-form-item>
-        <el-form-item label="项目 ID">
-          <el-input v-model="form.projectId" placeholder="项目 ID（可选）" />
+        <el-form-item label="项目">
+          <el-select
+            v-model="form.projectId"
+            :disabled="!!editingId"
+            clearable
+            filterable
+            remote
+            remote-show-suffix
+            :remote-method="onProjectSearch"
+            :loading="projectOptionsLoading"
+            placeholder="项目（可选）"
+            style="width: 100%"
+          >
+            <el-option v-for="opt in projectOptions" :key="opt.id" :label="opt.label" :value="opt.id" />
+          </el-select>
         </el-form-item>
         <el-form-item label="合同名称" prop="contractName">
           <el-input v-model="form.contractName" placeholder="请输入合同名称" />
@@ -302,6 +593,25 @@ onMounted(load)
         <el-form-item label="描述">
           <el-input v-model="form.description" type="textarea" :rows="2" placeholder="描述（可选）" />
         </el-form-item>
+        <el-form-item label="合同文件">
+          <div class="file-field">
+            <div class="file-field__row">
+              <el-upload
+                :auto-upload="false"
+                :show-file-list="false"
+                accept=".pdf,.jpg,.jpeg,.png,.webp"
+                :on-change="onContractFileChange"
+              >
+                <el-button size="small">{{ form.filePath ? '重新上传' : '选择文件' }}</el-button>
+              </el-upload>
+              <span v-if="form.fileName" class="file-name">{{ form.fileName }}</span>
+              <el-button v-if="form.filePath" link type="danger" size="small" @click="removeContractFile">
+                移除
+              </el-button>
+            </div>
+            <div class="form-tip">支持 PDF/JPG/PNG/WEBP，单文件不超过 20MB</div>
+          </div>
+        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
@@ -313,8 +623,8 @@ onMounted(load)
       <el-descriptions v-if="detail" :column="2" border>
         <el-descriptions-item label="合同名称">{{ detail.contractName }}</el-descriptions-item>
         <el-descriptions-item label="合同编号">{{ detail.contractNumber }}</el-descriptions-item>
-        <el-descriptions-item label="分包商 ID">{{ detail.subcontractorId }}</el-descriptions-item>
-        <el-descriptions-item label="项目 ID">{{ detail.projectId ?? '-' }}</el-descriptions-item>
+        <el-descriptions-item label="分包商">{{ detail.subcontractorName || detail.subcontractorId || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="项目">{{ detail.projectName || detail.projectId || '-' }}</el-descriptions-item>
         <el-descriptions-item label="合同金额">{{ detail.contractAmount }}</el-descriptions-item>
         <el-descriptions-item label="已付金额">{{ detail.paidAmount ?? '-' }}</el-descriptions-item>
         <el-descriptions-item label="状态">
@@ -322,7 +632,14 @@ onMounted(load)
         </el-descriptions-item>
         <el-descriptions-item label="开始日期">{{ detail.startDate ?? '-' }}</el-descriptions-item>
         <el-descriptions-item label="结束日期">{{ detail.endDate ?? '-' }}</el-descriptions-item>
-        <el-descriptions-item label="文件名">{{ detail.fileName ?? '-' }}</el-descriptions-item>
+        <el-descriptions-item label="合同文件">
+          <template v-if="detail.filePath">
+            <span class="file-name">{{ detail.fileName || '查看' }}</span>
+            <el-button link type="primary" size="small" @click="onPreviewFile(detail)">预览</el-button>
+            <el-button link type="primary" size="small" @click="onDownloadFile(detail)">下载</el-button>
+          </template>
+          <span v-else>-</span>
+        </el-descriptions-item>
         <el-descriptions-item label="描述" :span="2">{{ detail.description ?? '-' }}</el-descriptions-item>
       </el-descriptions>
     </el-dialog>
@@ -428,5 +745,27 @@ onMounted(load)
 }
 .risk-disclaimer {
   margin-top: 4px;
+}
+.file-field {
+  width: 100%;
+}
+.file-field__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.file-name {
+  max-width: 180px;
+  overflow: hidden;
+  color: #606266;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.form-tip {
+  color: #909399;
+  font-size: 12px;
+  line-height: 1.5;
 }
 </style>

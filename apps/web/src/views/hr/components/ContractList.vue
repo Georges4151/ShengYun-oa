@@ -14,10 +14,11 @@ import {
   ElSelect,
   ElTable,
   ElTableColumn,
-  ElTag
+  ElTag,
+  ElUpload
 } from 'element-plus'
-import type { FormInstance, FormRules } from 'element-plus'
-import { ceamsApi } from '@/services/http'
+import type { FormInstance, FormRules, UploadFile } from 'element-plus'
+import { ceamsApi, fetchBlob } from '@/services/http'
 import type {
   ContractVO,
   EmployeeVO,
@@ -26,6 +27,7 @@ import type {
 } from '@ceams/types'
 import { usePage } from '@/composables/usePage'
 import { apiErrorMessage } from '@/utils/error'
+import { previewBlob, saveBlob } from '@/utils/file'
 import { hrContractStatusLabels, hrContractTypeLabels, toOptions } from '@/utils/labels'
 
 defineOptions({ name: 'ContractList' })
@@ -113,7 +115,8 @@ const form = reactive({
   signDate: '',
   renewalRemindDate: '',
   status: 'ACTIVE' as HrContractStatus,
-  fileId: '',
+  filePath: '',
+  fileName: '',
   remark: ''
 })
 
@@ -133,7 +136,8 @@ function resetForm(): void {
     signDate: '',
     renewalRemindDate: '',
     status: 'ACTIVE',
-    fileId: '',
+    filePath: '',
+    fileName: '',
     remark: ''
   })
 }
@@ -155,7 +159,8 @@ function openEdit(row: ContractVO): void {
   form.signDate = row.signDate ?? ''
   form.renewalRemindDate = row.renewalRemindDate ?? ''
   form.status = row.status
-  form.fileId = row.fileId ?? ''
+  form.filePath = row.filePath ?? ''
+  form.fileName = row.fileName ?? ''
   form.remark = row.remark ?? ''
   dialogVisible.value = true
 }
@@ -175,7 +180,8 @@ async function submit(): Promise<void> {
         signDate: form.signDate || undefined,
         renewalRemindDate: form.renewalRemindDate || undefined,
         status: form.status,
-        fileId: form.fileId || undefined,
+        filePath: form.filePath || undefined,
+        fileName: form.fileName || undefined,
         remark: form.remark || undefined
       })
       ElMessage.success('更新成功')
@@ -189,11 +195,14 @@ async function submit(): Promise<void> {
         signDate: form.signDate || undefined,
         renewalRemindDate: form.renewalRemindDate || undefined,
         status: form.status,
-        fileId: form.fileId || undefined,
+        filePath: form.filePath || undefined,
+        fileName: form.fileName || undefined,
         remark: form.remark || undefined
       })
       ElMessage.success('创建成功')
     }
+    // 附件已随业务记录保存，关闭弹窗时不再补偿删除
+    pendingFilePath.value = ''
     dialogVisible.value = false
     await Promise.all([load(), loadExpiring()])
   } catch (err) {
@@ -206,6 +215,79 @@ onMounted(() => {
   void loadExpiring()
   void load()
 })
+
+// ---------- 合同原件上传 / 预览 ----------
+
+/** 本次弹窗内新上传、尚未随业务记录保存的文件存储名（用于取消时补偿删除） */
+const pendingFilePath = ref('')
+
+async function onContractFileChange(uploadFile: UploadFile): Promise<void> {
+  const raw = uploadFile.raw
+  if (!raw) return
+  if (raw.size > 20 * 1024 * 1024) {
+    ElMessage.error('文件大小不能超过 20MB')
+    return
+  }
+  try {
+    const uploaded = await ceamsApi.file.upload(raw)
+    // 重新上传时先删掉上一次刚上传但尚未保存的文件
+    if (pendingFilePath.value && pendingFilePath.value !== uploaded.name) {
+      await removePendingFile()
+    }
+    pendingFilePath.value = uploaded.name
+    form.filePath = uploaded.name
+    form.fileName = raw.name
+    ElMessage.success('上传成功')
+  } catch (err) {
+    ElMessage.error(apiErrorMessage(err, '上传失败'))
+  }
+}
+
+/** 删除本次弹窗内已上传但未保存到业务表的文件；失败不阻断主流程。 */
+async function removePendingFile(): Promise<void> {
+  if (!pendingFilePath.value) return
+  const name = pendingFilePath.value
+  pendingFilePath.value = ''
+  try {
+    await ceamsApi.file.remove(name)
+  } catch (err) {
+    console.warn('补偿删除文件失败', name, err)
+  }
+}
+
+/** 弹窗关闭（取消、右上角关闭、ESC）时补偿删除未保存文件。 */
+function onDialogClose(): void {
+  void removePendingFile()
+}
+
+/** 移除附件：本次新上传的文件需删服务器文件，已保存的附件仅清空表单引用。 */
+async function removeContractFile(): Promise<void> {
+  if (form.filePath && form.filePath === pendingFilePath.value) {
+    await removePendingFile()
+  }
+  form.filePath = ''
+  form.fileName = ''
+}
+
+async function onPreviewFile(row: ContractVO): Promise<void> {
+  if (!row.filePath) return
+  try {
+    const blob = await fetchBlob(`/api/v1/files/${encodeURIComponent(row.filePath)}`)
+    previewBlob(blob)
+  } catch (err) {
+    ElMessage.error(apiErrorMessage(err, '合同原件加载失败'))
+  }
+}
+
+async function onDownloadFile(row: ContractVO): Promise<void> {
+  if (!row.filePath) return
+  try {
+    const blob = await fetchBlob(`/api/v1/files/${encodeURIComponent(row.filePath)}`)
+    saveBlob(blob, row.fileName || 'contract')
+  } catch (err) {
+    ElMessage.error(apiErrorMessage(err, '合同原件加载失败'))
+  }
+}
 </script>
 
 <template>
@@ -248,6 +330,17 @@ onMounted(() => {
           </el-tag>
         </template>
       </el-table-column>
+      <el-table-column label="合同原件" width="120">
+        <template #default="{ row }">
+          <template v-if="(row as ContractVO).filePath">
+            <el-button link type="primary" size="small" @click="onPreviewFile(row as ContractVO)">
+              查看
+            </el-button>
+            <el-button link size="small" @click="onDownloadFile(row as ContractVO)">下载</el-button>
+          </template>
+          <span v-else class="empty-file">-</span>
+        </template>
+      </el-table-column>
       <el-table-column label="操作" width="100" fixed="right">
         <template #default="{ row }">
           <el-button link type="primary" size="small" @click="openEdit(row as ContractVO)">编辑</el-button>
@@ -266,7 +359,12 @@ onMounted(() => {
       @current-change="load"
     />
 
-    <el-dialog v-model="dialogVisible" :title="editingId ? '编辑合同' : '新增合同'" width="600px">
+    <el-dialog
+      v-model="dialogVisible"
+      :title="editingId ? '编辑合同' : '新增合同'"
+      width="600px"
+      @closed="onDialogClose"
+    >
       <el-form ref="formRef" :model="form" :rules="rules" label-width="110px">
         <el-form-item label="员工" prop="employeeId">
           <el-select
@@ -329,9 +427,30 @@ onMounted(() => {
             <el-option v-for="opt in statusOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
           </el-select>
         </el-form-item>
-        <el-form-item label="文件 ID">
-          <!-- 前端暂未接入统一文件上传组件，先以文本形式填写后端 fileId -->
-          <el-input v-model="form.fileId" placeholder="文件 ID（可选，来自文件服务）" />
+        <el-form-item label="合同原件">
+          <div class="file-field">
+            <div class="file-field__row">
+              <el-upload
+                :auto-upload="false"
+                :show-file-list="false"
+                accept=".pdf,.jpg,.jpeg,.png,.webp"
+                :on-change="onContractFileChange"
+              >
+                <el-button size="small">{{ form.filePath ? '重新上传' : '选择文件' }}</el-button>
+              </el-upload>
+              <span v-if="form.fileName" class="file-name">{{ form.fileName }}</span>
+              <el-button
+                v-if="form.filePath"
+                link
+                type="danger"
+                size="small"
+                @click="removeContractFile"
+              >
+                移除
+              </el-button>
+            </div>
+            <div class="form-tip">支持 PDF/JPG/PNG/WEBP，单文件不超过 20MB</div>
+          </div>
         </el-form-item>
         <el-form-item label="备注">
           <el-input v-model="form.remark" type="textarea" :rows="2" placeholder="备注（可选）" />
@@ -357,5 +476,25 @@ onMounted(() => {
 .pagination {
   margin-top: 12px;
   justify-content: flex-end;
+}
+.file-field {
+  width: 100%;
+}
+.file-field__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.file-name {
+  color: #303133;
+  word-break: break-all;
+}
+.form-tip {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #909399;
+}
+.empty-file {
+  color: #909399;
 }
 </style>

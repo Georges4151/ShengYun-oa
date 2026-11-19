@@ -14,6 +14,9 @@ import type {
 } from '@ceams/types'
 import { formatDate, formatDateTime } from '@ceams/utils'
 import { apiClient } from '../../platform/http'
+import { getUser, patchUser } from '../../platform/auth'
+import { chooseAndUploadAvatar } from '../../platform/avatar'
+import { API_BASE_URL } from '../../platform/config'
 import { apiErrorMessage, isEmployeeUnbound } from '../../utils/error'
 import {
   hrApprovalStatusLabels,
@@ -52,6 +55,18 @@ const depts = ref<DeptVO[]>([])
 const positions = ref<PositionVO[]>([])
 const loading = ref(false)
 const unbound = ref(false)
+
+/** 当前登录用户头像：后端返回的相对路径或完整 URL，空串表示未设置。 */
+const avatar = ref<string>(getUser()?.avatar ?? '')
+/** 头像上传中标记，避免重复触发。 */
+const uploadingAvatar = ref(false)
+
+/** 头像可被 <image> 直接加载的完整地址。 */
+const avatarSrc = computed<string>(() => {
+  const value = avatar.value
+  if (!value) return ''
+  return value.startsWith('http') ? value : `${API_BASE_URL}${value}`
+})
 
 const currentYear = computed<number>(() => new Date().getFullYear())
 const deptLabel = computed<string>(() => {
@@ -137,7 +152,30 @@ async function load(): Promise<void> {
   }
 }
 
+/**
+ * 点击头像 / 提示文字：选择图片并上传头像。
+ * 选择与上传细节由 chooseAndUploadAvatar 统一处理：取消时静默结束，成功后同步本地缓存。
+ */
+async function onChangeAvatar(): Promise<void> {
+  // 上传中忽略重复点击，避免并发上传产生错乱
+  if (uploadingAvatar.value) return
+  uploadingAvatar.value = true
+  try {
+    const url = await chooseAndUploadAvatar()
+    if (!url) return
+    avatar.value = url
+    patchUser({ avatar: url })
+    uni.showToast({ title: '头像已更新', icon: 'success' })
+  } catch (err) {
+    uni.showToast({ title: apiErrorMessage(err, '头像更新失败'), icon: 'none' })
+  } finally {
+    uploadingAvatar.value = false
+  }
+}
+
 onShow(() => {
+  // 每次显示页面时同步一次本地缓存头像，防止其他端修改后展示过期
+  avatar.value = getUser()?.avatar ?? ''
   void load()
   void loadReferences()
 })
@@ -157,6 +195,23 @@ onShow(() => {
     <template v-if="profile">
       <view class="ceams-card">
         <view class="profile__head">
+          <view class="profile__avatar-wrap">
+            <image
+              v-if="avatarSrc"
+              class="profile__avatar"
+              :src="avatarSrc"
+              mode="aspectFill"
+              @tap="onChangeAvatar"
+            />
+            <view
+              v-else
+              class="profile__avatar profile__avatar--empty"
+              @tap="onChangeAvatar"
+            >
+              <text>{{ profile.name.slice(0, 1) }}</text>
+            </view>
+            <text class="profile__avatar-tip" @tap="onChangeAvatar">点击更换头像</text>
+          </view>
           <view class="profile__main">
             <text class="profile__name">{{ profile.name }}</text>
             <text class="profile__no">工号 {{ profile.employeeNo }}</text>
@@ -274,9 +329,42 @@ onShow(() => {
 
 .profile__head {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
+  gap: var(--ceams-space-md);
   justify-content: space-between;
   margin-bottom: var(--ceams-space-xs);
+}
+
+/* 头像 + 「点击更换头像」提示 */
+.profile__avatar-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.profile__avatar {
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: var(--ceams-radius-pill);
+  overflow: hidden;
+  background-color: var(--ceams-color-primary-tint);
+}
+
+/* 无头像时的圆形占位，居中显示姓名首字 */
+.profile__avatar--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ceams-color-primary);
+  font-size: var(--ceams-font-size-heading);
+  font-weight: var(--ceams-font-weight-bold);
+}
+
+.profile__avatar-tip {
+  margin-top: var(--ceams-space-2xs);
+  color: var(--ceams-text-placeholder);
+  font-size: var(--ceams-font-size-caption);
 }
 
 .profile__main {

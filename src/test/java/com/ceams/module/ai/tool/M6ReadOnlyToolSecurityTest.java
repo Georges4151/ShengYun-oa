@@ -99,7 +99,7 @@ class M6ReadOnlyToolSecurityTest {
         registry.validate();
 
         assertEquals(6, registry.all().size());
-        assertEquals(15, ToolRegistry.ALLOWED_TOOL_NAMES.size());
+        assertEquals(16, ToolRegistry.ALLOWED_TOOL_NAMES.size());
         for (String name :
                 List.of(
                         "queryHrHeadcount",

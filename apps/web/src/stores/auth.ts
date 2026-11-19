@@ -6,6 +6,7 @@ import { ceamsApi } from '@/services/http'
 const ACCESS_TOKEN_KEY = 'ceams.access_token'
 const REFRESH_TOKEN_KEY = 'ceams.refresh_token'
 const USER_KEY = 'ceams.user'
+const PERMISSIONS_KEY = 'ceams.permissions'
 
 function readStored(key: string): string | null {
   try {
@@ -25,6 +26,18 @@ function readStoredUser(): UserVO | null {
   }
 }
 
+/** 读取缓存的权限码（刷新页面时先按缓存渲染菜单，避免闪烁）。 */
+function readStoredPermissions(): string[] {
+  const raw = readStored(PERMISSIONS_KEY)
+  if (!raw) return []
+  try {
+    const parsed = JSON.parse(raw) as unknown
+    return Array.isArray(parsed) ? parsed.filter((code): code is string => typeof code === 'string') : []
+  } catch {
+    return []
+  }
+}
+
 /**
  * 认证状态：access / refresh 令牌 + 当前用户。
  * token 为 access token；refreshToken 用于令牌轮换。
@@ -34,6 +47,10 @@ export const useAuthStore = defineStore('auth', () => {
   const token = ref<string | null>(readStored(ACCESS_TOKEN_KEY))
   const refreshToken = ref<string | null>(readStored(REFRESH_TOKEN_KEY))
   const user = ref<UserVO | null>(readStoredUser())
+  /** 当前账号后端下发的权限码（角色权限变更后需重新登录或刷新页面生效）。 */
+  const permissions = ref<string[]>(readStoredPermissions())
+  /** 是否已从后端拉取过权限码；未拉取时按钮判定回退到角色映射。 */
+  const permissionsLoaded = ref(permissions.value.length > 0)
 
   const isAuthenticated = computed(() => token.value !== null)
   /** 登录账号名。 */
@@ -51,6 +68,11 @@ export const useAuthStore = defineStore('auth', () => {
       else window.localStorage.removeItem(REFRESH_TOKEN_KEY)
       if (user.value) window.localStorage.setItem(USER_KEY, JSON.stringify(user.value))
       else window.localStorage.removeItem(USER_KEY)
+      if (permissions.value.length > 0) {
+        window.localStorage.setItem(PERMISSIONS_KEY, JSON.stringify(permissions.value))
+      } else {
+        window.localStorage.removeItem(PERMISSIONS_KEY)
+      }
     } catch {
       // localStorage 不可用时忽略（如隐私模式），会话仍可在内存中工作
     }
@@ -74,13 +96,32 @@ export const useAuthStore = defineStore('auth', () => {
     token.value = null
     refreshToken.value = null
     user.value = null
+    permissions.value = []
+    permissionsLoaded.value = false
     persist()
+  }
+
+  /**
+   * 从后端拉取当前账号权限码（用于菜单/按钮级控制）。
+   * 拉取失败时保留缓存值，避免网络抖动导致菜单全部消失。
+   */
+  async function loadPermissions(force = false): Promise<void> {
+    if (!token.value) return
+    if (permissionsLoaded.value && !force) return
+    try {
+      permissions.value = await ceamsApi.iam.permissionMine()
+      permissionsLoaded.value = true
+      persist()
+    } catch {
+      // 保留已有缓存；后续路由守卫会再次尝试
+    }
   }
 
   /** 登录：调用 iam.login 后保存令牌与用户信息。 */
   async function login(body: LoginRequest): Promise<void> {
     const data = await ceamsApi.iam.login(body)
     setSession(data)
+    await loadPermissions(true)
   }
 
   /**
@@ -90,6 +131,7 @@ export const useAuthStore = defineStore('auth', () => {
   async function loginByWecom(body: WecomLoginBody): Promise<void> {
     const data = await ceamsApi.integration.loginByWecom(body)
     setSession(data)
+    await loadPermissions(true)
   }
 
   /** 登出：调用后端注销接口并清空本地会话。 */
@@ -105,6 +147,8 @@ export const useAuthStore = defineStore('auth', () => {
     token,
     refreshToken,
     user,
+    permissions,
+    permissionsLoaded,
     isAuthenticated,
     username,
     name,
@@ -112,6 +156,7 @@ export const useAuthStore = defineStore('auth', () => {
     setSession,
     setUser,
     clear,
+    loadPermissions,
     login,
     loginByWecom,
     logout

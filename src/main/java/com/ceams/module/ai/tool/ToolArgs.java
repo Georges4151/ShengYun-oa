@@ -29,6 +29,15 @@ public final class ToolArgs {
         return text.isEmpty() ? null : text;
     }
 
+    /** 读取整数参数：支持数字与数字字符串，未传返回 null。 */
+    public static Integer integer(Map<String, Object> args, String key) {
+        Object value = args == null ? null : args.get(key);
+        if (value == null) {
+            return null;
+        }
+        return (int) parseLong(value, key);
+    }
+
     /** 读取 Long 参数：支持数字与数字字符串。 */
     public static Long longValue(Map<String, Object> args, String key) {
         Object value = args == null ? null : args.get(key);

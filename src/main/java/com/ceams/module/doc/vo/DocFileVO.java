@@ -1,6 +1,8 @@
 package com.ceams.module.doc.vo;
 
 import com.ceams.module.doc.enums.DocFileStatus;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import java.time.LocalDateTime;
 import lombok.Data;
 
@@ -9,9 +11,11 @@ import lombok.Data;
 public class DocFileVO {
 
     /** 文件 ID。 */
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long id;
 
     /** 所属目录 ID。 */
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long dirId;
 
     /** 文件名（含扩展名）。 */
@@ -30,6 +34,7 @@ public class DocFileVO {
     private DocFileStatus status;
 
     /** 上传人 ID。 */
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long uploadedBy;
 
     /** 创建时间。 */

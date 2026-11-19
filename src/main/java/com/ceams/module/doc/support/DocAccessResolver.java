@@ -13,6 +13,8 @@ import com.ceams.module.doc.enums.DocAction;
 import com.ceams.module.doc.enums.DocSubjectType;
 import com.ceams.module.doc.enums.LibraryType;
 import com.ceams.module.doc.mapper.DocDirPermissionMapper;
+import com.ceams.module.doc.mapper.DocDirectoryMapper;
+import com.ceams.module.doc.mapper.DocFileMapper;
 import com.ceams.module.doc.mapper.DocFilePermissionMapper;
 import com.ceams.module.iam.entity.SysDept;
 import com.ceams.module.iam.entity.SysUser;
@@ -23,6 +25,7 @@ import com.ceams.module.iam.mapper.UserRoleMapper;
 import com.ceams.module.project.entity.Project;
 import com.ceams.module.project.mapper.ProjectMapper;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -63,6 +66,8 @@ public class DocAccessResolver {
     private final DeptMapper deptMapper;
     private final DocDirPermissionMapper dirPermissionMapper;
     private final DocFilePermissionMapper filePermissionMapper;
+    private final DocDirectoryMapper dirMapper;
+    private final DocFileMapper fileMapper;
     private final BpmSecurityGuard securityGuard;
     private final UserMapper userMapper;
     private final UserRoleMapper userRoleMapper;
@@ -154,12 +159,246 @@ public class DocAccessResolver {
         require(action, dir, null);
     }
 
+    /**
+     * 批量解析用户可见的文件 ID 集合（知识库检索的「先收窄再召回」入口）。
+     *
+     * <p>口径与 {@link #resolve(Long, DocDirectory, DocFile)} 完全一致，只是把「逐文件判定」
+     * 改为「先按目录批量判定，再反查文件」：
+     *
+     * <ol>
+     *   <li>全权用户：直接取过滤条件下所有未删除目录下的未删除文件；
+     *   <li>库默认规则（PERSONAL 本人 / DEPT 部门在可见链 / PROJECT 项目经理 / PUBLIC 全员）
+     *       或目录链（含自身）上主体匹配授权包含 {@code PREVIEW} 的目录，其下文件全部可见；
+     *   <li>文件级授权中主体匹配且包含 {@code PREVIEW} 的文件也并入；若指定了
+     *       {@code libraryType / projectId}，只保留其目录符合过滤条件的文件。
+     * </ol>
+     *
+     * <p>返回值不可变；无权限时返回空集合（调用方必须直接返回空结果，不得先召回后过滤）。
+     *
+     * @param userId 用户 ID（为空返回空集合）
+     * @param libraryType 库类型过滤（可空表示不过滤）
+     * @param projectId 项目 ID 过滤（可空表示不过滤）
+     * @return 不可变的可访问文件 ID 集合
+     */
+    public Set<Long> accessibleFileIds(Long userId, LibraryType libraryType, Long projectId) {
+        if (userId == null) {
+            return Set.of();
+        }
+        List<DocDirectory> dirs = loadDirectories(libraryType, projectId);
+        if (dirs.isEmpty()) {
+            return Set.of();
+        }
+        Set<Long> filteredDirIds = new LinkedHashSet<>();
+        for (DocDirectory dir : dirs) {
+            if (dir.getId() != null) {
+                filteredDirIds.add(dir.getId());
+            }
+        }
+        if (filteredDirIds.isEmpty()) {
+            return Set.of();
+        }
+
+        if (isFullAccess()) {
+            return Collections.unmodifiableSet(
+                    new LinkedHashSet<>(fileIdsUnderDirs(filteredDirIds)));
+        }
+
+        SubjectContext context = loadContext(userId);
+        Map<Long, List<GrantEntry>> grantsByDir = loadAllDirGrants();
+        Map<Long, Boolean> projectManagerCache = new HashMap<>();
+        Set<Long> allowedDirIds = new LinkedHashSet<>();
+        for (DocDirectory dir : dirs) {
+            if (dir == null || dir.getId() == null) {
+                continue;
+            }
+            if (libraryGrants(dir, context, projectManagerCache)
+                    || grantsPreviewOnChain(dir, grantsByDir, context)) {
+                allowedDirIds.add(dir.getId());
+            }
+        }
+
+        Set<Long> fileIds = new LinkedHashSet<>(fileIdsUnderDirs(allowedDirIds));
+        fileIds.addAll(fileIdsGrantedPreview(filteredDirIds, context));
+        return Collections.unmodifiableSet(fileIds);
+    }
+
     // ------------------------------------------------------------------
     // 内部实现
     // ------------------------------------------------------------------
 
+    /** 按库类型 / 项目过滤加载全部未删除目录。 */
+    private List<DocDirectory> loadDirectories(LibraryType libraryType, Long projectId) {
+        LambdaQueryWrapper<DocDirectory> wrapper = new LambdaQueryWrapper<>();
+        if (libraryType != null) {
+            wrapper.eq(DocDirectory::getLibraryType, libraryType);
+        }
+        if (projectId != null) {
+            wrapper.eq(DocDirectory::getProjectId, projectId);
+        }
+        List<DocDirectory> dirs = dirMapper.selectList(wrapper);
+        return dirs == null ? List.of() : dirs;
+    }
+
+    /** 指定目录下所有未删除文件 ID（目录集合为空时直接返回空，避免 IN ()）。 */
+    private Set<Long> fileIdsUnderDirs(Set<Long> dirIds) {
+        Set<Long> fileIds = new LinkedHashSet<>();
+        if (dirIds == null || dirIds.isEmpty()) {
+            return fileIds;
+        }
+        List<DocFile> files =
+                fileMapper.selectList(
+                        new LambdaQueryWrapper<DocFile>()
+                                .select(DocFile::getId, DocFile::getDirId)
+                                .in(DocFile::getDirId, dirIds));
+        if (files == null) {
+            return fileIds;
+        }
+        for (DocFile file : files) {
+            if (file != null && file.getId() != null) {
+                fileIds.add(file.getId());
+            }
+        }
+        return fileIds;
+    }
+
+    /**
+     * 文件级授权命中 PREVIEW 的文件 ID。
+     *
+     * <p>过滤条件存在时，只保留目录属于 {@code filteredDirIds} 的文件。
+     */
+    private Set<Long> fileIdsGrantedPreview(Set<Long> filteredDirIds, SubjectContext context) {
+        Set<Long> grantedFileIds = new LinkedHashSet<>();
+        List<DocFilePermission> permissions = loadOwnFilePermissions(context);
+        if (permissions == null) {
+            return grantedFileIds;
+        }
+        Set<Long> candidateFileIds = new LinkedHashSet<>();
+        for (DocFilePermission permission : permissions) {
+            if (permission == null || permission.getFileId() == null) {
+                continue;
+            }
+            GrantEntry entry =
+                    new GrantEntry(
+                            permission.getSubjectType(),
+                            permission.getSubjectId(),
+                            permission.getActions());
+            if (!matches(entry, context)
+                    || !DocConverter.parseActions(entry.actions()).contains(DocAction.PREVIEW)) {
+                continue;
+            }
+            candidateFileIds.add(permission.getFileId());
+        }
+        if (candidateFileIds.isEmpty()) {
+            return grantedFileIds;
+        }
+        List<DocFile> files = fileMapper.selectBatchIds(candidateFileIds);
+        if (files == null) {
+            return grantedFileIds;
+        }
+        for (DocFile file : files) {
+            if (file == null || file.getId() == null) {
+                continue;
+            }
+            if (file.getDirId() == null || !filteredDirIds.contains(file.getDirId())) {
+                continue;
+            }
+            grantedFileIds.add(file.getId());
+        }
+        return grantedFileIds;
+    }
+
+    /** 一次性加载全量目录授权，按目录 ID 分组（避免逐个目录查询）。 */
+    private Map<Long, List<GrantEntry>> loadAllDirGrants() {
+        Map<Long, List<GrantEntry>> grantsByDir = new HashMap<>();
+        List<DocDirPermission> permissions =
+                dirPermissionMapper.selectList(new LambdaQueryWrapper<>());
+        if (permissions == null) {
+            return grantsByDir;
+        }
+        for (DocDirPermission permission : permissions) {
+            if (permission == null || permission.getDirId() == null) {
+                continue;
+            }
+            grantsByDir
+                    .computeIfAbsent(permission.getDirId(), key -> new ArrayList<>())
+                    .add(
+                            new GrantEntry(
+                                    permission.getSubjectType(),
+                                    permission.getSubjectId(),
+                                    permission.getActions()));
+        }
+        return grantsByDir;
+    }
+
+    /** 目录自身加上祖先链（path 解析）上是否存在主体匹配且含 PREVIEW 的授权。 */
+    private boolean grantsPreviewOnChain(
+            DocDirectory dir, Map<Long, List<GrantEntry>> grantsByDir, SubjectContext context) {
+        Set<Long> chain = new LinkedHashSet<>();
+        if (dir.getId() != null) {
+            chain.add(dir.getId());
+        }
+        chain.addAll(parsePathIds(dir.getPath()));
+        for (Long dirId : chain) {
+            List<GrantEntry> entries = grantsByDir.get(dirId);
+            if (entries == null || entries.isEmpty()) {
+                continue;
+            }
+            if (collect(entries, context).contains(DocAction.PREVIEW)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 一次性加载「主体可能匹配」的文件级授权（SQL 侧先按 USER / ROLE / DEPT 收窄）。
+     *
+     * <p>SQL 只是缩小范围，是否真正命中主体仍由 {@link #matches} 复核。
+     */
+    private List<DocFilePermission> loadOwnFilePermissions(SubjectContext context) {
+        Set<Long> roleIds = context.roleIds();
+        Set<Long> deptScope = context.deptScope();
+        LambdaQueryWrapper<DocFilePermission> wrapper = new LambdaQueryWrapper<>();
+        wrapper.and(
+                w -> {
+                    w.and(
+                            user ->
+                                    user.eq(
+                                                    DocFilePermission::getSubjectType,
+                                                    DocSubjectType.USER)
+                                            .eq(DocFilePermission::getSubjectId, context.userId()));
+                    if (roleIds != null && !roleIds.isEmpty()) {
+                        w.or(
+                                role ->
+                                        role.eq(
+                                                        DocFilePermission::getSubjectType,
+                                                        DocSubjectType.ROLE)
+                                                .in(DocFilePermission::getSubjectId, roleIds));
+                    }
+                    if (deptScope != null && !deptScope.isEmpty()) {
+                        w.or(
+                                dept ->
+                                        dept.eq(
+                                                        DocFilePermission::getSubjectType,
+                                                        DocSubjectType.DEPT)
+                                                .in(DocFilePermission::getSubjectId, deptScope));
+                    }
+                });
+        return filePermissionMapper.selectList(wrapper);
+    }
+
     /** 库默认规则：命中返回 true（四类动作全集）。 */
     private boolean libraryGrants(DocDirectory dir, SubjectContext context) {
+        return libraryGrants(dir, context, new HashMap<>());
+    }
+
+    /**
+     * 库默认规则（带项目经理判定缓存）。
+     *
+     * <p>批量判定时同一项目会重复命中，缓存可把 N 次 {@code biz_project} 查询降为 1 次。
+     */
+    private boolean libraryGrants(
+            DocDirectory dir, SubjectContext context, Map<Long, Boolean> projectManagerCache) {
         LibraryType type = dir.getLibraryType();
         if (type == null) {
             return false;
@@ -171,7 +410,9 @@ public class DocAccessResolver {
                             && context.deptScope().contains(dir.getOwnerDeptId());
             case PROJECT ->
                     dir.getProjectId() != null
-                            && isProjectManager(context.userId(), dir.getProjectId());
+                            && projectManagerCache.computeIfAbsent(
+                                    dir.getProjectId(),
+                                    projectId -> isProjectManager(context.userId(), projectId));
             case PUBLIC -> true;
         };
     }

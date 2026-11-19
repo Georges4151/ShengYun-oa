@@ -20,9 +20,11 @@ import com.ceams.module.doc.enums.LibraryType;
 import com.ceams.module.doc.mapper.DocDirectoryMapper;
 import com.ceams.module.doc.mapper.DocFileMapper;
 import com.ceams.module.doc.mapper.DocFileVersionMapper;
+import com.ceams.module.doc.service.DocIndexService;
 import com.ceams.module.doc.support.DocAccessResolver;
 import com.ceams.module.doc.support.DocStorageService;
 import com.ceams.module.doc.vo.DocFileVO;
+import com.ceams.module.iam.mapper.UserMapper;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -68,6 +70,10 @@ class DocVersionServiceImplTest {
 
     @Mock private DocStorageService storageService;
 
+    @Mock private DocIndexService docIndexService;
+
+    @Mock private UserMapper userMapper;
+
     @TempDir private Path tempDir;
 
     private DocVersionServiceImpl versionService;
@@ -82,7 +88,9 @@ class DocVersionServiceImplTest {
                         accessResolver,
                         securityGuard,
                         bpmAuditService,
-                        storageService);
+                        storageService,
+                        docIndexService,
+                        userMapper);
         SecurityContextHolder.getContext()
                 .setAuthentication(
                         new UsernamePasswordAuthenticationToken(

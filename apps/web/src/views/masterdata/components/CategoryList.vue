@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import {
   ElButton,
   ElDescriptions,
@@ -18,7 +18,8 @@ import {
   ElTable,
   ElTableColumn,
   ElTag,
-  ElTree
+  ElTree,
+  ElTreeSelect
 } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { ceamsApi } from '@/services/http'
@@ -54,6 +55,42 @@ const form = reactive({
   enabled: true
 })
 
+// 弹窗父分类候选
+const parentTree = ref<CategoryVO[]>([])
+
+function filterTree(nodes: CategoryVO[], excludeId: string): CategoryVO[] {
+  const result: CategoryVO[] = []
+  for (const node of nodes) {
+    if (node.id === excludeId) continue
+    const children = node.children ? filterTree(node.children, excludeId) : undefined
+    result.push(children ? { ...node, children } : { ...node })
+  }
+  return result
+}
+
+const parentOptions = computed<CategoryVO[]>(() => {
+  if (!editingId.value) return parentTree.value
+  return filterTree(parentTree.value, editingId.value)
+})
+
+async function loadParentTree(): Promise<void> {
+  try {
+    parentTree.value = await ceamsApi.masterdata.categoryTree({ type: form.type })
+  } catch (err) {
+    ElMessage.error(apiErrorMessage(err, '加载父分类失败'))
+  }
+}
+
+watch(
+  () => form.type,
+  () => {
+    if (dialogVisible.value && !editingId.value) {
+      form.parentId = ''
+      void loadParentTree()
+    }
+  }
+)
+
 const rules: FormRules<typeof form> = {
   name: [{ required: true, message: '请输入分类名称', trigger: 'blur' }],
   type: [{ required: true, message: '请选择分类类型', trigger: 'change' }]
@@ -65,6 +102,26 @@ async function loadTree(): Promise<void> {
   } catch (err) {
     ElMessage.error(apiErrorMessage(err, '加载分类树失败'))
   }
+}
+
+function collectNameMap(nodes: CategoryVO[], map: Map<string, string>): void {
+  for (const node of nodes) {
+    map.set(node.id, node.name)
+    if (node.children && node.children.length) {
+      collectNameMap(node.children, map)
+    }
+  }
+}
+
+const categoryNameMap = computed<Map<string, string>>(() => {
+  const map = new Map<string, string>()
+  collectNameMap(tree.value, map)
+  return map
+})
+
+function parentCategoryName(row: CategoryVO): string {
+  if (!row.parentId) return '-'
+  return categoryNameMap.value.get(row.parentId) ?? row.parentId
 }
 
 async function load(): Promise<void> {
@@ -100,6 +157,7 @@ function openCreate(): void {
   form.sort = 0
   form.enabled = true
   dialogVisible.value = true
+  void loadParentTree()
 }
 
 function openEdit(row: CategoryVO): void {
@@ -111,6 +169,7 @@ function openEdit(row: CategoryVO): void {
   form.sort = row.sort ?? 0
   form.enabled = row.enabled ?? true
   dialogVisible.value = true
+  void loadParentTree()
 }
 
 function openDetail(row: CategoryVO): void {
@@ -128,7 +187,7 @@ async function submit(): Promise<void> {
       await ceamsApi.masterdata.categoryUpdate(editingId.value, {
         name: form.name,
         code: form.code || undefined,
-        parentId: form.parentId || undefined,
+        parentId: form.parentId || null,
         sort: form.sort,
         enabled: form.enabled
       })
@@ -179,7 +238,17 @@ onMounted(() => {
       <el-select v-model="query.type" placeholder="分类类型" clearable style="width: 180px">
         <el-option v-for="opt in typeOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
       </el-select>
-      <el-input v-model="query.parentId" placeholder="父级 ID（可选）" clearable style="width: 200px" />
+      <el-tree-select
+        v-model="query.parentId"
+        :data="tree"
+        :props="{ label: 'name', children: 'children' }"
+        node-key="id"
+        check-strictly
+        clearable
+        filterable
+        placeholder="父级分类"
+        style="width: 200px"
+      />
       <el-button type="primary" @click="onSearch">查询</el-button>
       <el-button @click="openCreate">新增分类</el-button>
     </div>
@@ -198,7 +267,9 @@ onMounted(() => {
             </template>
           </el-table-column>
           <el-table-column prop="code" label="编码" width="140" />
-          <el-table-column prop="parentId" label="父级 ID" width="180" />
+          <el-table-column label="父级分类" width="180">
+            <template #default="{ row }">{{ parentCategoryName(row as CategoryVO) }}</template>
+          </el-table-column>
           <el-table-column prop="sort" label="排序" width="80" />
           <el-table-column label="状态" width="90">
             <template #default="{ row }">
@@ -235,15 +306,26 @@ onMounted(() => {
           <el-input v-model="form.name" placeholder="请输入分类名称" />
         </el-form-item>
         <el-form-item label="类型" prop="type">
-          <el-select v-model="form.type" style="width: 100%">
+          <el-select v-model="form.type" :disabled="!!editingId" style="width: 100%">
             <el-option v-for="opt in typeOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
           </el-select>
         </el-form-item>
         <el-form-item label="编码">
           <el-input v-model="form.code" placeholder="编码（可选）" />
         </el-form-item>
-        <el-form-item label="父级 ID">
-          <el-input v-model="form.parentId" placeholder="父级分类 ID（可选）" />
+        <el-form-item label="父级分类">
+          <el-tree-select
+            v-model="form.parentId"
+            :data="parentOptions"
+            :props="{ label: 'name', children: 'children' }"
+            node-key="id"
+            check-strictly
+            clearable
+            filterable
+            default-expand-all
+            placeholder="不选择则为一级分类"
+            style="width: 100%"
+          />
         </el-form-item>
         <el-form-item label="排序">
           <el-input-number v-model="form.sort" :min="0" />
@@ -263,7 +345,7 @@ onMounted(() => {
         <el-descriptions-item label="名称">{{ detail.name }}</el-descriptions-item>
         <el-descriptions-item label="类型">{{ categoryTypeLabels[detail.type] }}</el-descriptions-item>
         <el-descriptions-item label="编码">{{ detail.code ?? '-' }}</el-descriptions-item>
-        <el-descriptions-item label="父级 ID">{{ detail.parentId ?? '-' }}</el-descriptions-item>
+        <el-descriptions-item label="父级分类">{{ parentCategoryName(detail as CategoryVO) }}</el-descriptions-item>
         <el-descriptions-item label="排序">{{ detail.sort ?? '-' }}</el-descriptions-item>
         <el-descriptions-item label="状态">{{ detail.enabled ? '启用' : '停用' }}</el-descriptions-item>
         <el-descriptions-item label="创建时间">{{ detail.createTime ?? '-' }}</el-descriptions-item>

@@ -5,6 +5,7 @@ import type {
   AiChatEvent,
   AiChatMetaData,
   AiChatRequest,
+  AiChatSourcesData,
   AiChatToolData
 } from '@ceams/types'
 import { pinia } from '@/stores'
@@ -28,6 +29,7 @@ export interface AiStreamHandlers {
   onMeta?: (data: AiChatMetaData) => void
   onDelta?: (data: AiChatDeltaData) => void
   onTool?: (data: AiChatToolData) => void
+  onSources?: (data: AiChatSourcesData) => void
   onDone?: (data: AiChatDoneData) => void
   onError?: (data: AiChatErrorData) => void
   /** 每个 SSE 事件的统一回调 */
@@ -138,6 +140,12 @@ function dispatchSseBlock(rawBlock: string, handlers: AiStreamHandlers): boolean
       const data = payload as AiChatToolData
       handlers.onTool?.(data)
       handlers.onEvent?.({ event: 'tool', data })
+      return false
+    }
+    case 'sources': {
+      const data = payload as AiChatSourcesData
+      handlers.onSources?.(data)
+      handlers.onEvent?.({ event: 'sources', data })
       return false
     }
     case 'done': {

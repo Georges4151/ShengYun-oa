@@ -25,6 +25,7 @@ import type {
   ReceiptApprovalStatus,
   ReceiptType,
   RepairCategory,
+  RepairStatus,
   VerificationStatus,
   VehicleStatus
 } from '@ceams/types'
@@ -263,4 +264,13 @@ export const repairCategoryLabels: Record<RepairCategory, string> = {
   FURNITURE: '家具维修',
   IT: '信息技术',
   OTHER: '其他'
+}
+
+export const repairStatusLabels: Record<RepairStatus, string> = {
+  SUBMITTED: '待派单',
+  ASSIGNED: '已派单',
+  PROCESSING: '处理中',
+  DONE: '已完工',
+  ACCEPTED: '已验收',
+  REJECTED: '已驳回'
 }

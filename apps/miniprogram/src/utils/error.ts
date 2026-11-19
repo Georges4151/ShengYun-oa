@@ -1,8 +1,14 @@
 import { ApiError } from '@ceams/api-client'
+import { ERROR_CODES } from '@ceams/types'
+
+/** 后端业务错误码 -> 中文提示（未命中时回退原始消息）。 */
+const FRIENDLY_MESSAGES: Record<string, string> = {
+  [ERROR_CODES.AUTH_TOKEN_INVALID]: '登录已失效，请重新登录'
+}
 
 /** 从任意错误中提取可读消息，供 uni.showToast 使用。 */
 export function apiErrorMessage(err: unknown, fallback: string): string {
-  if (err instanceof ApiError && err.message) return err.message
+  if (err instanceof ApiError && err.message) return FRIENDLY_MESSAGES[err.message] ?? err.message
   if (err instanceof Error && err.message) return err.message
   return fallback
 }

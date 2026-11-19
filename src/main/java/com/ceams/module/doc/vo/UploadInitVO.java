@@ -1,5 +1,7 @@
 package com.ceams.module.doc.vo;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.Data;
@@ -21,6 +23,7 @@ public class UploadInitVO {
     private boolean instant;
 
     /** 秒传命中时的新文件 ID。 */
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long fileId;
 
     /** 规范化后的文件名。 */

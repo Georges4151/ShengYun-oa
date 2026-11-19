@@ -242,7 +242,7 @@ defineExpose({ validate })
           :value="valueOf(field)"
           :placeholder="field.placeholder"
           :maxlength="field.maxLength ?? 500"
-          :disabled="disabled"
+          :disabled="disabled || field.readonly"
           @input="onInput(field, $event)"
         />
 
@@ -285,7 +285,7 @@ defineExpose({ validate })
           :type="inputType(field)"
           :placeholder="field.placeholder"
           :maxlength="field.maxLength ?? 140"
-          :disabled="disabled"
+          :disabled="disabled || field.readonly"
           @input="onInput(field, $event)"
         />
       </view>

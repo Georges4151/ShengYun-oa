@@ -140,6 +140,8 @@ export interface DocVersionVO {
   /** SHA-256 校验和。 */
   checksum: string | null
   uploadedBy: Id | null
+  /** 上传人姓名（后端已解析） */
+  uploadedByName?: string | null
   changeNote: string | null
   source: DocVersionSource
   createTime: DateTime | null

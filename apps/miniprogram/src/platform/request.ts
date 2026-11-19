@@ -27,6 +27,7 @@ export const uniRequestAdapter: RequestAdapter = {
         method: request.method as UniApp.RequestOptions['method'],
         data: data as UniApp.RequestOptions['data'],
         header: request.headers,
+        timeout: request.timeoutMs,
         success: (res: UniApp.RequestSuccessCallbackResult) => {
           resolve({
             status: res.statusCode,

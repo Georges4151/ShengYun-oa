@@ -49,7 +49,9 @@
           "label": "报销人",
           "type": "string",
           "maxLength": 50,
-          "placeholder": "默认为本人（可选）"
+          "readonly": true,
+          "placeholder": "与当前登录用户一致",
+          "help": "自动带出当前登录用户姓名，不可修改"
         },
         {
           "key": "projectId",

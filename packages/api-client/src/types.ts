@@ -21,6 +21,8 @@ export interface HttpRequest {
   body?: string | FormData
   /** 高风险签名接口标记 */
   signed?: boolean
+  /** 本次请求超时（毫秒）；省略则沿用 HttpClient 默认超时，供适配器设置底层超时 */
+  timeoutMs?: number
 }
 
 /** 传输层返回的原始响应 */
@@ -62,4 +64,6 @@ export interface RequestOptions {
   raw?: boolean
   /** 跳过鉴权头（如登录接口） */
   skipAuth?: boolean
+  /** 单次请求超时（毫秒），覆盖客户端默认 timeoutMs；<=0 表示不限制 */
+  timeoutMs?: number
 }

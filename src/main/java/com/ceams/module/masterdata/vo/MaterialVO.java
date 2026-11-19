@@ -29,5 +29,11 @@ public class MaterialVO {
     @JsonSerialize(using = ToStringSerializer.class)
     private Long categoryId;
 
+    /** 供应商名称（展示用，逻辑引用 biz_contact.name，可空）。 */
+    private String supplierName;
+
+    /** 分类名称（展示用，逻辑引用 biz_category.name，可空）。 */
+    private String categoryName;
+
     private LocalDateTime createTime;
 }

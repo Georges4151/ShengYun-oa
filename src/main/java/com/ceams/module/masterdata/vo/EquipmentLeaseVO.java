@@ -18,11 +18,20 @@ public class EquipmentLeaseVO {
     @JsonSerialize(using = ToStringSerializer.class)
     private Long equipmentId;
 
+    /** 设备名称（列表展示冗余）。 */
+    private String equipmentName;
+
     @JsonSerialize(using = ToStringSerializer.class)
     private Long projectId;
 
+    /** 项目名称（列表展示冗余）。 */
+    private String projectName;
+
     @JsonSerialize(using = ToStringSerializer.class)
     private Long lessorId;
+
+    /** 出租方（往来单位）名称。 */
+    private String lessorName;
 
     private LocalDate leaseStartDate;
 

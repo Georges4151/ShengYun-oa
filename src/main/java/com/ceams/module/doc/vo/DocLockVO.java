@@ -1,5 +1,7 @@
 package com.ceams.module.doc.vo;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import lombok.Data;
 
 /** 文档编辑锁状态。 */
@@ -10,6 +12,7 @@ public class DocLockVO {
     private boolean locked;
 
     /** 锁持有人用户 ID。 */
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long ownerId;
 
     /** 锁持有人姓名（取不到返回 null）。 */

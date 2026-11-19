@@ -4,29 +4,33 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElAvatar, ElDropdown, ElDropdownItem, ElDropdownMenu, ElMenu, ElMenuItem } from 'element-plus'
 import { AppShell } from '@ceams/ui-web'
 import AiAssistant from '@/components/AiAssistant.vue'
+import { hasPermission } from '@/composables/usePermission'
 import { useAuthStore } from '@/stores/auth'
 
 const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
 
-// 页面地图菜单（与 routes.ts 一一对应）
-const menus = [
-  { path: '/todo', title: '待办中心' },
-  { path: '/masterdata', title: '主数据' },
-  { path: '/project', title: '项目合同' },
-  { path: '/hr', title: '人事' },
-  { path: '/admin', title: '行政后勤' },
-  { path: '/doc', title: '文档知识库' },
-  { path: '/integration/wecom', title: '企业微信集成' },
-  { path: '/expense', title: '报销' },
-  { path: '/payment', title: '资金' },
-  { path: '/bank', title: '对账' },
-  { path: '/seal', title: '印章' },
-  { path: '/notification', title: '通知' },
-  { path: '/report', title: '报表' },
-  { path: '/account', title: '账号' }
+// 页面地图菜单（与 routes.ts 一一对应；permission 为后端菜单权限码）
+const MENUS = [
+  { path: '/todo', title: '待办中心', permission: 'bpm' },
+  { path: '/masterdata', title: '主数据', permission: 'masterdata' },
+  { path: '/project', title: '项目合同', permission: 'project' },
+  { path: '/hr', title: '人事', permission: 'hr' },
+  { path: '/admin', title: '行政后勤', permission: 'admin' },
+  { path: '/doc', title: '文档知识库', permission: 'doc' },
+  { path: '/integration/wecom', title: '企业微信集成', permission: 'integration:wecom:view' },
+  { path: '/expense', title: '报销', permission: 'expense' },
+  { path: '/payment', title: '资金', permission: 'payment' },
+  { path: '/bank', title: '对账', permission: 'bank' },
+  { path: '/seal', title: '印章', permission: 'seal' },
+  { path: '/notification', title: '通知', permission: 'notification' },
+  { path: '/report', title: '报表', permission: 'report' },
+  { path: '/account', title: '账号', permission: 'iam' }
 ]
+
+/** 按当前账号权限码过滤菜单，无权限模块不渲染入口。 */
+const menus = computed(() => MENUS.filter((menu) => hasPermission(menu.permission)))
 
 const activeMenu = computed(() => route.path)
 
@@ -55,7 +59,7 @@ function onCommand(command: unknown): void {
     <template #toolbar>
       <el-dropdown @command="onCommand">
         <span class="user-trigger">
-          <el-avatar :size="28">{{ (auth.name || auth.username || '管').slice(0, 1) }}</el-avatar>
+          <el-avatar :size="28" :src="auth.user?.avatar || undefined">{{ (auth.name || auth.username || '管').slice(0, 1) }}</el-avatar>
           <span class="user-name">{{ auth.name || auth.username || '管理员' }}</span>
         </span>
         <template #dropdown>

@@ -1,6 +1,7 @@
 package com.ceams.module.ai.client;
 
 import com.ceams.module.ai.config.AiProperties;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -23,6 +24,7 @@ import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
 
 /**
  * 本地 Ollama 轻量客户端（零新增依赖，基于 Spring 6.1 {@link RestClient}）。
@@ -183,6 +185,74 @@ public class OllamaClient {
         }
         result.setLatencyMs((System.nanoTime() - startNanos) / 1_000_000L);
         return result;
+    }
+
+    /**
+     * 非流式图像对话：用于票据图片识别等需要把图片交给视觉模型的场景。
+     *
+     * <p>请求体固定 {@code stream=false}，只含一条 user 消息（{@code content} 为提示词， {@code images} 为 base64 列表）；
+     * {@code options.temperature=0} 以尽量降低随机性。响应中取 {@code message.content} 原样返回， 是否为空、是否为合法 JSON
+     * 由调用方按业务语义判断。
+     *
+     * @param model 视觉模型名（需支持图像输入，如 qwen2.5vl:7b）
+     * @param prompt 提示词
+     * @param images base64 编码的图片列表（不含 {@code data:} 前缀）
+     * @return 模型输出的文本内容
+     * @throws IllegalArgumentException 参数为空
+     * @throws IllegalStateException 请求失败、响应为空或缺少 {@code message.content}
+     */
+    public String chatWithImages(String model, String prompt, List<String> images) {
+        if (!StringUtils.hasText(model)) {
+            throw new IllegalArgumentException("model 不能为空");
+        }
+        if (!StringUtils.hasText(prompt)) {
+            throw new IllegalArgumentException("prompt 不能为空");
+        }
+        if (images == null || images.isEmpty()) {
+            throw new IllegalArgumentException("images 不能为空");
+        }
+
+        Map<String, Object> message = new LinkedHashMap<>(3);
+        message.put("role", "user");
+        message.put("content", prompt);
+        message.put("images", images);
+
+        Map<String, Object> options = new LinkedHashMap<>(1);
+        options.put("temperature", 0);
+
+        Map<String, Object> requestBody = new LinkedHashMap<>(4);
+        requestBody.put("model", model);
+        requestBody.put("stream", false);
+        requestBody.put("messages", List.of(message));
+        requestBody.put("options", options);
+
+        String body;
+        try {
+            body =
+                    chatClient
+                            .post()
+                            .uri("/api/chat")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .accept(MediaType.APPLICATION_JSON)
+                            .body(requestBody)
+                            .retrieve()
+                            .body(String.class);
+        } catch (RestClientException e) {
+            throw new IllegalStateException("Ollama 图像对话请求失败：" + e.getMessage(), e);
+        }
+        if (!StringUtils.hasText(body)) {
+            throw new IllegalStateException("Ollama 图像对话返回空响应");
+        }
+        try {
+            JsonNode root = objectMapper.readTree(body);
+            String content = root.path("message").path("content").asText("");
+            if (!StringUtils.hasText(content)) {
+                throw new IllegalStateException("Ollama 图像对话响应缺少 message.content");
+            }
+            return content;
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("Ollama 图像对话响应解析失败", e);
+        }
     }
 
     /**

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
+import type { Ref } from 'vue'
 import {
   ElButton,
   ElDatePicker,
@@ -28,6 +29,40 @@ import { paymentStatusLabels, toOptions } from '@/utils/labels'
 defineOptions({ name: 'EquipmentLeaseList' })
 
 const paymentOptions = toOptions(paymentStatusLabels)
+
+/** 下拉选项：id 为雪花 ID 字符串，label 为展示名称。 */
+interface SelectOption {
+  id: string
+  label: string
+}
+
+const equipmentOptions = ref<SelectOption[]>([])
+const projectOptions = ref<SelectOption[]>([])
+const lessorOptions = ref<SelectOption[]>([])
+
+/** 选项列表未覆盖当前记录时补一条，避免编辑时下拉退化成 ID。 */
+function keepOption(options: Ref<SelectOption[]>, id?: string | null, label?: string | null): void {
+  if (!id || options.value.some((item) => item.id === id)) return
+  options.value = [...options.value, { id, label: label || id }]
+}
+
+async function loadOptions(): Promise<void> {
+  try {
+    const [equipments, projects, contacts] = await Promise.all([
+      ceamsApi.masterdata.equipmentPage({ page: 1, size: 100 }),
+      ceamsApi.project.projectPage({ page: 1, size: 100 }),
+      ceamsApi.masterdata.contactPage({ page: 1, size: 100 })
+    ])
+    equipmentOptions.value = equipments.records.map((item) => ({ id: item.id, label: item.name }))
+    projectOptions.value = projects.records.map((item) => ({
+      id: item.id,
+      label: item.projectName
+    }))
+    lessorOptions.value = contacts.records.map((item) => ({ id: item.id, label: item.name }))
+  } catch {
+    // 选项加载失败不阻断列表展示，仍可通过名称回填展示
+  }
+}
 
 const query = reactive<{ equipmentId?: string; projectId?: string }>({})
 const { page, size, total, resetPage } = usePage()
@@ -60,8 +95,8 @@ const form = reactive<{
 })
 
 const rules: FormRules<typeof form> = {
-  equipmentId: [{ required: true, message: '请输入设备 ID', trigger: 'blur' }],
-  projectId: [{ required: true, message: '请输入项目 ID', trigger: 'blur' }],
+  equipmentId: [{ required: true, message: '请选择设备', trigger: 'change' }],
+  projectId: [{ required: true, message: '请选择项目', trigger: 'change' }],
   leaseStartDate: [{ required: true, message: '请选择租赁开始日期', trigger: 'change' }],
   leaseEndDate: [{ required: true, message: '请选择租赁结束日期', trigger: 'change' }]
 }
@@ -72,8 +107,8 @@ async function load(): Promise<void> {
     const res = await ceamsApi.masterdata.leasePage({
       page: page.value,
       size: size.value,
-      equipmentId: query.equipmentId,
-      projectId: query.projectId
+      equipmentId: query.equipmentId || undefined,
+      projectId: query.projectId || undefined
     })
     list.value = res.records
     total.value = res.total
@@ -106,6 +141,9 @@ function openCreate(): void {
 
 function openEdit(row: EquipmentLeaseVO): void {
   editingId.value = row.id
+  keepOption(equipmentOptions, row.equipmentId, row.equipmentName)
+  keepOption(projectOptions, row.projectId, row.projectName)
+  keepOption(lessorOptions, row.lessorId, row.lessorName)
   form.equipmentId = row.equipmentId
   form.projectId = row.projectId
   form.lessorId = row.lessorId ?? ''
@@ -174,22 +212,41 @@ async function onRemove(row: EquipmentLeaseVO): Promise<void> {
   }
 }
 
-onMounted(load)
+onMounted(() => {
+  void loadOptions()
+  void load()
+})
 </script>
 
 <template>
   <div>
     <div class="toolbar">
-      <el-input v-model="query.equipmentId" placeholder="设备 ID（可选）" clearable style="width: 200px" />
-      <el-input v-model="query.projectId" placeholder="项目 ID（可选）" clearable style="width: 200px" />
+      <el-select v-model="query.equipmentId" placeholder="设备（可选）" clearable filterable style="width: 200px">
+        <el-option v-for="opt in equipmentOptions" :key="opt.id" :label="opt.label" :value="opt.id" />
+      </el-select>
+      <el-select v-model="query.projectId" placeholder="项目（可选）" clearable filterable style="width: 200px">
+        <el-option v-for="opt in projectOptions" :key="opt.id" :label="opt.label" :value="opt.id" />
+      </el-select>
       <el-button type="primary" @click="onSearch">查询</el-button>
       <el-button @click="openCreate">新增租赁</el-button>
     </div>
 
     <el-table v-loading="loading" :data="list" border>
-      <el-table-column prop="equipmentId" label="设备 ID" width="180" />
-      <el-table-column prop="projectId" label="项目 ID" width="180" />
-      <el-table-column prop="lessorId" label="出租方 ID" width="180" />
+      <el-table-column label="设备" min-width="160">
+        <template #default="{ row }">
+          {{ (row as EquipmentLeaseVO).equipmentName || (row as EquipmentLeaseVO).equipmentId }}
+        </template>
+      </el-table-column>
+      <el-table-column label="项目" min-width="160">
+        <template #default="{ row }">
+          {{ (row as EquipmentLeaseVO).projectName || (row as EquipmentLeaseVO).projectId }}
+        </template>
+      </el-table-column>
+      <el-table-column label="出租方" min-width="160">
+        <template #default="{ row }">
+          {{ (row as EquipmentLeaseVO).lessorName || '-' }}
+        </template>
+      </el-table-column>
       <el-table-column prop="leaseStartDate" label="开始日期" width="120" />
       <el-table-column prop="leaseEndDate" label="结束日期" width="120" />
       <el-table-column prop="dailyRent" label="日租金" width="110" />
@@ -222,14 +279,32 @@ onMounted(load)
 
     <el-dialog v-model="dialogVisible" :title="editingId ? '编辑设备租赁' : '新增设备租赁'" width="540px">
       <el-form ref="formRef" :model="form" :rules="rules" label-width="110px">
-        <el-form-item label="设备 ID" prop="equipmentId">
-          <el-input v-model="form.equipmentId" :disabled="!!editingId" placeholder="请输入设备 ID" />
+        <el-form-item label="设备" prop="equipmentId">
+          <el-select
+            v-model="form.equipmentId"
+            :disabled="!!editingId"
+            placeholder="请选择设备"
+            filterable
+            style="width: 100%"
+          >
+            <el-option v-for="opt in equipmentOptions" :key="opt.id" :label="opt.label" :value="opt.id" />
+          </el-select>
         </el-form-item>
-        <el-form-item label="项目 ID" prop="projectId">
-          <el-input v-model="form.projectId" placeholder="请输入项目 ID" />
+        <el-form-item label="项目" prop="projectId">
+          <el-select v-model="form.projectId" placeholder="请选择项目" filterable style="width: 100%">
+            <el-option v-for="opt in projectOptions" :key="opt.id" :label="opt.label" :value="opt.id" />
+          </el-select>
         </el-form-item>
-        <el-form-item label="出租方 ID">
-          <el-input v-model="form.lessorId" placeholder="往来单位 ID（可选）" />
+        <el-form-item label="出租方">
+          <el-select
+            v-model="form.lessorId"
+            placeholder="请选择出租方（可选）"
+            clearable
+            filterable
+            style="width: 100%"
+          >
+            <el-option v-for="opt in lessorOptions" :key="opt.id" :label="opt.label" :value="opt.id" />
+          </el-select>
         </el-form-item>
         <el-form-item label="开始日期" prop="leaseStartDate">
           <el-date-picker v-model="form.leaseStartDate" type="date" value-format="YYYY-MM-DD" style="width: 100%" />
@@ -257,9 +332,9 @@ onMounted(load)
 
     <el-dialog v-model="detailVisible" title="设备租赁详情" width="540px">
       <el-descriptions v-if="detail" :column="1" border>
-        <el-descriptions-item label="设备 ID">{{ detail.equipmentId }}</el-descriptions-item>
-        <el-descriptions-item label="项目 ID">{{ detail.projectId }}</el-descriptions-item>
-        <el-descriptions-item label="出租方 ID">{{ detail.lessorId ?? '-' }}</el-descriptions-item>
+        <el-descriptions-item label="设备">{{ detail.equipmentName || detail.equipmentId }}</el-descriptions-item>
+        <el-descriptions-item label="项目">{{ detail.projectName || detail.projectId }}</el-descriptions-item>
+        <el-descriptions-item label="出租方">{{ detail.lessorName || '-' }}</el-descriptions-item>
         <el-descriptions-item label="开始日期">{{ detail.leaseStartDate ?? '-' }}</el-descriptions-item>
         <el-descriptions-item label="结束日期">{{ detail.leaseEndDate ?? '-' }}</el-descriptions-item>
         <el-descriptions-item label="日租金">{{ detail.dailyRent ?? '-' }}</el-descriptions-item>

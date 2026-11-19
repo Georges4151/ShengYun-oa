@@ -17,8 +17,12 @@ public class SettlementProofVO {
     @JsonSerialize(using = ToStringSerializer.class)
     private Long contractId;
 
+    private String contractName;
+
     @JsonSerialize(using = ToStringSerializer.class)
     private Long subcontractorId;
+
+    private String subcontractorName;
 
     private String proofName;
 

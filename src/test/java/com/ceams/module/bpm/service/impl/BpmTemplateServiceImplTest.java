@@ -18,6 +18,7 @@ import com.ceams.module.bpm.entity.BpmTemplate;
 import com.ceams.module.bpm.entity.BpmTemplateVersion;
 import com.ceams.module.bpm.enums.TemplateStatus;
 import com.ceams.module.bpm.enums.TemplateVersionStatus;
+import com.ceams.module.bpm.mapper.BpmInstanceMapper;
 import com.ceams.module.bpm.mapper.BpmTemplateMapper;
 import com.ceams.module.bpm.mapper.BpmTemplateVersionMapper;
 import com.ceams.module.bpm.service.BpmAuditService;
@@ -38,6 +39,7 @@ class BpmTemplateServiceImplTest {
 
     @Mock private BpmTemplateMapper templateMapper;
     @Mock private BpmTemplateVersionMapper versionMapper;
+    @Mock private BpmInstanceMapper instanceMapper;
     @Mock private BpmSchemaParser schemaParser;
     @Mock private BpmAuditService auditService;
     @Mock private BpmSecurityGuard securityGuard;
@@ -48,7 +50,12 @@ class BpmTemplateServiceImplTest {
     void setUp() {
         service =
                 new BpmTemplateServiceImpl(
-                        templateMapper, versionMapper, schemaParser, auditService, securityGuard);
+                        templateMapper,
+                        versionMapper,
+                        instanceMapper,
+                        schemaParser,
+                        auditService,
+                        securityGuard);
     }
 
     @Test

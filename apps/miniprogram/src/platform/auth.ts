@@ -55,6 +55,13 @@ export function setSession(data: LoginData): void {
   setStoredUser(data.user)
 }
 
+/** 局部更新本地缓存的当前用户（如头像地址变更），未登录时忽略。 */
+export function patchUser(patch: Partial<UserVO>): void {
+  const user = getStoredUser()
+  if (!user) return
+  setStoredUser({ ...user, ...patch })
+}
+
 /** 清空本地会话状态。 */
 export function clearSession(): void {
   setStoredAccessToken(null)

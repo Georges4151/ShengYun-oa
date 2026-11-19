@@ -84,6 +84,27 @@ export interface AiChatToolData {
   rows: number
 }
 
+/** 知识库检索命中的引用来源（后端 searchKnowledgeBase 工具产生） */
+export interface AiChatKnowledgeSource {
+  /** 引用编号，与回答中的 [n] 对应，从 1 开始 */
+  citationNo: number
+  /** 文件 ID（字符串雪花 ID） */
+  fileId: Id
+  /** 目录 ID，可空 */
+  dirId?: Id | null
+  /** 库类型 PERSONAL/DEPT/PROJECT/PUBLIC，可空 */
+  libraryType?: string | null
+  fileName: string
+  /** 目录路径，形如「制度 / 财务制度」 */
+  directoryPath?: string
+  /** 原文片段 */
+  snippet: string
+}
+
+export interface AiChatSourcesData {
+  items: AiChatKnowledgeSource[]
+}
+
 export interface AiChatDoneData {
   messageId: string
   latencyMs: number
@@ -96,12 +117,13 @@ export interface AiChatErrorData {
 
 /**
  * 服务端 SSE 事件（`event:` 字段即判别键）：
- * meta / delta / tool / done / error。
+ * meta / delta / tool / sources / done / error。
  */
 export type AiChatEvent =
   | { event: 'meta'; data: AiChatMetaData }
   | { event: 'delta'; data: AiChatDeltaData }
   | { event: 'tool'; data: AiChatToolData }
+  | { event: 'sources'; data: AiChatSourcesData }
   | { event: 'done'; data: AiChatDoneData }
   | { event: 'error'; data: AiChatErrorData }
 
@@ -298,4 +320,25 @@ export interface ContractRiskHintVO {
   aiEnabled: boolean
   /** 免责声明（后端提供文案，直接展示） */
   disclaimer: string
+}
+
+// ---------- 票据图片识别（登录即可访问，只读） ----------
+export interface ReceiptOcrRequest {
+  /** 纯文件名（如 1752560000000000001.png）或上传接口返回的 /api/v1/files/... URL */
+  filePath: string
+}
+
+export interface ReceiptOcrResult {
+  /** 票据编号 / 发票号码；未识别为 null */
+  receiptNumber?: string | null
+  /** 金额字符串（避免浮点精度问题）；未识别或校验不通过为 null */
+  amount?: string | null
+  /** 票据日期，yyyy-MM-dd；未识别为 null */
+  receiptDate?: string | null
+  /** 票据类型：TRANSPORTATION / ACCOMMODATION / MEAL / OFFICE / OTHER */
+  type?: string | null
+  /** 支付方式：CASH / BANK_TRANSFER / WECHAT / ALIPAY / OTHER */
+  paymentMethod?: string | null
+  /** 模型原始输出（已截断到 4000 字符），便于排查识别问题 */
+  raw?: string | null
 }

@@ -28,6 +28,7 @@ import com.ceams.module.doc.enums.LibraryType;
 import com.ceams.module.doc.mapper.DocDirectoryMapper;
 import com.ceams.module.doc.mapper.DocFileMapper;
 import com.ceams.module.doc.mapper.DocFileVersionMapper;
+import com.ceams.module.doc.service.DocIndexService;
 import com.ceams.module.doc.service.DocLockService;
 import com.ceams.module.doc.support.DocAccessResolver;
 import com.ceams.module.doc.support.DocStorageService;
@@ -82,6 +83,8 @@ class OnlyOfficeServiceImplTest {
 
     @Mock private DocFileVersionMapper versionMapper;
 
+    @Mock private DocIndexService docIndexService;
+
     @Mock private DocAccessResolver accessResolver;
 
     @Mock private DocLockService lockService;
@@ -118,6 +121,7 @@ class OnlyOfficeServiceImplTest {
                         fileMapper,
                         dirMapper,
                         versionMapper,
+                        docIndexService,
                         accessResolver,
                         lockService,
                         storageService,

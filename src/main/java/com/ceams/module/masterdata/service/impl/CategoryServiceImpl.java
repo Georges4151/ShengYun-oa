@@ -1,6 +1,7 @@
 package com.ceams.module.masterdata.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ceams.common.exception.BusinessException;
@@ -106,12 +107,23 @@ public class CategoryServiceImpl implements CategoryService {
         if (request.getCode() != null) {
             category.setCode(request.getCode());
         }
+        boolean clearParent = request.getParentId() == null;
         if (request.getParentId() != null) {
-            if (request.getParentId().equals(id)) {
+            Long parentId = request.getParentId();
+            if (parentId.equals(id)) {
                 throw BusinessException.of(ErrorCode.BIZ_STATE_CONFLICT, "父分类不能是自身");
             }
-            assertNotDescendant(id, request.getParentId());
-            category.setParentId(request.getParentId());
+            assertNotDescendant(id, parentId);
+            Category parent = categoryMapper.selectById(parentId);
+            if (parent == null) {
+                throw BusinessException.of(ErrorCode.BIZ_NOT_FOUND, "父分类不存在");
+            }
+            if (parent.getType() != category.getType()) {
+                throw BusinessException.of(ErrorCode.BIZ_UNPROCESSABLE, "父分类类型不一致");
+            }
+            category.setParentId(parentId);
+        } else {
+            category.setParentId(null);
         }
         if (request.getSort() != null) {
             category.setSortOrder(request.getSort());
@@ -120,6 +132,13 @@ public class CategoryServiceImpl implements CategoryService {
             category.setEnabled(request.getEnabled());
         }
         categoryMapper.updateById(category);
+        if (clearParent) {
+            categoryMapper.update(
+                    null,
+                    new LambdaUpdateWrapper<Category>()
+                            .eq(Category::getId, id)
+                            .set(Category::getParentId, null));
+        }
     }
 
     @Override

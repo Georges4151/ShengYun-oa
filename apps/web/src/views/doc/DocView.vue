@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { useRoute } from 'vue-router'
 import {
   ElBreadcrumb,
   ElBreadcrumbItem,
@@ -39,6 +40,8 @@ import DocEditor from './components/DocEditor.vue'
 import PermissionDrawer from './components/PermissionDrawer.vue'
 
 defineOptions({ name: 'DocView' })
+
+const route = useRoute()
 
 const libraryOptions: Array<{ value: LibraryType; label: string }> = [
   { value: 'PERSONAL', label: libraryTypeLabels.PERSONAL },
@@ -322,9 +325,34 @@ async function onRemove(row: DocFileVO): Promise<void> {
   }
 }
 
-onMounted(() => {
+/**
+ * 深链打开：/doc?fileId=&dirId=&libraryType=
+ * 用于 AI 助手引用来源点击后定位目录并自动预览文件。
+ */
+async function openFromQuery(): Promise<boolean> {
+  const fileId = typeof route.query.fileId === 'string' ? route.query.fileId : ''
+  const dirId = typeof route.query.dirId === 'string' ? route.query.dirId : ''
+  if (!fileId || !dirId) return false
+  const lt = typeof route.query.libraryType === 'string' ? route.query.libraryType : ''
+  const matched = libraryOptions.find((opt) => opt.value === lt)
+  if (matched && libraryType.value !== matched.value) {
+    libraryType.value = matched.value
+    if (matched.value === 'PROJECT') void loadProjects()
+  }
+  currentDirId.value = null
+  await loadTree()
+  if (findPath(tree.value, dirId).length === 0) return false
+  currentDirId.value = dirId
+  await loadFiles()
+  const target = files.value.find((item) => item.id === fileId)
+  if (target) await onPreview(target)
+  return true
+}
+
+onMounted(async () => {
   void loadUsers()
-  void loadTree()
+  const opened = await openFromQuery()
+  if (!opened) void loadTree()
 })
 </script>
 
@@ -457,7 +485,7 @@ onMounted(() => {
         </el-table-column>
         <el-table-column label="上传人" width="100">
           <template #default="{ row }">
-            {{ userNames[(row as DocVersionVO).uploadedBy ?? ''] ?? ((row as DocVersionVO).uploadedBy ?? '-') }}
+            {{ (row as DocVersionVO).uploadedByName || userNames[(row as DocVersionVO).uploadedBy ?? ''] || ((row as DocVersionVO).uploadedBy ?? '-') }}
           </template>
         </el-table-column>
         <el-table-column label="时间" width="170">

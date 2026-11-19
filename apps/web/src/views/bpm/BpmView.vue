@@ -23,6 +23,7 @@ import {
   ElTabs,
   ElTag
 } from 'element-plus'
+import type { FormInstance, FormRules } from 'element-plus'
 import { ceamsApi } from '@/services/http'
 import type {
   CcRecordVO,
@@ -34,6 +35,7 @@ import type {
   UserOptionVO
 } from '@ceams/types'
 import { useAuthStore } from '@/stores/auth'
+import { hasPermission } from '@/composables/usePermission'
 import { apiErrorMessage } from '@/utils/error'
 import {
   bpmBizTypeLabels,
@@ -191,6 +193,64 @@ async function submitPublish(): Promise<void> {
     await loadTemplates()
   } catch (err) {
     ElMessage.error(apiErrorMessage(err, '发布失败'))
+  }
+}
+
+// ---------------- 模板新增 ----------------
+const createVisible = ref(false)
+const createSaving = ref(false)
+const createFormRef = ref<FormInstance>()
+const createForm = reactive({ code: '', name: '', bizType: '' })
+
+const createRules: FormRules<typeof createForm> = {
+  code: [{ required: true, message: '请输入模板编码', trigger: 'blur' }],
+  name: [{ required: true, message: '请输入模板名称', trigger: 'blur' }],
+  bizType: [{ required: true, message: '请选择业务类型', trigger: 'change' }]
+}
+
+function openCreateTemplate(): void {
+  Object.assign(createForm, { code: '', name: '', bizType: '' })
+  createVisible.value = true
+  void nextTick(() => createFormRef.value?.clearValidate())
+}
+
+async function submitCreateTemplate(): Promise<void> {
+  if (!createFormRef.value) return
+  const valid = await createFormRef.value.validate().catch(() => false)
+  if (!valid) return
+  createSaving.value = true
+  try {
+    await ceamsApi.bpm.templateCreate({
+      code: createForm.code.trim(),
+      name: createForm.name.trim(),
+      bizType: createForm.bizType
+    })
+    ElMessage.success('模板已创建，请发布首个版本后再启用')
+    createVisible.value = false
+    await loadTemplates()
+  } catch (err) {
+    ElMessage.error(apiErrorMessage(err, '创建模板失败'))
+  } finally {
+    createSaving.value = false
+  }
+}
+
+async function deleteTemplate(row: TemplateVO): Promise<void> {
+  try {
+    await ElMessageBox.confirm(
+      `确定删除模板「${row.name}」吗？删除后不可恢复；已有流程实例的模板不能删除。`,
+      '删除模板',
+      { type: 'warning', confirmButtonText: '删除', cancelButtonText: '取消' }
+    )
+  } catch {
+    return
+  }
+  try {
+    await ceamsApi.bpm.templateDelete(row.id)
+    ElMessage.success('删除成功')
+    await loadTemplates()
+  } catch (err) {
+    ElMessage.error(apiErrorMessage(err, '删除失败'))
   }
 }
 
@@ -690,6 +750,7 @@ watch(
       <el-tab-pane v-if="isAdmin" label="流程模板" name="template">
         <div class="toolbar">
           <el-button type="primary" @click="loadTemplates">刷新</el-button>
+          <el-button v-if="hasPermission('bpm:template:create')" @click="openCreateTemplate">新增模板</el-button>
           <span class="hint">发布新版本只对新发起的单据生效，历史实例锁定原版本</span>
         </div>
         <el-table v-loading="templateLoading" :data="templates" border>
@@ -718,11 +779,20 @@ watch(
               <span v-else>-</span>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="200" fixed="right">
+          <el-table-column label="操作" width="260" fixed="right">
             <template #default="{ row }">
               <el-button link type="primary" size="small" @click="openPublish(row as TemplateVO)">发布新版本</el-button>
               <el-button link type="warning" size="small" @click="toggleTemplate(row as TemplateVO)">
                 {{ (row as TemplateVO).status === 'ENABLED' ? '停用' : '启用' }}
+              </el-button>
+              <el-button
+                v-if="hasPermission('bpm:template:delete')"
+                link
+                type="danger"
+                size="small"
+                @click="deleteTemplate(row as TemplateVO)"
+              >
+                删除
               </el-button>
             </template>
           </el-table-column>
@@ -731,6 +801,31 @@ watch(
     </el-tabs>
 
     <BpmInstanceDrawer v-model="drawerVisible" :instance-id="drawerInstanceId" />
+
+    <el-dialog v-model="createVisible" title="新增流程模板" width="480px">
+      <el-form ref="createFormRef" :model="createForm" :rules="createRules" label-width="90px">
+        <el-form-item label="模板编码" prop="code">
+          <el-input v-model="createForm.code" placeholder="唯一编码，如 PURCHASE_APPLY" maxlength="64" />
+        </el-form-item>
+        <el-form-item label="模板名称" prop="name">
+          <el-input v-model="createForm.name" placeholder="如 采购申请审批" maxlength="128" />
+        </el-form-item>
+        <el-form-item label="业务类型" prop="bizType">
+          <el-select v-model="createForm.bizType" placeholder="请选择业务类型" style="width: 100%">
+            <el-option
+              v-for="(label, value) in bpmBizTypeLabels"
+              :key="value"
+              :label="label"
+              :value="value"
+            />
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="createVisible = false">取消</el-button>
+        <el-button type="primary" :loading="createSaving" @click="submitCreateTemplate">确定</el-button>
+      </template>
+    </el-dialog>
 
     <el-dialog v-model="delegateVisible" title="新建代理" width="520px">
       <el-form label-width="90px">

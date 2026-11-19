@@ -10,13 +10,16 @@ import {
   ElInput,
   ElMessage,
   ElMessageBox,
+  ElOption,
   ElPagination,
+  ElSelect,
   ElTable,
-  ElTableColumn
+  ElTableColumn,
+  ElTreeSelect
 } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { ceamsApi } from '@/services/http'
-import type { MaterialVO } from '@ceams/types'
+import type { CategoryVO, ContactVO, MaterialVO } from '@ceams/types'
 import { usePage } from '@/composables/usePage'
 import { apiErrorMessage } from '@/utils/error'
 
@@ -46,6 +49,47 @@ const rules: FormRules<typeof form> = {
   materialCode: [{ required: true, message: '请输入材料编码', trigger: 'blur' }],
   materialName: [{ required: true, message: '请输入材料名称', trigger: 'blur' }],
   unit: [{ required: true, message: '请输入计量单位', trigger: 'blur' }]
+}
+
+const supplierOptions = ref<ContactVO[]>([])
+const categoryOptions = ref<CategoryVO[]>([])
+const supplierLoading = ref(false)
+
+async function loadSuppliers(keyword = ''): Promise<void> {
+  supplierLoading.value = true
+  try {
+    const res = await ceamsApi.masterdata.contactPage({
+      page: 1,
+      size: 20,
+      type: 'SUPPLIER',
+      keyword: keyword || undefined
+    })
+    supplierOptions.value = res.records
+  } catch (err) {
+    ElMessage.error(apiErrorMessage(err, '加载供应商失败'))
+  } finally {
+    supplierLoading.value = false
+  }
+}
+
+function onSupplierSearch(keyword: string): void {
+  void loadSuppliers(keyword)
+}
+
+async function loadCategoryTree(): Promise<void> {
+  try {
+    categoryOptions.value = await ceamsApi.masterdata.categoryTree({ type: 'MATERIAL' })
+  } catch (err) {
+    ElMessage.error(apiErrorMessage(err, '加载分类失败'))
+  }
+}
+
+async function initSupplierOptions(row?: MaterialVO): Promise<void> {
+  await loadSuppliers()
+  if (row?.supplierId && row.supplierName && !supplierOptions.value.some((item) => item.id === row.supplierId)) {
+    const fallback: ContactVO = { id: row.supplierId, name: row.supplierName, type: 'SUPPLIER' }
+    supplierOptions.value = [fallback, ...supplierOptions.value]
+  }
 }
 
 async function load(): Promise<void> {
@@ -83,6 +127,8 @@ function openCreate(): void {
     categoryId: ''
   })
   dialogVisible.value = true
+  void initSupplierOptions()
+  void loadCategoryTree()
 }
 
 function openEdit(row: MaterialVO): void {
@@ -95,6 +141,8 @@ function openEdit(row: MaterialVO): void {
   form.supplierId = row.supplierId ?? ''
   form.categoryId = row.categoryId ?? ''
   dialogVisible.value = true
+  void initSupplierOptions(row)
+  void loadCategoryTree()
 }
 
 function openDetail(row: MaterialVO): void {
@@ -111,11 +159,11 @@ async function submit(): Promise<void> {
     if (editingId.value) {
       await ceamsApi.masterdata.materialUpdate(editingId.value, {
         materialName: form.materialName,
-        specification: form.specification || undefined,
+        specification: form.specification || null,
         unit: form.unit,
-        currentPrice: form.currentPrice || undefined,
-        supplierId: form.supplierId || undefined,
-        categoryId: form.categoryId || undefined
+        currentPrice: form.currentPrice || null,
+        supplierId: form.supplierId || null,
+        categoryId: form.categoryId || null
       })
       ElMessage.success('更新成功')
     } else {
@@ -152,14 +200,28 @@ async function onRemove(row: MaterialVO): Promise<void> {
   }
 }
 
-onMounted(load)
+onMounted(() => {
+  void load()
+  void loadSuppliers()
+  void loadCategoryTree()
+})
 </script>
 
 <template>
   <div>
     <div class="toolbar">
       <el-input v-model="query.keyword" placeholder="关键字（编码/名称）" clearable style="width: 220px" />
-      <el-input v-model="query.categoryId" placeholder="分类 ID（可选）" clearable style="width: 200px" />
+      <el-tree-select
+        v-model="query.categoryId"
+        :data="categoryOptions"
+        :props="{ label: 'name', children: 'children' }"
+        node-key="id"
+        check-strictly
+        clearable
+        filterable
+        placeholder="分类"
+        style="width: 200px"
+      />
       <el-button type="primary" @click="onSearch">查询</el-button>
       <el-button @click="openCreate">新增材料</el-button>
     </div>
@@ -169,9 +231,15 @@ onMounted(load)
       <el-table-column prop="materialName" label="材料名称" min-width="160" />
       <el-table-column prop="specification" label="规格" min-width="140" />
       <el-table-column prop="unit" label="单位" width="80" />
-      <el-table-column prop="currentPrice" label="当前价" width="120" />
-      <el-table-column prop="supplierId" label="供应商 ID" width="180" />
-      <el-table-column prop="categoryId" label="分类 ID" width="180" />
+      <el-table-column label="当前价" width="120">
+        <template #default="{ row }">{{ row.currentPrice ?? '-' }}</template>
+      </el-table-column>
+      <el-table-column prop="supplierName" label="供应商" width="160">
+        <template #default="{ row }">{{ row.supplierName ?? '-' }}</template>
+      </el-table-column>
+      <el-table-column prop="categoryName" label="分类" width="160">
+        <template #default="{ row }">{{ row.categoryName ?? '-' }}</template>
+      </el-table-column>
       <el-table-column prop="createTime" label="创建时间" width="180" />
       <el-table-column label="操作" width="200" fixed="right">
         <template #default="{ row }">
@@ -210,11 +278,33 @@ onMounted(load)
         <el-form-item label="当前价">
           <el-input v-model="form.currentPrice" placeholder="金额（字符串，如 1280.50）" />
         </el-form-item>
-        <el-form-item label="供应商 ID">
-          <el-input v-model="form.supplierId" placeholder="往来单位 ID（可选）" />
+        <el-form-item label="供应商">
+          <el-select
+            v-model="form.supplierId"
+            filterable
+            remote
+            clearable
+            :remote-method="onSupplierSearch"
+            :loading="supplierLoading"
+            placeholder="请选择供应商（可选）"
+            style="width: 100%"
+          >
+            <el-option v-for="opt in supplierOptions" :key="opt.id" :label="opt.name" :value="opt.id" />
+          </el-select>
         </el-form-item>
-        <el-form-item label="分类 ID">
-          <el-input v-model="form.categoryId" placeholder="分类 ID（可选）" />
+        <el-form-item label="分类">
+          <el-tree-select
+            v-model="form.categoryId"
+            :data="categoryOptions"
+            :props="{ label: 'name', children: 'children' }"
+            node-key="id"
+            check-strictly
+            clearable
+            filterable
+            default-expand-all
+            placeholder="请选择分类（可选）"
+            style="width: 100%"
+          />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -230,8 +320,8 @@ onMounted(load)
         <el-descriptions-item label="规格">{{ detail.specification ?? '-' }}</el-descriptions-item>
         <el-descriptions-item label="单位">{{ detail.unit }}</el-descriptions-item>
         <el-descriptions-item label="当前价">{{ detail.currentPrice ?? '-' }}</el-descriptions-item>
-        <el-descriptions-item label="供应商 ID">{{ detail.supplierId ?? '-' }}</el-descriptions-item>
-        <el-descriptions-item label="分类 ID">{{ detail.categoryId ?? '-' }}</el-descriptions-item>
+        <el-descriptions-item label="供应商">{{ detail.supplierName ?? '-' }}</el-descriptions-item>
+        <el-descriptions-item label="分类">{{ detail.categoryName ?? '-' }}</el-descriptions-item>
         <el-descriptions-item label="创建时间">{{ detail.createTime ?? '-' }}</el-descriptions-item>
       </el-descriptions>
     </el-dialog>

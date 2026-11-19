@@ -2,6 +2,7 @@
 import { computed, reactive, ref } from 'vue'
 import type { RepairCategory } from '@ceams/types'
 import { chooseImage, uploadFile } from '../../platform/upload'
+import { previewLocalImages } from '../../platform/image'
 import { ATTACHMENT_UPLOAD_URL } from '../../platform/config'
 import { getAccessToken } from '../../platform/auth'
 import { apiClient } from '../../platform/http'
@@ -68,6 +69,14 @@ function removeImage(index: number): void {
   images.value.splice(index, 1)
 }
 
+/** 点击缩略图预览已选现场图片（本地临时路径，无需鉴权） */
+function previewImage(index: number): void {
+  const urls = images.value.map((item) => item.local)
+  previewLocalImages(urls, images.value[index]?.local ?? '').catch((err: unknown) => {
+    uni.showToast({ title: apiErrorMessage(err, '预览图片失败'), icon: 'none' })
+  })
+}
+
 async function submit(): Promise<void> {
   if (!form.location.trim()) {
     uni.showToast({ title: '请输入报修位置', icon: 'none' })
@@ -75,6 +84,11 @@ async function submit(): Promise<void> {
   }
   if (!form.description.trim()) {
     uni.showToast({ title: '请填写问题描述', icon: 'none' })
+    return
+  }
+  // 现场图片为必传，至少 1 张
+  if (images.value.length === 0) {
+    uni.showToast({ title: '请至少上传 1 张现场图片', icon: 'none' })
     return
   }
   submitting.value = true
@@ -142,11 +156,11 @@ async function submit(): Promise<void> {
       </view>
 
       <view class="field field--column">
-        <text class="field__label">现场图片（选填，最多 {{ MAX_IMAGES }} 张）</text>
+        <text class="field__label">现场图片（必传，最多 {{ MAX_IMAGES }} 张）</text>
         <view class="images">
           <view v-for="(item, index) in images" :key="item.name" class="images__item">
-            <image class="images__thumb" :src="item.local" mode="aspectFill" />
-            <text class="images__remove" @click="removeImage(index)">删除</text>
+            <image class="images__thumb" :src="item.local" mode="aspectFill" @click="previewImage(index)" />
+            <text class="images__remove" @click.stop="removeImage(index)">删除</text>
           </view>
           <view v-if="images.length < MAX_IMAGES" class="images__add" @click="pickImages">
             <text class="images__add-text">{{ uploading ? '上传中...' : '+ 添加' }}</text>
@@ -155,7 +169,11 @@ async function submit(): Promise<void> {
       </view>
     </view>
 
-    <button class="ceams-btn ceams-btn--primary submit" :disabled="submitting || uploading" @click="submit">
+    <button
+      class="ceams-btn ceams-btn--primary submit"
+      :disabled="submitting || uploading || images.length === 0"
+      @click="submit"
+    >
       {{ submitting ? '提交中...' : '提交报修' }}
     </button>
   </view>

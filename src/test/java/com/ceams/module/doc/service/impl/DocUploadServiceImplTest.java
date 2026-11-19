@@ -21,6 +21,7 @@ import com.ceams.module.doc.enums.LibraryType;
 import com.ceams.module.doc.mapper.DocDirectoryMapper;
 import com.ceams.module.doc.mapper.DocFileMapper;
 import com.ceams.module.doc.mapper.DocFileVersionMapper;
+import com.ceams.module.doc.service.DocIndexService;
 import com.ceams.module.doc.support.DocAccessResolver;
 import com.ceams.module.doc.support.DocStorageService;
 import com.ceams.module.doc.vo.UploadInitVO;
@@ -71,6 +72,8 @@ class DocUploadServiceImplTest {
 
     @Mock private BpmAuditService bpmAuditService;
 
+    @Mock private DocIndexService docIndexService;
+
     private DocProperties docProperties;
 
     private DocUploadServiceImpl uploadService;
@@ -87,7 +90,8 @@ class DocUploadServiceImplTest {
                         storageService,
                         stringRedisTemplate,
                         bpmAuditService,
-                        docProperties);
+                        docProperties,
+                        docIndexService);
         SecurityContextHolder.getContext()
                 .setAuthentication(
                         new UsernamePasswordAuthenticationToken(

@@ -412,6 +412,24 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/IdResponse' }
+  /subcontractor-contracts/export:
+    get:
+      tags: [subcontractor-contracts]
+      summary: 分包合同 Excel 导出
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: subcontractorId
+          in: query
+          schema: { type: string }
+        - name: projectId
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: xlsx 文件
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema: { type: string, format: binary }
   /subcontractor-contracts/{id}:
     get:
       tags: [subcontractor-contracts]
@@ -476,6 +494,21 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/IdResponse' }
+  /settlement-proofs/export:
+    get:
+      tags: [settlement-proofs]
+      summary: 结算凭证 Excel 导出
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: contractId
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: xlsx 文件
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema: { type: string, format: binary }
   /settlement-proofs/{id}:
     get:
       tags: [settlement-proofs]
@@ -865,7 +898,9 @@ components:
       properties:
         id: { type: string }
         subcontractorId: { type: string }
+        subcontractorName: { type: string, nullable: true }
         projectId: { type: string, nullable: true }
+        projectName: { type: string, nullable: true }
         contractName: { type: string, example: 路基土石方工程分包合同 }
         contractNumber: { type: string, example: HT-2026-001 }
         contractAmount: { type: string, example: '8000000.00' }
@@ -890,6 +925,8 @@ components:
         endDate: { type: string, format: date, nullable: true }
         status: { type: string, enum: [DRAFT, ACTIVE, COMPLETED, TERMINATED] }
         description: { type: string, nullable: true }
+        filePath: { type: string, maxLength: 500, nullable: true }
+        fileName: { type: string, maxLength: 255, nullable: true }
     SubcontractorContractUpdateRequest:
       type: object
       properties:
@@ -900,6 +937,8 @@ components:
         endDate: { type: string, format: date }
         status: { type: string, enum: [DRAFT, ACTIVE, COMPLETED, TERMINATED] }
         description: { type: string }
+        filePath: { type: string, maxLength: 500, nullable: true }
+        fileName: { type: string, maxLength: 255, nullable: true }
     SubcontractorContractResponse:
       allOf:
         - $ref: '#/components/schemas/ApiResponse'
@@ -926,7 +965,9 @@ components:
       properties:
         id: { type: string }
         contractId: { type: string }
+        contractName: { type: string, nullable: true }
         subcontractorId: { type: string, nullable: true }
+        subcontractorName: { type: string, nullable: true }
         proofName: { type: string, example: 第一期工程结算凭证 }
         proofNumber: { type: string, example: JS-2026-001 }
         proofDate: { type: string, format: date }
@@ -946,6 +987,8 @@ components:
         proofDate: { type: string, format: date }
         settlementAmount: { type: string }
         description: { type: string, nullable: true }
+        filePath: { type: string, maxLength: 500, nullable: true }
+        fileName: { type: string, maxLength: 255, nullable: true }
     SettlementProofUpdateRequest:
       type: object
       properties:
@@ -954,6 +997,8 @@ components:
         proofDate: { type: string, format: date }
         settlementAmount: { type: string }
         description: { type: string }
+        filePath: { type: string, maxLength: 500, nullable: true }
+        fileName: { type: string, maxLength: 255, nullable: true }
     SettlementProofResponse:
       allOf:
         - $ref: '#/components/schemas/ApiResponse'

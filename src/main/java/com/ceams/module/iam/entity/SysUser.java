@@ -24,6 +24,9 @@ public class SysUser extends BaseEntity {
     /** 真实姓名。 */
     private String name;
 
+    /** 头像访问地址（/api/v1/profile/avatars/{文件名}，可空）。 */
+    private String avatar;
+
     /** 邮箱。 */
     private String email;
 

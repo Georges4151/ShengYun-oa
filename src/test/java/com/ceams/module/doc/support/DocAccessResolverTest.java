@@ -10,6 +10,8 @@ import com.ceams.module.doc.entity.DocDirectory;
 import com.ceams.module.doc.enums.DocAction;
 import com.ceams.module.doc.enums.LibraryType;
 import com.ceams.module.doc.mapper.DocDirPermissionMapper;
+import com.ceams.module.doc.mapper.DocDirectoryMapper;
+import com.ceams.module.doc.mapper.DocFileMapper;
 import com.ceams.module.doc.mapper.DocFilePermissionMapper;
 import com.ceams.module.iam.entity.SysDept;
 import com.ceams.module.iam.entity.SysUser;
@@ -50,6 +52,10 @@ class DocAccessResolverTest {
 
     @Mock private DocFilePermissionMapper filePermissionMapper;
 
+    @Mock private DocDirectoryMapper dirMapper;
+
+    @Mock private DocFileMapper fileMapper;
+
     @Mock private BpmSecurityGuard securityGuard;
 
     @Mock private UserMapper userMapper;
@@ -67,6 +73,8 @@ class DocAccessResolverTest {
                         deptMapper,
                         dirPermissionMapper,
                         filePermissionMapper,
+                        dirMapper,
+                        fileMapper,
                         securityGuard,
                         userMapper,
                         userRoleMapper,

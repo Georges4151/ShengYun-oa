@@ -23,6 +23,9 @@ public class AiProperties {
     /** 使用的模型名（本机已安装 qwen2.5:7b，即指令微调版；可通过 OLLAMA_MODEL 覆盖为 14B 等）。 */
     private String model = "qwen2.5:7b";
 
+    /** 视觉模型名（票据识别使用），需支持图像输入。 */
+    private String visionModel = "qwen2.5vl:7b";
+
     /** 对话请求的读超时（秒）。 */
     private int timeoutSeconds = 120;
 

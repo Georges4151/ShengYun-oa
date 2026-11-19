@@ -18,6 +18,9 @@ public class UserVO {
 
     private String name;
 
+    /** 头像访问地址（/api/v1/profile/avatars/{文件名}，未设置为空）。 */
+    private String avatar;
+
     private String email;
 
     private String phone;

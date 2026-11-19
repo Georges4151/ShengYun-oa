@@ -81,6 +81,8 @@ ceams:
     base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
     # 本机已安装 qwen2.5:7b（即指令微调版）；可通过 OLLAMA_MODEL 覆盖（如 qwen2.5:14b-instruct）。
     model: ${OLLAMA_MODEL:qwen2.5:7b}
+    # 票据图片识别使用的视觉模型（需支持图像输入），可通过 OLLAMA_VISION_MODEL 覆盖。
+    vision-model: ${OLLAMA_VISION_MODEL:qwen2.5vl:7b}
     timeout-seconds: ${AI_TIMEOUT_SECONDS:120}
     max-context-messages: 10
     max-tool-rows: 200
@@ -154,6 +156,19 @@ ceams:
     download-token-ttl-seconds: ${DOC_DOWNLOAD_TOKEN_TTL_SECONDS:300}
     # 分片临时目录与上传 meta 的保留时长（小时）
     upload-temp-ttl-hours: ${DOC_UPLOAD_TEMP_TTL_HOURS:24}
+    # RAG 文档知识库（抽取 + 分块 + 全文检索）；关闭后索引任务直接 SKIPPED，上传/下载/预览不受影响
+    rag:
+      # 是否启用文本抽取与索引
+      enabled: ${DOC_RAG_ENABLED:true}
+      # 分块目标长度（字符）与相邻分块重叠字符数
+      chunk-size: ${DOC_RAG_CHUNK_SIZE:600}
+      chunk-overlap: ${DOC_RAG_CHUNK_OVERLAP:100}
+      # 单文件最大抽取字符数（超出截断）
+      max-extract-chars: ${DOC_RAG_MAX_EXTRACT_CHARS:2000000}
+      # 检索召回候选条数上限 / 默认返回条数 / 最大返回条数
+      search-candidate-limit: ${DOC_RAG_SEARCH_CANDIDATE_LIMIT:300}
+      search-default-limit: ${DOC_RAG_SEARCH_DEFAULT_LIMIT:5}
+      max-search-limit: ${DOC_RAG_MAX_SEARCH_LIMIT:10}
     # OnlyOffice 在线编辑（不可用时 editor-config 返回 503，上传/下载/版本不受影响）
     onlyoffice:
       # 在线编辑总开关，默认关闭

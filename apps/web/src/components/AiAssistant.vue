@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import {
   ElAlert,
   ElButton,
@@ -13,6 +13,7 @@ import {
 } from 'element-plus'
 import { ApiError } from '@ceams/api-client'
 import type {
+  AiChatKnowledgeSource,
   AiChatRequest,
   AiChatToolData,
   AiDailySummaryVO,
@@ -27,6 +28,7 @@ import { apiErrorMessage } from '@/utils/error'
 defineOptions({ name: 'AiAssistant' })
 
 const route = useRoute()
+const router = useRouter()
 const auth = useAuthStore()
 
 /** 工具调用轨迹（仅展示工具名 / 行数 / 参数摘要，不向用户暴露原始 JSON）。 */
@@ -41,6 +43,7 @@ interface ChatMessage {
   role: 'user' | 'assistant'
   content: string
   tools: ToolTrace[]
+  sources: AiChatKnowledgeSource[]
   error: string
   pending: boolean
 }
@@ -306,6 +309,7 @@ async function send(): Promise<void> {
     role: 'user',
     content: text,
     tools: [],
+    sources: [],
     error: '',
     pending: false
   }
@@ -314,6 +318,7 @@ async function send(): Promise<void> {
     role: 'assistant',
     content: '',
     tools: [],
+    sources: [],
     error: '',
     pending: true
   }
@@ -347,6 +352,19 @@ async function send(): Promise<void> {
         onTool(data) {
           updateAssistant(assistantIndex, (message) => {
             message.tools.push(toToolTrace(data))
+          })
+        },
+        onSources(data) {
+          updateAssistant(assistantIndex, (message) => {
+            for (const item of data.items) {
+              if (
+                !message.sources.some(
+                  (s) => s.citationNo === item.citationNo && s.fileId === item.fileId
+                )
+              ) {
+                message.sources.push(item)
+              }
+            }
           })
         },
         onDone() {
@@ -383,6 +401,19 @@ async function send(): Promise<void> {
 
 function stopGenerating(): void {
   controller?.abort()
+}
+
+/** 打开引用文档：跳转文档知识库并自动定位目录、预览文件 */
+function openSource(source: AiChatKnowledgeSource): void {
+  void router.push({
+    name: 'doc',
+    query: {
+      fileId: source.fileId,
+      ...(source.dirId ? { dirId: source.dirId } : {}),
+      ...(source.libraryType ? { libraryType: source.libraryType } : {})
+    }
+  })
+  open.value = false
 }
 
 function resetConversation(): void {
@@ -466,6 +497,27 @@ onBeforeUnmount(() => {
             <div class="ai-msg__bubble">
               <div v-if="msg.content" class="ai-msg__content">{{ msg.content }}</div>
               <div v-else-if="msg.pending" class="ai-msg__typing">正在思考…</div>
+
+              <div v-if="msg.sources.length" class="ai-msg__sources">
+                <div class="ai-msg__sources-title">引用来源</div>
+                <button
+                  v-for="source in msg.sources"
+                  :key="`${source.fileId}-${source.citationNo}`"
+                  type="button"
+                  class="ai-source"
+                  title="点击在文档知识库中打开"
+                  @click="openSource(source)"
+                >
+                  <span class="ai-source__no">[{{ source.citationNo }}]</span>
+                  <span class="ai-source__body">
+                    <span class="ai-source__name">{{ source.fileName }}</span>
+                    <span v-if="source.directoryPath" class="ai-source__path">
+                      {{ source.directoryPath }}
+                    </span>
+                    <span class="ai-source__snippet">{{ source.snippet }}</span>
+                  </span>
+                </button>
+              </div>
 
               <el-collapse v-if="msg.tools.length" class="ai-msg__tools">
                 <el-collapse-item
@@ -784,6 +836,64 @@ onBeforeUnmount(() => {
   margin-top: 8px;
   color: #f56c6c;
   font-size: 13px;
+}
+.ai-msg__sources {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed #e5e7eb;
+}
+.ai-msg__sources-title {
+  font-size: 12px;
+  color: #909399;
+  margin-bottom: 6px;
+}
+.ai-source {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  padding: 8px;
+  margin-bottom: 6px;
+  border: 1px solid #ebeef5;
+  border-radius: 6px;
+  background: #fafafa;
+  text-align: left;
+  cursor: pointer;
+}
+.ai-source:hover {
+  border-color: #409eff;
+  background: #f0f7ff;
+}
+.ai-source__no {
+  flex: none;
+  color: #409eff;
+  font-weight: 600;
+  font-size: 12px;
+}
+.ai-source__body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.ai-source__name {
+  font-size: 13px;
+  color: #303133;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ai-source__path {
+  font-size: 12px;
+  color: #909399;
+}
+.ai-source__snippet {
+  font-size: 12px;
+  color: #606266;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .ai-panel__summary {

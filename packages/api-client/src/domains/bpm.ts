@@ -53,6 +53,7 @@ export interface BpmApi {
   templateUpdate(id: Id, body: TemplateUpdateRequest): Promise<void>
   templateEnable(id: Id): Promise<void>
   templateDisable(id: Id): Promise<void>
+  templateDelete(id: Id): Promise<void>
   templatePublish(id: Id, body: TemplatePublishRequest): Promise<Id>
 
   // 用户自助代理
@@ -155,6 +156,9 @@ export function createBpmApi(client: HttpClient): BpmApi {
     },
     async templateDisable(id) {
       return client.put<void>(`/api/v1/bpm/templates/${id}/disable`)
+    },
+    async templateDelete(id) {
+      return client.delete<void>(`/api/v1/bpm/templates/${id}`)
     },
     async templatePublish(id, body) {
       return client.post<Id>(`/api/v1/bpm/templates/${id}/publish`, body, { signed: true })

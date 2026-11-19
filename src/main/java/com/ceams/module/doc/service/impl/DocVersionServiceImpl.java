@@ -16,18 +16,27 @@ import com.ceams.module.doc.enums.DocVersionSource;
 import com.ceams.module.doc.mapper.DocDirectoryMapper;
 import com.ceams.module.doc.mapper.DocFileMapper;
 import com.ceams.module.doc.mapper.DocFileVersionMapper;
+import com.ceams.module.doc.service.DocIndexService;
 import com.ceams.module.doc.service.DocVersionService;
 import com.ceams.module.doc.support.DocAccessResolver;
 import com.ceams.module.doc.support.DocConverter;
 import com.ceams.module.doc.support.DocStorageService;
 import com.ceams.module.doc.vo.DocFileVO;
 import com.ceams.module.doc.vo.DocVersionVO;
+import com.ceams.module.iam.entity.SysUser;
+import com.ceams.module.iam.mapper.UserMapper;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -59,6 +68,8 @@ public class DocVersionServiceImpl implements DocVersionService {
     private final BpmSecurityGuard securityGuard;
     private final BpmAuditService bpmAuditService;
     private final DocStorageService storageService;
+    private final DocIndexService docIndexService;
+    private final UserMapper userMapper;
 
     @Override
     public List<DocVersionVO> list(Long fileId) {
@@ -74,7 +85,45 @@ public class DocVersionServiceImpl implements DocVersionService {
         if (versions == null) {
             return List.of();
         }
-        return versions.stream().map(DocConverter::toVersionVO).toList();
+        List<DocVersionVO> vos =
+                versions.stream()
+                        .filter(Objects::nonNull)
+                        .map(DocConverter::toVersionVO)
+                        .filter(Objects::nonNull)
+                        .toList();
+        fillUploaderNames(vos);
+        return vos;
+    }
+
+    /** 批量回填上传人姓名（sys_user.name，空则 username）。 */
+    private void fillUploaderNames(List<DocVersionVO> vos) {
+        Set<Long> ids =
+                vos.stream()
+                        .map(DocVersionVO::getUploadedBy)
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toCollection(LinkedHashSet::new));
+        if (ids.isEmpty()) {
+            return;
+        }
+        List<SysUser> users = userMapper.selectBatchIds(ids);
+        if (users == null || users.isEmpty()) {
+            return;
+        }
+        Map<Long, String> nameMap = new HashMap<>(users.size());
+        for (SysUser user : users) {
+            if (user == null || user.getId() == null) {
+                continue;
+            }
+            nameMap.put(
+                    user.getId(),
+                    StringUtils.isNotBlank(user.getName()) ? user.getName() : user.getUsername());
+        }
+        for (DocVersionVO vo : vos) {
+            Long uploadedBy = vo.getUploadedBy();
+            if (uploadedBy != null) {
+                vo.setUploadedByName(nameMap.get(uploadedBy));
+            }
+        }
     }
 
     @Override
@@ -163,6 +212,8 @@ public class DocVersionServiceImpl implements DocVersionService {
         file.setSize(newSize);
         file.setChecksum(newChecksum);
         file.setCurrentVersionNo(nextVersionNo);
+        // 回滚产生新版本：事务提交后重建语料，失败不影响回滚结果
+        docIndexService.submitAfterCommit(fileId, nextVersionNo);
         log.info(
                 "文档文件 {} 回滚到 v{}，新版本 v{}，key={}", fileId, versionNo, nextVersionNo, newKey);
         return DocConverter.toFileVO(file);

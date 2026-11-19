@@ -31,6 +31,8 @@
         <jjwt.version>0.12.5</jjwt.version>
         <bouncycastle.version>1.78.1</bouncycastle.version>
         <pdfbox.version>3.0.4</pdfbox.version>
+        <tika.version>3.2.3</tika.version>
+        <commons-lang3.version>3.17.0</commons-lang3.version>
 
         <!-- ===== CI 静态检查插件版本 ===== -->
         <checkstyle.version>10.18.0</checkstyle.version>
@@ -146,6 +148,18 @@
             <groupId>org.apache.pdfbox</groupId>
             <artifactId>pdfbox</artifactId>
             <version>${pdfbox.version}</version>
+        </dependency>
+
+        <!-- ===== 文档文本抽取：Apache Tika（RAG 语料构建，含标准解析器包） ===== -->
+        <dependency>
+            <groupId>org.apache.tika</groupId>
+            <artifactId>tika-core</artifactId>
+            <version>${tika.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.tika</groupId>
+            <artifactId>tika-parsers-standard-package</artifactId>
+            <version>${tika.version}</version>
         </dependency>
 
         <!-- ===== Lombok ===== -->

@@ -23,6 +23,14 @@ public class ContractUpdateRequest {
 
     private Long fileId;
 
+    /** 合同原件存储名（通用文件服务返回的 name）。 */
+    @Size(max = 255, message = "合同文件存储名长度不能超过 255")
+    private String filePath;
+
+    /** 合同原件原始文件名。 */
+    @Size(max = 255, message = "合同文件名长度不能超过 255")
+    private String fileName;
+
     private ContractStatus status;
 
     private LocalDate renewalRemindDate;

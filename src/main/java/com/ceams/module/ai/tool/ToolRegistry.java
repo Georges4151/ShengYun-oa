@@ -16,14 +16,14 @@ import org.springframework.stereotype.Component;
 /**
  * 只读工具注册表。
  *
- * <p>启动时强制校验工具名：非空、唯一且必须命中 15 个白名单之一。任何未知工具都会让应用启动失败， 这是防止模型触达任意查询的安全红线。
+ * <p>启动时强制校验工具名：非空、唯一且必须命中 16 个白名单之一。任何未知工具都会让应用启动失败， 这是防止模型触达任意查询的安全红线。
  */
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class ToolRegistry {
 
-    /** 方案 §6 定义的 15 个只读工具白名单。 */
+    /** 方案 §6 定义的 16 个只读工具白名单。 */
     public static final Set<String> ALLOWED_TOOL_NAMES =
             Set.of(
                     "queryProjectSummary",
@@ -40,7 +40,8 @@ public class ToolRegistry {
                     "queryPayrollSummary",
                     "queryAssetInventory",
                     "queryVehicleUsage",
-                    "queryRepairStats");
+                    "queryRepairStats",
+                    "searchKnowledgeBase");
 
     private final List<ReadOnlyTool> tools;
 

@@ -1,7 +1,10 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
-import { clearSession, getUserName, isLoggedIn, rolesOf } from '../../platform/auth'
+import { clearSession, getUser, getUserName, isLoggedIn, patchUser, rolesOf } from '../../platform/auth'
+import { chooseAndUploadAvatar } from '../../platform/avatar'
+import { API_BASE_URL } from '../../platform/config'
+import { apiErrorMessage } from '../../utils/error'
 
 interface MenuItem {
   title: string
@@ -15,6 +18,21 @@ interface MenuItem {
 const name = ref('')
 /** 行政服务入口仅 SYS_ADMIN 可见（角色来自登录会话） */
 const canAdmin = ref(false)
+/** 当前登录用户头像：后端返回的相对路径或完整 URL，空串表示未设置。 */
+const avatar = ref('')
+/** 头像上传中标记，避免重复触发。 */
+const uploadingAvatar = ref(false)
+
+/** 头像可被 <image> 直接加载的完整地址。 */
+const avatarSrc = computed<string>(() => {
+  const value = avatar.value
+  if (!value) return ''
+  return value.startsWith('http') ? value : `${API_BASE_URL}${value}`
+})
+
+/** 无头像时展示的用户名首字，兜底为「用」。 */
+const avatarText = computed<string>(() => name.value.slice(0, 1) || '用')
+
 const menus: MenuItem[] = [
   {
     title: '项目与进度款',
@@ -93,6 +111,12 @@ const menus: MenuItem[] = [
     path: '/pages/ai/assistant',
     icon: '✦',
     desc: '用自然语言查账与解释待办'
+  },
+  {
+    title: '我的报修',
+    path: '/pages/admin/repair-list',
+    icon: '▦',
+    desc: '查看报修进度与完工图片'
   }
 ]
 
@@ -137,7 +161,30 @@ onShow(() => {
   }
   name.value = getUserName()
   canAdmin.value = rolesOf().includes('SYS_ADMIN')
+  // 每次显示首页时同步本地缓存头像，保证其他端修改后即时生效
+  avatar.value = getUser()?.avatar ?? ''
 })
+
+/**
+ * 点击首页头像：选择图片并上传头像。
+ * 未绑定员工档案的账号看不到「我的档案」，因此首页提供同一个换头像入口。
+ */
+async function onChangeAvatar(): Promise<void> {
+  // 上传中忽略重复点击，避免并发上传产生错乱
+  if (uploadingAvatar.value) return
+  uploadingAvatar.value = true
+  try {
+    const url = await chooseAndUploadAvatar()
+    if (!url) return
+    avatar.value = url
+    patchUser({ avatar: url })
+    uni.showToast({ title: '头像已更新', icon: 'success' })
+  } catch (err) {
+    uni.showToast({ title: apiErrorMessage(err, '头像更新失败'), icon: 'none' })
+  } finally {
+    uploadingAvatar.value = false
+  }
+}
 
 function open(path: string): void {
   uni.navigateTo({ url: path })
@@ -166,7 +213,14 @@ function logout(): void {
           <text class="home__greeting">{{ name ? '你好，' + name : '你好，欢迎回来' }}</text>
           <text class="home__subtitle">CEAMS 建筑财务移动办公</text>
         </view>
-        <button class="home__logout" @click="logout">退出登录</button>
+        <!-- 右侧操作区：头像入口 + 退出登录，保持横向一行 -->
+        <view class="home__actions">
+          <view class="home__avatar" @tap="onChangeAvatar">
+            <image v-if="avatarSrc" class="home__avatar-img" :src="avatarSrc" mode="aspectFill" />
+            <text v-else class="home__avatar-text">{{ avatarText }}</text>
+          </view>
+          <button class="home__logout" @click="logout">退出登录</button>
+        </view>
       </view>
     </view>
 
@@ -283,6 +337,41 @@ function logout(): void {
   font-size: var(--ceams-font-size-caption);
   font-weight: var(--ceams-font-weight-regular);
   line-height: var(--ceams-line-height-normal);
+}
+
+/* 右侧操作区：头像与退出按钮同一行，垂直居中 */
+.home__actions {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  margin-left: var(--ceams-space-md);
+}
+
+/* 首页头像入口：白色圆形底 + 半透明描边，未设置头像时展示姓名首字 */
+.home__avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 50%;
+  overflow: hidden;
+  background-color: var(--ceams-bg-card);
+  border: 2rpx solid rgba(255, 255, 255, 0.6);
+  box-sizing: border-box;
+}
+
+.home__avatar-img {
+  width: 100%;
+  height: 100%;
+}
+
+.home__avatar-text {
+  color: var(--ceams-color-primary);
+  font-size: var(--ceams-font-size-body);
+  font-weight: var(--ceams-font-weight-bold);
+  line-height: var(--ceams-line-height-tight);
 }
 
 .home__logout::after {

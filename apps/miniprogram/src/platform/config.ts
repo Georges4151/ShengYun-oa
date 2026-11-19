@@ -14,3 +14,6 @@ export const API_BASE_URL: string = import.meta.env.VITE_API_BASE_URL ?? 'https:
  * 待后端文件服务就绪后替换为真实端点。
  */
 export const ATTACHMENT_UPLOAD_URL: string = `${API_BASE_URL}/api/v1/files/upload`
+
+/** 当前登录用户头像上传端点（multipart，需 Bearer 令牌）。 */
+export const AVATAR_UPLOAD_URL: string = `${API_BASE_URL}/api/v1/profile/avatar`

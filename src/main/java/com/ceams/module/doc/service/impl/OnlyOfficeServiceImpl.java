@@ -15,6 +15,7 @@ import com.ceams.module.doc.enums.DocVersionSource;
 import com.ceams.module.doc.mapper.DocDirectoryMapper;
 import com.ceams.module.doc.mapper.DocFileMapper;
 import com.ceams.module.doc.mapper.DocFileVersionMapper;
+import com.ceams.module.doc.service.DocIndexService;
 import com.ceams.module.doc.service.DocLockService;
 import com.ceams.module.doc.service.OnlyOfficeService;
 import com.ceams.module.doc.support.DocAccessResolver;
@@ -113,6 +114,7 @@ public class OnlyOfficeServiceImpl implements OnlyOfficeService {
     private final DocFileMapper fileMapper;
     private final DocDirectoryMapper dirMapper;
     private final DocFileVersionMapper versionMapper;
+    private final DocIndexService docIndexService;
     private final DocAccessResolver accessResolver;
     private final DocLockService lockService;
     private final DocStorageService storageService;
@@ -550,6 +552,8 @@ public class OnlyOfficeServiceImpl implements OnlyOfficeService {
         bpmAuditService.record(
                 AUDIT_TARGET, file.getId(), AuditAction.DOC_EDIT, before, after, null, uploadedBy);
 
+        // 仅在确实生成新版本时触发索引；异步执行，失败不影响在线保存结果
+        docIndexService.submit(file.getId(), nextVersionNo);
         log.info(
                 "OnlyOffice 在线保存成功：fileId={}，v{} -> v{}，key={}",
                 file.getId(),

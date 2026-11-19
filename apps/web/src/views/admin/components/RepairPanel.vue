@@ -15,9 +15,10 @@ import {
   ElTableColumn,
   ElTag,
   ElTimeline,
-  ElTimelineItem
+  ElTimelineItem,
+  ElUpload
 } from 'element-plus'
-import type { FormInstance, FormRules } from 'element-plus'
+import type { FormInstance, FormRules, UploadFile } from 'element-plus'
 import { formatDateTime } from '@ceams/utils'
 import { ceamsApi } from '@/services/http'
 import type { Id, RepairVO, RepairStatus, RepairCategory, RepairCreateRequest, UserVO } from '@ceams/types'
@@ -25,12 +26,96 @@ import { usePage } from '@/composables/usePage'
 import { hasPermission } from '@/composables/usePermission'
 import { apiErrorMessage } from '@/utils/error'
 import { repairCategoryLabels, repairStatusLabels, toOptions } from '@/utils/labels'
+import RepairImageThumbs from './RepairImageThumbs.vue'
 
 defineOptions({ name: 'RepairPanel' })
+
+/** 报修现场 / 完工图片数量上限。 */
+const MAX_IMAGES = 6
+
+/** 已上传图片：name 为文件服务文件名，url 为本地 objectURL（仅用于弹窗内预览）。 */
+interface LocalImage {
+  name: string
+  url: string
+}
+
+/**
+ * 图片选择器：关闭 el-upload 自动上传，选中即上传并保存文件服务返回的 name，
+ * 同时用原始文件生成本地 objectURL 供弹窗内即时预览。
+ */
+function useImagePicker() {
+  const images = ref<LocalImage[]>([])
+  const uploading = ref(false)
+  /** 代次：clear 后递增，用于丢弃弹窗关闭后才返回的上传结果。 */
+  let generation = 0
+
+  /** 释放全部 objectURL 并清空列表（打开 / 关闭弹窗时调用）。 */
+  function clear(): void {
+    generation += 1
+    images.value.forEach((item) => URL.revokeObjectURL(item.url))
+    images.value = []
+  }
+
+  async function onChange(file: UploadFile): Promise<void> {
+    const raw = file.raw
+    if (!raw) return
+    if (!/^image\/(jpeg|png|webp)$/i.test(raw.type) && !/\.(jpe?g|png|webp)$/i.test(raw.name)) {
+      ElMessage.warning('仅支持 JPG/PNG/WEBP 图片')
+      return
+    }
+    if (images.value.length >= MAX_IMAGES) {
+      ElMessage.warning(`最多上传 ${MAX_IMAGES} 张图片`)
+      return
+    }
+    const current = generation
+    uploading.value = true
+    try {
+      const uploaded = await ceamsApi.file.upload(raw)
+      if (current !== generation) return
+      images.value.push({ name: uploaded.name, url: URL.createObjectURL(raw) })
+    } catch (err) {
+      ElMessage.error(apiErrorMessage(err, '图片上传失败'))
+    } finally {
+      uploading.value = false
+    }
+  }
+
+  function remove(index: number): void {
+    const target = images.value[index]
+    if (!target) return
+    URL.revokeObjectURL(target.url)
+    images.value.splice(index, 1)
+  }
+
+  /** 提交用文件名数组。 */
+  function names(): string[] {
+    return images.value.map((item) => item.name)
+  }
+
+  return { images, uploading, clear, onChange, remove, names }
+}
 
 const canManage = computed(() => hasPermission('admin:repair:manage'))
 const statusOptions = toOptions(repairStatusLabels)
 const categoryOptions = toOptions(repairCategoryLabels)
+
+// 新建报修 / 完成维修的图片选择器（各弹窗独立，互不影响）
+const {
+  images: createImages,
+  uploading: createUploading,
+  clear: clearCreateImages,
+  onChange: onCreateImageChange,
+  remove: removeCreateImage,
+  names: createImageNames
+} = useImagePicker()
+const {
+  images: finishImages,
+  uploading: finishUploading,
+  clear: clearFinishImages,
+  onChange: onFinishImageChange,
+  remove: removeFinishImage,
+  names: finishImageNames
+} = useImagePicker()
 
 function assigneeName(id: Id | null): string {
   if (!id) return '-'
@@ -131,18 +216,27 @@ function openRemark(row: RepairVO, mode: 'process' | 'finish'): void {
   remarkRepair.value = row
   remarkMode.value = mode
   remarkText.value = ''
+  clearFinishImages()
   remarkVisible.value = true
 }
 
 async function submitRemark(): Promise<void> {
   if (!remarkRepair.value) return
+  if (remarkMode.value === 'finish' && finishImages.value.length === 0) {
+    ElMessage.warning('请至少上传 1 张完工图片')
+    return
+  }
   try {
-    const body = { remark: remarkText.value.trim() || undefined }
     if (remarkMode.value === 'process') {
-      await ceamsApi.admin.repairProcess(remarkRepair.value.id, body)
+      await ceamsApi.admin.repairProcess(remarkRepair.value.id, {
+        remark: remarkText.value.trim() || undefined
+      })
       ElMessage.success('已提交处理进度')
     } else {
-      await ceamsApi.admin.repairFinish(remarkRepair.value.id, body)
+      await ceamsApi.admin.repairFinish(remarkRepair.value.id, {
+        remark: remarkText.value.trim() || undefined,
+        images: finishImageNames()
+      })
       ElMessage.success('工单已完工')
     }
     remarkVisible.value = false
@@ -175,8 +269,7 @@ const createFormRef = ref<FormInstance>()
 const createForm = reactive({
   location: '',
   category: 'ELECTRIC' as RepairCategory,
-  description: '',
-  imagesText: ''
+  description: ''
 })
 const createRules: FormRules<typeof createForm> = {
   location: [{ required: true, message: '请输入报修位置', trigger: 'blur' }],
@@ -188,9 +281,9 @@ function openCreate(): void {
   Object.assign(createForm, {
     location: '',
     category: 'ELECTRIC',
-    description: '',
-    imagesText: ''
+    description: ''
   })
+  clearCreateImages()
   createVisible.value = true
 }
 
@@ -198,15 +291,15 @@ async function submitCreate(): Promise<void> {
   if (!createFormRef.value) return
   const valid = await createFormRef.value.validate().catch(() => false)
   if (!valid) return
-  const images = createForm.imagesText
-    .split(/[,，\s]+/)
-    .map((item) => item.trim())
-    .filter((item) => item.length > 0)
+  if (createImages.value.length === 0) {
+    ElMessage.warning('请至少上传 1 张现场图片')
+    return
+  }
   const payload: RepairCreateRequest = {
     location: createForm.location.trim(),
     category: createForm.category,
     description: createForm.description.trim(),
-    images: images.length > 0 ? images : undefined
+    images: createImageNames()
   }
   try {
     await ceamsApi.admin.repairCreate(payload)
@@ -265,15 +358,11 @@ onMounted(() => {
             </div>
             <div class="detail-item">
               <span class="detail-label">现场图片</span>
-              <span v-if="(row as RepairVO).images.length === 0">-</span>
-              <el-tag
-                v-for="name in (row as RepairVO).images"
-                :key="name"
-                size="small"
-                class="image-tag"
-              >
-                {{ name }}
-              </el-tag>
+              <RepairImageThumbs :names="(row as RepairVO).images" />
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">完工图片</span>
+              <RepairImageThumbs :names="(row as RepairVO).finishImages" />
             </div>
             <div class="detail-item">
               <span class="detail-label">处理备注</span>
@@ -400,6 +489,16 @@ onMounted(() => {
           </template>
         </el-table-column>
         <el-table-column prop="description" label="问题描述" min-width="200" />
+        <el-table-column label="现场图片" width="140">
+          <template #default="{ row }">
+            <RepairImageThumbs :names="(row as RepairVO).images" :size="48" />
+          </template>
+        </el-table-column>
+        <el-table-column label="完工图片" width="140">
+          <template #default="{ row }">
+            <RepairImageThumbs :names="(row as RepairVO).finishImages" :size="48" />
+          </template>
+        </el-table-column>
         <el-table-column label="状态" width="100">
           <template #default="{ row }">
             <el-tag size="small" :type="repairTagType((row as RepairVO).status)">
@@ -411,7 +510,7 @@ onMounted(() => {
     </div>
 
     <!-- 新建报修 -->
-    <el-dialog v-model="createVisible" title="新建报修" width="560px">
+    <el-dialog v-model="createVisible" title="新建报修" width="560px" @closed="clearCreateImages">
       <el-form ref="createFormRef" :model="createForm" :rules="createRules" label-width="90px">
         <el-form-item label="报修位置" prop="location">
           <el-input v-model="createForm.location" placeholder="如：3 号楼 2 层 201 室" />
@@ -435,12 +534,24 @@ onMounted(() => {
           />
         </el-form-item>
         <el-form-item label="现场图片">
-          <el-input
-            v-model="createForm.imagesText"
-            type="textarea"
-            :rows="2"
-            placeholder="图片文件名，多个用逗号分隔（可选）"
-          />
+          <div class="image-field">
+            <div v-for="(img, index) in createImages" :key="img.name" class="image-item">
+              <img :src="img.url" :alt="img.name" :title="img.name" class="image-item__thumb" />
+              <span class="image-item__remove" title="删除" @click="removeCreateImage(index)">×</span>
+            </div>
+            <el-upload
+              v-if="createImages.length < MAX_IMAGES"
+              class="image-uploader"
+              :auto-upload="false"
+              :show-file-list="false"
+              :disabled="createUploading"
+              accept="image/jpeg,image/png,image/webp"
+              :on-change="onCreateImageChange"
+            >
+              <div class="image-add">{{ createUploading ? '上传中' : '+' }}</div>
+            </el-upload>
+          </div>
+          <div class="image-tip">至少 1 张，最多 {{ MAX_IMAGES }} 张，支持 JPG/PNG/WEBP</div>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -474,7 +585,8 @@ onMounted(() => {
     <el-dialog
       v-model="remarkVisible"
       :title="remarkMode === 'process' ? '提交处理进度' : '完成维修'"
-      width="480px"
+      width="560px"
+      @closed="clearFinishImages"
     >
       <el-form label-width="90px">
         <el-form-item label="工单号">
@@ -487,6 +599,26 @@ onMounted(() => {
             :rows="3"
             placeholder="请输入处理说明（可选）"
           />
+        </el-form-item>
+        <el-form-item v-if="remarkMode === 'finish'" label="完工图片">
+          <div class="image-field">
+            <div v-for="(img, index) in finishImages" :key="img.name" class="image-item">
+              <img :src="img.url" :alt="img.name" :title="img.name" class="image-item__thumb" />
+              <span class="image-item__remove" title="删除" @click="removeFinishImage(index)">×</span>
+            </div>
+            <el-upload
+              v-if="finishImages.length < MAX_IMAGES"
+              class="image-uploader"
+              :auto-upload="false"
+              :show-file-list="false"
+              :disabled="finishUploading"
+              accept="image/jpeg,image/png,image/webp"
+              :on-change="onFinishImageChange"
+            >
+              <div class="image-add">{{ finishUploading ? '上传中' : '+' }}</div>
+            </el-upload>
+          </div>
+          <div class="image-tip">至少 1 张，最多 {{ MAX_IMAGES }} 张，支持 JPG/PNG/WEBP</div>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -533,7 +665,64 @@ onMounted(() => {
 .timeline-item {
   align-items: flex-start;
 }
-.image-tag {
-  margin-right: 6px;
+.image-field {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.image-item {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: #f3f4f6;
+}
+.image-item__thumb {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.image-item__remove {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 18px;
+  height: 18px;
+  color: #fff;
+  font-size: 14px;
+  line-height: 18px;
+  text-align: center;
+  background: rgba(17, 24, 39, 0.6);
+  border-bottom-left-radius: 6px;
+  cursor: pointer;
+}
+.image-uploader :deep(.el-upload) {
+  width: 72px;
+  height: 72px;
+  overflow: hidden;
+  border: 1px dashed #d1d5db;
+  border-radius: 6px;
+  background: #fafafa;
+}
+.image-add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  color: #9ca3af;
+  font-size: 20px;
+  line-height: 1;
+}
+.image-tip {
+  width: 100%;
+  margin-top: 4px;
+  color: #9ca3af;
+  font-size: 12px;
+  line-height: 1.5;
 }
 </style>

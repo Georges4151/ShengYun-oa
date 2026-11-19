@@ -4,6 +4,7 @@ import com.ceams.common.exception.ErrorCode;
 import com.ceams.common.response.ApiResponse;
 import com.ceams.common.sign.HmacSignatureFilter;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.DispatcherType;
 import java.nio.charset.StandardCharsets;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
@@ -24,6 +25,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
  *
  * <p>放行路径：登录/刷新（/api/v1/auth/**）、OpenAPI 文档、Swagger UI、健康检查。 其余一律要求已认证（本波不实现具体资源级授权，后续按域补
  * hasAuthority/hasRole）。
+ *
+ * <p>ASYNC/ERROR 分发属于已鉴权请求的延续，放行以免 SSE 断连后二次分发被 403 并产生噪声日志。
  */
 @Configuration
 @EnableWebSecurity
@@ -37,6 +40,8 @@ public class SecurityConfig {
         // OnlyOffice：取件走短时 token，保存回调用 JWT 校验，二者均无用户登录态
         "/api/v1/doc/onlyoffice/file",
         "/api/v1/doc/onlyoffice/callback",
+        // 头像图片读取：URL 由雪花 ID 生成、不含敏感信息，允许匿名直接访问（便于 img 标签加载）
+        "/api/v1/profile/avatars/*",
         "/v3/api-docs/**",
         "/swagger-ui/**",
         "/swagger-ui.html",
@@ -81,7 +86,10 @@ public class SecurityConfig {
                 .formLogin(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(
                         auth ->
-                                auth.requestMatchers(PERMIT_ALL)
+                                auth.dispatcherTypeMatchers(
+                                                DispatcherType.ASYNC, DispatcherType.ERROR)
+                                        .permitAll()
+                                        .requestMatchers(PERMIT_ALL)
                                         .permitAll()
                                         .anyRequest()
                                         .authenticated())

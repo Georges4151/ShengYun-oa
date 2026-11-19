@@ -29,4 +29,38 @@ public class DocProperties {
 
     /** 分片临时目录（含 Redis meta）保留时长（小时），默认 24。 */
     private int uploadTempTtlHours = 24;
+
+    /** 文档知识库 RAG 配置（抽取 / 分块 / 检索）。 */
+    private Rag rag = new Rag();
+
+    /**
+     * RAG 配置（{@code ceams.doc.rag.*}）。
+     *
+     * <p>关闭 {@link #enabled} 时索引任务直接置 SKIPPED，检索接口仍可调用（返回空结果），
+     * 上传 / 下载 / 预览 / 在线编辑链路不受影响。
+     */
+    @Data
+    public static class Rag {
+
+        /** 是否启用抽取与索引（默认开启；关闭后不做任何文本抽取）。 */
+        private boolean enabled = true;
+
+        /** 分块目标长度（字符），默认 600。 */
+        private int chunkSize = 600;
+
+        /** 相邻分块重叠字符数，默认 100。 */
+        private int chunkOverlap = 100;
+
+        /** 单文件最大抽取字符数，超出后截断，默认 200 万。 */
+        private int maxExtractChars = 2000000;
+
+        /** 检索时召回的候选分块条数上限，默认 300。 */
+        private int searchCandidateLimit = 300;
+
+        /** 检索接口默认返回条数，默认 5。 */
+        private int searchDefaultLimit = 5;
+
+        /** 检索接口允许的最大返回条数，默认 10。 */
+        private int maxSearchLimit = 10;
+    }
 }

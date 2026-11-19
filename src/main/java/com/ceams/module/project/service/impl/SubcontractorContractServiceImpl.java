@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ceams.common.exception.BusinessException;
 import com.ceams.common.exception.ErrorCode;
 import com.ceams.common.response.PageResult;
+import com.ceams.module.hr.support.SimpleXlsxWriter;
 import com.ceams.module.project.converter.SubcontractorContractConverter;
 import com.ceams.module.project.dto.subcontractorcontract.SubcontractorContractCreateRequest;
 import com.ceams.module.project.dto.subcontractorcontract.SubcontractorContractUpdateRequest;
@@ -22,8 +23,17 @@ import com.ceams.module.project.mapper.SubcontractorMapper;
 import com.ceams.module.project.service.SubcontractorContractService;
 import com.ceams.module.project.util.PageUtil;
 import com.ceams.module.project.vo.SubcontractorContractVO;
+import java.io.OutputStream;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -35,6 +45,21 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class SubcontractorContractServiceImpl implements SubcontractorContractService {
+
+    /** 导出列顺序。 */
+    private static final List<String> EXPORT_HEADERS =
+            List.of(
+                    "合同名称",
+                    "合同编号",
+                    "分包商",
+                    "项目",
+                    "合同金额",
+                    "已付金额",
+                    "状态",
+                    "开始日期",
+                    "结束日期",
+                    "附件文件名",
+                    "创建时间");
 
     private final SubcontractorContractMapper subcontractorContractMapper;
     private final SubcontractorMapper subcontractorMapper;
@@ -56,16 +81,17 @@ public class SubcontractorContractServiceImpl implements SubcontractorContractSe
         }
         wrapper.orderByDesc(SubcontractorContract::getCreateTime);
         IPage<SubcontractorContract> result = subcontractorContractMapper.selectPage(p, wrapper);
-        return new PageResult<>(
-                subcontractorContractConverter.toVOList(result.getRecords()),
-                result.getTotal(),
-                result.getCurrent(),
-                result.getSize());
+        List<SubcontractorContractVO> records =
+                subcontractorContractConverter.toVOList(result.getRecords());
+        fillNames(records);
+        return new PageResult<>(records, result.getTotal(), result.getCurrent(), result.getSize());
     }
 
     @Override
     public SubcontractorContractVO detail(Long id) {
-        return subcontractorContractConverter.toVO(requireContract(id));
+        SubcontractorContractVO vo = subcontractorContractConverter.toVO(requireContract(id));
+        fillNames(List.of(vo));
+        return vo;
     }
 
     @Override
@@ -86,6 +112,8 @@ public class SubcontractorContractServiceImpl implements SubcontractorContractSe
         contract.setEndDate(toDateTime(request.getEndDate()));
         contract.setStatus(request.getStatus());
         contract.setDescription(request.getDescription());
+        contract.setFilePath(request.getFilePath());
+        contract.setFileName(request.getFileName());
         subcontractorContractMapper.insert(contract);
         return String.valueOf(contract.getId());
     }
@@ -116,6 +144,12 @@ public class SubcontractorContractServiceImpl implements SubcontractorContractSe
         if (request.getDescription() != null) {
             contract.setDescription(request.getDescription());
         }
+        if (StringUtils.isNotBlank(request.getFilePath())) {
+            contract.setFilePath(request.getFilePath());
+        }
+        if (StringUtils.isNotBlank(request.getFileName())) {
+            contract.setFileName(request.getFileName());
+        }
         subcontractorContractMapper.updateById(contract);
     }
 
@@ -137,6 +171,122 @@ public class SubcontractorContractServiceImpl implements SubcontractorContractSe
             throw BusinessException.of(ErrorCode.BIZ_REFERENCED, "分包合同存在关联结算凭证，无法删除");
         }
         subcontractorContractMapper.deleteById(id);
+    }
+
+    @Override
+    public void export(OutputStream out, Long subcontractorId, Long projectId) {
+        LambdaQueryWrapper<SubcontractorContract> wrapper = new LambdaQueryWrapper<>();
+        if (subcontractorId != null) {
+            wrapper.eq(SubcontractorContract::getSubcontractorId, subcontractorId);
+        }
+        if (projectId != null) {
+            wrapper.eq(SubcontractorContract::getProjectId, projectId);
+        }
+        wrapper.orderByDesc(SubcontractorContract::getCreateTime);
+        List<SubcontractorContract> contracts = subcontractorContractMapper.selectList(wrapper);
+        Set<Long> subcontractorIds =
+                contracts.stream()
+                        .map(SubcontractorContract::getSubcontractorId)
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toSet());
+        Set<Long> projectIds =
+                contracts.stream()
+                        .map(SubcontractorContract::getProjectId)
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toSet());
+        Map<Long, String> subcontractorNames = loadSubcontractorNames(subcontractorIds);
+        Map<Long, String> projectNames = loadProjectNames(projectIds);
+        List<List<Object>> rows = new ArrayList<>(contracts.size());
+        for (SubcontractorContract contract : contracts) {
+            List<Object> row = new ArrayList<>(EXPORT_HEADERS.size());
+            row.add(contract.getContractName());
+            row.add(contract.getContractNumber());
+            row.add(
+                    nameOrId(
+                            subcontractorNames.get(contract.getSubcontractorId()),
+                            contract.getSubcontractorId()));
+            row.add(nameOrId(projectNames.get(contract.getProjectId()), contract.getProjectId()));
+            row.add(contract.getContractAmount());
+            row.add(contract.getPaidAmount());
+            row.add(contract.getStatus() == null ? null : contract.getStatus().name());
+            row.add(dateText(contract.getStartDate()));
+            row.add(dateText(contract.getEndDate()));
+            row.add(contract.getFileName());
+            row.add(contract.getCreateTime() == null ? null : contract.getCreateTime().toString());
+            rows.add(row);
+        }
+        SimpleXlsxWriter.write(out, "分包合同", EXPORT_HEADERS, rows);
+        log.info(
+                "分包合同导出完成：分包商 {}，项目 {}，条数 {}", subcontractorId, projectId, rows.size());
+    }
+
+    /**
+     * 批量填充分包商名称与项目名称（展示用）。
+     *
+     * <p>先收集本批记录中的非空 ID，再各用一次批量查询换取名称，避免逐条查询造成 N+1；
+     * 查不到（含记录已删除）时保持名称字段为 null。
+     */
+    private void fillNames(List<SubcontractorContractVO> records) {
+        if (records == null || records.isEmpty()) {
+            return;
+        }
+        Set<Long> subcontractorIds =
+                records.stream()
+                        .map(SubcontractorContractVO::getSubcontractorId)
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toSet());
+        Set<Long> projectIds =
+                records.stream()
+                        .map(SubcontractorContractVO::getProjectId)
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toSet());
+        Map<Long, String> subcontractorNames = loadSubcontractorNames(subcontractorIds);
+        Map<Long, String> projectNames = loadProjectNames(projectIds);
+        for (SubcontractorContractVO vo : records) {
+            if (vo.getSubcontractorId() != null) {
+                vo.setSubcontractorName(subcontractorNames.get(vo.getSubcontractorId()));
+            }
+            if (vo.getProjectId() != null) {
+                vo.setProjectName(projectNames.get(vo.getProjectId()));
+            }
+        }
+    }
+
+    private Map<Long, String> loadSubcontractorNames(Collection<Long> ids) {
+        Map<Long, String> names = new HashMap<>();
+        if (ids == null || ids.isEmpty()) {
+            return names;
+        }
+        for (Subcontractor subcontractor : subcontractorMapper.selectBatchIds(ids)) {
+            names.put(subcontractor.getId(), subcontractor.getName());
+        }
+        return names;
+    }
+
+    private Map<Long, String> loadProjectNames(Collection<Long> ids) {
+        Map<Long, String> names = new HashMap<>();
+        if (ids == null || ids.isEmpty()) {
+            return names;
+        }
+        for (Project project : projectMapper.selectBatchIds(ids)) {
+            names.put(project.getId(), project.getProjectName());
+        }
+        return names;
+    }
+
+    /** 名称缺失时回退写 ID 文本。 */
+    private String nameOrId(String name, Long id) {
+        return StringUtils.isNotBlank(name) ? name : idText(id);
+    }
+
+    /** ID 按字符串写出，避免 Excel 数值单元格丢失雪花 ID 精度。 */
+    private String idText(Long id) {
+        return id == null ? null : String.valueOf(id);
+    }
+
+    /** 日期写出为 yyyy-MM-dd 文本。 */
+    private String dateText(LocalDateTime date) {
+        return date == null ? null : date.toLocalDate().toString();
     }
 
     private SubcontractorContract requireContract(Long id) {

@@ -598,11 +598,11 @@ components:
       type: object
       properties:
         materialName: { type: string }
-        specification: { type: string }
+        specification: { type: string, nullable: true }
         unit: { type: string }
-        currentPrice: { type: string }
-        supplierId: { type: string }
-        categoryId: { type: string }
+        currentPrice: { type: string, nullable: true }
+        supplierId: { type: string, nullable: true }
+        categoryId: { type: string, nullable: true }
     MaterialResponse:
       allOf:
         - $ref: '#/components/schemas/ApiResponse'

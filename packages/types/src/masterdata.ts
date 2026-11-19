@@ -94,6 +94,10 @@ export interface MaterialVO {
   currentPrice?: Money
   supplierId?: Id | null
   categoryId?: Id | null
+  /** 供应商名称（展示用） */
+  supplierName?: string | null
+  /** 分类名称（展示用） */
+  categoryName?: string | null
   createTime?: DateTime
 }
 
@@ -109,11 +113,11 @@ export interface MaterialCreateRequest {
 
 export interface MaterialUpdateRequest {
   materialName?: string
-  specification?: string
+  specification?: string | null
   unit?: string
-  currentPrice?: Money
-  supplierId?: Id
-  categoryId?: Id
+  currentPrice?: Money | null
+  supplierId?: Id | null
+  categoryId?: Id | null
 }
 
 // ---------- 设备台账 ----------
@@ -150,9 +154,15 @@ export interface EquipmentUpdateRequest {
 export interface EquipmentLeaseVO {
   id: Id
   equipmentId: Id
+  /** 设备名称 */
+  equipmentName?: string | null
   projectId: Id
+  /** 项目名称 */
+  projectName?: string | null
   /** 出租方（往来单位）ID */
   lessorId?: Id | null
+  /** 出租方（往来单位）名称 */
+  lessorName?: string | null
   leaseStartDate?: string
   leaseEndDate?: string
   dailyRent?: Money

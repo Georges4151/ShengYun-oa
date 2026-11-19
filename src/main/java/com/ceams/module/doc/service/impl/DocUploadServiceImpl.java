@@ -17,6 +17,7 @@ import com.ceams.module.doc.enums.DocVersionSource;
 import com.ceams.module.doc.mapper.DocDirectoryMapper;
 import com.ceams.module.doc.mapper.DocFileMapper;
 import com.ceams.module.doc.mapper.DocFileVersionMapper;
+import com.ceams.module.doc.service.DocIndexService;
 import com.ceams.module.doc.service.DocUploadService;
 import com.ceams.module.doc.support.DocAccessResolver;
 import com.ceams.module.doc.support.DocConverter;
@@ -92,6 +93,7 @@ public class DocUploadServiceImpl implements DocUploadService {
     private final StringRedisTemplate stringRedisTemplate;
     private final BpmAuditService bpmAuditService;
     private final DocProperties docProperties;
+    private final DocIndexService docIndexService;
 
     @Override
     public UploadInitVO init(UploadInitRequest request) {
@@ -285,6 +287,9 @@ public class DocUploadServiceImpl implements DocUploadService {
                 after,
                 null,
                 userId == null ? 0L : userId);
+
+        // 索引在事务提交后异步执行，失败不影响上传主链路
+        docIndexService.submitAfterCommit(file.getId(), 1);
         return file;
     }
 

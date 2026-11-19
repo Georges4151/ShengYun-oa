@@ -34,6 +34,9 @@ public class RepairVO {
     /** 图片文件名列表。 */
     private List<String> images;
 
+    /** 完工图片文件名列表。 */
+    private List<String> finishImages;
+
     /** 维修人 ID。 */
     private Long assigneeId;
 

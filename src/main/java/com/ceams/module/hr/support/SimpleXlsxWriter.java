@@ -19,8 +19,11 @@ import java.util.zip.ZipOutputStream;
  */
 public final class SimpleXlsxWriter {
 
-    /** 工作表名称。 */
+    /** 默认工作表名称。 */
     private static final String SHEET_NAME = "工资条";
+
+    /** Excel 工作表名最大长度。 */
+    private static final int MAX_SHEET_NAME_LENGTH = 31;
 
     /** XML 声明。 */
     private static final String XML_DECL = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>";
@@ -40,16 +43,46 @@ public final class SimpleXlsxWriter {
      * @throws IllegalStateException 压缩包写出失败时抛出
      */
     public static void write(OutputStream out, List<String> headers, List<List<Object>> rows) {
+        write(out, SHEET_NAME, headers, rows);
+    }
+
+    /**
+     * 按指定工作表名写出单工作表 xlsx。
+     *
+     * @param out 输出流（写到结束后关闭）
+     * @param sheetName 工作表名；空白回退为默认名，超长按 Excel 限制截断
+     * @param headers 表头文本（按列顺序）
+     * @param rows 数据行；{@link BigDecimal} 与其他 {@link Number} 写数值单元格，其余按字符串写出
+     * @throws IllegalStateException 压缩包写出失败时抛出
+     */
+    public static void write(
+            OutputStream out,
+            String sheetName,
+            List<String> headers,
+            List<List<Object>> rows) {
+        String resolvedSheetName = resolveSheetName(sheetName);
         try (ZipOutputStream zip = new ZipOutputStream(out, StandardCharsets.UTF_8)) {
             putEntry(zip, "[Content_Types].xml", contentTypes());
             putEntry(zip, "_rels/.rels", rootRelationships());
-            putEntry(zip, "xl/workbook.xml", workbook());
+            putEntry(zip, "xl/workbook.xml", workbook(resolvedSheetName));
             putEntry(zip, "xl/_rels/workbook.xml.rels", workbookRelationships());
             putEntry(zip, "xl/worksheets/sheet1.xml", worksheet(headers, rows));
             zip.finish();
         } catch (IOException e) {
-            throw new IllegalStateException("工资条 xlsx 写出失败", e);
+            throw new IllegalStateException(resolvedSheetName + " xlsx 写出失败", e);
         }
+    }
+
+    /** 工作表名最小安全处理：空白回退默认值，超过 31 个字符按码点截断。 */
+    private static String resolveSheetName(String sheetName) {
+        if (sheetName == null || sheetName.isBlank()) {
+            return SHEET_NAME;
+        }
+        if (sheetName.codePointCount(0, sheetName.length()) <= MAX_SHEET_NAME_LENGTH) {
+            return sheetName;
+        }
+        return sheetName.substring(
+                0, sheetName.offsetByCodePoints(0, MAX_SHEET_NAME_LENGTH));
     }
 
     private static void putEntry(ZipOutputStream zip, String name, String content)
@@ -81,13 +114,13 @@ public final class SimpleXlsxWriter {
                 + "</Relationships>";
     }
 
-    private static String workbook() {
+    private static String workbook(String sheetName) {
         return XML_DECL
                 + "<workbook xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\""
                 + " xmlns:r=\""
                 + REL_NAMESPACE
                 + "\"><sheets><sheet name=\""
-                + escape(SHEET_NAME)
+                + escape(sheetName)
                 + "\" sheetId=\"1\" r:id=\"rId1\"/></sheets></workbook>";
     }
 

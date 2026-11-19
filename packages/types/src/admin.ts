@@ -433,8 +433,10 @@ export interface RepairVO {
   location: string
   category: RepairCategory
   description: string
-  /** 图片文件名列表。 */
+  /** 报修现场图片文件名列表。 */
   images: string[]
+  /** 完工图片文件名列表。 */
+  finishImages: string[]
   assigneeId: Id | null
   status: RepairStatus
   assignedAt: string | null
@@ -455,8 +457,8 @@ export interface RepairCreateRequest {
   location: string
   category: RepairCategory
   description: string
-  /** 图片文件名列表，最多 6 张。 */
-  images?: string[]
+  /** 现场图片文件名列表，1～6 张。 */
+  images: string[]
 }
 
 export interface RepairAssignRequest {
@@ -470,4 +472,6 @@ export interface RepairProcessRequest {
 
 export interface RepairFinishRequest {
   remark?: string
+  /** 完工图片文件名列表，1～6 张。 */
+  images: string[]
 }

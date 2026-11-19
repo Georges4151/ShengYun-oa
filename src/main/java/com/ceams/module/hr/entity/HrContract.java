@@ -35,6 +35,12 @@ public class HrContract extends BaseEntity {
     /** 合同附件 ID。 */
     private Long fileId;
 
+    /** 合同原件存储名（通用文件服务返回的 name）。 */
+    private String filePath;
+
+    /** 合同原件原始文件名。 */
+    private String fileName;
+
     /** 合同状态。 */
     private ContractStatus status;
 

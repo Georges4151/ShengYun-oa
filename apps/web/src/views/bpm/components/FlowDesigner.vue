@@ -97,6 +97,37 @@ const userOptions = ref<UserOptionVO[]>([])
 const userLoading = ref(false)
 const userOptionsLoaded = ref(false)
 
+/** 角色下拉：label 展示角色名称，value 仍存角色编码（后端按编码解析审批人）。 */
+const roleOptions = ref<{ code: string; name: string }[]>([])
+const roleOptionsLoaded = ref(false)
+
+/** 补充历史配置中不在当前角色列表里的编码，避免下拉框只显示裸编码。 */
+const roleSelectOptions = computed(() => {
+  const map = new Map<string, string>()
+  for (const role of roleOptions.value) {
+    map.set(role.code, role.name)
+  }
+  for (const node of nodes.value) {
+    for (const assignee of node.assignees) {
+      if (assignee.type === 'ROLE' && assignee.value && !map.has(assignee.value)) {
+        map.set(assignee.value, assignee.value)
+      }
+    }
+  }
+  return Array.from(map, ([code, name]) => ({ code, name }))
+})
+
+async function loadRoles(): Promise<void> {
+  if (roleOptionsLoaded.value) return
+  try {
+    const page = await ceamsApi.iam.rolePage({ page: 1, size: 100 })
+    roleOptions.value = page.records.map((role) => ({ code: role.code, name: role.name }))
+    roleOptionsLoaded.value = true
+  } catch {
+    // 角色加载失败时仍保留历史值展示
+  }
+}
+
 let uidSeed = 0
 let keySeed = 0
 let suppressEmit = false
@@ -154,7 +185,12 @@ function assigneeSummary(node: DesignerNode): string {
   return node.assignees
     .map((assignee) => {
       const label = bpmAssigneeSourceLabels[assignee.type] ?? assignee.type
-      return assignee.value ? `${label}：${assignee.value}` : label
+      if (!assignee.value) return label
+      if (assignee.type === 'ROLE') {
+        const role = roleSelectOptions.value.find((item) => item.code === assignee.value)
+        return `${label}：${role?.name ?? assignee.value}`
+      }
+      return `${label}：${assignee.value}`
     })
     .join('、')
 }
@@ -477,7 +513,10 @@ function emitSchema(): void {
 
 watch(nodes, emitSchema, { deep: true })
 
-onMounted(() => load(props.schemaJson))
+onMounted(() => {
+  void loadRoles()
+  load(props.schemaJson)
+})
 
 defineExpose({ load })
 </script>
@@ -625,12 +664,20 @@ defineExpose({ load })
                     :value="user.id"
                   />
                 </el-select>
-                <el-input
+                <el-select
                   v-else-if="assignee.type === 'ROLE'"
                   v-model="assignee.value"
                   class="assignee-value"
-                  placeholder="角色编码，如 FINANCE"
-                />
+                  filterable
+                  placeholder="选择角色"
+                >
+                  <el-option
+                    v-for="role in roleSelectOptions"
+                    :key="role.code"
+                    :label="role.name"
+                    :value="role.code"
+                  />
+                </el-select>
                 <span v-else class="assignee-none">按发起人组织关系解析</span>
                 <el-button link type="danger" @click="removeAssignee(selectedNode, index)">
                   移除

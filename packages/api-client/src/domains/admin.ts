@@ -105,6 +105,8 @@ export interface AdminApi {
   // 报修
   repairCreate(body: RepairCreateRequest): Promise<Id>
   repairPage(query?: RepairPageQuery): Promise<PageResult<RepairVO>>
+  repairDetail(id: Id): Promise<RepairVO>
+  assignedRepairs(): Promise<RepairVO[]>
   myRepairs(): Promise<RepairVO[]>
   repairAssign(id: Id, body: RepairAssignRequest): Promise<void>
   repairProcess(id: Id, body: RepairProcessRequest): Promise<void>
@@ -286,6 +288,12 @@ export function createAdminApi(client: HttpClient): AdminApi {
           assigneeId: query.assigneeId
         }
       })
+    },
+    async repairDetail(id) {
+      return client.get<RepairVO>(`${PREFIX}/repairs/${id}`)
+    },
+    async assignedRepairs() {
+      return client.get<RepairVO[]>(`${PREFIX}/repairs/assigned`)
     },
     async myRepairs() {
       return client.get<RepairVO[]>(`${PREFIX}/repairs/my`)

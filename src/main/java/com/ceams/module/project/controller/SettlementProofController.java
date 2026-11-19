@@ -6,7 +6,9 @@ import com.ceams.module.project.dto.settlementproof.SettlementProofCreateRequest
 import com.ceams.module.project.dto.settlementproof.SettlementProofUpdateRequest;
 import com.ceams.module.project.service.SettlementProofService;
 import com.ceams.module.project.vo.SettlementProofVO;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import java.io.IOException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -40,6 +42,18 @@ public class SettlementProofController {
     @PreAuthorize("hasAnyRole('SYS_ADMIN','FINANCE')")
     public ApiResponse<String> create(@Valid @RequestBody SettlementProofCreateRequest request) {
         return ApiResponse.success(settlementProofService.create(request));
+    }
+
+    @GetMapping("/export")
+    @PreAuthorize("isAuthenticated()")
+    public void export(
+            @RequestParam(required = false) Long contractId, HttpServletResponse response)
+            throws IOException {
+        response.setContentType(
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        response.setHeader(
+                "Content-Disposition", "attachment; filename=\"settlement-proofs.xlsx\"");
+        settlementProofService.export(response.getOutputStream(), contractId);
     }
 
     @GetMapping("/{id}")

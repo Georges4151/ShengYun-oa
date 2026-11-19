@@ -31,6 +31,10 @@ public class ContractVO {
     @JsonSerialize(using = ToStringSerializer.class)
     private Long fileId;
 
+    private String filePath;
+
+    private String fileName;
+
     private ContractStatus status;
 
     private LocalDate renewalRemindDate;

@@ -18,6 +18,7 @@ import com.ceams.module.admin.enums.RepairCategory;
 import com.ceams.module.admin.enums.RepairStatus;
 import com.ceams.module.admin.mapper.AdminRepairMapper;
 import com.ceams.module.admin.support.AdminNoGenerator;
+import com.ceams.module.admin.vo.RepairVO;
 import com.ceams.module.bpm.dto.InstanceStartRequest;
 import com.ceams.module.bpm.service.BpmInstanceService;
 import com.ceams.module.iam.mapper.UserMapper;
@@ -105,6 +106,18 @@ class AdminRepairServiceImplTest {
         ArgumentCaptor<AdminRepair> updateCaptor = ArgumentCaptor.forClass(AdminRepair.class);
         verify(repairMapper).updateById(updateCaptor.capture());
         assertThat(updateCaptor.getValue().getBpmInstanceId()).isEqualTo(9300L);
+    }
+
+    @Test
+    void createShouldRejectEmptyImages() {
+        RepairCreateRequest request = request(List.of());
+
+        assertThatThrownBy(() -> repairService.create(request))
+                .isInstanceOf(BusinessException.class)
+                .extracting(e -> ((BusinessException) e).getErrorCode())
+                .isEqualTo(ErrorCode.VALID_ILLEGAL_ARGUMENT);
+        verify(repairMapper, never()).insert(any(AdminRepair.class));
+        verify(bpmInstanceService, never()).start(any(InstanceStartRequest.class));
     }
 
     @Test
@@ -207,6 +220,94 @@ class AdminRepairServiceImplTest {
         assertThat(captor.getValue().getStatus()).isEqualTo(RepairStatus.DONE);
         assertThat(captor.getValue().getFinishedAt()).isNotNull();
         assertThat(captor.getValue().getRemark()).isEqualTo("已更换灯管");
+        assertThat(captor.getValue().getFinishImagesJson()).isEqualTo("[\"c.jpg\"]");
+        assertThat(captor.getValue().getVersion()).isNull();
+    }
+
+    @Test
+    void finishShouldRejectEmptyImages() {
+        when(repairMapper.selectById(REPAIR_ID)).thenReturn(repair(RepairStatus.PROCESSING, 0L));
+        RepairFinishRequest request = new RepairFinishRequest();
+        request.setRemark("已更换灯管");
+
+        assertThatThrownBy(() -> repairService.finish(REPAIR_ID, request))
+                .isInstanceOf(BusinessException.class)
+                .extracting(e -> ((BusinessException) e).getErrorCode())
+                .isEqualTo(ErrorCode.VALID_ILLEGAL_ARGUMENT);
+        verify(repairMapper, never()).update(any(AdminRepair.class), any(Wrapper.class));
+    }
+
+    @Test
+    void finishShouldRejectMoreThanSixImages() {
+        when(repairMapper.selectById(REPAIR_ID)).thenReturn(repair(RepairStatus.PROCESSING, 0L));
+        RepairFinishRequest request = new RepairFinishRequest();
+        request.setImages(List.of("1.jpg", "2.jpg", "3.jpg", "4.jpg", "5.jpg", "6.jpg", "7.jpg"));
+
+        assertThatThrownBy(() -> repairService.finish(REPAIR_ID, request))
+                .isInstanceOf(BusinessException.class)
+                .extracting(e -> ((BusinessException) e).getErrorCode())
+                .isEqualTo(ErrorCode.VALID_ILLEGAL_ARGUMENT);
+        verify(repairMapper, never()).update(any(AdminRepair.class), any(Wrapper.class));
+    }
+
+    @Test
+    void detailShouldRejectOtherUser() {
+        AdminRepair repair = repair(RepairStatus.DONE, OTHER_USER_ID);
+        repair.setReporterId(OTHER_USER_ID + 1);
+        when(repairMapper.selectById(REPAIR_ID)).thenReturn(repair);
+
+        assertThatThrownBy(() -> repairService.detail(REPAIR_ID))
+                .isInstanceOf(BusinessException.class)
+                .extracting(e -> ((BusinessException) e).getErrorCode())
+                .isEqualTo(ErrorCode.AUTH_ACCESS_DENIED);
+    }
+
+    @Test
+    void detailShouldAllowReporter() {
+        AdminRepair repair = repair(RepairStatus.DONE, OTHER_USER_ID);
+        repair.setFinishImagesJson("[\"c.jpg\"]");
+        when(repairMapper.selectById(REPAIR_ID)).thenReturn(repair);
+
+        RepairVO vo = repairService.detail(REPAIR_ID);
+
+        assertThat(vo.getFinishImages()).containsExactly("c.jpg");
+    }
+
+    @Test
+    void detailShouldAllowAssignee() {
+        loginAs(ASSIGNEE_ID);
+        AdminRepair repair = repair(RepairStatus.PROCESSING, ASSIGNEE_ID);
+        repair.setReporterId(OTHER_USER_ID);
+        when(repairMapper.selectById(REPAIR_ID)).thenReturn(repair);
+
+        assertThat(repairService.detail(REPAIR_ID).getId()).isEqualTo(REPAIR_ID);
+    }
+
+    @Test
+    void detailShouldAllowAdmin() {
+        loginAs(OTHER_USER_ID, "ROLE_SYS_ADMIN");
+        AdminRepair repair = repair(RepairStatus.DONE, OTHER_USER_ID + 1);
+        repair.setReporterId(OTHER_USER_ID + 2);
+        when(repairMapper.selectById(REPAIR_ID)).thenReturn(repair);
+
+        assertThat(repairService.detail(REPAIR_ID).getId()).isEqualTo(REPAIR_ID);
+    }
+
+    @Test
+    void detailShouldThrowNotFound() {
+        assertThatThrownBy(() -> repairService.detail(REPAIR_ID))
+                .isInstanceOf(BusinessException.class)
+                .extracting(e -> ((BusinessException) e).getErrorCode())
+                .isEqualTo(ErrorCode.BIZ_NOT_FOUND);
+    }
+
+    @Test
+    void assignedShouldQueryCurrentUserAsAssignee() {
+        when(repairMapper.selectList(any(Wrapper.class)))
+                .thenReturn(List.of(repair(RepairStatus.ASSIGNED, 0L)));
+
+        assertThat(repairService.assigned()).hasSize(1);
+        verify(repairMapper).selectList(any(Wrapper.class));
     }
 
     @Test
@@ -290,6 +391,7 @@ class AdminRepairServiceImplTest {
     private RepairFinishRequest finishRequest() {
         RepairFinishRequest request = new RepairFinishRequest();
         request.setRemark("已更换灯管");
+        request.setImages(List.of("c.jpg"));
         return request;
     }
 

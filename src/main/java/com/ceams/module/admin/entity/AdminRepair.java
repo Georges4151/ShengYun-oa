@@ -35,6 +35,9 @@ public class AdminRepair extends BaseEntity {
     /** 图片文件名数组（JSON 文本）。 */
     private String imagesJson;
 
+    /** 完工图片文件名数组（JSON 文本）。 */
+    private String finishImagesJson;
+
     /** 维修人 ID。 */
     private Long assigneeId;
 
