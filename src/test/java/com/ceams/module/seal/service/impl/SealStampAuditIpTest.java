@@ -18,6 +18,7 @@ import com.ceams.module.seal.mapper.ElectronicSealApplicationMapper;
 import com.ceams.module.seal.mapper.ElectronicSealMapper;
 import com.ceams.module.seal.mapper.ElectronicSealStampMapper;
 import com.ceams.module.seal.mapper.ElectronicSealUsageMapper;
+import com.ceams.module.seal.support.SealAuthorizationGuard;
 import com.ceams.module.seal.vo.SealStampResultVO;
 import java.nio.file.Path;
 import java.util.Base64;
@@ -30,6 +31,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -49,6 +51,8 @@ class SealStampAuditIpTest {
     @Mock private ElectronicSealApplicationMapper electronicSealApplicationMapper;
     @Mock private ElectronicSealStampMapper electronicSealStampMapper;
     @Mock private ElectronicSealUsageMapper electronicSealUsageMapper;
+    @Mock private SealAuthorizationGuard sealAuthorizationGuard;
+    @Mock private PasswordEncoder passwordEncoder;
 
     @TempDir private Path tempDir;
 
@@ -62,7 +66,9 @@ class SealStampAuditIpTest {
                         electronicSealMapper,
                         electronicSealApplicationMapper,
                         electronicSealStampMapper,
-                        electronicSealUsageMapper);
+                        electronicSealUsageMapper,
+                        sealAuthorizationGuard,
+                        passwordEncoder);
         // 落盘目录指向临时目录，避免真实文件污染工作区
         ReflectionTestUtils.setField(service, "stampDir", tempDir.toString());
     }

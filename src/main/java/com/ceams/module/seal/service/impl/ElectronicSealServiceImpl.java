@@ -21,6 +21,7 @@ import com.ceams.module.seal.vo.ElectronicSealVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,6 +34,7 @@ public class ElectronicSealServiceImpl implements ElectronicSealService {
     private final ElectronicSealMapper electronicSealMapper;
     private final ElectronicSealApplicationMapper electronicSealApplicationMapper;
     private final ElectronicSealConverter electronicSealConverter;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     public PageResult<ElectronicSealVO> page(
@@ -72,10 +74,10 @@ public class ElectronicSealServiceImpl implements ElectronicSealService {
         seal.setStorageType(request.getStorageType());
         seal.setSealFileId(request.getSealFileId());
         seal.setUsbDriveId(request.getUsbDriveId());
-        seal.setPasswordProtected(
-                request.getPasswordProtected() == null
-                        ? Boolean.FALSE
-                        : request.getPasswordProtected());
+        boolean passwordProtected = Boolean.TRUE.equals(request.getPasswordProtected());
+        seal.setPasswordProtected(passwordProtected);
+        // 仅存哈希；未启用密码保护时清空，避免历史残留
+        seal.setPasswordHash(passwordProtected ? encodePassword(request.getPassword()) : null);
         electronicSealMapper.insert(seal);
         return String.valueOf(seal.getId());
     }
@@ -115,6 +117,17 @@ public class ElectronicSealServiceImpl implements ElectronicSealService {
         if (request.getPasswordProtected() != null) {
             seal.setPasswordProtected(request.getPasswordProtected());
         }
+        boolean passwordProtected = Boolean.TRUE.equals(seal.getPasswordProtected());
+        if (!passwordProtected) {
+            // 关闭密码保护时清空哈希，避免失效密码残留
+            seal.setPasswordHash(null);
+        } else if (StringUtils.isNotBlank(request.getPassword())) {
+            seal.setPasswordHash(encodePassword(request.getPassword()));
+        } else if (StringUtils.isBlank(seal.getPasswordHash())) {
+            // 已启用保护且历史上没有哈希时，必须同时设置密码
+            throw BusinessException.of(
+                    ErrorCode.VALID_ILLEGAL_ARGUMENT, "启用密码保护时必须设置印章密码");
+        }
         electronicSealMapper.updateById(seal);
     }
 
@@ -152,5 +165,17 @@ public class ElectronicSealServiceImpl implements ElectronicSealService {
         if (count != null && count > 0) {
             throw BusinessException.of(ErrorCode.BIZ_DUPLICATE_CODE, "印章编码已存在");
         }
+    }
+
+    /** 校验并加密印章密码：启用密码保护时密码必填且不少于 6 位。 */
+    private String encodePassword(String rawPassword) {
+        if (StringUtils.isBlank(rawPassword)) {
+            throw BusinessException.of(
+                    ErrorCode.VALID_ILLEGAL_ARGUMENT, "启用密码保护时必须设置印章密码");
+        }
+        if (rawPassword.length() < 6) {
+            throw BusinessException.of(ErrorCode.VALID_ILLEGAL_ARGUMENT, "印章密码长度不能少于 6 位");
+        }
+        return passwordEncoder.encode(rawPassword);
     }
 }

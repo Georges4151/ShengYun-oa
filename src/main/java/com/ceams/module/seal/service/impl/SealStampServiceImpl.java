@@ -18,6 +18,7 @@ import com.ceams.module.seal.mapper.ElectronicSealMapper;
 import com.ceams.module.seal.mapper.ElectronicSealStampMapper;
 import com.ceams.module.seal.mapper.ElectronicSealUsageMapper;
 import com.ceams.module.seal.service.SealStampService;
+import com.ceams.module.seal.support.SealAuthorizationGuard;
 import com.ceams.module.seal.vo.SealStampResultVO;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -28,6 +29,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,6 +44,8 @@ public class SealStampServiceImpl implements SealStampService {
     private final ElectronicSealApplicationMapper electronicSealApplicationMapper;
     private final ElectronicSealStampMapper electronicSealStampMapper;
     private final ElectronicSealUsageMapper electronicSealUsageMapper;
+    private final SealAuthorizationGuard sealAuthorizationGuard;
+    private final PasswordEncoder passwordEncoder;
 
     @Value("${ceams.file.stamp-dir:./data/stamps}")
     private String stampDir;
@@ -50,6 +54,9 @@ public class SealStampServiceImpl implements SealStampService {
     @Transactional(rollbackFor = Exception.class)
     public SealStampResultVO stamp(SealStampRequest request) {
         ElectronicSeal seal = requireActiveSeal(request.getSealId());
+        // 管理员/财务或命中有效期内授权才可盖章
+        sealAuthorizationGuard.checkCanUse(seal.getId());
+        verifySealPassword(seal, request.getSealPassword());
         ElectronicSealApplication application =
                 requireApprovedApplication(request.getApplicationId(), seal.getId());
 
@@ -112,6 +119,20 @@ public class SealStampServiceImpl implements SealStampService {
             throw BusinessException.of(ErrorCode.BIZ_STATE_CONFLICT, "印章已停用或归档，不可盖章");
         }
         return seal;
+    }
+
+    /** 印章启用密码保护时强制校验密码；未启用时忽略请求中的密码字段。 */
+    private void verifySealPassword(ElectronicSeal seal, String sealPassword) {
+        if (!Boolean.TRUE.equals(seal.getPasswordProtected())) {
+            return;
+        }
+        if (StringUtils.isBlank(sealPassword)) {
+            throw BusinessException.of(
+                    ErrorCode.VALID_ILLEGAL_ARGUMENT, "该印章已启用密码保护，请输入印章密码");
+        }
+        if (!passwordEncoder.matches(sealPassword, seal.getPasswordHash())) {
+            throw BusinessException.of(ErrorCode.VALID_ILLEGAL_ARGUMENT, "印章密码错误");
+        }
     }
 
     private ElectronicSealApplication requireApprovedApplication(Long applicationId, Long sealId) {

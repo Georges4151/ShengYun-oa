@@ -26,4 +26,7 @@ public class SealStampRequest {
 
     /** 盖章位置（可选，格式 x,y 如 100,200）。 */
     private String stampPosition;
+
+    /** 印章密码（印章启用密码保护时必填）。 */
+    private String sealPassword;
 }

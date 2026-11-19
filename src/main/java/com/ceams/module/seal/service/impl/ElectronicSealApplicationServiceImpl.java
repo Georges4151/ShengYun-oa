@@ -19,6 +19,7 @@ import com.ceams.module.seal.mapper.ElectronicSealApplicationMapper;
 import com.ceams.module.seal.mapper.ElectronicSealMapper;
 import com.ceams.module.seal.mapper.StampApprovalMapper;
 import com.ceams.module.seal.service.ElectronicSealApplicationService;
+import com.ceams.module.seal.support.SealAuthorizationGuard;
 import com.ceams.module.seal.util.PageUtil;
 import com.ceams.module.seal.vo.ElectronicSealApplicationVO;
 import java.time.LocalDateTime;
@@ -37,6 +38,7 @@ public class ElectronicSealApplicationServiceImpl implements ElectronicSealAppli
     private final ElectronicSealMapper electronicSealMapper;
     private final StampApprovalMapper stampApprovalMapper;
     private final ElectronicSealApplicationConverter electronicSealApplicationConverter;
+    private final SealAuthorizationGuard sealAuthorizationGuard;
 
     @Override
     public PageResult<ElectronicSealApplicationVO> page(
@@ -65,6 +67,8 @@ public class ElectronicSealApplicationServiceImpl implements ElectronicSealAppli
     @Transactional(rollbackFor = Exception.class)
     public String create(ElectronicSealApplicationCreateRequest request) {
         ElectronicSeal seal = requireActiveSeal(request.getSealId());
+        // 管理员/财务或命中有效期内授权才可提交用印申请
+        sealAuthorizationGuard.checkCanUse(seal.getId());
         ElectronicSealApplication application = new ElectronicSealApplication();
         application.setSealId(seal.getId());
         application.setSealName(seal.getSealName());

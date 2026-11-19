@@ -34,4 +34,8 @@ public class ElectronicSealUpdateRequest {
     private String usbDriveId;
 
     private Boolean passwordProtected;
+
+    /** 印章密码（可选；为空表示不修改，非空时重新加密保存）。 */
+    @Size(max = 72, message = "印章密码长度不能超过 72")
+    private String password;
 }

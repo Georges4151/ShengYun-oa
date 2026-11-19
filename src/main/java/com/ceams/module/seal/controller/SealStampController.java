@@ -23,7 +23,7 @@ public class SealStampController {
 
     @HmacSigned
     @PostMapping("/stamp")
-    @PreAuthorize("hasAnyRole('SYS_ADMIN','FINANCE')")
+    @PreAuthorize("isAuthenticated()")
     public ApiResponse<SealStampResultVO> stamp(@Valid @RequestBody SealStampRequest request) {
         return ApiResponse.success(sealStampService.stamp(request));
     }

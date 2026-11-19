@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import com.ceams.common.base.BaseEntity;
 import com.ceams.module.seal.enums.SealStatus;
 import com.ceams.module.seal.enums.StorageType;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.time.LocalDateTime;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -43,6 +44,10 @@ public class ElectronicSeal extends BaseEntity {
 
     /** 是否密码保护：true/false。 */
     private Boolean passwordProtected = Boolean.FALSE;
+
+    /** 印章密码 BCrypt 哈希（password_protected=true 时必填，接口不返回）。 */
+    @JsonIgnore
+    private String passwordHash;
 
     /** 最后使用时间。 */
     private LocalDateTime lastUsedTime;

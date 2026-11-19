@@ -35,4 +35,8 @@ public class ElectronicSealCreateRequest {
 
     /** 是否密码保护（缺省 false）。 */
     private Boolean passwordProtected;
+
+    /** 印章密码（启用密码保护时必填，落库前 BCrypt 加密）。 */
+    @Size(max = 72, message = "印章密码长度不能超过 72")
+    private String password;
 }

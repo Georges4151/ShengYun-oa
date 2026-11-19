@@ -41,7 +41,7 @@ public class ElectronicSealApplicationController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('SYS_ADMIN','FINANCE')")
+    @PreAuthorize("isAuthenticated()")
     public ApiResponse<String> create(
             @Valid @RequestBody ElectronicSealApplicationCreateRequest request) {
         return ApiResponse.success(electronicSealApplicationService.create(request));
