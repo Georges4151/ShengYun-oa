@@ -5,6 +5,7 @@ import { ElAvatar, ElDropdown, ElDropdownItem, ElDropdownMenu, ElMenu, ElMenuIte
 import { AppShell } from '@ceams/ui-web'
 import AiAssistant from '@/components/AiAssistant.vue'
 import { hasPermission } from '@/composables/usePermission'
+import { isModuleHidden } from '@/config/features'
 import { useAuthStore } from '@/stores/auth'
 
 const route = useRoute()
@@ -29,8 +30,10 @@ const MENUS = [
   { path: '/account', title: '账号', permission: 'iam' }
 ]
 
-/** 按当前账号权限码过滤菜单，无权限模块不渲染入口。 */
-const menus = computed(() => MENUS.filter((menu) => hasPermission(menu.permission)))
+/** 按当前账号权限码过滤菜单，无权限或已隐藏的模块不渲染入口。 */
+const menus = computed(() =>
+  MENUS.filter((menu) => hasPermission(menu.permission) && !isModuleHidden(menu.path))
+)
 
 const activeMenu = computed(() => route.path)
 

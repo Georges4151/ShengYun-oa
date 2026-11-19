@@ -2,6 +2,7 @@ import { createRouter, createWebHashHistory, createWebHistory } from 'vue-router
 import { routes } from './routes'
 import { useAuthStore } from '@/stores/auth'
 import { hasPermission } from '@/composables/usePermission'
+import { isModuleHidden } from '@/config/features'
 
 // Electron（file:// 协议）下 pushState 受限，改用 hash 历史模式；Web 部署保持 history 模式
 const history =
@@ -35,9 +36,11 @@ const MENU_ACCESS: Array<[path: string, permission: string]> = [
   ['/account', 'iam']
 ]
 
-/** 当前账号可访问的第一个菜单；一个都没有时回退到登录页，避免死循环。 */
+/** 当前账号可访问的第一个未隐藏菜单；一个都没有时回退到登录页，避免死循环。 */
 function firstAllowedPath(): string {
-  const found = MENU_ACCESS.find(([, permission]) => hasPermission(permission))
+  const found = MENU_ACCESS.find(
+    ([path, permission]) => !isModuleHidden(path) && hasPermission(permission)
+  )
   return found ? found[0] : '/login'
 }
 
@@ -57,6 +60,11 @@ router.beforeEach(async (to) => {
         return { path: fallback, replace: true }
       }
     }
+  }
+
+  // 已隐藏模块禁止直接输入地址访问
+  if (isModuleHidden(to.path)) {
+    return { path: firstAllowedPath(), replace: true }
   }
 
   const title = typeof to.meta.title === 'string' ? to.meta.title : 'CEAMS'
