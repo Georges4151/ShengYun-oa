@@ -133,6 +133,32 @@ class ReceiptApprovalFlowTest {
         verify(receiptMapper, times(1)).updateById(any(Receipt.class));
     }
 
+    /** 重复的 APPROVED 终态回调应幂等：只写库一次。 */
+    @Test
+    void duplicateApprovedCallbackShouldWriteOnce() {
+        Receipt receipt = receipt(ReceiptApprovalStatus.PENDING);
+        when(receiptMapper.selectById(RECEIPT_ID)).thenReturn(receipt);
+
+        expenseBpmCallback.onInstanceFinished(instance(RECEIPT_ID), BpmInstanceStatus.APPROVED);
+        expenseBpmCallback.onInstanceFinished(instance(RECEIPT_ID), BpmInstanceStatus.APPROVED);
+
+        verify(receiptMapper, times(1)).updateById(any(Receipt.class));
+        assertThat(receipt.getApprovalStatus()).isEqualTo(ReceiptApprovalStatus.APPROVED);
+    }
+
+    /** 终态之后迟到的 REJECTED 回调不得覆盖 APPROVED，也不产生第二次写库。 */
+    @Test
+    void lateRejectedCallbackShouldNotOverrideApproved() {
+        Receipt receipt = receipt(ReceiptApprovalStatus.PENDING);
+        when(receiptMapper.selectById(RECEIPT_ID)).thenReturn(receipt);
+
+        expenseBpmCallback.onInstanceFinished(instance(RECEIPT_ID), BpmInstanceStatus.APPROVED);
+        expenseBpmCallback.onInstanceFinished(instance(RECEIPT_ID), BpmInstanceStatus.REJECTED);
+
+        assertThat(receipt.getApprovalStatus()).isEqualTo(ReceiptApprovalStatus.APPROVED);
+        verify(receiptMapper, times(1)).updateById(any(Receipt.class));
+    }
+
     /** 审批驳回：PENDING -> REJECTED，并清空审批层级快照。 */
     @Test
     void rejectedInstanceShouldMovePendingToRejectedAndResetApprovalLevel() {

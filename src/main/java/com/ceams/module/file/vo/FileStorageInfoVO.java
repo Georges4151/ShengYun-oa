@@ -27,8 +27,8 @@ public class FileStorageInfoVO {
     /** 递归统计的常规文件数量（不含目录，忽略符号链接与不可读文件）。 */
     private long fileCount;
 
-    /** 递归统计的文件总字节数。 */
-    private Long totalSizeBytes;
+    /** 递归统计的文件总字节数；目录不存在或配置非法时为 0。 */
+    private Long totalSizeBytes = 0L;
 
     /** 目录所在分区可用字节数；探测失败时为 null。 */
     private Long diskUsableBytes;

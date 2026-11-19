@@ -16,6 +16,7 @@ import com.ceams.module.bank.enums.BankStatementStatus;
 import com.ceams.module.bank.enums.DiscrepancyType;
 import com.ceams.module.bank.enums.ReconciliationStatus;
 import com.ceams.module.bank.enums.ResolutionStatus;
+import com.ceams.module.bank.enums.TransactionType;
 import com.ceams.module.bank.mapper.BankStatementMapper;
 import com.ceams.module.bank.mapper.GeneralLedgerMapper;
 import com.ceams.module.bank.mapper.ReconciliationResultMapper;
@@ -23,6 +24,7 @@ import com.ceams.module.bank.vo.BankMatchCandidatesVO;
 import com.ceams.module.bank.vo.ReconciliationMatchResultVO;
 import com.ceams.module.payment.entity.PaymentAccount;
 import com.ceams.module.payment.entity.PaymentTransaction;
+import com.ceams.module.payment.enums.AccountType;
 import com.ceams.module.payment.mapper.PaymentTransactionMapper;
 import com.ceams.module.payment.service.PaymentAccountQueryService;
 import java.math.BigDecimal;
@@ -187,6 +189,74 @@ class ReconciliationMatchFlowTest {
         assertThat(statementCaptor.getValue().getStatus())
                 .isEqualTo(BankStatementStatus.RECONCILED)
                 .isNotEqualTo(BankStatementStatus.MATCHED);
+    }
+
+    /**
+     * 收支方向相反（银行 EXPENSE / 付款交易 INCOME）时，即使金额、日期、摘要完全一致也不得判定为匹配。
+     *
+     * <p>按现有差异记录规则：银行流水落 UNMATCHED/MISSING_IN_SYSTEM，付款交易落
+     * UNMATCHED/MISSING_IN_BANK，且该交易不会被记为已匹配。
+     */
+    @Test
+    void matchShouldNotMatchWhenDirectionOpposite() {
+        BankStatement statement = statement(new BigDecimal("100.00"), "工程款");
+        statement.setType(TransactionType.EXPENSE);
+        PaymentTransaction transaction =
+                transaction(TRANSACTION_ID, new BigDecimal("100.00"), BANK_DATE, "工程款");
+        transaction.setType(AccountType.INCOME);
+        stubPool(statement, List.of(transaction), List.of());
+        when(paymentAccountQueryService.exists(ACCOUNT_ID)).thenReturn(true);
+        when(reconciliationResultMapper.selectCount(any())).thenReturn(0L);
+
+        ReconciliationMatchResultVO result = service.match(matchRequest(3));
+
+        assertThat(result.getMatched()).isZero();
+        assertThat(result.getUnmatched()).isEqualTo(2);
+        assertThat(result.getPartialMatched()).isZero();
+
+        ArgumentCaptor<ReconciliationResult> resultCaptor =
+                ArgumentCaptor.forClass(ReconciliationResult.class);
+        verify(reconciliationResultMapper, times(2)).insert(resultCaptor.capture());
+        List<ReconciliationResult> saved = resultCaptor.getAllValues();
+        assertThat(saved).noneMatch(r -> r.getStatus() == ReconciliationStatus.MATCHED);
+        assertThat(saved.get(0).getStatus()).isEqualTo(ReconciliationStatus.UNMATCHED);
+        assertThat(saved.get(0).getDiscrepancyType()).isEqualTo(DiscrepancyType.MISSING_IN_SYSTEM);
+        assertThat(saved.get(0).getStatementId()).isEqualTo(STATEMENT_ID);
+        // 反向交易不被记为已匹配，因此仍会进入「银行缺失」补录
+        assertThat(saved.get(1).getStatus()).isEqualTo(ReconciliationStatus.UNMATCHED);
+        assertThat(saved.get(1).getDiscrepancyType()).isEqualTo(DiscrepancyType.MISSING_IN_BANK);
+        assertThat(saved.get(1).getTransactionId()).isEqualTo(TRANSACTION_ID);
+
+        ArgumentCaptor<BankStatement> statementCaptor =
+                ArgumentCaptor.forClass(BankStatement.class);
+        verify(bankStatementMapper).updateById(statementCaptor.capture());
+        assertThat(statementCaptor.getValue().getStatus())
+                .isEqualTo(BankStatementStatus.RECONCILED)
+                .isNotEqualTo(BankStatementStatus.MATCHED);
+    }
+
+    /** 候选接口同样过滤反向记录：反向付款交易不进入候选，同向总账仍保留。 */
+    @Test
+    void matchCandidatesShouldExcludeOppositeDirectionTransaction() {
+        BankStatement statement = statement(new BigDecimal("100.00"), "工程款");
+        statement.setType(TransactionType.EXPENSE);
+        PaymentTransaction transaction =
+                transaction(TRANSACTION_ID, new BigDecimal("100.00"), BANK_DATE, "工程款");
+        transaction.setType(AccountType.INCOME);
+        GeneralLedger ledger = ledger(300L, new BigDecimal("100.00"), BANK_DATE, "工程款");
+        ledger.setTransactionType(TransactionType.EXPENSE);
+        when(bankStatementMapper.selectById(STATEMENT_ID)).thenReturn(statement);
+        when(paymentTransactionMapper.selectList(any())).thenReturn(List.of(transaction));
+        when(paymentAccountQueryService.getById(ACCOUNT_ID)).thenReturn(account("基本户"));
+        when(generalLedgerMapper.selectList(any())).thenReturn(List.of(ledger));
+
+        BankMatchCandidatesVO vo = service.matchCandidates(STATEMENT_ID, 3, 5);
+
+        assertThat(vo.getCandidateCount()).isEqualTo(1);
+        assertThat(vo.getCandidates())
+                .extracting(candidate -> candidate.getSourceId())
+                .doesNotContain(String.valueOf(TRANSACTION_ID))
+                .contains(String.valueOf(300L));
     }
 
     /** 候选接口是硬约定的只读操作：只做 select，不产生任何 insert/update/delete。 */

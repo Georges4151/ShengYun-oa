@@ -16,6 +16,7 @@ import com.ceams.module.bank.enums.BankStatementStatus;
 import com.ceams.module.bank.enums.DiscrepancyType;
 import com.ceams.module.bank.enums.ReconciliationStatus;
 import com.ceams.module.bank.enums.ResolutionStatus;
+import com.ceams.module.bank.enums.TransactionType;
 import com.ceams.module.bank.mapper.BankStatementMapper;
 import com.ceams.module.bank.mapper.GeneralLedgerMapper;
 import com.ceams.module.bank.mapper.ReconciliationResultMapper;
@@ -27,6 +28,7 @@ import com.ceams.module.bank.vo.ReconciliationMatchResultVO;
 import com.ceams.module.bank.vo.ReconciliationResultVO;
 import com.ceams.module.payment.entity.PaymentAccount;
 import com.ceams.module.payment.entity.PaymentTransaction;
+import com.ceams.module.payment.enums.AccountType;
 import com.ceams.module.payment.mapper.PaymentTransactionMapper;
 import com.ceams.module.payment.service.PaymentAccountQueryService;
 import java.math.BigDecimal;
@@ -270,6 +272,9 @@ public class ReconciliationServiceImpl implements ReconciliationService {
             if (transaction.getTransactionDate() == null) {
                 continue;
             }
+            if (!directionMatches(statement.getType(), transaction.getType())) {
+                continue;
+            }
             int dateDiff = daysBetween(bankDate, transaction.getTransactionDate());
             if (dateDiff > days) {
                 continue;
@@ -287,6 +292,9 @@ public class ReconciliationServiceImpl implements ReconciliationService {
         }
         for (GeneralLedger ledger : ledgers) {
             if (ledger.getTransactionTime() == null) {
+                continue;
+            }
+            if (!directionMatches(statement.getType(), ledger.getTransactionType())) {
                 continue;
             }
             int dateDiff = daysBetween(bankDate, ledger.getTransactionTime());
@@ -497,6 +505,10 @@ public class ReconciliationServiceImpl implements ReconciliationService {
             if (!amountEquals(transaction.getAmount(), statement.getAmount())) {
                 continue;
             }
+            // 资金类系统必须校验收支方向，避免「一收一支」被误判为同一笔
+            if (!directionMatches(statement.getType(), transaction.getType())) {
+                continue;
+            }
             int diff =
                     daysBetween(statement.getTransactionDate(), transaction.getTransactionDate());
             if (diff > days) {
@@ -518,6 +530,9 @@ public class ReconciliationServiceImpl implements ReconciliationService {
         }
         for (GeneralLedger ledger : ledgers) {
             if (!amountEquals(ledger.getAmount(), statement.getAmount())) {
+                continue;
+            }
+            if (!directionMatches(statement.getType(), ledger.getTransactionType())) {
                 continue;
             }
             int diff = daysBetween(statement.getTransactionDate(), ledger.getTransactionTime());
@@ -545,6 +560,30 @@ public class ReconciliationServiceImpl implements ReconciliationService {
             return false;
         }
         return a.compareTo(b) == 0;
+    }
+
+    /**
+     * 收支方向一致性：任一侧缺失（历史数据）视为一致以保持兼容；两侧均存在时必须相同。
+     */
+    private boolean directionMatches(TransactionType bankType, TransactionType systemType) {
+        return directionCompatible(
+                bankType == null ? null : bankType.name(),
+                systemType == null ? null : systemType.name());
+    }
+
+    /** 付款交易的收支类型是 {@link AccountType}，与银行流水 {@link TransactionType} 按枚举名比较。 */
+    private boolean directionMatches(TransactionType bankType, AccountType paymentType) {
+        return directionCompatible(
+                bankType == null ? null : bankType.name(),
+                paymentType == null ? null : paymentType.name());
+    }
+
+    /** 名称级方向比较：任一侧为空返回 true（向后兼容），否则要求名称相等。 */
+    private boolean directionCompatible(String bankTypeName, String systemTypeName) {
+        if (bankTypeName == null || systemTypeName == null) {
+            return true;
+        }
+        return bankTypeName.equals(systemTypeName);
     }
 
     private int daysBetween(LocalDateTime bankDate, LocalDateTime systemDate) {

@@ -74,6 +74,21 @@ public class ExpenseBpmCallback implements BpmBizCallback {
         if (target == null) {
             return;
         }
+        ReceiptApprovalStatus current = receipt.getApprovalStatus();
+        if (current == target) {
+            // 重复终态回调：状态已一致，直接忽略，避免无意义写库
+            log.debug("报销单 {} 审批状态已为 {}，忽略重复回调", receipt.getId(), target);
+            return;
+        }
+        if (isTerminal(current)) {
+            // 已定终态不允许被迟到回调覆盖（DRAFT 由撤回派生，不视为终态）
+            log.warn(
+                    "报销单 {} 已是终态 {}，忽略迟到的 {} 回调",
+                    receipt.getId(),
+                    current,
+                    target);
+            return;
+        }
         receipt.setApprovalStatus(target);
         if (target == ReceiptApprovalStatus.REJECTED || target == ReceiptApprovalStatus.CANCELLED) {
             // 清空审批级别快照，避免前端展示过期的审批层级
@@ -81,6 +96,12 @@ public class ExpenseBpmCallback implements BpmBizCallback {
         }
         receiptMapper.updateById(receipt);
         log.info("报销单 {} 审批状态派生为 {}", receipt.getId(), target);
+    }
+
+    private static boolean isTerminal(ReceiptApprovalStatus status) {
+        return status == ReceiptApprovalStatus.APPROVED
+                || status == ReceiptApprovalStatus.REJECTED
+                || status == ReceiptApprovalStatus.CANCELLED;
     }
 
     private Receipt loadReceipt(BpmInstance instance) {
