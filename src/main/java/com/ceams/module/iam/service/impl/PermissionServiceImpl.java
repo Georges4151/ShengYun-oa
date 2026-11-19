@@ -1,6 +1,8 @@
 package com.ceams.module.iam.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.ceams.common.cache.BusinessCache;
+import com.ceams.common.cache.CacheKeys;
 import com.ceams.common.exception.BusinessException;
 import com.ceams.common.exception.ErrorCode;
 import com.ceams.common.security.SecurityUtils;
@@ -15,6 +17,8 @@ import com.ceams.module.iam.mapper.RolePermissionMapper;
 import com.ceams.module.iam.mapper.UserRoleMapper;
 import com.ceams.module.iam.service.PermissionService;
 import com.ceams.module.iam.vo.PermissionVO;
+import com.fasterxml.jackson.core.type.TypeReference;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -35,13 +39,24 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class PermissionServiceImpl implements PermissionService {
 
+    /** 权限树缓存有效期（分钟）。 */
+    private static final Duration TREE_CACHE_TTL = Duration.ofMinutes(30);
+
+    /** 权限树缓存反序列化类型。 */
+    private static final TypeReference<List<PermissionVO>> TREE_TYPE = new TypeReference<>() {};
+
     private final PermissionMapper permissionMapper;
     private final UserRoleMapper userRoleMapper;
     private final RolePermissionMapper rolePermissionMapper;
     private final PermissionConverter permissionConverter;
+    private final BusinessCache businessCache;
 
     @Override
     public List<PermissionVO> tree() {
+        List<PermissionVO> cached = businessCache.get(CacheKeys.PERMISSION_TREE, TREE_TYPE);
+        if (cached != null) {
+            return cached;
+        }
         List<SysPermission> permissions =
                 permissionMapper.selectList(
                         new LambdaQueryWrapper<SysPermission>()
@@ -63,6 +78,7 @@ public class PermissionServiceImpl implements PermissionService {
             }
         }
         sortTree(roots);
+        businessCache.put(CacheKeys.PERMISSION_TREE, roots, TREE_CACHE_TTL);
         return roots;
     }
 
@@ -111,6 +127,7 @@ public class PermissionServiceImpl implements PermissionService {
         }
         SysPermission permission = permissionConverter.toEntity(request);
         permissionMapper.insert(permission);
+        businessCache.evict(CacheKeys.PERMISSION_TREE);
         return String.valueOf(permission.getId());
     }
 
@@ -124,6 +141,7 @@ public class PermissionServiceImpl implements PermissionService {
         }
         permissionConverter.updateEntity(request, permission);
         permissionMapper.updateById(permission);
+        businessCache.evict(CacheKeys.PERMISSION_TREE);
     }
 
     @Override
@@ -140,6 +158,7 @@ public class PermissionServiceImpl implements PermissionService {
         rolePermissionMapper.delete(
                 new LambdaQueryWrapper<RolePermission>().eq(RolePermission::getPermissionId, id));
         permissionMapper.deleteById(id);
+        businessCache.evict(CacheKeys.PERMISSION_TREE);
     }
 
     /** 校验权限编码全局唯一（excludeId 用于更新时排除自身）。 */

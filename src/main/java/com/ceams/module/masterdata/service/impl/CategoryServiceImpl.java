@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.ceams.common.cache.BusinessCache;
+import com.ceams.common.cache.CacheKeys;
 import com.ceams.common.exception.BusinessException;
 import com.ceams.common.exception.ErrorCode;
 import com.ceams.common.response.PageResult;
@@ -18,6 +20,8 @@ import com.ceams.module.masterdata.mapper.MaterialMapper;
 import com.ceams.module.masterdata.service.CategoryService;
 import com.ceams.module.masterdata.util.PageUtil;
 import com.ceams.module.masterdata.vo.CategoryVO;
+import com.fasterxml.jackson.core.type.TypeReference;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -34,19 +38,38 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class CategoryServiceImpl implements CategoryService {
 
+    /** 分类树缓存有效期（分钟）。 */
+    private static final Duration TREE_CACHE_TTL = Duration.ofMinutes(30);
+
+    /** 分类树缓存反序列化类型。 */
+    private static final TypeReference<List<CategoryVO>> TREE_TYPE = new TypeReference<>() {};
+
     private final CategoryMapper categoryMapper;
     private final MaterialMapper materialMapper;
     private final CategoryConverter categoryConverter;
+    private final BusinessCache businessCache;
 
     @Override
     public List<CategoryVO> tree(CategoryType type) {
+        // 未指定类型时结果集不确定，直接查库不缓存
+        String cacheKey = type == null ? null : CacheKeys.categoryTree(type.name());
+        if (cacheKey != null) {
+            List<CategoryVO> cached = businessCache.get(cacheKey, TREE_TYPE);
+            if (cached != null) {
+                return cached;
+            }
+        }
         LambdaQueryWrapper<Category> wrapper = new LambdaQueryWrapper<>();
         if (type != null) {
             wrapper.eq(Category::getType, type);
         }
         wrapper.orderByAsc(Category::getSortOrder).orderByAsc(Category::getId);
         List<Category> categories = categoryMapper.selectList(wrapper);
-        return buildTree(categoryConverter.toVOList(categories));
+        List<CategoryVO> tree = buildTree(categoryConverter.toVOList(categories));
+        if (cacheKey != null) {
+            businessCache.put(cacheKey, tree, TREE_CACHE_TTL);
+        }
+        return tree;
     }
 
     @Override
@@ -94,6 +117,7 @@ public class CategoryServiceImpl implements CategoryService {
         category.setSortOrder(request.getSort() == null ? 0 : request.getSort());
         category.setEnabled(Boolean.TRUE);
         categoryMapper.insert(category);
+        businessCache.evictByPrefix(CacheKeys.CATEGORY_TREE_PREFIX);
         return String.valueOf(category.getId());
     }
 
@@ -139,6 +163,7 @@ public class CategoryServiceImpl implements CategoryService {
                             .eq(Category::getId, id)
                             .set(Category::getParentId, null));
         }
+        businessCache.evictByPrefix(CacheKeys.CATEGORY_TREE_PREFIX);
     }
 
     @Override
@@ -158,6 +183,7 @@ public class CategoryServiceImpl implements CategoryService {
             throw BusinessException.of(ErrorCode.BIZ_REFERENCED, "分类已被材料引用，无法删除");
         }
         categoryMapper.deleteById(id);
+        businessCache.evictByPrefix(CacheKeys.CATEGORY_TREE_PREFIX);
     }
 
     private Category requireCategory(Long id) {

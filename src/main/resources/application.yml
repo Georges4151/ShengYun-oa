@@ -52,6 +52,9 @@ mybatis-plus:
   mapper-locations: classpath*:mapper/**/*.xml
 
 ceams:
+  cache:
+    # 业务缓存总开关（权限树 / 分类树等字典缓存）；关闭后接口自动降级为直查数据库
+    enabled: ${CEAMS_CACHE_ENABLED:true}
   jwt:
     # 生产环境务必通过环境变量覆盖（长度不低于 32 字节以支持 HS256）
     secret: ${JWT_SECRET:ceams-jwt-secret-2026-change-me-in-production-0123456789abcdefABCDEF}
@@ -234,10 +237,13 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,prometheus
   endpoint:
     health:
       show-details: when-authorized
+  metrics:
+    tags:
+      application: ceams
 
 logging:
   level:

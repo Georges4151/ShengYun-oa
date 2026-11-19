@@ -8,6 +8,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.ceams.common.cache.BusinessCache;
 import com.ceams.common.exception.BusinessException;
 import com.ceams.common.exception.ErrorCode;
 import com.ceams.module.iam.converter.PermissionConverter;
@@ -32,6 +33,7 @@ class PermissionServiceImplTest {
     @Mock private UserRoleMapper userRoleMapper;
     @Mock private RolePermissionMapper rolePermissionMapper;
     @Mock private PermissionConverter permissionConverter;
+    @Mock private BusinessCache businessCache;
 
     @InjectMocks private PermissionServiceImpl service;
 

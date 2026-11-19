@@ -46,6 +46,8 @@ public class SecurityConfig {
         "/swagger-ui/**",
         "/swagger-ui.html",
         "/actuator/health",
+        // Prometheus 抓取指标：仅含运行时统计，生产环境须由网关限制为内网访问
+        "/actuator/prometheus",
         "/error"
     };
 

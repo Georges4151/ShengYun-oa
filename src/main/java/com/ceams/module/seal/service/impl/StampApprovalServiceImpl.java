@@ -69,6 +69,17 @@ public class StampApprovalServiceImpl implements StampApprovalService {
         ElectronicSealApplication application = requirePendingApplication(request.getStampId());
         ElectronicSeal seal = requireActiveSeal(application.getSealId());
 
+        // 同一用印申请已存在待审批记录时拒绝重复提交；行锁已在当前事务内串行化并发请求
+        Long pendingCount =
+                stampApprovalMapper.selectCount(
+                        new LambdaQueryWrapper<StampApproval>()
+                                .eq(StampApproval::getStampId, application.getId())
+                                .eq(StampApproval::getStatus, ApprovalStatus.PENDING));
+        if (pendingCount != null && pendingCount > 0) {
+            throw BusinessException.of(
+                    ErrorCode.BIZ_STATE_CONFLICT, "该用印申请已存在待审批记录，请勿重复提交");
+        }
+
         StampApproval approval = new StampApproval();
         approval.setStampId(application.getId());
         approval.setSealId(seal.getId());
@@ -171,8 +182,9 @@ public class StampApprovalServiceImpl implements StampApprovalService {
     }
 
     private ElectronicSealApplication requirePendingApplication(Long applicationId) {
+        // 先对申请行加锁再校验状态，保证同一申请下的待审批记录检查与插入串行执行
         ElectronicSealApplication application =
-                electronicSealApplicationMapper.selectById(applicationId);
+                electronicSealApplicationMapper.selectByIdForUpdate(applicationId);
         if (application == null) {
             throw BusinessException.of(ErrorCode.BIZ_NOT_FOUND, "用印申请不存在");
         }
