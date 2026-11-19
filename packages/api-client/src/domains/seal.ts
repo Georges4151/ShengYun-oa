@@ -26,7 +26,9 @@ import type {
   ElectronicSealStampVO,
   ElectronicSealStampPageQuery,
   ElectronicSealUsageVO,
-  ElectronicSealUsagePageQuery
+  ElectronicSealUsagePageQuery,
+  SealAuthorizationVO,
+  SealAuthorizationCreateRequest
 } from '@ceams/types'
 
 export interface SealApi {
@@ -64,6 +66,13 @@ export interface SealApi {
 
   usagePage(query?: ElectronicSealUsagePageQuery): Promise<PageResult<ElectronicSealUsageVO>>
   usageDetail(id: Id): Promise<ElectronicSealUsageVO>
+
+  /** 查询指定印章的授权列表（SYS_ADMIN / FINANCE） */
+  listSealAuthorizations(sealId: Id): Promise<SealAuthorizationVO[]>
+  /** 新增印章授权（SYS_ADMIN / FINANCE） */
+  createSealAuthorization(body: SealAuthorizationCreateRequest): Promise<Id>
+  /** 撤销印章授权（SYS_ADMIN / FINANCE） */
+  revokeSealAuthorization(id: Id): Promise<void>
 }
 
 export function createSealApi(client: HttpClient): SealApi {
@@ -182,6 +191,18 @@ export function createSealApi(client: HttpClient): SealApi {
     },
     async usageDetail(id) {
       return client.get<ElectronicSealUsageVO>(`/api/v1/seal/usages/${id}`)
+    },
+
+    async listSealAuthorizations(sealId) {
+      return client.get<SealAuthorizationVO[]>('/api/v1/seal/authorizations', {
+        query: { sealId }
+      })
+    },
+    async createSealAuthorization(body) {
+      return client.post<Id>('/api/v1/seal/authorizations', body)
+    },
+    async revokeSealAuthorization(id) {
+      return client.post<void>(`/api/v1/seal/authorizations/${id}/revoke`)
     }
   }
 }

@@ -33,11 +33,35 @@ const stampFormRef = ref<FormInstance>()
 const stampForm = reactive({
   sealId: '',
   applicationId: '',
-  stampPosition: ''
+  stampPosition: '',
+  sealPassword: ''
 })
 const stampRules: FormRules<typeof stampForm> = {
   sealId: [{ required: true, message: '请输入印章 ID', trigger: 'blur' }],
   applicationId: [{ required: true, message: '请输入用印申请 ID', trigger: 'blur' }]
+}
+
+/** 当前印章是否启用密码保护（按印章详情懒加载，仅在启用时展示密码框） */
+const sealPasswordProtected = ref(false)
+const checkedSealId = ref('')
+
+async function refreshSealPasswordState(sealId: string): Promise<void> {
+  const id = sealId.trim()
+  if (!id) {
+    sealPasswordProtected.value = false
+    checkedSealId.value = ''
+    return
+  }
+  if (checkedSealId.value === id) return
+  try {
+    const detail = await ceamsApi.seal.sealDetail(id)
+    checkedSealId.value = id
+    sealPasswordProtected.value = detail.passwordProtected === true
+  } catch {
+    // 印章详情获取失败时不阻断输入，提交时由后端兜底校验
+    checkedSealId.value = ''
+    sealPasswordProtected.value = false
+  }
 }
 
 const pdfFile = ref<File | null>(null)
@@ -97,7 +121,9 @@ function openDetail(row: ElectronicSealStampVO): void {
 }
 
 function openStamp(): void {
-  Object.assign(stampForm, { sealId: '', applicationId: '', stampPosition: '' })
+  Object.assign(stampForm, { sealId: '', applicationId: '', stampPosition: '', sealPassword: '' })
+  sealPasswordProtected.value = false
+  checkedSealId.value = ''
   pdfFile.value = null
   sealImageFile.value = null
   stampResult.value = null
@@ -128,6 +154,12 @@ async function submitStamp(): Promise<void> {
     ElMessage.warning('请选择印章图片')
     return
   }
+  // 提交前确认印章是否启用密码保护；启用时必须输入密码
+  await refreshSealPasswordState(stampForm.sealId)
+  if (sealPasswordProtected.value && !stampForm.sealPassword) {
+    ElMessage.warning('该印章已启用密码保护，请输入印章密码')
+    return
+  }
 
   stamping.value = true
   try {
@@ -138,7 +170,8 @@ async function submitStamp(): Promise<void> {
       applicationId: stampForm.applicationId,
       sourcePdfBase64,
       sealImageBase64,
-      stampPosition: stampForm.stampPosition || null
+      stampPosition: stampForm.stampPosition || null,
+      sealPassword: sealPasswordProtected.value ? stampForm.sealPassword : undefined
     })
     stampResult.value = res
     ElMessage.success('盖章成功（HMAC 自动签名）')
@@ -209,13 +242,26 @@ onMounted(load)
     <el-dialog v-model="stampVisible" title="PDF 盖章" width="600px">
       <el-form ref="stampFormRef" :model="stampForm" :rules="stampRules" label-width="110px">
         <el-form-item label="印章 ID" prop="sealId">
-          <el-input v-model="stampForm.sealId" placeholder="请输入印章 ID" />
+          <el-input
+            v-model="stampForm.sealId"
+            placeholder="请输入印章 ID"
+            @blur="refreshSealPasswordState(stampForm.sealId)"
+          />
         </el-form-item>
         <el-form-item label="用印申请 ID" prop="applicationId">
           <el-input v-model="stampForm.applicationId" placeholder="请输入用印申请 ID" />
         </el-form-item>
         <el-form-item label="盖章位置">
           <el-input v-model="stampForm.stampPosition" placeholder="盖章位置（可选）" />
+        </el-form-item>
+        <el-form-item v-if="sealPasswordProtected" label="印章密码" required>
+          <el-input
+            v-model="stampForm.sealPassword"
+            type="password"
+            show-password
+            autocomplete="off"
+            placeholder="该印章已启用密码保护，请输入印章密码"
+          />
         </el-form-item>
         <el-form-item label="源 PDF 文件" required>
           <div class="file-row">

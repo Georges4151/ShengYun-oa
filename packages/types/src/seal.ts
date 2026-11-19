@@ -47,6 +47,8 @@ export interface ElectronicSealCreateRequest {
   sealFileId?: string | null
   usbDriveId?: string | null
   passwordProtected?: boolean | null
+  /** 印章独立密码：启用密码保护时必填（≥6 位），后端 BCrypt 加密存储 */
+  password?: string | null
 }
 
 export interface ElectronicSealUpdateRequest {
@@ -60,6 +62,31 @@ export interface ElectronicSealUpdateRequest {
   sealFileId?: string | null
   usbDriveId?: string | null
   passwordProtected?: boolean | null
+  /** 印章独立密码：留空表示不修改，非空时重新加密保存 */
+  password?: string | null
+}
+
+// ---------- 印章授权 ----------
+/** 印章级授权：管理员将指定印章在有效期内授权给用户使用（ID 均为字符串，避免雪花 ID 精度丢失） */
+export interface SealAuthorizationVO {
+  id: Id
+  sealId: Id
+  sealName?: string | null
+  userId: Id
+  userName?: string | null
+  startTime: DateTime
+  endTime: DateTime
+  enabled: boolean
+  remark?: string | null
+  createdAt?: DateTime | null
+}
+
+export interface SealAuthorizationCreateRequest {
+  sealId: Id
+  userId: Id
+  startTime: DateTime
+  endTime: DateTime
+  remark?: string | null
 }
 
 // ---------- 用印申请 ----------
@@ -158,6 +185,8 @@ export interface SealStampRequest {
   sourcePdfBase64: string
   sealImageBase64: string
   stampPosition?: string | null
+  /** 印章密码：印章启用密码保护时必填 */
+  sealPassword?: string | null
 }
 
 export interface SealStampResultVO {

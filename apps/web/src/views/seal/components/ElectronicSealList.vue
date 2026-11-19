@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import {
   ElButton,
+  ElCheckbox,
   ElDescriptions,
   ElDescriptionsItem,
   ElDialog,
@@ -19,12 +20,20 @@ import {
 } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { ceamsApi } from '@/services/http'
+import { useAuthStore } from '@/stores/auth'
 import type { ElectronicSealVO, SealStatus, StorageType } from '@ceams/types'
 import { usePage } from '@/composables/usePage'
 import { apiErrorMessage } from '@/utils/error'
 import { sealStatusLabels, storageTypeLabels, toOptions } from '@/utils/labels'
+import SealAuthorizationDialog from './SealAuthorizationDialog.vue'
 
 defineOptions({ name: 'ElectronicSealList' })
+
+const auth = useAuthStore()
+/** 印章授权管理仅系统管理员 / 财务可见（与后端 hasAnyRole 保持一致） */
+const canManageAuthorization = computed(() =>
+  auth.roles.some((role) => role.code === 'SYS_ADMIN' || role.code === 'FINANCE')
+)
 
 const statusOptions = toOptions(sealStatusLabels)
 const storageTypeOptions = toOptions(storageTypeLabels)
@@ -45,13 +54,43 @@ const form = reactive({
   status: 'ACTIVE' as SealStatus,
   storageType: '' as StorageType | '',
   sealCode: '',
-  description: ''
+  description: '',
+  passwordProtected: false,
+  password: ''
 })
 
 const rules: FormRules<typeof form> = {
   sealName: [{ required: true, message: '请输入印章名称', trigger: 'blur' }],
-  sealType: [{ required: true, message: '请输入印章类型', trigger: 'blur' }]
+  sealType: [{ required: true, message: '请输入印章类型', trigger: 'blur' }],
+  password: [
+    {
+      validator: (_rule, value: string, callback) => {
+        if (!form.passwordProtected) {
+          callback()
+          return
+        }
+        // 编辑时密码留空表示不修改，仅校验非空时的最小长度
+        if (!value) {
+          if (editingId.value) {
+            callback()
+            return
+          }
+          callback(new Error('启用密码保护时必须设置印章密码'))
+          return
+        }
+        if (value.length < 6) {
+          callback(new Error('印章密码长度不能少于 6 位'))
+          return
+        }
+        callback()
+      },
+      trigger: 'blur'
+    }
+  ]
 }
+
+const authorizationVisible = ref(false)
+const authorizationSeal = ref<ElectronicSealVO | null>(null)
 
 async function load(): Promise<void> {
   loading.value = true
@@ -85,7 +124,9 @@ function openCreate(): void {
     status: 'ACTIVE',
     storageType: '',
     sealCode: '',
-    description: ''
+    description: '',
+    passwordProtected: false,
+    password: ''
   })
   dialogVisible.value = true
 }
@@ -98,7 +139,15 @@ function openEdit(row: ElectronicSealVO): void {
   form.storageType = row.storageType ?? ''
   form.sealCode = row.sealCode ?? ''
   form.description = row.description ?? ''
+  form.passwordProtected = row.passwordProtected ?? false
+  // 密码不回显：编辑时始终从空开始，留空表示不修改
+  form.password = ''
   dialogVisible.value = true
+}
+
+function openAuthorization(row: ElectronicSealVO): void {
+  authorizationSeal.value = row
+  authorizationVisible.value = true
 }
 
 function openDetail(row: ElectronicSealVO): void {
@@ -119,7 +168,10 @@ async function submit(): Promise<void> {
         sealCode: form.sealCode || null,
         description: form.description || null,
         status: form.status,
-        storageType: form.storageType || undefined
+        storageType: form.storageType || undefined,
+        passwordProtected: form.passwordProtected,
+        // 留空表示不修改密码
+        password: form.passwordProtected && form.password ? form.password : undefined
       })
       ElMessage.success('更新成功')
     } else {
@@ -128,7 +180,9 @@ async function submit(): Promise<void> {
         sealType: form.sealType,
         sealCode: form.sealCode || null,
         description: form.description || null,
-        storageType: form.storageType || undefined
+        storageType: form.storageType || undefined,
+        passwordProtected: form.passwordProtected,
+        password: form.passwordProtected && form.password ? form.password : undefined
       })
       ElMessage.success('创建成功')
     }
@@ -184,13 +238,28 @@ onMounted(load)
           {{ (row as ElectronicSealVO).storageType ? storageTypeLabels[(row as ElectronicSealVO).storageType!] : '-' }}
         </template>
       </el-table-column>
+      <el-table-column label="密码保护" width="130">
+        <template #default="{ row }">
+          <el-tag v-if="(row as ElectronicSealVO).passwordProtected" size="small" type="warning">已启用密码保护</el-tag>
+          <span v-else>-</span>
+        </template>
+      </el-table-column>
       <el-table-column prop="sealCode" label="印章编码" width="130" />
       <el-table-column prop="usageCount" label="使用次数" width="100" />
       <el-table-column prop="lastUsedTime" label="最近使用时间" width="180" />
-      <el-table-column label="操作" width="200" fixed="right">
+      <el-table-column label="操作" width="260" fixed="right">
         <template #default="{ row }">
           <el-button link type="primary" size="small" @click="openDetail(row as ElectronicSealVO)">详情</el-button>
           <el-button link type="primary" size="small" @click="openEdit(row as ElectronicSealVO)">编辑</el-button>
+          <el-button
+            v-if="canManageAuthorization"
+            link
+            type="primary"
+            size="small"
+            @click="openAuthorization(row as ElectronicSealVO)"
+          >
+            授权
+          </el-button>
           <el-button link type="danger" size="small" @click="onRemove(row as ElectronicSealVO)">删除</el-button>
         </template>
       </el-table-column>
@@ -228,6 +297,18 @@ onMounted(load)
         <el-form-item label="印章编码">
           <el-input v-model="form.sealCode" placeholder="印章编码（可选）" />
         </el-form-item>
+        <el-form-item label="密码保护">
+          <el-checkbox v-model="form.passwordProtected">启用密码保护</el-checkbox>
+        </el-form-item>
+        <el-form-item v-if="form.passwordProtected" label="印章密码" prop="password">
+          <el-input
+            v-model="form.password"
+            type="password"
+            show-password
+            autocomplete="new-password"
+            :placeholder="editingId ? '留空表示不修改密码（至少 6 位）' : '新建必填，至少 6 位'"
+          />
+        </el-form-item>
         <el-form-item label="描述">
           <el-input v-model="form.description" type="textarea" :rows="2" placeholder="描述（可选）" />
         </el-form-item>
@@ -247,10 +328,15 @@ onMounted(load)
         <el-descriptions-item label="印章编码">{{ detail.sealCode ?? '-' }}</el-descriptions-item>
         <el-descriptions-item label="使用次数">{{ detail.usageCount ?? 0 }}</el-descriptions-item>
         <el-descriptions-item label="最近使用时间">{{ detail.lastUsedTime ?? '-' }}</el-descriptions-item>
-        <el-descriptions-item label="密码保护">{{ detail.passwordProtected ? '是' : '否' }}</el-descriptions-item>
+        <el-descriptions-item label="密码保护">
+          <el-tag v-if="detail.passwordProtected" size="small" type="warning">已启用密码保护</el-tag>
+          <span v-else>未启用</span>
+        </el-descriptions-item>
         <el-descriptions-item label="描述" :span="2">{{ detail.description ?? '-' }}</el-descriptions-item>
       </el-descriptions>
     </el-dialog>
+
+    <SealAuthorizationDialog v-model="authorizationVisible" :seal="authorizationSeal" />
   </div>
 </template>
 
