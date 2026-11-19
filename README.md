@@ -82,7 +82,7 @@
 
 ## 五、快速开始
 
-详细步骤见 [docs/STARTUP_GUIDE.md](docs/STARTUP_GUIDE.md)，核心命令如下。
+详细步骤见 [docs/STARTUP_GUIDE.md](docs/STARTUP_GUIDE.md)，功能与操作说明见 [docs/功能介绍与使用手册.md](docs/功能介绍与使用手册.md)，核心命令如下。
 
 ### 1. 后端（Docker，推荐）
 
