@@ -1,281 +1,168 @@
-# 建筑企业账目管理系统
+# CEAMS 建筑企业账目管理系统（V2）
 
-## 项目概述
+面向建筑企业的多端一体化业务管理系统，覆盖项目、材料、分包、账目、报销、银行流水、印章、文档、人事行政、流程审批与经营报表等场景。
 
-建筑企业账目管理系统是一个基于Java开发的Windows桌面应用，专为建筑企业设计，用于管理项目、材料、分包商、账目和票据等核心业务。系统集成了OCR票据识别功能，支持报表生成和数据库备份，提供了完整的用户认证和授权机制。
+后端为 Spring Boot 单体服务，前端为 pnpm monorepo，同一套接口契约同时驱动 Web、桌面端（Electron）与微信小程序。
 
-## 技术栈
+> 仓库旧版 README 描述的是已下线的 JavaFX 1.0 桌面版，1.0 已弃用并归档在 `master` 基线提交中；当前 `dev` 分支为 V2 全量实现。
 
-### 后端技术
-- Java 17
-- Spring Boot 3.2.2
-- MyBatis-Plus 3.5.5
-- MySQL 8.0+
-- Spring Security
+---
 
-### 前端技术
-- JavaFX 17.0.10
-
-### 其他技术
-- JasperReports 6.19.1 (报表生成)
-- Tesseract OCR 5.8.0 (票据识别)
-- Lombok (减少样板代码)
-- BCrypt (密码加密)
-
-## 功能模块
-
-### 1. 项目管理
-- 项目信息录入、编辑、删除
-- 项目进度跟踪
-- 项目变更管理
-
-### 2. 材料管理
-- 材料信息管理
-- 材料采购记录
-- 材料库存管理
-
-### 3. 分包管理
-- 分包商信息管理
-- 分包合同管理
-- 进度款支付管理
-
-### 4. 账目管理
-- 收支记录管理
-- 账目分类管理
-- 账目统计分析
-
-### 5. 票据管理
-- 票据上传和存储
-- OCR票据识别
-- 票据核查和验证
-
-### 6. 报表生成
-- 财务报表
-- 项目成本报表
-- 材料使用报表
-
-### 7. 系统管理
-- 用户管理
-- 权限管理
-- 操作日志
-- 数据库备份和恢复
-
-## 安装步骤
-
-### 1. 环境准备
-- JDK 17 或更高版本
-- MySQL 8.0 或更高版本
-- Maven 3.6 或更高版本
-
-### 2. 数据库配置
-1. 创建数据库：
-   ```sql
-   CREATE DATABASE ceams DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-   ```
-
-2. 创建数据库用户：
-   ```sql
-   CREATE USER 'ceams_user'@'localhost' IDENTIFIED BY 'ceams_password';
-   GRANT ALL PRIVILEGES ON ceams.* TO 'ceams_user'@'localhost';
-   FLUSH PRIVILEGES;
-   ```
-
-3. 执行数据库脚本：
-   ```sql
-   SOURCE database.sql;
-   ```
-
-### 3. 项目配置
-1. 修改 `src/main/resources/application.properties` 文件，配置数据库连接：
-   ```properties
-   spring.datasource.url=jdbc:mysql://localhost:3306/ceams?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8
-   spring.datasource.username=ceams_user
-   spring.datasource.password=ceams_password
-   ```
-
-2. 配置其他参数（可选）：
-   ```properties
-   # 备份配置
-   ceams.backup.path=backup
-   ceams.backup.keep-days=30
-   
-   # OCR配置
-   ceams.ocr.data-path=tessdata
-   ceams.ocr.language=chi_sim
-   ```
-
-### 4. 项目构建
-```bash
-mvn clean package
-```
-
-## 使用说明
-
-### 1. 启动应用
-
-#### 方式一：使用Maven运行
-```bash
-mvn javafx:run
-```
-
-#### 方式二：使用JAR文件运行
-```bash
-java -jar target/ceams-1.0-SNAPSHOT.jar
-```
-
-### 2. 登录系统
-- 默认用户名：admin
-- 默认密码：admin123
-
-### 3. 主要功能使用
-
-#### 项目管理
-1. 点击左侧菜单的"项目管理"
-2. 点击"新增"按钮添加新项目
-3. 填写项目信息，点击"保存"
-4. 可以在列表中编辑或删除项目
-
-#### 材料管理
-1. 点击左侧菜单的"材料管理"
-2. 点击"新增"按钮添加新材料
-3. 填写材料信息，点击"保存"
-4. 可以在列表中编辑或删除材料
-
-#### 分包管理
-1. 点击左侧菜单的"分包管理"
-2. 点击"新增"按钮添加新分包商
-3. 填写分包商信息，点击"保存"
-4. 可以在列表中编辑或删除分包商
-
-#### 账目管理
-1. 点击左侧菜单的"账目管理"
-2. 点击"新增"按钮添加新账目记录
-3. 填写账目信息，点击"保存"
-4. 可以在列表中查看、编辑或删除账目记录
-
-#### 票据管理
-1. 点击左侧菜单的"票据管理"
-2. 点击"上传"按钮选择票据图片
-3. 系统会自动识别票据信息
-4. 核对识别结果，点击"保存"
-
-#### 报表生成
-1. 点击左侧菜单的"报表管理"
-2. 选择报表类型
-3. 设置报表参数
-4. 点击"生成"按钮生成报表
-
-#### 系统管理
-1. 点击左侧菜单的"系统管理"
-2. 可以进行用户管理、权限管理、日志查看等操作
-3. 点击"备份"按钮可以备份数据库
-
-## 项目结构
+## 一、系统架构
 
 ```
-src/
-├── main/
-│   ├── java/
-│   │   └── com/
-│   │       └── ceams/
-│   │           ├── controller/      # Web控制器
-│   │           ├── dao/             # 数据访问层
-│   │           ├── model/           # 数据模型
-│   │           │   └── entity/      # 实体类
-│   │           ├── security/        # 安全模块
-│   │           ├── service/         # 业务逻辑层
-│   │           ├── ui/              # JavaFX界面
-│   │           │   └── controller/  # JavaFX控制器
-│   │           └── CeamsApplication.java  # Spring Boot启动类
-│   └── resources/                   # 资源文件
-│       ├── fxml/                    # JavaFX FXML文件
-│       ├── mapper/                  # MyBatis映射文件
-│       └── application.properties   # 配置文件
-└── test/                            # 测试代码
+┌──────────────────────┬──────────────────────┬──────────────────────┐
+│  Web (Vue 3 + Vite)  │ Desktop (Electron)   │ 小程序 (uni-app)      │
+└──────────┬───────────┴──────────┬───────────┴──────────┬───────────┘
+           │                      │                      │
+           └────────── 统一 API 客户端 @ceams/api-client ──┘
+                                  │ HTTPS / JWT / HMAC
+                     ┌────────────▼────────────┐
+                     │  Spring Boot 3 后端      │
+                     │  REST /api/v1            │
+                     └───┬────────┬────────┬───┘
+                         │        │        │
+                    ┌────▼───┐ ┌──▼───┐ ┌─▼──────────┐
+                    │ MySQL 8│ │Redis │ │OnlyOffice   │
+                    └────────┘ └──────┘ │Ollama(AI)   │
+                                         └─────────────┘
 ```
 
-## 配置文件说明
+## 二、技术栈
 
-### application.properties
+| 层次 | 技术 |
+|------|------|
+| 后端 | Java 17、Spring Boot 3、Spring Security、MyBatis-Plus、Flyway、Redis |
+| 数据库 | MySQL 8（Flyway 增量迁移，当前至 V47） |
+| 前端 | Vue 3、TypeScript、Vite、Element Plus、Pinia、Vue Router |
+| 桌面端 | Electron + electron-builder（NSIS 安装包） |
+| 小程序 | uni-app（Vue 3）编译微信小程序 |
+| 文档服务 | OnlyOffice Document Server（在线编辑） |
+| AI | Ollama（文本 qwen2.5:7b / 视觉 qwen2.5vl:7b），默认关闭 |
+| 工程化 | pnpm workspace、ESLint、vue-tsc、Docker Compose |
 
-| 配置项 | 说明 | 默认值 |
-|--------|------|--------|
-| spring.datasource.url | 数据库连接URL | jdbc:mysql://localhost:3306/ceams |
-| spring.datasource.username | 数据库用户名 | ceams_user |
-| spring.datasource.password | 数据库密码 | ceams_password |
-| mybatis-plus.mapper-locations | MyBatis映射文件路径 | classpath:mapper/*.xml |
-| spring.security.user.name | 默认管理员用户名 | admin |
-| spring.security.user.password | 默认管理员密码 | admin123 |
-| ceams.backup.path | 备份文件存储路径 | backup |
-| ceams.backup.keep-days | 备份文件保留天数 | 30 |
-| ceams.ocr.data-path | OCR数据文件路径 | tessdata |
-| ceams.ocr.language | OCR识别语言 | chi_sim |
-| ceams.receipt.path | 票据存储路径 | receipts |
+## 三、目录结构
 
-## 开发说明
+```
+.
+├── src/                      # 后端 Spring Boot 源码
+│   ├── main/java/com/ceams/
+│   │   ├── common/           # 统一响应、异常、安全、审计
+│   │   └── module/           # iam / project / masterdata / expense / payment /
+│   │                         # bank / seal / doc / bpm / hr / admin / report / ai
+│   ├── main/resources/
+│   │   ├── db/migration/     # Flyway 迁移脚本 V1～V47
+│   │   └── application.yml   # 统一配置（环境变量注入）
+│   └── test/java/            # 单元测试
+├── apps/
+│   ├── web/                  # Web 端（Vue 3 + Element Plus）
+│   ├── desktop/              # 桌面端（Electron 主进程与打包配置）
+│   └── miniprogram/          # 微信小程序（uni-app）
+├── packages/
+│   ├── api-client/           # 三端共用 HTTP 客户端与域接口
+│   ├── types/                # 共享 TS 类型与错误码
+│   ├── ui-web/               # Web 通用组件
+│   └── utils/                # 加密、签名、格式化等工具
+├── deploy/                   # 生产部署（Dockerfile + compose，端口 8080）
+├── docs/                     # 设计文档、OpenAPI 契约、启动指南
+├── scripts/                  # 备份脚本、种子数据
+└── docker-compose.yml        # 本地开发编排（端口 9095，复用 ceams-mysql/redis）
+```
 
-### 代码规范
-- 遵循Java编码规范
-- 使用Lombok减少样板代码
-- 服务层接口和实现分离
-- 控制器使用RESTful风格
+## 四、功能模块
 
-### 数据库设计
-- 采用三范式设计
-- 表名使用小写字母，单词之间用下划线分隔
-- 主键使用自增ID
-- 外键约束确保数据完整性
+- **基础平台**：JWT 双令牌（访问令牌 + 一次性刷新令牌）、RBAC 权限、设备绑定与 HMAC 签名、操作审计。
+- **项目与主数据**：项目台账、进度款、变更申请、分包商与分包合同、结算凭证、材料、设备租赁、供应商与分类。
+- **资金与账目**：收支账目、报销（含票据上传与 AI 识别）、银行流水导入与对账匹配、应收应付。
+- **印章管理**：印章台账 → 用印申请 → 审批 → PDF 盖章 → 使用审计闭环，高危接口强制签名校验。
+- **文档中心**：目录权限、版本管理、OnlyOffice 在线编辑、正文抽取与分块索引、知识库 RAG 检索。
+- **流程审批**：BPM 模板与版本、节点流转、待办/已办、审批留痕。
+- **人事行政**：员工档案、考勤、请假、绩效、合同台账、工资条、报修、车辆、资产、访客。
+- **报表与集成**：经营指标、Excel 导出（签名临时下载链接）、通知中心、企业微信推送、AI 日报与只读查询工具。
 
-### 安全设计
-- 密码使用BCrypt加密存储
-- 所有敏感操作记录日志
-- 基于角色的访问控制
+## 五、快速开始
 
-## 部署说明
+详细步骤见 [docs/STARTUP_GUIDE.md](docs/STARTUP_GUIDE.md)，核心命令如下。
 
-### 开发环境部署
-1. 克隆代码到本地
-2. 配置数据库
-3. 使用IDE运行CeamsApplication.java
+### 1. 后端（Docker，推荐）
 
-### 生产环境部署
-1. 构建JAR文件：`mvn clean package`
-2. 将JAR文件复制到服务器
-3. 创建启动脚本：
-   ```bash
-   #!/bin/bash
-   java -jar ceams-1.0-SNAPSHOT.jar
-   ```
-4. 配置系统服务（可选）
-5. 启动应用
+```powershell
+docker network create ceams-net
+docker network connect ceams-net ceams-mysql
+docker network connect ceams-net ceams-redis
+docker compose up -d --build
+curl http://localhost:9095/actuator/health   # {"status":"UP"}
+```
 
-## 注意事项
+### 2. Web 端
 
-1. 首次运行前请确保已正确配置数据库连接
-2. OCR功能需要下载对应的语言数据包
-3. 建议定期备份数据库
-4. 生产环境中请修改默认管理员密码
-5. 确保服务器有足够的磁盘空间存储票据和备份文件
+```powershell
+pnpm install
+pnpm dev                                     # http://localhost:5173
+```
 
-## 更新日志
+### 3. 小程序
 
-### 版本 1.0.0 (2026-01-22)
-- 初始版本发布
-- 实现所有核心功能模块
-- 支持OCR票据识别
-- 支持报表生成
-- 支持数据库备份和恢复
+```powershell
+pnpm --filter @ceams/miniprogram dev:mp-weixin
+# 微信开发者工具打开 apps/miniprogram/dist/dev/mp-weixin，勾选「不校验合法域名」
+```
 
-## 许可证
+### 4. 桌面端
 
-MIT License
+```powershell
+pnpm --filter @ceams/desktop start           # 开发调试
+pnpm --filter @ceams/desktop dist            # 打包 NSIS 安装包
+```
 
-## 联系方式
+### 端口约定（本地开发）
 
-- 开发团队：建筑企业管理系统开发组
-- 联系邮箱：support@ceams.com
-- 技术支持：010-12345678
+| 服务 | 端口 |
+|------|------|
+| 后端 API | 9095 |
+| Web 前端 | 5173 |
+| MySQL | 13306（宿主）→ 3306（容器） |
+| Redis | 6379 |
+| OnlyOffice | 8081 |
+| Ollama | 11434（仅回环） |
 
-## 致谢
+默认账号：`admin / admin123`；新建用户未指定密码时默认 `123456`。
 
-感谢所有为项目做出贡献的开发者和测试人员！
+## 六、生产部署
+
+生产环境使用 [deploy/docker-compose.yml](deploy/docker-compose.yml)（端口 8080），敏感配置通过 `.env` 注入（`MYSQL_ROOT_PASSWORD`、`REDIS_PASSWORD`、`JWT_SECRET`、`CEAMS_SENSITIVE_KEY`、`EXPORT_SECRET`），详见 [deploy/README.md](deploy/README.md)。
+
+> 根目录 compose 仅用于本地开发，切勿用于生产；两者不可混用。
+
+## 七、数据库与配置
+
+- 数据库结构由 Flyway 管理，启动时自动执行 `src/main/resources/db/migration` 下的增量脚本，**禁止修改已执行的历史脚本**，变更请新增 `V{n}__xxx.sql`。
+- 所有敏感配置（JWT 密钥、AES 密钥、导出签名密钥）必须通过环境变量注入，仓库内仅有开发占位值。
+- AI 能力由 `AI_ENABLED` 控制，默认关闭；启用前需拉取 Ollama 模型。
+
+## 八、分支与协作
+
+| 分支 | 用途 |
+|------|------|
+| `master` | 稳定分支，仅接受来自 `dev` 的 PR 合并 |
+| `dev` | 日常集成分支，功能开发与联调提交至此 |
+
+提交信息格式：`[类型] 模块/范围: 简短描述`，类型取 `feat / fix / docs / style / refactor / test / chore`。
+
+常规流程：在 `dev` 开发 → 推送 `origin dev` → 创建 `dev → master` 的 PR → 评审通过后合并。
+
+## 九、测试与校验
+
+```powershell
+pnpm -r --if-present typecheck     # 全端 TS 类型检查
+pnpm lint                          # ESLint
+mvn test                           # 后端单元测试
+```
+
+## 十、安全约定
+
+- 文件上传强制扩展名白名单、大小限制与路径穿越防护。
+- 盖章、用印等高危接口强制 HMAC 签名（`X-Sign` / `X-Timestamp` / `X-Nonce`，±5 分钟 + nonce 防重放）。
+- 导出与盖章文件下载使用限时签名 URL，默认 5 分钟有效。
+- 敏感字段（金额等）数据库加密存储，报表统计必须在 Java 层解密后汇总。
+- 知识库检索先做权限过滤再送入模型上下文，AI 回答必须附带来源引用。
