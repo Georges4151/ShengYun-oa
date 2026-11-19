@@ -50,6 +50,7 @@ function vehicleTagType(status: VehicleStatus): 'success' | 'warning' | 'info' {
     case 'IDLE':
       return 'success'
     case 'USING':
+    case 'MAINTENANCE':
       return 'warning'
     default:
       return 'info'
@@ -58,9 +59,10 @@ function vehicleTagType(status: VehicleStatus): 'success' | 'warning' | 'info' {
 
 function applyTagType(status: VehicleApplyStatus): 'success' | 'warning' | 'info' | 'danger' {
   switch (status) {
-    case 'APPROVED':
+    case 'APPROVING':
     case 'USING':
       return 'warning'
+    case 'APPROVED':
     case 'RETURNED':
       return 'success'
     case 'REJECTED':
@@ -405,10 +407,15 @@ onMounted(() => {
 </script>
 
 <template>
-  <div>
-    <!-- 到期预警 -->
-    <div class="section">
-      <div class="section-title">保险 / 年检到期预警</div>
+  <div class="vehicle-panel">
+    <!-- 到期预警卡片 -->
+    <div class="data-card panel-card">
+      <div class="card-header">
+        <div class="card-heading">
+          <span class="card-title">保险 / 年检到期预警</span>
+          <span class="card-count">共 {{ alerts.length }} 辆</span>
+        </div>
+      </div>
       <el-table v-if="alerts.length > 0" v-loading="alertsLoading" :data="alerts" border size="small">
         <el-table-column prop="plateNo" label="车牌号" width="130" />
         <el-table-column prop="brandModel" label="品牌车型" min-width="140">
@@ -438,30 +445,37 @@ onMounted(() => {
       <el-alert v-else title="当前没有临近到期的保险或年检" type="success" :closable="false" show-icon />
     </div>
 
-    <!-- 车辆列表 -->
-    <div class="section">
-      <div class="section-title">车辆台账</div>
-      <div class="toolbar">
-        <el-input
-          v-model="query.keyword"
-          placeholder="车牌号 / 品牌车型"
-          clearable
-          style="width: 220px"
-          @keyup.enter="onSearch"
+    <!-- 车辆筛选区 -->
+    <div class="filter-bar">
+      <el-input
+        v-model="query.keyword"
+        placeholder="车牌号 / 品牌车型"
+        clearable
+        style="width: 220px"
+        @keyup.enter="onSearch"
+      />
+      <el-select v-model="query.status" placeholder="车辆状态" clearable style="width: 140px">
+        <el-option
+          v-for="opt in statusOptions"
+          :key="opt.value"
+          :label="opt.label"
+          :value="opt.value"
         />
-        <el-select v-model="query.status" placeholder="车辆状态" clearable style="width: 140px">
-          <el-option
-            v-for="opt in statusOptions"
-            :key="opt.value"
-            :label="opt.label"
-            :value="opt.value"
-          />
-        </el-select>
+      </el-select>
+      <div class="filter-actions">
         <el-button type="primary" @click="onSearch">查询</el-button>
-        <template v-if="canManage">
-          <el-button @click="openCreate">新增车辆</el-button>
-          <el-button @click="openApply">用车申请</el-button>
-        </template>
+        <el-button v-if="canManage" @click="openApply">用车申请</el-button>
+      </div>
+    </div>
+
+    <!-- 车辆台账卡片 -->
+    <div class="data-card panel-card">
+      <div class="card-header">
+        <div class="card-heading">
+          <span class="card-title">车辆台账</span>
+          <span class="card-count">共 {{ total }} 辆</span>
+        </div>
+        <el-button v-if="canManage" type="primary" @click="openCreate">新增车辆</el-button>
       </div>
 
       <el-table v-loading="loading" :data="list" border>
@@ -500,6 +514,7 @@ onMounted(() => {
         </el-table-column>
       </el-table>
 
+      <!-- 分页右对齐，距表 16px -->
       <el-pagination
         v-model:current-page="page"
         v-model:page-size="size"
@@ -512,9 +527,14 @@ onMounted(() => {
       />
     </div>
 
-    <!-- 我的用车 -->
-    <div class="section">
-      <div class="section-title">我的用车</div>
+    <!-- 我的用车卡片 -->
+    <div class="data-card panel-card">
+      <div class="card-header">
+        <div class="card-heading">
+          <span class="card-title">我的用车</span>
+          <span class="card-count">共 {{ myApplies.length }} 条</span>
+        </div>
+      </div>
       <el-table v-loading="myLoading" :data="myApplies" border>
         <el-table-column prop="vehiclePlateNo" label="车牌号" width="120" />
         <el-table-column prop="purpose" label="用车事由" min-width="140">
@@ -565,7 +585,12 @@ onMounted(() => {
     </div>
 
     <!-- 新建 / 编辑车辆 -->
-    <el-dialog v-model="formVisible" :title="editingId ? '编辑车辆' : '新增车辆'" width="560px">
+    <el-dialog
+      v-model="formVisible"
+      class="admin-dialog"
+      :title="editingId ? '编辑车辆' : '新增车辆'"
+      width="560px"
+    >
       <el-form ref="formRef" :model="form" :rules="formRules" label-width="100px">
         <el-form-item label="车牌号" prop="plateNo">
           <el-input v-model="form.plateNo" :disabled="!!editingId" placeholder="请输入车牌号" />
@@ -611,7 +636,7 @@ onMounted(() => {
     </el-dialog>
 
     <!-- 用车申请 -->
-    <el-dialog v-model="applyVisible" title="用车申请" width="560px">
+    <el-dialog v-model="applyVisible" class="admin-dialog" title="用车申请" width="560px">
       <el-form ref="applyFormRef" :model="applyForm" :rules="applyRules" label-width="100px">
         <el-form-item label="车辆" prop="vehicleId">
           <el-select v-model="applyForm.vehicleId" filterable placeholder="请选择空闲车辆" style="width: 100%">
@@ -653,7 +678,7 @@ onMounted(() => {
     </el-dialog>
 
     <!-- 还车 -->
-    <el-dialog v-model="returnVisible" title="还车登记" width="480px">
+    <el-dialog v-model="returnVisible" class="admin-dialog" title="还车登记" width="480px">
       <el-form ref="returnFormRef" :model="returnForm" :rules="returnRules" label-width="100px">
         <el-form-item label="车辆">
           <span>{{ returnApply?.vehiclePlateNo ?? '-' }}</span>
@@ -677,7 +702,7 @@ onMounted(() => {
     </el-dialog>
 
     <!-- 费用登记 -->
-    <el-dialog v-model="expenseVisible" title="车辆费用登记" width="520px">
+    <el-dialog v-model="expenseVisible" class="admin-dialog" title="车辆费用登记" width="520px">
       <el-form :model="expenseForm" label-width="100px">
         <el-form-item label="车辆">
           <span>{{ expenseVehicle?.plateNo ?? '-' }}</span>
@@ -717,7 +742,7 @@ onMounted(() => {
     </el-dialog>
 
     <!-- 费用明细 -->
-    <el-dialog v-model="expenseListVisible" title="车辆费用明细" width="720px">
+    <el-dialog v-model="expenseListVisible" class="admin-dialog" title="车辆费用明细" width="720px">
       <el-table v-loading="expenseLoading" :data="expenses" border size="small">
         <el-table-column label="费用类型" width="120">
           <template #default="{ row }">
@@ -742,30 +767,87 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.section {
-  margin-bottom: 24px;
-}
-.section-title {
-  margin-bottom: 10px;
-  font-size: 15px;
-  font-weight: 600;
-  color: #111827;
-}
-.toolbar {
+/* 模块容器：各卡片之间保持 16px 间距 */
+.vehicle-panel {
   display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
+  flex-direction: column;
+  gap: var(--ceams-space-4);
 }
+
+/* 筛选卡片：16px 20px 内边距，控件 12px 间距 */
+.filter-bar {
+  padding: 16px 20px;
+  margin-bottom: 0;
+  gap: var(--ceams-space-3);
+}
+
+.filter-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--ceams-space-3);
+  margin-left: auto;
+}
+
+/* 列表卡片：20px 内边距 */
+.panel-card {
+  padding: var(--ceams-space-5);
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ceams-space-3);
+  margin-bottom: var(--ceams-space-4);
+}
+
+.card-heading {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ceams-space-2);
+  min-width: 0;
+}
+
+.card-title {
+  font-size: var(--ceams-font-size-md);
+  font-weight: 600;
+  color: var(--ceams-text-primary);
+}
+
+.card-count {
+  font-size: var(--ceams-font-size-sm);
+  color: var(--ceams-text-secondary);
+}
+
+/* 分页右对齐，距表 16px */
 .pagination {
-  margin-top: 12px;
+  margin-top: var(--ceams-space-4);
   justify-content: flex-end;
 }
+
+/* 空态居中灰色、40px 留白 */
+.panel-card :deep(.el-table__empty-text) {
+  color: var(--ceams-text-placeholder);
+}
+
+.panel-card :deep(.el-table__empty-block) {
+  padding: var(--ceams-space-10) 0;
+  min-height: 0;
+}
+
+/* 到期提醒使用语义功能色 */
 .remain-danger {
-  color: #dc2626;
+  color: var(--ceams-color-danger);
   font-weight: 600;
 }
+
 .remain-warning {
-  color: #d97706;
+  color: var(--ceams-color-warning);
   font-weight: 600;
+}
+
+/* 弹窗内容 20px 24px */
+:global(.admin-dialog .el-dialog__body) {
+  padding: 20px 24px;
 }
 </style>

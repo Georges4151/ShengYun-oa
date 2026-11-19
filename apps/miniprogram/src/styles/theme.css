@@ -12,6 +12,12 @@ page {
   --ceams-color-primary-tint: #eff6ff;
   --ceams-color-primary-tint-strong: #dbeafe;
 
+  /* ---------------- 品牌渐变 ---------------- */
+  /* 主品牌渐变：135deg 主色过渡到深色，用于页面头部、主视觉块 */
+  --ceams-gradient-brand: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+  /* 柔和品牌渐变：浅蓝过渡到白，用于头部背景、卡片高光与占位底 */
+  --ceams-gradient-brand-soft: linear-gradient(135deg, #eff6ff 0%, #ffffff 100%);
+
   /* ---------------- 功能色 ---------------- */
   --ceams-color-success: #16a34a;
   --ceams-color-success-deep: #15803d;
@@ -28,6 +34,36 @@ page {
   --ceams-color-neutral: #6b7280;
   --ceams-color-neutral-deep: #4b5563;
   --ceams-color-neutral-tint: #f3f4f6;
+
+  /* ---------------- 金额涨跌（财务语义：红涨绿跌） ---------------- */
+  --ceams-color-up: #dc2626;
+  --ceams-color-down: #16a34a;
+
+  /* ---------------- 图标色板 ----------------
+   * 低饱和浅底 + 中等饱和度前景，保证白色卡片上的对比度；
+   * 使用方式：底色 var(--ceams-icon-bg-x)，图标与文字 var(--ceams-icon-fg-x)。
+   */
+  /* 蓝：通用 / 项目 / 文档 */
+  --ceams-icon-bg-blue: #eff6ff;
+  --ceams-icon-fg-blue: #2563eb;
+  /* 绿：收入 / 考勤 / 已完成 */
+  --ceams-icon-bg-green: #ecfdf5;
+  --ceams-icon-fg-green: #059669;
+  /* 橙：支出 / 待办 / 提醒 */
+  --ceams-icon-bg-orange: #fff7ed;
+  --ceams-icon-fg-orange: #ea580c;
+  /* 紫：绩效 / 分析 */
+  --ceams-icon-bg-purple: #f5f3ff;
+  --ceams-icon-fg-purple: #7c3aed;
+  /* 青：付款 / 资产 */
+  --ceams-icon-bg-teal: #f0fdfa;
+  --ceams-icon-fg-teal: #0d9488;
+  /* 粉：人事 / 薪资 */
+  --ceams-icon-bg-pink: #fdf2f8;
+  --ceams-icon-fg-pink: #db2777;
+  /* 靛：维修 / 工单 */
+  --ceams-icon-bg-indigo: #eef2ff;
+  --ceams-icon-fg-indigo: #4f46e5;
 
   /* ---------------- 文本层级 ---------------- */
   --ceams-text-primary: #1f2937;
@@ -82,6 +118,7 @@ page {
   --ceams-radius-md: 12rpx;
   --ceams-radius-lg: 16rpx;
   --ceams-radius-xl: 24rpx;
+  --ceams-radius-2xl: 32rpx;
   --ceams-radius-card: 16rpx;
   --ceams-radius-tag: 8rpx;
   --ceams-radius-pill: 999rpx;
@@ -89,6 +126,7 @@ page {
   /* ---------------- 阴影层级 ---------------- */
   --ceams-shadow-card: 0 2rpx 6rpx rgba(15, 23, 42, 0.04), 0 10rpx 24rpx rgba(15, 23, 42, 0.06);
   --ceams-shadow-raised: 0 6rpx 20rpx rgba(15, 23, 42, 0.1);
+  --ceams-shadow-float: 0 8rpx 32rpx rgba(15, 23, 42, 0.12);
   --ceams-shadow-overlay: 0 16rpx 48rpx rgba(15, 23, 42, 0.16);
 
   /* ---------------- 字号层级 ---------------- */

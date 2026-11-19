@@ -2,7 +2,6 @@
 import { computed, onMounted, ref } from 'vue'
 import {
   ElButton,
-  ElCard,
   ElEmpty,
   ElMessage,
   ElMessageBox,
@@ -15,6 +14,7 @@ import {
 } from 'element-plus'
 import { ApiError } from '@ceams/api-client'
 import { formatDateTime } from '@ceams/utils'
+import { PageContainer } from '@ceams/ui-web'
 import type {
   Id,
   WecomMessageStatus,
@@ -233,49 +233,64 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="wecom-view">
-    <el-card class="overview-card" shadow="never">
-      <template #header>
-        <div class="card-header">
-          <span class="card-title">企业微信集成</span>
-          <el-button
-            v-if="canSync"
-            type="primary"
-            :loading="syncing"
-            @click="onTriggerSync"
-          >
-            立即同步
-          </el-button>
+  <PageContainer title="企业微信集成" subtitle="企业微信组织单向同步与应用消息投递监控">
+    <template #extra>
+      <el-button v-if="canSync" type="primary" :loading="syncing" @click="onTriggerSync">
+        立即同步
+      </el-button>
+    </template>
+
+    <div class="wecom-view">
+      <!-- 概览卡片：说明 + 最近一次同步的分组信息 -->
+      <div v-loading="latestLoading" class="data-card overview-card">
+        <div class="card-head">
+          <div class="card-heading">
+            <span class="card-title">集成概览</span>
+          </div>
         </div>
-      </template>
 
-      <p class="overview-desc">
-        企业微信组织单向同步：以 CEAMS 为主数据源，部门与成员从企业微信拉取后写入本系统；
-        本地手工创建的账号不会被同步禁用。应用消息由站内通知入队后异步投递。
-      </p>
+        <p class="overview-desc">
+          企业微信组织单向同步：以 CEAMS 为主数据源，部门与成员从企业微信拉取后写入本系统；
+          本地手工创建的账号不会被同步禁用。应用消息由站内通知入队后异步投递。
+        </p>
 
-      <div v-loading="latestLoading" class="latest-row">
-        <span class="latest-label">最近一次同步：</span>
-        <template v-if="latestLog">
-          <el-tag :type="syncStatusTagType(latestLog.status)" size="small">
-            {{ syncStatusLabels[latestLog.status] ?? latestLog.status }}
-          </el-tag>
-          <span>批次 {{ latestLog.batchNo }}</span>
-          <span>
-            成功 {{ latestLog.successCount }} / 失败 {{ latestLog.failedCount }}（共
-            {{ latestLog.total }}）
-          </span>
-          <span>开始 {{ formatDateTime(latestLog.startedAt) }}</span>
-        </template>
-        <span v-else class="latest-empty">暂无同步记录</span>
+        <div class="info-rows">
+          <div class="info-row">
+            <span class="info-label">最近同步状态</span>
+            <span class="info-value">
+              <el-tag v-if="latestLog" :type="syncStatusTagType(latestLog.status)" size="small">
+                {{ syncStatusLabels[latestLog.status] ?? latestLog.status }}
+              </el-tag>
+              <span v-else class="muted">暂无同步记录</span>
+            </span>
+          </div>
+          <template v-if="latestLog">
+            <div class="info-row">
+              <span class="info-label">批次号</span>
+              <span class="info-value">{{ latestLog.batchNo }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">同步结果</span>
+              <span class="info-value">
+                成功 {{ latestLog.successCount }} / 失败 {{ latestLog.failedCount }}（共 {{ latestLog.total }}）
+              </span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">开始时间</span>
+              <span class="info-value">{{ formatDateTime(latestLog.startedAt) }}</span>
+            </div>
+          </template>
+        </div>
       </div>
-    </el-card>
 
-    <el-card class="table-card" shadow="never">
-      <template #header>
-        <div class="card-header">
-          <span class="card-title">同步批次</span>
-          <div class="header-actions">
+      <!-- 同步批次卡片：标题 + 条数 + 筛选与刷新 -->
+      <div class="data-card table-card">
+        <div class="card-head">
+          <div class="card-heading">
+            <span class="card-title">同步批次</span>
+            <span class="card-sub">共 {{ syncTotal }} 条</span>
+          </div>
+          <div class="card-actions">
             <el-select
               v-model="syncFilter"
               placeholder="全部状态"
@@ -293,175 +308,245 @@ onMounted(() => {
             <el-button @click="loadSyncLogs">刷新</el-button>
           </div>
         </div>
-      </template>
 
-      <el-table v-loading="syncLoading" :data="syncLogs" border size="small">
-        <el-table-column prop="batchNo" label="批次号" min-width="170" show-overflow-tooltip />
-        <el-table-column label="类型" width="80">
-          <template #default="{ row }">
-            {{ syncTypeLabels[(row as WecomSyncLogVO).syncType] ?? (row as WecomSyncLogVO).syncType }}
+        <el-table v-loading="syncLoading" :data="syncLogs" border>
+          <el-table-column prop="batchNo" label="批次号" min-width="170" show-overflow-tooltip />
+          <el-table-column label="类型" width="80">
+            <template #default="{ row }">
+              {{ syncTypeLabels[(row as WecomSyncLogVO).syncType] ?? (row as WecomSyncLogVO).syncType }}
+            </template>
+          </el-table-column>
+          <el-table-column label="总数" width="80" align="right" class-name="number-col">
+            <template #default="{ row }">{{ (row as WecomSyncLogVO).total }}</template>
+          </el-table-column>
+          <el-table-column label="成功" width="80" align="right" class-name="number-col">
+            <template #default="{ row }">{{ (row as WecomSyncLogVO).successCount }}</template>
+          </el-table-column>
+          <el-table-column label="失败" width="80" align="right" class-name="number-col">
+            <template #default="{ row }">{{ (row as WecomSyncLogVO).failedCount }}</template>
+          </el-table-column>
+          <el-table-column label="状态" width="100">
+            <template #default="{ row }">
+              <el-tag :type="syncStatusTagType((row as WecomSyncLogVO).status)" size="small">
+                {{ syncStatusLabels[(row as WecomSyncLogVO).status] ?? (row as WecomSyncLogVO).status }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="开始时间" width="165">
+            <template #default="{ row }">{{ formatDateTime((row as WecomSyncLogVO).startedAt) }}</template>
+          </el-table-column>
+          <el-table-column label="结束时间" width="165">
+            <template #default="{ row }">{{ formatDateTime((row as WecomSyncLogVO).finishedAt) }}</template>
+          </el-table-column>
+          <el-table-column
+            prop="errorMsg"
+            label="错误信息"
+            min-width="180"
+            show-overflow-tooltip
+          >
+            <template #default="{ row }">{{ (row as WecomSyncLogVO).errorMsg ?? '-' }}</template>
+          </el-table-column>
+          <template #empty>
+            <el-empty description="暂无同步批次" />
           </template>
-        </el-table-column>
-        <el-table-column label="总数" width="80">
-          <template #default="{ row }">{{ (row as WecomSyncLogVO).total }}</template>
-        </el-table-column>
-        <el-table-column label="成功" width="80">
-          <template #default="{ row }">{{ (row as WecomSyncLogVO).successCount }}</template>
-        </el-table-column>
-        <el-table-column label="失败" width="80">
-          <template #default="{ row }">{{ (row as WecomSyncLogVO).failedCount }}</template>
-        </el-table-column>
-        <el-table-column label="状态" width="100">
-          <template #default="{ row }">
-            <el-tag :type="syncStatusTagType((row as WecomSyncLogVO).status)" size="small">
-              {{ syncStatusLabels[(row as WecomSyncLogVO).status] ?? (row as WecomSyncLogVO).status }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="开始时间" width="165">
-          <template #default="{ row }">{{ formatDateTime((row as WecomSyncLogVO).startedAt) }}</template>
-        </el-table-column>
-        <el-table-column label="结束时间" width="165">
-          <template #default="{ row }">{{ formatDateTime((row as WecomSyncLogVO).finishedAt) }}</template>
-        </el-table-column>
-        <el-table-column
-          prop="errorMsg"
-          label="错误信息"
-          min-width="180"
-          show-overflow-tooltip
-        >
-          <template #default="{ row }">{{ (row as WecomSyncLogVO).errorMsg ?? '-' }}</template>
-        </el-table-column>
-        <template #empty>
-          <el-empty description="暂无同步批次" />
-        </template>
-      </el-table>
+        </el-table>
 
-      <el-pagination
-        v-model:current-page="syncPage"
-        v-model:page-size="syncSize"
-        :total="syncTotal"
-        :page-sizes="PAGE_SIZES"
-        layout="total, sizes, prev, pager, next"
-        class="pagination"
-        @size-change="onSyncSizeChange"
-        @current-change="loadSyncLogs"
-      />
-    </el-card>
+        <el-pagination
+          v-model:current-page="syncPage"
+          v-model:page-size="syncSize"
+          :total="syncTotal"
+          :page-sizes="PAGE_SIZES"
+          layout="total, sizes, prev, pager, next"
+          class="pagination"
+          @size-change="onSyncSizeChange"
+          @current-change="loadSyncLogs"
+        />
+      </div>
 
-    <el-card class="table-card" shadow="never">
-      <template #header>
-        <div class="card-header">
-          <span class="card-title">应用消息</span>
-          <el-button @click="loadMessages">刷新</el-button>
+      <!-- 应用消息卡片：标题 + 条数 + 刷新 -->
+      <div class="data-card table-card">
+        <div class="card-head">
+          <div class="card-heading">
+            <span class="card-title">应用消息</span>
+            <span class="card-sub">共 {{ messageTotal }} 条</span>
+          </div>
+          <div class="card-actions">
+            <el-button @click="loadMessages">刷新</el-button>
+          </div>
         </div>
-      </template>
 
-      <el-table v-loading="messageLoading" :data="messages" border size="small">
-        <el-table-column prop="targetUserId" label="接收人ID" min-width="150" show-overflow-tooltip />
-        <el-table-column prop="wecomUserid" label="企微 userid" min-width="120" show-overflow-tooltip />
-        <el-table-column prop="msgType" label="类型" width="80" />
-        <el-table-column label="状态" width="90">
-          <template #default="{ row }">
-            <el-tag :type="messageStatusTagType((row as WecomMessageVO).status)" size="small">
-              {{ messageStatusLabels[(row as WecomMessageVO).status] ?? (row as WecomMessageVO).status }}
-            </el-tag>
+        <el-table v-loading="messageLoading" :data="messages" border>
+          <el-table-column prop="targetUserId" label="接收人ID" min-width="150" show-overflow-tooltip />
+          <el-table-column prop="wecomUserid" label="企微 userid" min-width="120" show-overflow-tooltip />
+          <el-table-column prop="msgType" label="类型" width="80" />
+          <el-table-column label="状态" width="90">
+            <template #default="{ row }">
+              <el-tag :type="messageStatusTagType((row as WecomMessageVO).status)" size="small">
+                {{ messageStatusLabels[(row as WecomMessageVO).status] ?? (row as WecomMessageVO).status }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="重试次数" width="90" align="right" class-name="number-col">
+            <template #default="{ row }">{{ (row as WecomMessageVO).retryCount }}</template>
+          </el-table-column>
+          <el-table-column label="下次重试" width="165">
+            <template #default="{ row }">{{ formatDateTime((row as WecomMessageVO).nextRetryAt) }}</template>
+          </el-table-column>
+          <el-table-column label="发送时间" width="165">
+            <template #default="{ row }">{{ formatDateTime((row as WecomMessageVO).sentAt) }}</template>
+          </el-table-column>
+          <el-table-column
+            prop="errorMsg"
+            label="错误信息"
+            min-width="180"
+            show-overflow-tooltip
+          >
+            <template #default="{ row }">{{ (row as WecomMessageVO).errorMsg ?? '-' }}</template>
+          </el-table-column>
+          <el-table-column v-if="canSync" label="操作" width="90" fixed="right">
+            <template #default="{ row }">
+              <el-button
+                v-if="(row as WecomMessageVO).status === 'FAILED'"
+                link
+                type="primary"
+                size="small"
+                :loading="retryingId === (row as WecomMessageVO).id"
+                @click="onRetry(row as WecomMessageVO)"
+              >
+                重投
+              </el-button>
+              <span v-else>-</span>
+            </template>
+          </el-table-column>
+          <template #empty>
+            <el-empty description="暂无应用消息" />
           </template>
-        </el-table-column>
-        <el-table-column label="重试次数" width="90">
-          <template #default="{ row }">{{ (row as WecomMessageVO).retryCount }}</template>
-        </el-table-column>
-        <el-table-column label="下次重试" width="165">
-          <template #default="{ row }">{{ formatDateTime((row as WecomMessageVO).nextRetryAt) }}</template>
-        </el-table-column>
-        <el-table-column label="发送时间" width="165">
-          <template #default="{ row }">{{ formatDateTime((row as WecomMessageVO).sentAt) }}</template>
-        </el-table-column>
-        <el-table-column
-          prop="errorMsg"
-          label="错误信息"
-          min-width="180"
-          show-overflow-tooltip
-        >
-          <template #default="{ row }">{{ (row as WecomMessageVO).errorMsg ?? '-' }}</template>
-        </el-table-column>
-        <el-table-column v-if="canSync" label="操作" width="90" fixed="right">
-          <template #default="{ row }">
-            <el-button
-              v-if="(row as WecomMessageVO).status === 'FAILED'"
-              link
-              type="primary"
-              size="small"
-              :loading="retryingId === (row as WecomMessageVO).id"
-              @click="onRetry(row as WecomMessageVO)"
-            >
-              重投
-            </el-button>
-            <span v-else>-</span>
-          </template>
-        </el-table-column>
-        <template #empty>
-          <el-empty description="暂无应用消息" />
-        </template>
-      </el-table>
+        </el-table>
 
-      <el-pagination
-        v-model:current-page="messagePage"
-        v-model:page-size="messageSize"
-        :total="messageTotal"
-        :page-sizes="PAGE_SIZES"
-        layout="total, sizes, prev, pager, next"
-        class="pagination"
-        @size-change="onMessageSizeChange"
-        @current-change="loadMessages"
-      />
-    </el-card>
-  </div>
+        <el-pagination
+          v-model:current-page="messagePage"
+          v-model:page-size="messageSize"
+          :total="messageTotal"
+          :page-sizes="PAGE_SIZES"
+          layout="total, sizes, prev, pager, next"
+          class="pagination"
+          @size-change="onMessageSizeChange"
+          @current-change="loadMessages"
+        />
+      </div>
+    </div>
+  </PageContainer>
 </template>
 
 <style scoped>
+/* 页面纵向卡片间距 16px */
 .wecom-view {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--ceams-space-4);
 }
-.card-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+
+.overview-card,
+.table-card {
+  padding: 20px;
 }
-.card-title {
-  font-size: 15px;
-  font-weight: 600;
-  color: #303133;
-}
-.header-actions {
-  display: flex;
-  gap: 8px;
-}
-.overview-desc {
-  margin: 0 0 12px;
-  color: #606266;
-  font-size: 13px;
-  line-height: 1.7;
-}
-.latest-row {
+
+/* 卡片头部：标题 + 条数在左，筛选与操作为右 */
+.card-head {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
-  font-size: 13px;
-  color: #606266;
+  justify-content: space-between;
+  gap: var(--ceams-space-3);
+  margin-bottom: var(--ceams-space-4);
 }
-.latest-label {
-  color: #303133;
-  font-weight: 500;
+
+.card-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--ceams-space-2);
 }
-.latest-empty {
-  color: #909399;
+
+.card-title {
+  font-size: var(--ceams-font-size-md);
+  font-weight: 600;
+  color: var(--ceams-text-primary);
 }
+
+.card-sub {
+  font-size: var(--ceams-font-size-xs);
+  color: var(--ceams-text-secondary);
+}
+
+.card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ceams-space-2);
+  margin-left: auto;
+}
+
+.overview-desc {
+  margin: 0 0 var(--ceams-space-4);
+  font-size: var(--ceams-font-size-sm);
+  line-height: 1.7;
+  color: var(--ceams-text-secondary);
+}
+
+/* 配置信息：每行 label / value 两列 */
+.info-rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ceams-space-2);
+}
+
+.info-row {
+  display: flex;
+  align-items: center;
+  gap: var(--ceams-space-4);
+  min-height: 28px;
+  font-size: var(--ceams-font-size-sm);
+}
+
+.info-label {
+  width: 108px;
+  flex-shrink: 0;
+  color: var(--ceams-text-secondary);
+}
+
+.info-value {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--ceams-space-2);
+  min-width: 0;
+  color: var(--ceams-text-primary);
+}
+
+.muted {
+  color: var(--ceams-text-secondary);
+}
+
+/* 数字列右对齐等宽 */
+:deep(.number-col .cell) {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+}
+
+/* 分页右对齐，距表格 16px */
 .pagination {
-  margin-top: 12px;
+  margin-top: var(--ceams-space-4);
   justify-content: flex-end;
+}
+
+/* 空态：居中灰色 + 40px 留白 */
+:deep(.el-table__empty-block) {
+  padding: 40px 0;
+  min-height: 0;
+}
+
+:deep(.el-table__empty-text) {
+  color: var(--ceams-text-secondary);
 }
 </style>

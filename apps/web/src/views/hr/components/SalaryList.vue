@@ -313,11 +313,10 @@ onMounted(() => {
 </script>
 
 <template>
-  <div>
+  <div class="panel-page">
     <!-- 薪资台账 -->
     <div class="section">
-      <div class="section-title">薪资台账</div>
-      <div class="toolbar">
+      <div class="filter-bar">
         <el-select
           v-model="query.employeeId"
           placeholder="员工"
@@ -340,63 +339,73 @@ onMounted(() => {
             :value="opt.value"
           />
         </el-select>
-        <el-button type="primary" @click="onSearch">查询</el-button>
-        <template v-if="canChange">
-          <el-button @click="openCreate">新增档案</el-button>
-          <el-button @click="openChange()">发起变动</el-button>
-        </template>
+        <div class="filter-actions">
+          <el-button type="primary" @click="onSearch">查询</el-button>
+        </div>
       </div>
 
-      <el-table v-loading="loading" :data="list" border>
-        <el-table-column label="员工" min-width="160">
-          <template #default="{ row }">{{ employeeLabel(row as SalaryVO) }}</template>
-        </el-table-column>
-        <el-table-column prop="effectiveDate" label="生效日期" width="120" />
-        <el-table-column label="基本工资" width="120" align="right">
-          <template #default="{ row }">{{ formatMoney((row as SalaryVO).baseSalary) }}</template>
-        </el-table-column>
-        <el-table-column label="岗位工资" width="120" align="right">
-          <template #default="{ row }">{{ formatMoney((row as SalaryVO).postSalary) }}</template>
-        </el-table-column>
-        <el-table-column label="绩效基数" width="120" align="right">
-          <template #default="{ row }">{{ formatMoney((row as SalaryVO).performanceBase) }}</template>
-        </el-table-column>
-        <el-table-column label="固定补贴" width="120" align="right">
-          <template #default="{ row }">{{ formatMoney((row as SalaryVO).allowance) }}</template>
-        </el-table-column>
-        <el-table-column label="状态" width="110">
-          <template #default="{ row }">
-            <el-tag size="small" :type="salaryTagType((row as SalaryVO).status)">
-              {{ hrSalaryStatusLabels[(row as SalaryVO).status] }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="remark" label="备注" min-width="140" />
-        <el-table-column v-if="canChange" label="操作" width="110" fixed="right">
-          <template #default="{ row }">
-            <el-button link type="primary" size="small" @click="openChange(row as SalaryVO)">
-              发起变动
-            </el-button>
-          </template>
-        </el-table-column>
-      </el-table>
+      <div class="data-card">
+        <div class="card-head">
+          <div class="card-heading">
+            <span class="card-title">薪资台账</span>
+            <span class="card-sub">共 {{ total }} 条</span>
+          </div>
+          <div v-if="canChange" class="card-actions">
+            <el-button @click="openCreate">新增档案</el-button>
+            <el-button @click="openChange()">发起变动</el-button>
+          </div>
+        </div>
 
-      <el-pagination
-        v-model:current-page="page"
-        v-model:page-size="size"
-        :total="total"
-        :page-sizes="[10, 20, 50, 100]"
-        layout="total, sizes, prev, pager, next, jumper"
-        class="pagination"
-        @size-change="onSearch"
-        @current-change="load"
-      />
+        <el-table v-loading="loading" :data="list" border>
+          <el-table-column label="员工" min-width="160">
+            <template #default="{ row }">{{ employeeLabel(row as SalaryVO) }}</template>
+          </el-table-column>
+          <el-table-column prop="effectiveDate" label="生效日期" width="120" />
+          <el-table-column label="基本工资" width="120" align="right" class-name="amount-col">
+            <template #default="{ row }">{{ formatMoney((row as SalaryVO).baseSalary) }}</template>
+          </el-table-column>
+          <el-table-column label="岗位工资" width="120" align="right" class-name="amount-col">
+            <template #default="{ row }">{{ formatMoney((row as SalaryVO).postSalary) }}</template>
+          </el-table-column>
+          <el-table-column label="绩效基数" width="120" align="right" class-name="amount-col">
+            <template #default="{ row }">{{ formatMoney((row as SalaryVO).performanceBase) }}</template>
+          </el-table-column>
+          <el-table-column label="固定补贴" width="120" align="right" class-name="amount-col">
+            <template #default="{ row }">{{ formatMoney((row as SalaryVO).allowance) }}</template>
+          </el-table-column>
+          <el-table-column label="状态" width="110">
+            <template #default="{ row }">
+              <el-tag size="small" :type="salaryTagType((row as SalaryVO).status)">
+                {{ hrSalaryStatusLabels[(row as SalaryVO).status] }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="remark" label="备注" min-width="140" />
+          <el-table-column v-if="canChange" label="操作" width="110" fixed="right">
+            <template #default="{ row }">
+              <el-button link type="primary" size="small" @click="openChange(row as SalaryVO)">
+                发起变动
+              </el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+
+        <el-pagination
+          v-model:current-page="page"
+          v-model:page-size="size"
+          :total="total"
+          :page-sizes="[10, 20, 50, 100]"
+          layout="total, sizes, prev, pager, next, jumper"
+          class="pagination"
+          @size-change="onSearch"
+          @current-change="load"
+        />
+      </div>
     </div>
 
     <!-- 薪资变动记录 -->
     <div class="section">
-      <div class="section-title">薪资变动记录</div>
-      <div class="toolbar">
+      <div class="filter-bar">
         <el-select
           v-model="changeQuery.employeeId"
           placeholder="员工"
@@ -427,69 +436,80 @@ onMounted(() => {
             :value="opt.value"
           />
         </el-select>
-        <el-button type="primary" @click="onSearchChanges">查询</el-button>
+        <div class="filter-actions">
+          <el-button type="primary" @click="onSearchChanges">查询</el-button>
+        </div>
       </div>
 
-      <el-table v-loading="changeLoading" :data="changeList" border>
-        <el-table-column label="员工" min-width="160">
-          <template #default="{ row }">{{ employeeLabel(row as SalaryChangeVO) }}</template>
-        </el-table-column>
-        <el-table-column label="变动类型" width="110">
-          <template #default="{ row }">
-            {{ hrSalaryChangeTypeLabels[(row as SalaryChangeVO).changeType] }}
-          </template>
-        </el-table-column>
-        <el-table-column label="状态" width="110">
-          <template #default="{ row }">
-            <el-tag size="small" :type="changeTagType((row as SalaryChangeVO).status)">
-              {{ hrSalaryChangeStatusLabels[(row as SalaryChangeVO).status] }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="applicantName" label="申请人" width="110">
-          <template #default="{ row }">{{ (row as SalaryChangeVO).applicantName ?? '-' }}</template>
-        </el-table-column>
-        <el-table-column label="发起时间" width="180">
-          <template #default="{ row }">{{ formatDateTime((row as SalaryChangeVO).createTime) }}</template>
-        </el-table-column>
-        <el-table-column label="BPM 实例状态" width="200">
-          <template #default="{ row }">
-            <span v-if="(row as SalaryChangeVO).bpmInstanceId">
-              #{{ (row as SalaryChangeVO).bpmInstanceId }} ·
-              {{ hrSalaryChangeStatusLabels[(row as SalaryChangeVO).status] }}
-            </span>
-            <span v-else>-</span>
-          </template>
-        </el-table-column>
-        <el-table-column prop="effectiveDate" label="生效日期" width="120" />
-        <el-table-column label="变更摘要" min-width="240">
-          <template #default="{ row }">
-            <div v-if="(row as SalaryChangeVO).beforeSummary" class="summary-line">
-              变更前：{{ (row as SalaryChangeVO).beforeSummary }}
-            </div>
-            <div v-if="(row as SalaryChangeVO).afterSummary" class="summary-line">
-              变更后：{{ (row as SalaryChangeVO).afterSummary }}
-            </div>
-            <span
-              v-if="!(row as SalaryChangeVO).beforeSummary && !(row as SalaryChangeVO).afterSummary"
-            >
-              -
-            </span>
-          </template>
-        </el-table-column>
-        <el-table-column prop="reason" label="原因" min-width="160" />
-      </el-table>
+      <div class="data-card">
+        <div class="card-head">
+          <div class="card-heading">
+            <span class="card-title">薪资变动记录</span>
+            <span class="card-sub">共 {{ changeTotal }} 条</span>
+          </div>
+        </div>
 
-      <el-pagination
-        v-model:current-page="changePage"
-        v-model:page-size="changeSize"
-        :total="changeTotal"
-        :page-sizes="[10, 20, 50, 100]"
-        layout="total, sizes, prev, pager, next, jumper"
-        class="pagination"
-        @size-change="onSearchChanges"
-        @current-change="loadChanges"
-      />
+        <el-table v-loading="changeLoading" :data="changeList" border>
+          <el-table-column label="员工" min-width="160">
+            <template #default="{ row }">{{ employeeLabel(row as SalaryChangeVO) }}</template>
+          </el-table-column>
+          <el-table-column label="变动类型" width="110">
+            <template #default="{ row }">
+              {{ hrSalaryChangeTypeLabels[(row as SalaryChangeVO).changeType] }}
+            </template>
+          </el-table-column>
+          <el-table-column label="状态" width="110">
+            <template #default="{ row }">
+              <el-tag size="small" :type="changeTagType((row as SalaryChangeVO).status)">
+                {{ hrSalaryChangeStatusLabels[(row as SalaryChangeVO).status] }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="applicantName" label="申请人" width="110">
+            <template #default="{ row }">{{ (row as SalaryChangeVO).applicantName ?? '-' }}</template>
+          </el-table-column>
+          <el-table-column label="发起时间" width="180">
+            <template #default="{ row }">{{ formatDateTime((row as SalaryChangeVO).createTime) }}</template>
+          </el-table-column>
+          <el-table-column label="BPM 实例状态" width="200">
+            <template #default="{ row }">
+              <span v-if="(row as SalaryChangeVO).bpmInstanceId">
+                #{{ (row as SalaryChangeVO).bpmInstanceId }} ·
+                {{ hrSalaryChangeStatusLabels[(row as SalaryChangeVO).status] }}
+              </span>
+              <span v-else>-</span>
+            </template>
+          </el-table-column>
+          <el-table-column prop="effectiveDate" label="生效日期" width="120" />
+          <el-table-column label="变更摘要" min-width="240">
+            <template #default="{ row }">
+              <div v-if="(row as SalaryChangeVO).beforeSummary" class="summary-line">
+                变更前：{{ (row as SalaryChangeVO).beforeSummary }}
+              </div>
+              <div v-if="(row as SalaryChangeVO).afterSummary" class="summary-line">
+                变更后：{{ (row as SalaryChangeVO).afterSummary }}
+              </div>
+              <span
+                v-if="!(row as SalaryChangeVO).beforeSummary && !(row as SalaryChangeVO).afterSummary"
+              >
+                -
+              </span>
+            </template>
+          </el-table-column>
+          <el-table-column prop="reason" label="原因" min-width="160" />
+        </el-table>
+
+        <el-pagination
+          v-model:current-page="changePage"
+          v-model:page-size="changeSize"
+          :total="changeTotal"
+          :page-sizes="[10, 20, 50, 100]"
+          layout="total, sizes, prev, pager, next, jumper"
+          class="pagination"
+          @size-change="onSearchChanges"
+          @current-change="loadChanges"
+        />
+      </div>
     </div>
 
     <!-- 新增薪资档案 -->
@@ -607,27 +627,110 @@ onMounted(() => {
 </template>
 
 <style scoped>
+/* 多个区块之间保持 16px 间距 */
 .section {
-  margin-bottom: 24px;
+  margin-bottom: var(--ceams-space-4, 16px);
 }
-.section-title {
-  margin-bottom: 10px;
-  font-size: 15px;
-  font-weight: 600;
-  color: #111827;
+
+.section:last-child {
+  margin-bottom: 0;
 }
-.toolbar {
+
+/* 筛选卡片：白色圆角、16px 20px 内边距，操作按钮靠右 */
+.filter-bar {
+  padding: 16px 20px;
+}
+
+.filter-actions {
   display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: var(--ceams-space-2, 8px);
+  margin-left: auto;
 }
+
+/* 表格卡片：20px 内边距 */
+.data-card {
+  padding: 20px;
+}
+
+/* 卡片头部：左侧标题与条数，右侧主操作 */
+.card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ceams-space-3, 12px);
+  margin-bottom: var(--ceams-space-4, 16px);
+}
+
+.card-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--ceams-space-2, 8px);
+}
+
+.card-title {
+  font-size: var(--ceams-font-size-md, 16px);
+  font-weight: 600;
+  color: var(--ceams-text-primary);
+}
+
+.card-sub {
+  font-size: var(--ceams-font-size-xs, 12px);
+  color: var(--ceams-text-secondary);
+}
+
+.card-actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--ceams-space-2, 8px);
+}
+
+.card-actions .el-button + .el-button {
+  margin-left: 0;
+}
+
+/* 金额列：右对齐 + 等宽数字，避免金额跳动 */
+:deep(.amount-col .cell) {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+}
+
+/* 分页右对齐，距表格 16px */
 .pagination {
-  margin-top: 12px;
+  margin-top: var(--ceams-space-4, 16px);
   justify-content: flex-end;
 }
+
+/* 空态居中灰色，上下 40px 留白 */
+:deep(.el-table__empty-block) {
+  padding: 40px 0;
+  min-height: 0;
+}
+
+:deep(.el-table__empty-text) {
+  color: var(--ceams-text-secondary);
+}
+
+/* 变更摘要行 */
 .summary-line {
-  color: #4b5563;
-  font-size: 12px;
+  color: var(--ceams-text-secondary);
+  font-size: var(--ceams-font-size-xs, 12px);
   line-height: 18px;
+}
+
+/* 抽屉：标题加粗，内容 20px 24px，底部操作条靠右并带顶部细边框 */
+:deep(.el-drawer__title) {
+  font-weight: 600;
+}
+
+:deep(.el-drawer__body) {
+  padding: 20px 24px;
+}
+
+:deep(.el-drawer__footer) {
+  padding: 12px 24px 18px;
+  border-top: 1px solid var(--ceams-border-divider);
+  text-align: right;
 }
 </style>

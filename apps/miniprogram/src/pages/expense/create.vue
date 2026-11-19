@@ -135,11 +135,11 @@ async function submit(): Promise<void> {
 </script>
 
 <template>
-  <view class="ceams-page">
+  <view class="ceams-page page--with-bar">
     <SchemaForm ref="formRef" v-model="form" :schema="schema" :disabled="submitting" />
 
     <view class="ocr ceams-card">
-      <text class="ocr__title">AI 识别</text>
+      <view class="ceams-section-title ocr__title">AI 识别</view>
       <text class="ocr__hint">上传票据图片后，可自动识别编号、金额、日期、类型与支付方式并回填表单</text>
       <button
         class="ceams-btn ceams-btn--ghost ocr__btn"
@@ -151,8 +151,9 @@ async function submit(): Promise<void> {
       </button>
     </view>
 
-    <view class="submit">
-      <button class="ceams-btn ceams-btn--primary" :disabled="submitting" @click="submit">
+    <!-- 底部提交栏：白底 + 安全区，避免被系统手势条遮挡 -->
+    <view class="submit ceams-safe-bottom">
+      <button class="ceams-btn ceams-btn--primary submit__btn" :disabled="submitting" @click="submit">
         保存为草稿
       </button>
       <text class="submit__hint">保存后可在详情页点击"提交审批"发起流程</text>
@@ -161,19 +162,21 @@ async function submit(): Promise<void> {
 </template>
 
 <style scoped>
+/* 为固定提交栏预留滚动空间 */
+.page--with-bar {
+  padding-bottom: calc(var(--ceams-control-height) + var(--ceams-space-3xl) + var(--ceams-space-lg));
+}
+
 .ocr__title {
-  display: block;
   margin-bottom: var(--ceams-space-xs);
-  color: var(--ceams-text-primary);
-  font-size: var(--ceams-font-size-body);
-  font-weight: var(--ceams-font-weight-semibold);
 }
 
 .ocr__hint {
   display: block;
-  margin-bottom: var(--ceams-space-sm);
+  margin-bottom: var(--ceams-space-md);
   color: var(--ceams-text-secondary);
   font-size: var(--ceams-font-size-mini);
+  line-height: var(--ceams-line-height-normal);
 }
 
 .ocr__btn {
@@ -181,7 +184,22 @@ async function submit(): Promise<void> {
 }
 
 .submit {
-  margin-top: var(--ceams-space-lg);
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  padding-top: var(--ceams-space-sm);
+  padding-left: var(--ceams-space-xl);
+  padding-right: var(--ceams-space-xl);
+  background-color: var(--ceams-bg-card);
+  border-top: var(--ceams-border-width) solid var(--ceams-divider);
+  box-shadow: var(--ceams-shadow-raised);
+  box-sizing: border-box;
+}
+
+.submit__btn {
+  margin: 0;
 }
 
 .submit__hint {

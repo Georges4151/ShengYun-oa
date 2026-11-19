@@ -63,9 +63,11 @@ function statusTagType(status: AssetStatus): 'success' | 'warning' | 'info' | 'd
     case 'BORROWED':
       return 'warning'
     case 'REPAIRING':
+      return 'warning'
+    case 'SCRAPPED':
       return 'info'
     default:
-      return 'danger'
+      return 'info'
   }
 }
 
@@ -350,8 +352,9 @@ onMounted(() => {
 </script>
 
 <template>
-  <div>
-    <div class="toolbar">
+  <div class="asset-panel">
+    <!-- 筛选区：白色圆角卡片，控件 12px 间距，操作按钮靠右 -->
+    <div class="filter-bar">
       <el-input
         v-model="query.keyword"
         placeholder="资产编号 / 名称"
@@ -377,102 +380,120 @@ onMounted(() => {
         placeholder="使用部门"
         style="width: 180px"
       />
-      <el-button type="primary" @click="onSearch">查询</el-button>
-      <template v-if="canManage">
-        <el-button @click="openCreate">新建资产</el-button>
-        <el-button :disabled="selection.length === 0" @click="openInventory">批量盘点</el-button>
-      </template>
+      <div class="filter-actions">
+        <el-button type="primary" @click="onSearch">查询</el-button>
+        <el-button
+          v-if="canManage"
+          :disabled="selection.length === 0"
+          @click="openInventory"
+        >
+          批量盘点
+        </el-button>
+      </div>
     </div>
 
-    <el-table
-      v-loading="loading"
-      :data="list"
-      border
-      @selection-change="onSelectionChange"
-    >
-      <el-table-column v-if="canManage" type="selection" width="46" />
-      <el-table-column prop="assetNo" label="资产编号" width="160" />
-      <el-table-column prop="name" label="资产名称" min-width="150" />
-      <el-table-column label="分类" width="110">
-        <template #default="{ row }">
-          {{ assetCategoryLabels[(row as AssetVO).category ?? 'OTHER'] }}
-        </template>
-      </el-table-column>
-      <el-table-column prop="specification" label="规格型号" min-width="130">
-        <template #default="{ row }">{{ (row as AssetVO).specification ?? '-' }}</template>
-      </el-table-column>
-      <el-table-column label="购置日期" width="120">
-        <template #default="{ row }">{{ (row as AssetVO).purchaseDate ?? '-' }}</template>
-      </el-table-column>
-      <el-table-column label="购置金额" width="120" align="right">
-        <template #default="{ row }">{{ formatMoney((row as AssetVO).purchasePrice) }}</template>
-      </el-table-column>
-      <el-table-column label="存放地点" min-width="130">
-        <template #default="{ row }">{{ (row as AssetVO).location ?? '-' }}</template>
-      </el-table-column>
-      <el-table-column label="保管人" width="110">
-        <template #default="{ row }">{{ keeperName((row as AssetVO).keeperId) }}</template>
-      </el-table-column>
-      <el-table-column label="状态" width="100">
-        <template #default="{ row }">
-          <el-tag size="small" :type="statusTagType((row as AssetVO).status)">
-            {{ assetStatusLabels[(row as AssetVO).status] }}
-          </el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="操作" width="220" fixed="right">
-        <template #default="{ row }">
-          <template v-if="canManage">
-            <el-button link type="primary" size="small" @click="openEdit(row as AssetVO)">
-              编辑
-            </el-button>
-            <el-button
-              v-if="(row as AssetVO).status === 'IN_STOCK'"
-              link
-              type="primary"
-              size="small"
-              @click="openBorrow(row as AssetVO)"
-            >
-              领用
-            </el-button>
-            <el-button
-              v-if="(row as AssetVO).status === 'BORROWED'"
-              link
-              type="warning"
-              size="small"
-              @click="onReturn(row as AssetVO)"
-            >
-              归还
-            </el-button>
-            <el-button
-              v-if="(row as AssetVO).status === 'IN_STOCK'"
-              link
-              type="danger"
-              size="small"
-              @click="onScrap(row as AssetVO)"
-            >
-              报废
-            </el-button>
-          </template>
-          <span v-else>-</span>
-        </template>
-      </el-table-column>
-    </el-table>
+    <!-- 列表卡片：头部标题、条数与主操作 -->
+    <div class="data-card panel-card">
+      <div class="card-header">
+        <div class="card-heading">
+          <span class="card-title">资产台账</span>
+          <span class="card-count">共 {{ total }} 项</span>
+        </div>
+        <el-button v-if="canManage" type="primary" @click="openCreate">新建资产</el-button>
+      </div>
 
-    <el-pagination
-      v-model:current-page="page"
-      v-model:page-size="size"
-      :total="total"
-      :page-sizes="[10, 20, 50, 100]"
-      layout="total, sizes, prev, pager, next, jumper"
-      class="pagination"
-      @size-change="onSearch"
-      @current-change="load"
-    />
+      <el-table
+        v-loading="loading"
+        :data="list"
+        border
+        @selection-change="onSelectionChange"
+      >
+        <el-table-column v-if="canManage" type="selection" width="46" />
+        <el-table-column prop="assetNo" label="资产编号" width="160" />
+        <el-table-column prop="name" label="资产名称" min-width="150" />
+        <el-table-column label="分类" width="110">
+          <template #default="{ row }">
+            {{ assetCategoryLabels[(row as AssetVO).category ?? 'OTHER'] }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="specification" label="规格型号" min-width="130">
+          <template #default="{ row }">{{ (row as AssetVO).specification ?? '-' }}</template>
+        </el-table-column>
+        <el-table-column label="购置日期" width="120">
+          <template #default="{ row }">{{ (row as AssetVO).purchaseDate ?? '-' }}</template>
+        </el-table-column>
+        <el-table-column label="购置金额" width="120" align="right">
+          <template #default="{ row }">{{ formatMoney((row as AssetVO).purchasePrice) }}</template>
+        </el-table-column>
+        <el-table-column label="存放地点" min-width="130">
+          <template #default="{ row }">{{ (row as AssetVO).location ?? '-' }}</template>
+        </el-table-column>
+        <el-table-column label="保管人" width="110">
+          <template #default="{ row }">{{ keeperName((row as AssetVO).keeperId) }}</template>
+        </el-table-column>
+        <el-table-column label="状态" width="100">
+          <template #default="{ row }">
+            <el-tag size="small" :type="statusTagType((row as AssetVO).status)">
+              {{ assetStatusLabels[(row as AssetVO).status] }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="220" fixed="right">
+          <template #default="{ row }">
+            <template v-if="canManage">
+              <el-button link type="primary" size="small" @click="openEdit(row as AssetVO)">
+                编辑
+              </el-button>
+              <el-button
+                v-if="(row as AssetVO).status === 'IN_STOCK'"
+                link
+                type="primary"
+                size="small"
+                @click="openBorrow(row as AssetVO)"
+              >
+                领用
+              </el-button>
+              <el-button
+                v-if="(row as AssetVO).status === 'BORROWED'"
+                link
+                type="warning"
+                size="small"
+                @click="onReturn(row as AssetVO)"
+              >
+                归还
+              </el-button>
+              <el-button
+                v-if="(row as AssetVO).status === 'IN_STOCK'"
+                link
+                type="danger"
+                size="small"
+                @click="onScrap(row as AssetVO)"
+              >
+                报废
+              </el-button>
+            </template>
+            <span v-else>-</span>
+          </template>
+        </el-table-column>
+      </el-table>
+
+      <!-- 分页右对齐，距表 16px -->
+      <el-pagination
+        v-model:current-page="page"
+        v-model:page-size="size"
+        :total="total"
+        :page-sizes="[10, 20, 50, 100]"
+        layout="total, sizes, prev, pager, next, jumper"
+        class="pagination"
+        @size-change="onSearch"
+        @current-change="load"
+      />
+    </div>
 
     <!-- 新建 / 编辑资产 -->
     <el-dialog
       v-model="formVisible"
+      class="admin-dialog"
       :title="editingId ? '编辑资产' : '新建资产'"
       width="620px"
     >
@@ -544,7 +565,7 @@ onMounted(() => {
     </el-dialog>
 
     <!-- 领用申请 -->
-    <el-dialog v-model="borrowVisible" title="资产领用" width="520px">
+    <el-dialog v-model="borrowVisible" class="admin-dialog" title="资产领用" width="520px">
       <el-form ref="borrowFormRef" :model="borrowForm" :rules="borrowRules" label-width="100px">
         <el-form-item label="领用资产">
           <span>{{ borrowAsset?.assetNo }} · {{ borrowAsset?.name }}</span>
@@ -584,7 +605,7 @@ onMounted(() => {
     </el-dialog>
 
     <!-- 批量盘点 -->
-    <el-dialog v-model="inventoryVisible" title="批量盘点" width="760px">
+    <el-dialog v-model="inventoryVisible" class="admin-dialog" title="批量盘点" width="760px">
       <el-table :data="inventoryRows" border size="small">
         <el-table-column prop="assetNo" label="资产编号" width="150" />
         <el-table-column prop="name" label="资产名称" min-width="140" />
@@ -629,13 +650,77 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.toolbar {
+/* 模块容器：筛选区与列表卡片保持 16px 间距 */
+.asset-panel {
   display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
+  flex-direction: column;
+  gap: var(--ceams-space-4);
 }
+
+/* 筛选卡片：16px 20px 内边距，控件 12px 间距 */
+.filter-bar {
+  padding: 16px 20px;
+  margin-bottom: 0;
+  gap: var(--ceams-space-3);
+}
+
+/* 筛选区操作按钮靠右 */
+.filter-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--ceams-space-3);
+  margin-left: auto;
+}
+
+/* 列表卡片：20px 内边距 */
+.panel-card {
+  padding: var(--ceams-space-5);
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ceams-space-3);
+  margin-bottom: var(--ceams-space-4);
+}
+
+.card-heading {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ceams-space-2);
+  min-width: 0;
+}
+
+.card-title {
+  font-size: var(--ceams-font-size-md);
+  font-weight: 600;
+  color: var(--ceams-text-primary);
+}
+
+.card-count {
+  font-size: var(--ceams-font-size-sm);
+  color: var(--ceams-text-secondary);
+}
+
+/* 分页右对齐，距表 16px */
 .pagination {
-  margin-top: 12px;
+  margin-top: var(--ceams-space-4);
   justify-content: flex-end;
+}
+
+/* 空态居中灰色、40px 留白 */
+.panel-card :deep(.el-table__empty-text) {
+  color: var(--ceams-text-placeholder);
+}
+
+.panel-card :deep(.el-table__empty-block) {
+  padding: var(--ceams-space-10) 0;
+  min-height: 0;
+}
+
+/* 弹窗内容 20px 24px（弹层挂载在 body，需全局选择器配合类名） */
+:global(.admin-dialog .el-dialog__body) {
+  padding: 20px 24px;
 }
 </style>

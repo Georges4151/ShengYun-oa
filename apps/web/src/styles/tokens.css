@@ -1,0 +1,89 @@
+/**
+ * CEAMS 设计令牌（Design Tokens）
+ * 纯 CSS 变量，供 Web 端与共享 UI 包统一消费。
+ * 命名规范：--ceams-{类别}-{语义}-{变体}
+ */
+:root {
+  /* ===== 主色体系 ===== */
+  --ceams-color-primary: #2563eb;
+  --ceams-color-primary-dark: #1d4ed8;
+  --ceams-color-primary-light: #eff6ff;
+  --ceams-color-primary-lighter: #dbeafe;
+
+  /* ===== 文字色 ===== */
+  --ceams-text-primary: #1f2937;
+  --ceams-text-secondary: #6b7280;
+  --ceams-text-placeholder: #9ca3af;
+  --ceams-text-inverse: #ffffff;
+
+  /* ===== 背景色 ===== */
+  --ceams-bg-page: #f4f6fa;
+  --ceams-bg-card: #ffffff;
+  --ceams-bg-elevated: #f8fafc;
+
+  /* ===== 边框与分隔线 ===== */
+  --ceams-border-base: #e5e7eb;
+  --ceams-border-strong: #d1d5db;
+  --ceams-border-divider: #eef2f7;
+
+  /* ===== 侧边栏（深色） ===== */
+  --ceams-sidebar-width: 232px;
+  --ceams-sidebar-bg: #1b2536;
+  --ceams-sidebar-bg-sub: #16202e;
+  --ceams-sidebar-hover-bg: #243044;
+  --ceams-sidebar-active-bg: #2563eb;
+  --ceams-sidebar-text: rgba(255, 255, 255, 0.72);
+  --ceams-sidebar-text-active: #ffffff;
+  --ceams-sidebar-border: rgba(255, 255, 255, 0.06);
+
+  /* ===== 顶栏 ===== */
+  --ceams-header-height: 60px;
+
+  /* ===== 圆角 ===== */
+  --ceams-radius-xs: 4px;
+  --ceams-radius-sm: 6px;
+  --ceams-radius-md: 8px;
+  --ceams-radius-lg: 10px;
+  --ceams-radius-xl: 12px;
+  --ceams-radius-2xl: 16px;
+
+  /* ===== 阴影（柔和冷色调） ===== */
+  --ceams-shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04), 0 2px 8px rgba(30, 64, 175, 0.04);
+  --ceams-shadow-raised: 0 4px 12px rgba(15, 23, 42, 0.06), 0 12px 28px rgba(30, 64, 175, 0.06);
+  --ceams-shadow-overlay: 0 16px 40px rgba(15, 23, 42, 0.16), 0 4px 12px rgba(15, 23, 42, 0.08);
+
+  /* ===== 间距刻度 ===== */
+  --ceams-space-1: 4px;
+  --ceams-space-2: 8px;
+  --ceams-space-3: 12px;
+  --ceams-space-4: 16px;
+  --ceams-space-5: 20px;
+  --ceams-space-6: 24px;
+  --ceams-space-8: 32px;
+  --ceams-space-10: 40px;
+
+  /* ===== 字号刻度 ===== */
+  --ceams-font-size-xs: 12px;
+  --ceams-font-size-sm: 13px;
+  --ceams-font-size-base: 14px;
+  --ceams-font-size-md: 16px;
+  --ceams-font-size-lg: 18px;
+  --ceams-font-size-xl: 20px;
+  --ceams-font-size-2xl: 24px;
+  --ceams-font-size-3xl: 28px;
+
+  /* ===== 控件高度 ===== */
+  --ceams-control-height-sm: 32px;
+  --ceams-control-height-md: 36px;
+  --ceams-control-height-lg: 40px;
+
+  /* ===== 功能色 ===== */
+  --ceams-color-success: #16a34a;
+  --ceams-color-success-light: #ecfdf3;
+  --ceams-color-warning: #d97706;
+  --ceams-color-warning-light: #fffbeb;
+  --ceams-color-danger: #dc2626;
+  --ceams-color-danger-light: #fef2f2;
+  --ceams-color-info: #64748b;
+  --ceams-color-info-light: #f1f5f9;
+}

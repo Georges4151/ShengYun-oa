@@ -6,6 +6,7 @@ import {
   ElDescriptions,
   ElDescriptionsItem,
   ElDialog,
+  ElEmpty,
   ElForm,
   ElFormItem,
   ElInput,
@@ -52,6 +53,21 @@ const rules: FormRules<typeof form> = {
   name: [{ required: true, message: '请输入设备名称', trigger: 'blur' }],
   type: [{ required: true, message: '请输入设备类型', trigger: 'blur' }],
   status: [{ required: true, message: '请选择设备状态', trigger: 'change' }]
+}
+
+/** 设备状态标签配色：仅影响展示，不改变状态枚举与文案。 */
+function equipmentTagType(status: EquipmentStatus): 'primary' | 'success' | 'warning' | 'info' {
+  switch (status) {
+    case 'IDLE':
+      return 'success'
+    case 'IN_USE':
+      return 'primary'
+    case 'LEASED':
+    case 'MAINTENANCE':
+      return 'warning'
+    default:
+      return 'info'
+  }
 }
 
 async function load(): Promise<void> {
@@ -153,46 +169,71 @@ onMounted(load)
 
 <template>
   <div>
-    <div class="toolbar">
+    <!-- 筛选卡片：控件 12px 间距，查询按钮靠右 -->
+    <div class="data-card filter-card">
       <el-input v-model="query.keyword" placeholder="关键字（名称/型号）" clearable style="width: 220px" />
       <el-select v-model="query.status" placeholder="设备状态" clearable style="width: 160px">
         <el-option v-for="opt in statusOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
       </el-select>
-      <el-button type="primary" @click="onSearch">查询</el-button>
-      <el-button @click="openCreate">新增设备</el-button>
+      <div class="filter-actions">
+        <el-button type="primary" @click="onSearch">查询</el-button>
+      </div>
     </div>
 
-    <el-table v-loading="loading" :data="list" border>
-      <el-table-column prop="name" label="设备名称" min-width="160" />
-      <el-table-column prop="type" label="类型" width="140" />
-      <el-table-column prop="model" label="型号" width="140" />
-      <el-table-column label="状态" width="120">
-        <template #default="{ row }">
-          <el-tag size="small">{{ equipmentStatusLabels[(row as EquipmentVO).status] }}</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column prop="purchaseDate" label="购置日期" width="120" />
-      <el-table-column prop="purchasePrice" label="购置价格" width="120" />
-      <el-table-column prop="createTime" label="创建时间" width="180" />
-      <el-table-column label="操作" width="200" fixed="right">
-        <template #default="{ row }">
-          <el-button link type="primary" size="small" @click="openDetail(row as EquipmentVO)">详情</el-button>
-          <el-button link type="primary" size="small" @click="openEdit(row as EquipmentVO)">编辑</el-button>
-          <el-button link type="danger" size="small" @click="onRemove(row as EquipmentVO)">删除</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
+    <!-- 表格卡片：头部标题、条数与主操作，表格四周 20px 内边距 -->
+    <div class="data-card table-card">
+      <div class="card-head">
+        <div class="card-heading">
+          <span class="card-title">设备列表</span>
+          <span class="card-sub">共 {{ total }} 条</span>
+        </div>
+        <div class="card-actions">
+          <el-button type="primary" @click="openCreate">新增设备</el-button>
+        </div>
+      </div>
 
-    <el-pagination
-      v-model:current-page="page"
-      v-model:page-size="size"
-      :total="total"
-      :page-sizes="[10, 20, 50, 100]"
-      layout="total, sizes, prev, pager, next, jumper"
-      class="pagination"
-      @size-change="onSearch"
-      @current-change="load"
-    />
+      <el-table v-loading="loading" :data="list" border>
+        <el-table-column prop="name" label="设备名称" min-width="160" />
+        <el-table-column prop="type" label="类型" width="140" />
+        <el-table-column prop="model" label="型号" width="140" />
+        <el-table-column label="状态" width="120">
+          <template #default="{ row }">
+            <el-tag size="small" :type="equipmentTagType((row as EquipmentVO).status)">
+              {{ equipmentStatusLabels[(row as EquipmentVO).status] }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="purchaseDate" label="购置日期" width="120" />
+        <el-table-column label="购置价格" width="120" align="right">
+          <template #default="{ row }">
+            <span v-if="(row as EquipmentVO).purchasePrice" class="amount">{{ (row as EquipmentVO).purchasePrice }}</span>
+            <span v-else>-</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="createTime" label="创建时间" width="180" />
+        <el-table-column label="操作" width="200" fixed="right">
+          <template #default="{ row }">
+            <el-button link type="primary" size="small" @click="openDetail(row as EquipmentVO)">详情</el-button>
+            <el-button link type="primary" size="small" @click="openEdit(row as EquipmentVO)">编辑</el-button>
+            <el-button link type="danger" size="small" @click="onRemove(row as EquipmentVO)">删除</el-button>
+          </template>
+        </el-table-column>
+        <template #empty>
+          <el-empty description="暂无设备数据" />
+        </template>
+      </el-table>
+
+      <el-pagination
+        v-model:current-page="page"
+        v-model:page-size="size"
+        :total="total"
+        :page-sizes="[10, 20, 50, 100]"
+        layout="total, sizes, prev, pager, next, jumper"
+        class="pagination"
+        @size-change="onSearch"
+        @current-change="load"
+      />
+    </div>
 
     <el-dialog v-model="dialogVisible" :title="editingId ? '编辑设备' : '新增设备'" width="520px">
       <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
@@ -238,13 +279,102 @@ onMounted(load)
 </template>
 
 <style scoped>
-.toolbar {
+/* 筛选卡片：控件 12px 间距，查询按钮靠右 */
+.filter-card {
   display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ceams-space-3);
+  padding: 16px 20px;
+  margin-bottom: var(--ceams-space-4);
 }
+
+.filter-actions {
+  display: flex;
+  gap: var(--ceams-space-2);
+  align-items: center;
+  margin-left: auto;
+}
+
+/* 表格卡片：头部标题、条数与主操作，表格四周 20px 内边距 */
+.table-card {
+  padding: 20px;
+}
+
+.card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ceams-space-3);
+  margin-bottom: var(--ceams-space-4);
+}
+
+.card-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--ceams-space-2);
+}
+
+.card-title {
+  font-size: var(--ceams-font-size-md);
+  font-weight: 600;
+  color: var(--ceams-text-primary);
+}
+
+.card-sub {
+  font-size: var(--ceams-font-size-xs);
+  color: var(--ceams-text-secondary);
+}
+
+.card-actions {
+  display: flex;
+  gap: var(--ceams-space-2);
+  align-items: center;
+}
+
+/* 金额列：右对齐 + 等宽数字 */
+.amount {
+  display: inline-block;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+  font-weight: 600;
+  color: var(--ceams-text-primary);
+}
+
+/* 分页右对齐，距表格 16px */
 .pagination {
-  margin-top: 12px;
+  margin-top: var(--ceams-space-4);
   justify-content: flex-end;
+}
+
+/* 空态：居中灰色，上下 40px 留白 */
+:deep(.el-table__empty-block) {
+  padding: 40px 0;
+  min-height: 0;
+}
+
+:deep(.el-table__empty-text) {
+  color: var(--ceams-text-secondary);
+}
+
+:deep(.el-empty) {
+  padding: 0;
+}
+
+/* 弹窗：标题加粗，内容区 20px 24px，底部操作条靠右并带顶部细边框 */
+:deep(.el-dialog__title) {
+  font-weight: 600;
+}
+
+:deep(.el-dialog__body) {
+  padding: 20px 24px;
+}
+
+:deep(.el-dialog__footer) {
+  padding: 12px 24px 18px;
+  border-top: 1px solid var(--ceams-border-divider);
+  text-align: right;
 }
 </style>

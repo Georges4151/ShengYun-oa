@@ -264,11 +264,10 @@ onMounted(() => {
 </script>
 
 <template>
-  <div>
+  <div class="panel-page">
     <!-- 排班管理 -->
     <div class="section">
-      <div class="section-title">排班管理</div>
-      <div class="toolbar">
+      <div class="filter-bar">
         <el-select v-model="scheduleQuery.employeeId" placeholder="员工" clearable filterable style="width: 180px">
           <el-option
             v-for="item in employees"
@@ -284,37 +283,49 @@ onMounted(() => {
           placeholder="月份（默认当月）"
           style="width: 160px"
         />
-        <el-button type="primary" @click="loadSchedules">查询</el-button>
-        <el-button @click="openScheduleCreate">新增排班</el-button>
-        <el-button @click="openBatch">批量排班</el-button>
+        <div class="filter-actions">
+          <el-button type="primary" @click="loadSchedules">查询</el-button>
+        </div>
       </div>
 
-      <el-table v-loading="scheduleLoading" :data="schedules" border>
-        <el-table-column label="员工" width="140">
-          <template #default="{ row }">{{ employeeName((row as ScheduleVO).employeeId) }}</template>
-        </el-table-column>
-        <el-table-column prop="workDate" label="排班日期" width="130" />
-        <el-table-column prop="shiftCode" label="班次编码" width="120" />
-        <el-table-column prop="startTime" label="上班时间" width="110" />
-        <el-table-column prop="endTime" label="下班时间" width="110" />
-        <el-table-column label="类型" width="110">
-          <template #default="{ row }">
-            {{ (row as ScheduleVO).scheduleType ? hrScheduleTypeLabels[(row as ScheduleVO).scheduleType!] : '-' }}
-          </template>
-        </el-table-column>
-        <el-table-column prop="remark" label="备注" min-width="140" />
-        <el-table-column label="操作" width="90" fixed="right">
-          <template #default="{ row }">
-            <el-button link type="primary" size="small" @click="openScheduleEdit(row as ScheduleVO)">编辑</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
+      <div class="data-card">
+        <div class="card-head">
+          <div class="card-heading">
+            <span class="card-title">排班管理</span>
+            <span class="card-sub">共 {{ schedules.length }} 条</span>
+          </div>
+          <div class="card-actions">
+            <el-button @click="openScheduleCreate">新增排班</el-button>
+            <el-button @click="openBatch">批量排班</el-button>
+          </div>
+        </div>
+
+        <el-table v-loading="scheduleLoading" :data="schedules" border>
+          <el-table-column label="员工" width="140">
+            <template #default="{ row }">{{ employeeName((row as ScheduleVO).employeeId) }}</template>
+          </el-table-column>
+          <el-table-column prop="workDate" label="排班日期" width="130" />
+          <el-table-column prop="shiftCode" label="班次编码" width="120" />
+          <el-table-column prop="startTime" label="上班时间" width="110" />
+          <el-table-column prop="endTime" label="下班时间" width="110" />
+          <el-table-column label="类型" width="110">
+            <template #default="{ row }">
+              {{ (row as ScheduleVO).scheduleType ? hrScheduleTypeLabels[(row as ScheduleVO).scheduleType!] : '-' }}
+            </template>
+          </el-table-column>
+          <el-table-column prop="remark" label="备注" min-width="140" />
+          <el-table-column label="操作" width="90" fixed="right">
+            <template #default="{ row }">
+              <el-button link type="primary" size="small" @click="openScheduleEdit(row as ScheduleVO)">编辑</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
     </div>
 
     <!-- 打卡记录 -->
     <div class="section">
-      <div class="section-title">打卡记录</div>
-      <div class="toolbar">
+      <div class="filter-bar">
         <el-select v-model="checkinQuery.employeeId" placeholder="员工" clearable filterable style="width: 180px">
           <el-option
             v-for="item in employees"
@@ -340,56 +351,73 @@ onMounted(() => {
         <el-select v-model="checkinQuery.status" placeholder="打卡状态" clearable style="width: 140px">
           <el-option v-for="opt in checkinStatusOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
         </el-select>
-        <el-button type="primary" @click="onCheckinSearch">查询</el-button>
+        <div class="filter-actions">
+          <el-button type="primary" @click="onCheckinSearch">查询</el-button>
+        </div>
       </div>
 
-      <el-table v-loading="checkinLoading" :data="checkins" border>
-        <el-table-column label="员工" width="140">
-          <template #default="{ row }">{{ employeeName((row as CheckinVO).employeeId) }}</template>
-        </el-table-column>
-        <el-table-column prop="checkinDate" label="打卡日期" width="120" />
-        <el-table-column prop="checkinTime" label="打卡时间" width="170" />
-        <el-table-column label="类型" width="90">
-          <template #default="{ row }">{{ hrCheckinTypeLabels[(row as CheckinVO).checkinType] }}</template>
-        </el-table-column>
-        <el-table-column label="来源" width="110">
-          <template #default="{ row }">
-            {{ (row as CheckinVO).source ? hrCheckinSourceLabels[(row as CheckinVO).source!] : '-' }}
-          </template>
-        </el-table-column>
-        <el-table-column label="状态" width="90">
-          <template #default="{ row }">
-            <el-tag size="small" :type="checkinTagType((row as CheckinVO).status)">
-              {{ hrCheckinStatusLabels[(row as CheckinVO).status] }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="address" label="打卡地址" min-width="160" />
-        <el-table-column prop="remark" label="备注" min-width="120" />
-      </el-table>
+      <div class="data-card">
+        <div class="card-head">
+          <div class="card-heading">
+            <span class="card-title">打卡记录</span>
+            <span class="card-sub">共 {{ total }} 条</span>
+          </div>
+        </div>
 
-      <el-pagination
-        v-model:current-page="page"
-        v-model:page-size="size"
-        :total="total"
-        :page-sizes="[10, 20, 50, 100]"
-        layout="total, sizes, prev, pager, next, jumper"
-        class="pagination"
-        @size-change="onCheckinSearch"
-        @current-change="loadCheckins"
-      />
+        <el-table v-loading="checkinLoading" :data="checkins" border>
+          <el-table-column label="员工" width="140">
+            <template #default="{ row }">{{ employeeName((row as CheckinVO).employeeId) }}</template>
+          </el-table-column>
+          <el-table-column prop="checkinDate" label="打卡日期" width="120" />
+          <el-table-column prop="checkinTime" label="打卡时间" width="170" />
+          <el-table-column label="类型" width="90">
+            <template #default="{ row }">{{ hrCheckinTypeLabels[(row as CheckinVO).checkinType] }}</template>
+          </el-table-column>
+          <el-table-column label="来源" width="110">
+            <template #default="{ row }">
+              {{ (row as CheckinVO).source ? hrCheckinSourceLabels[(row as CheckinVO).source!] : '-' }}
+            </template>
+          </el-table-column>
+          <el-table-column label="状态" width="90">
+            <template #default="{ row }">
+              <el-tag size="small" :type="checkinTagType((row as CheckinVO).status)">
+                {{ hrCheckinStatusLabels[(row as CheckinVO).status] }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="address" label="打卡地址" min-width="160" />
+          <el-table-column prop="remark" label="备注" min-width="120" />
+        </el-table>
+
+        <el-pagination
+          v-model:current-page="page"
+          v-model:page-size="size"
+          :total="total"
+          :page-sizes="[10, 20, 50, 100]"
+          layout="total, sizes, prev, pager, next, jumper"
+          class="pagination"
+          @size-change="onCheckinSearch"
+          @current-change="loadCheckins"
+        />
+      </div>
     </div>
 
     <!-- 补卡 / 请假 -->
     <div class="section">
-      <div class="section-title">补卡 / 请假</div>
-      <el-alert
-        title="补卡、请假等审批请在待办中心处理"
-        description="本页仅提供排班与打卡记录管理；补卡、请假申请由移动端发起，审批进度请在待办中心查看。"
-        type="info"
-        show-icon
-        :closable="false"
-      />
+      <div class="data-card">
+        <div class="card-head">
+          <div class="card-heading">
+            <span class="card-title">补卡 / 请假</span>
+          </div>
+        </div>
+        <el-alert
+          title="补卡、请假等审批请在待办中心处理"
+          description="本页仅提供排班与打卡记录管理；补卡、请假申请由移动端发起，审批进度请在待办中心查看。"
+          type="info"
+          show-icon
+          :closable="false"
+        />
+      </div>
     </div>
 
     <!-- 排班新增 / 编辑 -->
@@ -524,22 +552,97 @@ onMounted(() => {
 </template>
 
 <style scoped>
+/* 多个区块之间保持 16px 间距 */
 .section {
-  margin-bottom: 24px;
+  margin-bottom: var(--ceams-space-4, 16px);
 }
-.section-title {
-  margin-bottom: 10px;
-  font-size: 15px;
-  font-weight: 600;
-  color: #111827;
+
+.section:last-child {
+  margin-bottom: 0;
 }
-.toolbar {
+
+/* 筛选卡片：白色圆角、16px 20px 内边距，操作按钮靠右 */
+.filter-bar {
+  padding: 16px 20px;
+}
+
+.filter-actions {
   display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: var(--ceams-space-2, 8px);
+  margin-left: auto;
 }
+
+/* 表格卡片：20px 内边距 */
+.data-card {
+  padding: 20px;
+}
+
+/* 卡片头部：左侧标题与条数，右侧主操作 */
+.card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ceams-space-3, 12px);
+  margin-bottom: var(--ceams-space-4, 16px);
+}
+
+.card-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--ceams-space-2, 8px);
+}
+
+.card-title {
+  font-size: var(--ceams-font-size-md, 16px);
+  font-weight: 600;
+  color: var(--ceams-text-primary);
+}
+
+.card-sub {
+  font-size: var(--ceams-font-size-xs, 12px);
+  color: var(--ceams-text-secondary);
+}
+
+.card-actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--ceams-space-2, 8px);
+}
+
+.card-actions .el-button + .el-button {
+  margin-left: 0;
+}
+
+/* 分页右对齐，距表格 16px */
 .pagination {
-  margin-top: 12px;
+  margin-top: var(--ceams-space-4, 16px);
   justify-content: flex-end;
+}
+
+/* 空态居中灰色，上下 40px 留白 */
+:deep(.el-table__empty-block) {
+  padding: 40px 0;
+  min-height: 0;
+}
+
+:deep(.el-table__empty-text) {
+  color: var(--ceams-text-secondary);
+}
+
+/* 弹窗：标题加粗，内容 20px 24px，底部操作条靠右并带顶部细边框 */
+:deep(.el-dialog__title) {
+  font-weight: 600;
+}
+
+:deep(.el-dialog__body) {
+  padding: 20px 24px;
+}
+
+:deep(.el-dialog__footer) {
+  padding: 12px 24px 18px;
+  border-top: 1px solid var(--ceams-border-divider);
+  text-align: right;
 }
 </style>

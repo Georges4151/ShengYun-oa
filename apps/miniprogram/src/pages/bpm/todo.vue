@@ -327,25 +327,38 @@ onReachBottom(() => {
 .tabs {
   display: flex;
   margin-bottom: var(--ceams-space-md);
-  padding: var(--ceams-space-2xs);
+  padding: 0 var(--ceams-space-xs);
   background-color: var(--ceams-bg-card);
-  border-radius: var(--ceams-radius-pill);
-  box-shadow: var(--ceams-shadow-card);
+  border-radius: var(--ceams-radius-card);
+  box-shadow: 0 2rpx 8rpx rgba(15, 23, 42, 0.04);
 }
 
 .tabs__item {
+  position: relative;
   flex: 1;
-  padding: var(--ceams-space-xs) 0;
+  padding: 24rpx 0 22rpx;
   color: var(--ceams-text-secondary);
-  font-size: var(--ceams-font-size-caption);
+  font-size: 26rpx;
+  line-height: var(--ceams-line-height-tight);
   text-align: center;
-  border-radius: var(--ceams-radius-pill);
 }
 
+/* 选中页签：加粗 + 底部 4rpx 主色条 */
 .tabs__item--active {
-  background-color: var(--ceams-color-primary);
-  color: var(--ceams-text-inverse);
+  color: var(--ceams-color-primary);
   font-weight: var(--ceams-font-weight-semibold);
+}
+
+.tabs__item--active::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 48rpx;
+  height: 4rpx;
+  margin-left: -24rpx;
+  background-color: var(--ceams-color-primary);
+  border-radius: 2rpx;
 }
 
 .item {
@@ -367,7 +380,7 @@ onReachBottom(() => {
   flex: 1;
   min-width: 0;
   color: var(--ceams-text-primary);
-  font-size: var(--ceams-font-size-heading);
+  font-size: 28rpx;
   font-weight: var(--ceams-font-weight-semibold);
   line-height: var(--ceams-line-height-tight);
 }
@@ -384,7 +397,7 @@ onReachBottom(() => {
   display: block;
   margin-top: var(--ceams-space-2xs);
   color: var(--ceams-text-secondary);
-  font-size: var(--ceams-font-size-mini);
+  font-size: 24rpx;
   line-height: var(--ceams-line-height-normal);
 }
 

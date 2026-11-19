@@ -2,6 +2,9 @@ package com.ceams.module.notification.service;
 
 import com.ceams.common.response.PageResult;
 import com.ceams.module.notification.dto.NotificationCreateRequest;
+import com.ceams.module.notification.dto.NotificationPublishRequest;
+import com.ceams.module.notification.dto.NotificationRecipientRoleVO;
+import com.ceams.module.notification.dto.NotificationRecipientUserVO;
 import com.ceams.module.notification.dto.NotificationUpdateRequest;
 import com.ceams.module.notification.enums.NotificationPriority;
 import com.ceams.module.notification.enums.NotificationStatus;
@@ -9,6 +12,7 @@ import com.ceams.module.notification.enums.NotificationType;
 import com.ceams.module.notification.vo.NotificationVO;
 import java.time.LocalDateTime;
 import java.util.Collection;
+import java.util.List;
 
 /** 通知服务。 */
 public interface NotificationService {
@@ -50,7 +54,34 @@ public interface NotificationService {
 
     void delete(Long id);
 
+    /**
+     * 按用户偏好分发并发布（兼容旧调用，未指定接收范围时使用）。
+     *
+     * @param id 通知 ID
+     */
     void publish(Long id);
+
+    /**
+     * 按指定接收范围发布通知，仅生成系统站内信（不受用户偏好限制）。
+     *
+     * <p>{@code request} 为 {@code null} 时保持旧的偏好分发行为，便于兼容未改造的调用方。
+     *
+     * @param id 通知 ID
+     * @param request 发布请求（接收范围）；为空表示按用户偏好分发
+     * @return 实际送达（写入系统站内信）的人数
+     */
+    int publish(Long id, NotificationPublishRequest request);
+
+    /** 查询启用角色列表（发布范围选择用）。 */
+    List<NotificationRecipientRoleVO> listRecipientRoles();
+
+    /**
+     * 按姓名或账号模糊查询启用用户（发布范围选择用）。
+     *
+     * @param keyword 关键字，为空时返回前 50 条启用用户
+     * @return 最多 50 条启用用户
+     */
+    List<NotificationRecipientUserVO> searchRecipientUsers(String keyword);
 
     void revoke(Long id);
 }

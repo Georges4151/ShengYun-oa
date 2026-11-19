@@ -141,10 +141,7 @@ onLoad((query) => {
       </view>
 
       <view class="ceams-card">
-        <view class="section">
-          <view class="section__bar"></view>
-          <text class="section__title">基础信息</text>
-        </view>
+        <view class="ceams-section-title detail__section-title">基础信息</view>
         <view class="ceams-list-item row">
           <text class="row__label">报销人</text>
           <text class="row__value">{{ detail.reporterName || '-' }}</text>
@@ -164,10 +161,7 @@ onLoad((query) => {
       </view>
 
       <view class="ceams-card">
-        <view class="section">
-          <view class="section__bar"></view>
-          <text class="section__title">金额与核验</text>
-        </view>
+        <view class="ceams-section-title detail__section-title">金额与核验</view>
         <view class="ceams-list-item row">
           <text class="row__label">报销金额</text>
           <view class="row__value row__value--amount">
@@ -192,10 +186,7 @@ onLoad((query) => {
 
       <view class="ceams-card">
         <view class="attach__head">
-          <view class="section attach__section">
-            <view class="section__bar"></view>
-            <text class="section__title">票据附件</text>
-          </view>
+          <view class="ceams-section-title">票据附件</view>
           <button class="ceams-btn ceams-btn--ghost attach__btn" @click="takePhoto">拍照上传</button>
         </view>
         <text class="attach__hint">支持 jpg / png / pdf，单文件不超过 20MB</text>
@@ -296,25 +287,9 @@ onLoad((query) => {
   line-height: var(--ceams-line-height-normal);
 }
 
-.section {
-  display: flex;
-  align-items: center;
+/* 分组标题沿用全局 .ceams-section-title，仅补下间距 */
+.detail__section-title {
   margin-bottom: var(--ceams-space-xs);
-}
-
-.section__bar {
-  width: 6rpx;
-  height: var(--ceams-space-lg);
-  margin-right: var(--ceams-space-xs);
-  background-color: var(--ceams-color-primary);
-  border-radius: var(--ceams-radius-xs);
-}
-
-.section__title {
-  color: var(--ceams-text-primary);
-  font-size: var(--ceams-font-size-body);
-  font-weight: var(--ceams-font-weight-semibold);
-  line-height: var(--ceams-line-height-tight);
 }
 
 .row {
@@ -353,10 +328,6 @@ onLoad((query) => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-}
-
-.attach__section {
-  margin-bottom: 0;
 }
 
 .attach__btn {

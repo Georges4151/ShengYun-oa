@@ -358,6 +358,16 @@ onMounted(async () => {
 
 <template>
   <div class="doc-view">
+    <!-- 页头：标题 + 灰色说明 + 右侧主操作 -->
+    <div class="page-header">
+      <div>
+        <h2 class="page-title">文档知识库</h2>
+        <p class="page-subtitle">按个人、部门、项目与公共库分类管理目录与文件</p>
+      </div>
+      <el-button v-if="canUpload" type="primary" @click="openUpload">上传文件</el-button>
+    </div>
+
+    <!-- 库切换 -->
     <div class="library-bar">
       <el-radio-group v-model="libraryType" @change="onLibraryChange">
         <el-radio-button v-for="opt in libraryOptions" :key="opt.value" :value="opt.value">
@@ -383,6 +393,7 @@ onMounted(async () => {
     </div>
 
     <div class="doc-body">
+      <!-- 左侧目录树面板 -->
       <div class="tree-pane">
         <DirectoryTree
           :data="tree"
@@ -404,7 +415,8 @@ onMounted(async () => {
           </el-breadcrumb-item>
         </el-breadcrumb>
 
-        <div class="toolbar">
+        <!-- 筛选区：白色圆角卡片，按钮靠右 -->
+        <div class="filter-bar">
           <el-input
             v-model="keyword"
             placeholder="文件名搜索"
@@ -412,37 +424,52 @@ onMounted(async () => {
             style="width: 220px"
             @keyup.enter="onSearch"
           />
-          <el-button @click="onSearch">查询</el-button>
-          <el-button v-if="canUpload" type="primary" @click="openUpload">上传文件</el-button>
+          <div class="filter-actions">
+            <el-button type="primary" @click="onSearch">查询</el-button>
+          </div>
         </div>
 
         <template v-if="currentDirId">
-          <FileTable
-            :files="files"
-            :loading="loading"
-            :user-names="userNames"
-            :can-edit="canEditFile"
-            :can-delete="canDeleteFile"
-            :can-permission="canManagePermission"
-            @preview="onPreview"
-            @download="onDownload"
-            @edit="onEdit"
-            @versions="onVersions"
-            @permission="onPermission"
-            @remove="onRemove"
-          />
-          <el-pagination
-            v-model:current-page="page"
-            v-model:page-size="size"
-            :total="total"
-            :page-sizes="[10, 20, 50, 100]"
-            layout="total, sizes, prev, pager, next, jumper"
-            class="pagination"
-            @size-change="onSearch"
-            @current-change="loadFiles"
-          />
+          <!-- 文件列表卡片 -->
+          <div class="data-card file-card">
+            <div class="card-header">
+              <div class="card-heading">
+                <span class="card-title">文件列表</span>
+                <span class="card-count">共 {{ total }} 个文件</span>
+              </div>
+            </div>
+
+            <FileTable
+              :files="files"
+              :loading="loading"
+              :user-names="userNames"
+              :can-edit="canEditFile"
+              :can-delete="canDeleteFile"
+              :can-permission="canManagePermission"
+              @preview="onPreview"
+              @download="onDownload"
+              @edit="onEdit"
+              @versions="onVersions"
+              @permission="onPermission"
+              @remove="onRemove"
+            />
+            <!-- 分页右对齐，距表 16px -->
+            <el-pagination
+              v-model:current-page="page"
+              v-model:page-size="size"
+              :total="total"
+              :page-sizes="[10, 20, 50, 100]"
+              layout="total, sizes, prev, pager, next, jumper"
+              class="pagination"
+              @size-change="onSearch"
+              @current-change="loadFiles"
+            />
+          </div>
         </template>
-        <el-empty v-else description="请选择左侧目录查看文件" />
+        <!-- 空态：居中灰色、40px 留白 -->
+        <div v-else class="empty-state">
+          <el-empty description="请选择左侧目录查看文件" />
+        </div>
       </div>
     </div>
 
@@ -469,7 +496,7 @@ onMounted(async () => {
     />
 
     <!-- 版本 -->
-    <el-dialog v-model="versionVisible" title="版本历史" width="760px">
+    <el-dialog v-model="versionVisible" class="doc-dialog" title="版本历史" width="760px">
       <div class="version-tip">文件：{{ versionFile?.name ?? '-' }}</div>
       <el-table v-loading="versionLoading" :data="versions" border size="small">
         <el-table-column label="版本" width="90">
@@ -512,52 +539,120 @@ onMounted(async () => {
   flex-direction: column;
   height: 100%;
 }
+
+/* 页头与下方内容保持 16px 间距 */
+.page-header {
+  margin-bottom: var(--ceams-space-4);
+}
+
+/* 库切换条 */
 .library-bar {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 12px;
+  gap: var(--ceams-space-3);
+  margin-bottom: var(--ceams-space-4);
 }
+
 .doc-body {
   display: flex;
   flex: 1;
-  gap: 12px;
+  gap: var(--ceams-space-4);
   min-height: 0;
 }
+
+/* 左侧目录树面板：白底圆角卡片 */
 .tree-pane {
   width: 260px;
   flex: none;
-  padding: 12px;
+  padding: var(--ceams-space-4);
   overflow: hidden;
-  background: #fff;
-  border: 1px solid #ebeef5;
-  border-radius: 4px;
+  background: var(--ceams-bg-card);
+  border: 1px solid var(--ceams-border-base);
+  border-radius: var(--ceams-radius-lg);
 }
+
+/* 右侧内容区：面包屑 + 筛选 + 文件卡片，16px 间距 */
 .content-pane {
   display: flex;
   flex: 1;
   flex-direction: column;
+  gap: var(--ceams-space-4);
   min-width: 0;
-  padding: 12px;
-  background: #fff;
-  border: 1px solid #ebeef5;
-  border-radius: 4px;
 }
+
 .breadcrumb {
-  margin-bottom: 12px;
+  margin-bottom: 0;
 }
-.toolbar {
+
+/* 筛选卡片：16px 20px 内边距，按钮靠右 */
+.filter-bar {
+  padding: 16px 20px;
+  margin-bottom: 0;
+  gap: var(--ceams-space-3);
+}
+
+.filter-actions {
   display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
+  align-items: center;
+  gap: var(--ceams-space-3);
+  margin-left: auto;
 }
+
+/* 文件列表卡片：20px 内边距 */
+.file-card {
+  padding: var(--ceams-space-5);
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ceams-space-3);
+  margin-bottom: var(--ceams-space-4);
+}
+
+.card-heading {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ceams-space-2);
+  min-width: 0;
+}
+
+.card-title {
+  font-size: var(--ceams-font-size-md);
+  font-weight: 600;
+  color: var(--ceams-text-primary);
+}
+
+.card-count {
+  font-size: var(--ceams-font-size-sm);
+  color: var(--ceams-text-secondary);
+}
+
+/* 分页右对齐，距表 16px */
 .pagination {
-  margin-top: 12px;
+  margin-top: var(--ceams-space-4);
   justify-content: flex-end;
 }
+
+/* 空态居中灰色、40px 留白 */
+.empty-state {
+  padding: var(--ceams-space-10) 0;
+}
+
+.empty-state :deep(.el-empty__description p) {
+  color: var(--ceams-text-placeholder);
+}
+
+/* 版本历史弹窗提示文案 */
 .version-tip {
-  margin-bottom: 12px;
-  color: #606266;
-  font-size: 13px;
+  margin-bottom: var(--ceams-space-3);
+  color: var(--ceams-text-secondary);
+  font-size: var(--ceams-font-size-sm);
+}
+
+/* 弹窗内容 20px 24px */
+:global(.doc-dialog .el-dialog__body) {
+  padding: 20px 24px;
 }
 </style>

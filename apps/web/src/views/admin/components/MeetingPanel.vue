@@ -235,15 +235,18 @@ onMounted(() => {
 </script>
 
 <template>
-  <div>
-    <!-- 会议室列表 -->
-    <div class="section">
-      <div class="section-title">会议室</div>
-      <div class="toolbar">
-        <el-button type="primary" @click="openApply()">预定会议室</el-button>
-        <template v-if="canManage">
-          <el-button @click="openRoomCreate">新增会议室</el-button>
-        </template>
+  <div class="meeting-panel">
+    <!-- 会议室列表卡片 -->
+    <div class="data-card panel-card">
+      <div class="card-header">
+        <div class="card-heading">
+          <span class="card-title">会议室</span>
+          <span class="card-count">共 {{ rooms.length }} 间</span>
+        </div>
+        <div class="card-actions">
+          <el-button v-if="canManage" @click="openRoomCreate">新增会议室</el-button>
+          <el-button type="primary" @click="openApply()">预定会议室</el-button>
+        </div>
       </div>
       <el-table v-loading="roomsLoading" :data="rooms" border>
         <el-table-column prop="name" label="会议室名称" min-width="160" />
@@ -288,9 +291,14 @@ onMounted(() => {
       </el-table>
     </div>
 
-    <!-- 我的预定 -->
-    <div class="section">
-      <div class="section-title">我的预定</div>
+    <!-- 我的预定卡片 -->
+    <div class="data-card panel-card">
+      <div class="card-header">
+        <div class="card-heading">
+          <span class="card-title">我的预定</span>
+          <span class="card-count">共 {{ myApplies.length }} 条</span>
+        </div>
+      </div>
       <el-table v-loading="myLoading" :data="myApplies" border>
         <el-table-column prop="roomName" label="会议室" width="150">
           <template #default="{ row }">{{ (row as MeetingApplyVO).roomName ?? '-' }}</template>
@@ -318,25 +326,32 @@ onMounted(() => {
       </el-table>
     </div>
 
-    <!-- 当日占用时间轴 -->
-    <div class="section">
-      <div class="section-title">当日占用情况</div>
-      <div class="toolbar">
-        <el-select
-          v-model="availabilityQuery.roomId"
-          placeholder="选择会议室"
-          style="width: 200px"
-          @change="loadAvailability"
-        >
-          <el-option v-for="item in rooms" :key="item.id" :label="item.name" :value="item.id" />
-        </el-select>
-        <el-date-picker
-          v-model="availabilityQuery.date"
-          type="date"
-          value-format="YYYY-MM-DD"
-          style="width: 160px"
-          @change="loadAvailability"
-        />
+    <!-- 当日占用筛选区 -->
+    <div class="filter-bar">
+      <el-select
+        v-model="availabilityQuery.roomId"
+        placeholder="选择会议室"
+        style="width: 200px"
+        @change="loadAvailability"
+      >
+        <el-option v-for="item in rooms" :key="item.id" :label="item.name" :value="item.id" />
+      </el-select>
+      <el-date-picker
+        v-model="availabilityQuery.date"
+        type="date"
+        value-format="YYYY-MM-DD"
+        style="width: 160px"
+        @change="loadAvailability"
+      />
+    </div>
+
+    <!-- 当日占用时间轴卡片 -->
+    <div class="data-card panel-card">
+      <div class="card-header">
+        <div class="card-heading">
+          <span class="card-title">当日占用情况</span>
+          <span class="card-count">共 {{ availability?.intervals.length ?? 0 }} 个时段</span>
+        </div>
       </div>
       <template v-if="availabilityQuery.roomId">
         <el-alert
@@ -363,6 +378,7 @@ onMounted(() => {
     <!-- 新建 / 编辑会议室 -->
     <el-dialog
       v-model="roomFormVisible"
+      class="admin-dialog"
       :title="editingRoomId ? '编辑会议室' : '新增会议室'"
       width="520px"
     >
@@ -387,7 +403,7 @@ onMounted(() => {
     </el-dialog>
 
     <!-- 会议室预定 -->
-    <el-dialog v-model="applyVisible" title="会议室预定" width="560px">
+    <el-dialog v-model="applyVisible" class="admin-dialog" title="会议室预定" width="560px">
       <el-form ref="applyFormRef" :model="applyForm" :rules="applyRules" label-width="100px">
         <el-form-item label="会议室" prop="roomId">
           <el-select v-model="applyForm.roomId" placeholder="请选择会议室" style="width: 100%">
@@ -453,25 +469,78 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.section {
-  margin-bottom: 24px;
-}
-.section-title {
-  margin-bottom: 10px;
-  font-size: 15px;
-  font-weight: 600;
-  color: #111827;
-}
-.toolbar {
+/* 模块容器：各卡片之间保持 16px 间距 */
+.meeting-panel {
   display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
+  flex-direction: column;
+  gap: var(--ceams-space-4);
 }
+
+/* 筛选卡片：16px 20px 内边距，控件 12px 间距 */
+.filter-bar {
+  padding: 16px 20px;
+  margin-bottom: 0;
+  gap: var(--ceams-space-3);
+}
+
+/* 列表卡片：20px 内边距 */
+.panel-card {
+  padding: var(--ceams-space-5);
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ceams-space-3);
+  margin-bottom: var(--ceams-space-4);
+}
+
+.card-heading {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ceams-space-2);
+  min-width: 0;
+}
+
+.card-title {
+  font-size: var(--ceams-font-size-md);
+  font-weight: 600;
+  color: var(--ceams-text-primary);
+}
+
+.card-count {
+  font-size: var(--ceams-font-size-sm);
+  color: var(--ceams-text-secondary);
+}
+
+.card-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--ceams-space-3);
+}
+
+/* 空态居中灰色、40px 留白 */
+.panel-card :deep(.el-table__empty-text) {
+  color: var(--ceams-text-placeholder);
+}
+
+.panel-card :deep(.el-table__empty-block) {
+  padding: var(--ceams-space-10) 0;
+  min-height: 0;
+}
+
 .timeline {
   padding-left: 4px;
 }
+
 .occupied {
-  color: #dc2626;
+  color: var(--ceams-color-danger);
   font-weight: 600;
+}
+
+/* 弹窗内容 20px 24px */
+:global(.admin-dialog .el-dialog__body) {
+  padding: 20px 24px;
 }
 </style>

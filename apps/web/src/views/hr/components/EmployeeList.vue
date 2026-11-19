@@ -380,8 +380,9 @@ onMounted(() => {
 </script>
 
 <template>
-  <div>
-    <div class="toolbar">
+  <div class="list-page">
+    <!-- 筛选区：白色圆角卡片，控件 12px 间距，操作按钮靠右 -->
+    <div class="filter-bar">
       <el-input
         v-model="query.keyword"
         placeholder="关键字（姓名/工号）"
@@ -399,49 +400,63 @@ onMounted(() => {
       <el-select v-model="query.status" placeholder="员工状态" clearable style="width: 140px">
         <el-option v-for="opt in statusOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
       </el-select>
-      <el-button type="primary" @click="onSearch">查询</el-button>
-      <el-button @click="openCreate">新增员工</el-button>
+      <div class="filter-actions">
+        <el-button type="primary" @click="onSearch">查询</el-button>
+      </div>
     </div>
 
-    <el-table v-loading="loading" :data="list" border>
-      <el-table-column prop="employeeNo" label="工号" width="120" />
-      <el-table-column prop="name" label="姓名" width="110" />
-      <el-table-column label="部门" min-width="140">
-        <template #default="{ row }">{{ deptName((row as EmployeeVO).deptId) }}</template>
-      </el-table-column>
-      <el-table-column label="岗位" min-width="140">
-        <template #default="{ row }">{{ positionName((row as EmployeeVO).positionId) }}</template>
-      </el-table-column>
-      <el-table-column prop="hireDate" label="入职日期" width="120" />
-      <el-table-column label="状态" width="100">
-        <template #default="{ row }">
-          <el-tag size="small" :type="statusTagType((row as EmployeeVO).status)">
-            {{ hrEmployeeStatusLabels[(row as EmployeeVO).status] }}
-          </el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column prop="phone" label="手机号" width="140" />
-      <el-table-column label="操作" width="330" fixed="right">
-        <template #default="{ row }">
-          <el-button link type="primary" size="small" @click="openEdit(row as EmployeeVO)">编辑</el-button>
-          <el-button link type="primary" size="small" @click="openChange(row as EmployeeVO, 'REGULAR')">转正</el-button>
-          <el-button link type="primary" size="small" @click="openChange(row as EmployeeVO, 'TRANSFER')">调岗</el-button>
-          <el-button link type="danger" size="small" @click="openChange(row as EmployeeVO, 'RESIGN')">离职</el-button>
-          <el-button link type="info" size="small" @click="openChanges(row as EmployeeVO)">变更记录</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
+    <!-- 表格卡片：头部放置标题、条数与主操作 -->
+    <div class="data-card">
+      <div class="card-head">
+        <div class="card-heading">
+          <span class="card-title">员工档案</span>
+          <span class="card-sub">共 {{ total }} 条</span>
+        </div>
+        <div class="card-actions">
+          <el-button type="primary" @click="openCreate">新增员工</el-button>
+        </div>
+      </div>
 
-    <el-pagination
-      v-model:current-page="page"
-      v-model:page-size="size"
-      :total="total"
-      :page-sizes="[10, 20, 50, 100]"
-      layout="total, sizes, prev, pager, next, jumper"
-      class="pagination"
-      @size-change="onSearch"
-      @current-change="load"
-    />
+      <el-table v-loading="loading" :data="list" border>
+        <el-table-column prop="employeeNo" label="工号" width="120" />
+        <el-table-column prop="name" label="姓名" width="110" />
+        <el-table-column label="部门" min-width="140">
+          <template #default="{ row }">{{ deptName((row as EmployeeVO).deptId) }}</template>
+        </el-table-column>
+        <el-table-column label="岗位" min-width="140">
+          <template #default="{ row }">{{ positionName((row as EmployeeVO).positionId) }}</template>
+        </el-table-column>
+        <el-table-column prop="hireDate" label="入职日期" width="120" />
+        <el-table-column label="状态" width="100">
+          <template #default="{ row }">
+            <el-tag size="small" :type="statusTagType((row as EmployeeVO).status)">
+              {{ hrEmployeeStatusLabels[(row as EmployeeVO).status] }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="phone" label="手机号" width="140" />
+        <el-table-column label="操作" width="330" fixed="right">
+          <template #default="{ row }">
+            <el-button link type="primary" size="small" @click="openEdit(row as EmployeeVO)">编辑</el-button>
+            <el-button link type="primary" size="small" @click="openChange(row as EmployeeVO, 'REGULAR')">转正</el-button>
+            <el-button link type="primary" size="small" @click="openChange(row as EmployeeVO, 'TRANSFER')">调岗</el-button>
+            <el-button link type="danger" size="small" @click="openChange(row as EmployeeVO, 'RESIGN')">离职</el-button>
+            <el-button link type="info" size="small" @click="openChanges(row as EmployeeVO)">变更记录</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+
+      <el-pagination
+        v-model:current-page="page"
+        v-model:page-size="size"
+        :total="total"
+        :page-sizes="[10, 20, 50, 100]"
+        layout="total, sizes, prev, pager, next, jumper"
+        class="pagination"
+        @size-change="onSearch"
+        @current-change="load"
+      />
+    </div>
 
     <el-drawer v-model="drawerVisible" :title="editingId ? '编辑员工档案' : '新增员工档案'" size="520px">
       <el-form ref="formRef" :model="form" :rules="rules" label-width="110px">
@@ -636,29 +651,111 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.toolbar {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
+/* 筛选卡片：白色圆角、16px 20px 内边距，操作按钮靠右 */
+.filter-bar {
+  padding: 16px 20px;
 }
+
+.filter-actions {
+  display: flex;
+  gap: var(--ceams-space-2, 8px);
+  margin-left: auto;
+}
+
+/* 表格卡片：20px 内边距 */
+.data-card {
+  padding: 20px;
+}
+
+/* 卡片头部：左侧标题与条数，右侧主操作 */
+.card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ceams-space-3, 12px);
+  margin-bottom: var(--ceams-space-4, 16px);
+}
+
+.card-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--ceams-space-2, 8px);
+}
+
+.card-title {
+  font-size: var(--ceams-font-size-md, 16px);
+  font-weight: 600;
+  color: var(--ceams-text-primary);
+}
+
+.card-sub {
+  font-size: var(--ceams-font-size-xs, 12px);
+  color: var(--ceams-text-secondary);
+}
+
+.card-actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--ceams-space-2, 8px);
+}
+
+.card-actions .el-button + .el-button {
+  margin-left: 0;
+}
+
+/* 分页右对齐，距表格 16px */
 .pagination {
-  margin-top: 12px;
+  margin-top: var(--ceams-space-4, 16px);
   justify-content: flex-end;
 }
-.change-tip {
-  margin-bottom: 12px;
-  color: #4b5563;
-  font-size: 13px;
+
+/* 空态居中灰色，上下 40px 留白 */
+:deep(.el-table__empty-block) {
+  padding: 40px 0;
+  min-height: 0;
 }
+
+:deep(.el-table__empty-text) {
+  color: var(--ceams-text-secondary);
+}
+
+/* 变更提示与时间线文本 */
+.change-tip {
+  margin-bottom: var(--ceams-space-3, 12px);
+  color: var(--ceams-text-secondary);
+  font-size: var(--ceams-font-size-sm, 13px);
+}
+
 .record-title {
   display: flex;
-  gap: 8px;
+  gap: var(--ceams-space-2, 8px);
   align-items: center;
   font-weight: 500;
 }
+
 .record-line {
-  margin-top: 4px;
-  color: #4b5563;
-  font-size: 13px;
+  margin-top: var(--ceams-space-1, 4px);
+  color: var(--ceams-text-secondary);
+  font-size: var(--ceams-font-size-sm, 13px);
+}
+
+/* 抽屉 / 弹窗：标题加粗，内容 20px 24px，底部操作条靠右并带顶部细边框 */
+:deep(.el-drawer__title),
+:deep(.el-dialog__title) {
+  font-weight: 600;
+}
+
+:deep(.el-drawer__body),
+:deep(.el-dialog__body) {
+  padding: 20px 24px;
+}
+
+:deep(.el-drawer__footer),
+:deep(.el-dialog__footer) {
+  padding: 12px 24px 18px;
+  border-top: 1px solid var(--ceams-border-divider);
+  text-align: right;
 }
 </style>

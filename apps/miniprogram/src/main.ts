@@ -4,6 +4,7 @@ import StatusTag from './components/status-tag/status-tag.vue'
 import EmptyState from './components/empty-state/empty-state.vue'
 import ListCard from './components/list-card/list-card.vue'
 import AmountText from './components/amount-text/amount-text.vue'
+import AppIcon from './components/app-icon/app-icon.vue'
 
 // uni-app Vue3 标准入口：返回 { app } 供各平台渲染。
 export function createApp() {
@@ -14,5 +15,6 @@ export function createApp() {
   app.component('empty-state', EmptyState)
   app.component('list-card', ListCard)
   app.component('amount-text', AmountText)
+  app.component('app-icon', AppIcon)
   return { app }
 }

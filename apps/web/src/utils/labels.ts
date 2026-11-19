@@ -543,7 +543,20 @@ export function toOptions<T extends string>(labels: Record<T, string>): { value:
 
 export const bpmBizTypeLabels: Record<string, string> = {
   EXPENSE: '报销',
-  CHANGE_REQUEST: '项目变更'
+  CHANGE_REQUEST: '项目变更',
+  HR_REGULAR: '转正',
+  HR_TRANSFER: '调岗',
+  HR_RESIGN: '离职',
+  HR_LEAVE: '请假',
+  HR_CHECKIN_SUPPLEMENT: '补卡',
+  HR_SALARY_CHANGE: '薪资变动',
+  HR_SALARY_CORRECTION: '薪资更正',
+  HR_PERFORMANCE: '绩效考评',
+  ADMIN_ASSET_BORROW: '资产领用',
+  ADMIN_MATERIAL_APPLY: '易耗品申领',
+  ADMIN_VEHICLE_APPLY: '用车申请',
+  ADMIN_MEETING_APPLY: '会议室预定',
+  ADMIN_REPAIR: '报修'
 }
 
 export const bpmInstanceStatusLabels: Record<string, string> = {

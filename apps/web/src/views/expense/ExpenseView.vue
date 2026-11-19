@@ -19,10 +19,18 @@ const canPreAudit = computed(() =>
 </script>
 
 <template>
-  <div>
+  <div class="expense-view">
+    <!-- 页头：主标题 + 说明文字 -->
+    <div class="page-header">
+      <div>
+        <h2 class="page-title">报销管理</h2>
+        <p class="page-subtitle">集中管理票据、审批记录与核验记录，支持 AI 预审提示</p>
+      </div>
+    </div>
+
     <ReceiptPreAuditPanel v-if="canPreAudit" />
 
-    <el-tabs v-model="activeTab">
+    <el-tabs v-model="activeTab" class="expense-tabs">
       <el-tab-pane label="票据" name="receipt">
         <ReceiptList />
       </el-tab-pane>
@@ -35,3 +43,10 @@ const canPreAudit = computed(() =>
     </el-tabs>
   </div>
 </template>
+
+<style scoped>
+/* 页签头部与内容的间距 */
+.expense-tabs :deep(.el-tabs__header) {
+  margin-bottom: var(--ceams-space-4);
+}
+</style>

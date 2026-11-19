@@ -177,51 +177,74 @@ const actionColumnWidth = computed(() => {
 .file-name {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--ceams-space-2);
   min-width: 0;
 }
+
 .file-text {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* 文件类型角标：统一圆角与字号 */
 .file-badge {
   flex: none;
   width: 34px;
   height: 22px;
-  border-radius: 3px;
-  color: #fff;
-  font-size: 11px;
+  border-radius: var(--ceams-radius-xs);
+  color: var(--ceams-text-inverse);
+  font-size: var(--ceams-font-size-xs);
   font-weight: 600;
   line-height: 22px;
   text-align: center;
-  background: #909399;
+  background: var(--ceams-color-info);
 }
+
+/* 各文件类型保留品牌色以便快速识别 */
 .badge-word {
   background: #2b579a;
 }
+
 .badge-excel {
   background: #217346;
 }
+
 .badge-ppt {
   background: #b7472a;
 }
+
 .badge-pdf {
   background: #d93025;
 }
+
 .badge-image {
   background: #7b61ff;
 }
+
 .badge-text {
-  background: #606266;
+  background: var(--ceams-color-info);
 }
+
 .badge-archive {
   background: #d48806;
 }
+
 .version-text {
-  color: #303133;
+  color: var(--ceams-text-primary);
 }
+
 .lock-tag {
-  margin-left: 6px;
+  margin-left: var(--ceams-space-2);
+}
+
+/* 空态居中灰色、40px 留白 */
+:deep(.el-table__empty-text) {
+  color: var(--ceams-text-placeholder);
+}
+
+:deep(.el-table__empty-block) {
+  padding: var(--ceams-space-10) 0;
+  min-height: 0;
 }
 </style>

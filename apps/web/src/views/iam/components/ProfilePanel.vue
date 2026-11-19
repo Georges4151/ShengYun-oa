@@ -4,8 +4,6 @@ import {
   ElAvatar,
   ElButton,
   ElCard,
-  ElDescriptions,
-  ElDescriptionsItem,
   ElMessage,
   ElMessageBox,
   ElTag
@@ -144,49 +142,112 @@ async function onClearAvatar(): Promise<void> {
       />
     </div>
 
-    <el-descriptions :column="1" border>
-      <el-descriptions-item label="账号">{{ auth.user?.username || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="姓名">{{ auth.user?.name || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="角色">
-        <template v-if="roles.length">
-          <el-tag v-for="role in roles" :key="role.id" class="role-tag" size="small" type="info">
-            {{ role.name }}（{{ role.code }}）
-          </el-tag>
-        </template>
-        <span v-else>-</span>
-      </el-descriptions-item>
-    </el-descriptions>
+    <!-- 字段网格：label / value 两列展示 -->
+    <div class="info-grid">
+      <div class="info-item">
+        <span class="info-label">账号</span>
+        <span class="info-value">{{ auth.user?.username || '-' }}</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">姓名</span>
+        <span class="info-value">{{ auth.user?.name || '-' }}</span>
+      </div>
+      <div class="info-item info-item--full">
+        <span class="info-label">角色</span>
+        <span class="info-value">
+          <template v-if="roles.length">
+            <el-tag v-for="role in roles" :key="role.id" class="role-tag" size="small" type="info">
+              {{ role.name }}（{{ role.code }}）
+            </el-tag>
+          </template>
+          <span v-else>-</span>
+        </span>
+      </div>
+    </div>
   </el-card>
 </template>
 
 <style scoped>
+/* 信息卡片：限制阅读宽度，避免超宽行 */
 .profile-card {
   max-width: 720px;
 }
+
 .card-title {
   font-weight: 600;
 }
+
 .avatar-section {
   display: flex;
   align-items: center;
-  gap: 20px;
-  margin-bottom: 20px;
+  gap: var(--ceams-space-5);
+  margin-bottom: var(--ceams-space-5);
 }
+
 .avatar-actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: var(--ceams-space-2);
 }
+
 .avatar-tip {
   width: 100%;
-  font-size: 12px;
-  color: #909399;
+  font-size: var(--ceams-font-size-xs);
+  color: var(--ceams-text-secondary);
 }
+
 .hidden-file-input {
   display: none;
 }
+
+/* 字段网格：两列 label / value */
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--ceams-space-3) var(--ceams-space-4);
+}
+
+.info-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ceams-space-3);
+  padding: 12px 14px;
+  background-color: var(--ceams-bg-elevated);
+  border-radius: var(--ceams-radius-md);
+}
+
+/* 通栏项：角色等可能较长的内容占满整行 */
+.info-item--full {
+  grid-column: 1 / -1;
+}
+
+.info-label {
+  flex-shrink: 0;
+  width: 56px;
+  font-size: var(--ceams-font-size-sm);
+  color: var(--ceams-text-secondary);
+}
+
+.info-value {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ceams-space-2);
+  min-width: 0;
+  font-size: var(--ceams-font-size-sm);
+  color: var(--ceams-text-primary);
+  word-break: break-all;
+}
+
 .role-tag {
-  margin-right: 6px;
+  margin-right: 0;
+}
+
+/* 窄屏时字段网格降为单列 */
+@media (max-width: 640px) {
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

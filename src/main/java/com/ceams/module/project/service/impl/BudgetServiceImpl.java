@@ -21,7 +21,10 @@ import com.ceams.module.project.vo.BudgetVO;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -48,16 +51,16 @@ public class BudgetServiceImpl implements BudgetService {
         }
         wrapper.orderByDesc(Budget::getCreateTime);
         IPage<Budget> result = budgetMapper.selectPage(p, wrapper);
-        return new PageResult<>(
-                budgetConverter.toVOList(result.getRecords()),
-                result.getTotal(),
-                result.getCurrent(),
-                result.getSize());
+        List<BudgetVO> records = budgetConverter.toVOList(result.getRecords());
+        fillRelationNames(records);
+        return new PageResult<>(records, result.getTotal(), result.getCurrent(), result.getSize());
     }
 
     @Override
     public BudgetVO detail(Long id) {
-        return budgetConverter.toVO(requireBudget(id));
+        BudgetVO vo = budgetConverter.toVO(requireBudget(id));
+        fillRelationNames(List.of(vo));
+        return vo;
     }
 
     @Override
@@ -83,11 +86,9 @@ public class BudgetServiceImpl implements BudgetService {
         LambdaQueryWrapper<Budget> wrapper = new LambdaQueryWrapper<>();
         wrapper.in(Budget::getProjectId, projectIds).orderByDesc(Budget::getCreateTime);
         IPage<Budget> result = budgetMapper.selectPage(p, wrapper);
-        return new PageResult<>(
-                budgetConverter.toVOList(result.getRecords()),
-                result.getTotal(),
-                result.getCurrent(),
-                result.getSize());
+        List<BudgetVO> records = budgetConverter.toVOList(result.getRecords());
+        fillRelationNames(records);
+        return new PageResult<>(records, result.getTotal(), result.getCurrent(), result.getSize());
     }
 
     @Override
@@ -150,6 +151,48 @@ public class BudgetServiceImpl implements BudgetService {
     public void delete(Long id) {
         requireBudget(id);
         budgetMapper.deleteById(id);
+    }
+
+    /**
+     * 批量回填项目名称与合同名称：按需去重后各查一次，避免逐条查询产生 N+1。
+     */
+    private void fillRelationNames(List<BudgetVO> records) {
+        if (records == null || records.isEmpty()) {
+            return;
+        }
+        List<Long> projectIds =
+                records.stream()
+                        .map(BudgetVO::getProjectId)
+                        .filter(Objects::nonNull)
+                        .distinct()
+                        .toList();
+        Map<Long, String> projectNames = new HashMap<>();
+        if (!projectIds.isEmpty()) {
+            for (Project project : projectMapper.selectBatchIds(projectIds)) {
+                projectNames.put(project.getId(), project.getProjectName());
+            }
+        }
+        List<Long> contractIds =
+                records.stream()
+                        .map(BudgetVO::getContractId)
+                        .filter(Objects::nonNull)
+                        .distinct()
+                        .toList();
+        Map<Long, String> contractNames = new HashMap<>();
+        if (!contractIds.isEmpty()) {
+            for (SubcontractorContract contract :
+                    subcontractorContractMapper.selectBatchIds(contractIds)) {
+                contractNames.put(contract.getId(), contract.getContractName());
+            }
+        }
+        for (BudgetVO record : records) {
+            if (record.getProjectId() != null) {
+                record.setProjectName(projectNames.get(record.getProjectId()));
+            }
+            if (record.getContractId() != null) {
+                record.setContractName(contractNames.get(record.getContractId()));
+            }
+        }
     }
 
     private Budget requireBudget(Long id) {

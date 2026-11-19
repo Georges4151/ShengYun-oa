@@ -404,8 +404,9 @@ onMounted(() => {
 </script>
 
 <template>
-  <div>
-    <div class="toolbar">
+  <div class="list-page">
+    <!-- 筛选卡片：控件 12px 间距，按钮组靠右 -->
+    <div class="data-card filter-card">
       <el-select
         v-model="query.contractId"
         placeholder="合同（可选）"
@@ -416,55 +417,69 @@ onMounted(() => {
       >
         <el-option v-for="opt in contractOptions" :key="opt.id" :label="opt.label" :value="opt.id" />
       </el-select>
-      <el-button type="primary" @click="onSearch">查询</el-button>
-      <el-button @click="openCreate">新增凭证</el-button>
-      <el-button :loading="exporting" @click="onExport">导出 Excel</el-button>
+      <div class="filter-actions">
+        <el-button type="primary" @click="onSearch">查询</el-button>
+      </div>
     </div>
 
-    <el-table v-loading="loading" :data="list" border>
-      <el-table-column prop="proofName" label="凭证名称" min-width="180" />
-      <el-table-column prop="proofNumber" label="凭证编号" width="160" />
-      <el-table-column label="合同名称" width="180">
-        <template #default="{ row }">
-          {{ (row as SettlementProofVO).contractName || (row as SettlementProofVO).contractId || '-' }}
-        </template>
-      </el-table-column>
-      <el-table-column label="分包商" width="180">
-        <template #default="{ row }">
-          {{ (row as SettlementProofVO).subcontractorName || (row as SettlementProofVO).subcontractorId || '-' }}
-        </template>
-      </el-table-column>
-      <el-table-column prop="proofDate" label="凭证日期" width="120" />
-      <el-table-column prop="settlementAmount" label="结算金额" width="120" />
-      <el-table-column label="附件" width="160">
-        <template #default="{ row }">
-          <template v-if="(row as SettlementProofVO).filePath">
-            <span class="file-name">{{ (row as SettlementProofVO).fileName || '查看' }}</span>
-            <el-button link type="primary" size="small" @click="onPreviewFile(row as SettlementProofVO)">预览</el-button>
-            <el-button link type="primary" size="small" @click="onDownloadFile(row as SettlementProofVO)">下载</el-button>
-          </template>
-          <span v-else>-</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="操作" width="200" fixed="right">
-        <template #default="{ row }">
-          <el-button link type="primary" size="small" @click="openDetail(row as SettlementProofVO)">详情</el-button>
-          <el-button link type="primary" size="small" @click="openEdit(row as SettlementProofVO)">编辑</el-button>
-          <el-button link type="danger" size="small" @click="onRemove(row as SettlementProofVO)">删除</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
+    <!-- 表格卡片：头部标题、条数与主操作 -->
+    <div class="data-card table-card">
+      <div class="card-head">
+        <div class="card-heading">
+          <span class="card-title">结算凭证列表</span>
+          <span class="card-sub">共 {{ total }} 条</span>
+        </div>
+        <div class="card-actions">
+          <el-button type="primary" @click="openCreate">新增凭证</el-button>
+          <el-button :loading="exporting" @click="onExport">导出 Excel</el-button>
+        </div>
+      </div>
 
-    <el-pagination
-      v-model:current-page="page"
-      v-model:page-size="size"
-      :total="total"
-      :page-sizes="[10, 20, 50, 100]"
-      layout="total, sizes, prev, pager, next, jumper"
-      class="pagination"
-      @size-change="onSearch"
-      @current-change="load"
-    />
+      <el-table v-loading="loading" :data="list" border>
+        <el-table-column prop="proofName" label="凭证名称" min-width="180" />
+        <el-table-column prop="proofNumber" label="凭证编号" width="160" />
+        <el-table-column label="合同名称" width="180">
+          <template #default="{ row }">
+            {{ (row as SettlementProofVO).contractName || (row as SettlementProofVO).contractId || '-' }}
+          </template>
+        </el-table-column>
+        <el-table-column label="分包商" width="180">
+          <template #default="{ row }">
+            {{ (row as SettlementProofVO).subcontractorName || (row as SettlementProofVO).subcontractorId || '-' }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="proofDate" label="凭证日期" width="120" />
+        <el-table-column prop="settlementAmount" label="结算金额" width="120" align="right" class-name="amount-col" />
+        <el-table-column label="附件" width="160">
+          <template #default="{ row }">
+            <template v-if="(row as SettlementProofVO).filePath">
+              <span class="file-name">{{ (row as SettlementProofVO).fileName || '查看' }}</span>
+              <el-button link type="primary" size="small" @click="onPreviewFile(row as SettlementProofVO)">预览</el-button>
+              <el-button link type="primary" size="small" @click="onDownloadFile(row as SettlementProofVO)">下载</el-button>
+            </template>
+            <span v-else>-</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="200" fixed="right">
+          <template #default="{ row }">
+            <el-button link type="primary" size="small" @click="openDetail(row as SettlementProofVO)">详情</el-button>
+            <el-button link type="primary" size="small" @click="openEdit(row as SettlementProofVO)">编辑</el-button>
+            <el-button link type="danger" size="small" @click="onRemove(row as SettlementProofVO)">删除</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+
+      <el-pagination
+        v-model:current-page="page"
+        v-model:page-size="size"
+        :total="total"
+        :page-sizes="[10, 20, 50, 100]"
+        layout="total, sizes, prev, pager, next, jumper"
+        class="pagination"
+        @size-change="onSearch"
+        @current-change="load"
+      />
+    </div>
 
     <el-dialog
       v-model="dialogVisible"
@@ -567,15 +582,97 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.toolbar {
+/* 筛选卡片：16px 20px 内边距，控件 12px 间距，按钮组靠右 */
+.filter-card {
   display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ceams-space-3);
+  padding: 16px 20px;
+  margin-bottom: var(--ceams-space-4);
 }
+
+.filter-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--ceams-space-2);
+  margin-left: auto;
+}
+
+/* 表格卡片：20px 内边距，头部放标题、条数与主操作 */
+.table-card {
+  padding: 20px;
+}
+
+.card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ceams-space-3);
+  margin-bottom: var(--ceams-space-4);
+}
+
+.card-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--ceams-space-2);
+}
+
+.card-title {
+  font-size: var(--ceams-font-size-md);
+  font-weight: 600;
+  color: var(--ceams-text-primary);
+}
+
+.card-sub {
+  font-size: var(--ceams-font-size-xs);
+  color: var(--ceams-text-secondary);
+}
+
+.card-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--ceams-space-2);
+}
+
+/* 金额列右对齐并使用等宽数字，避免数字跳动 */
+:deep(.amount-col .cell) {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+}
+
+/* 分页右对齐，距表格 16px */
 .pagination {
-  margin-top: 12px;
   justify-content: flex-end;
+  margin-top: var(--ceams-space-4);
 }
+
+/* 空态居中灰色，上下 40px 留白 */
+:deep(.el-table__empty-block) {
+  padding: 40px 0;
+  min-height: 0;
+}
+
+:deep(.el-table__empty-text) {
+  color: var(--ceams-text-secondary);
+}
+
+/* 弹窗：标题加粗、内容区 20px 24px、底部操作条靠右并带顶部细边框 */
+:deep(.el-dialog__title) {
+  font-weight: 600;
+}
+
+:deep(.el-dialog__body) {
+  padding: 20px 24px;
+}
+
+:deep(.el-dialog__footer) {
+  padding: 12px 24px 18px;
+  border-top: 1px solid var(--ceams-border-divider);
+  text-align: right;
+}
+
 .file-field {
   width: 100%;
 }
@@ -588,14 +685,14 @@ onMounted(() => {
 .file-name {
   max-width: 180px;
   overflow: hidden;
-  color: #606266;
-  font-size: 12px;
+  color: var(--ceams-text-secondary);
+  font-size: var(--ceams-font-size-xs);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .form-tip {
-  color: #909399;
-  font-size: 12px;
+  color: var(--ceams-text-placeholder);
+  font-size: var(--ceams-font-size-xs);
   line-height: 1.5;
 }
 </style>

@@ -188,7 +188,10 @@ defineExpose({ validate })
 <template>
   <view class="schema-form">
     <view v-for="section in schema.sections" :key="section.title" class="ceams-card">
-      <text class="section-title">{{ section.title }}</text>
+      <view class="section-head">
+        <view class="section-head__bar"></view>
+        <text class="section-head__title">{{ section.title }}</text>
+      </view>
 
       <view
         v-for="field in section.fields"
@@ -281,6 +284,7 @@ defineExpose({ validate })
         <input
           v-else
           class="field__input"
+          :class="{ 'field__input--number': field.type === 'number' || field.type === 'integer' }"
           :value="valueOf(field)"
           :type="inputType(field)"
           :placeholder="field.placeholder"
@@ -294,18 +298,33 @@ defineExpose({ validate })
 </template>
 
 <style scoped>
-.section-title {
-  display: block;
-  margin-bottom: var(--ceams-space-xs);
+/* 分组标题：左侧 4rpx 主色竖条，与全局 .ceams-section-title 观感一致 */
+.section-head {
+  display: flex;
+  align-items: center;
+  margin-bottom: var(--ceams-space-sm);
+}
+
+.section-head__bar {
+  width: 4rpx;
+  height: 28rpx;
+  margin-right: var(--ceams-space-xs);
+  background-color: var(--ceams-color-primary);
+  border-radius: 2rpx;
+}
+
+.section-head__title {
   color: var(--ceams-text-primary);
   font-size: var(--ceams-font-size-body);
   font-weight: var(--ceams-font-weight-semibold);
+  line-height: var(--ceams-line-height-tight);
 }
 
 .field {
   display: flex;
   align-items: center;
-  padding: var(--ceams-space-sm) 0;
+  /* 输入项上下各 24rpx，形成统一的行间距 */
+  padding: 24rpx 0;
   border-bottom: var(--ceams-border-width) solid var(--ceams-divider);
 }
 
@@ -322,12 +341,13 @@ defineExpose({ validate })
   width: 160rpx;
   flex-shrink: 0;
   color: var(--ceams-text-secondary);
-  font-size: var(--ceams-font-size-caption);
+  font-size: 24rpx;
 }
 
 .field__required {
   margin-left: 4rpx;
-  color: var(--ceams-color-danger);
+  /* 必填星号使用主色，与品牌视觉一致 */
+  color: var(--ceams-color-primary);
 }
 
 .field__input {
@@ -335,6 +355,13 @@ defineExpose({ validate })
   text-align: right;
   color: var(--ceams-text-primary);
   font-size: var(--ceams-font-size-caption);
+}
+
+/* 数字输入（金额、天数等）加大字号并加粗，突出关键数值 */
+.field__input--number {
+  color: var(--ceams-text-amount);
+  font-size: 32rpx;
+  font-weight: var(--ceams-font-weight-semibold);
 }
 
 .field__picker {
@@ -368,13 +395,12 @@ defineExpose({ validate })
 
 .attach__actions {
   display: flex;
-  gap: var(--ceams-space-xs);
 }
 
 .attach__btn {
-  margin: 0;
-  padding: 0 var(--ceams-space-md);
   height: 56rpx;
+  margin: 0 var(--ceams-space-xs) 0 0;
+  padding: 0 var(--ceams-space-md);
   font-size: var(--ceams-font-size-mini);
 }
 

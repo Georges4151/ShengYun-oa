@@ -20,7 +20,7 @@ import {
 } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { ceamsApi } from '@/services/http'
-import type { AccountStatus, AccountType, AccountVO } from '@ceams/types'
+import type { AccountStatus, AccountType, AccountVO, AllocationStatus } from '@ceams/types'
 import { usePage } from '@/composables/usePage'
 import { apiErrorMessage } from '@/utils/error'
 import {
@@ -58,6 +58,25 @@ const rules: FormRules<typeof form> = {
   transactionDate: [{ required: true, message: '请选择交易日期', trigger: 'change' }],
   amount: [{ required: true, message: '请输入金额', trigger: 'blur' }],
   type: [{ required: true, message: '请选择收支类型', trigger: 'change' }]
+}
+
+/** 状态标签视觉映射：仅决定颜色，状态值与文案保持原样。 */
+function statusTagType(status: AccountStatus): 'success' | 'warning' | 'info' {
+  if (status === 'CONFIRMED') return 'success'
+  if (status === 'DRAFT') return 'warning'
+  return 'info'
+}
+
+/** 分摊状态标签视觉映射。 */
+function allocationTagType(status: AllocationStatus): 'success' | 'warning' | 'info' {
+  if (status === 'ALLOCATED') return 'success'
+  if (status === 'PARTIAL') return 'warning'
+  return 'info'
+}
+
+/** 金额着色：收入绿色、支出红色，不改变原值与正负号。 */
+function amountClass(type: AccountType): string {
+  return type === 'INCOME' ? 'amount-in' : 'amount-out'
 }
 
 async function load(): Promise<void> {
@@ -196,8 +215,8 @@ onMounted(load)
 </script>
 
 <template>
-  <div>
-    <div class="toolbar">
+  <div class="list-page">
+    <div class="filter-bar">
       <el-input v-model="query.projectId" placeholder="项目 ID" clearable style="width: 180px" />
       <el-select v-model="query.type" placeholder="收支类型" clearable style="width: 140px">
         <el-option v-for="opt in typeOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
@@ -205,68 +224,82 @@ onMounted(load)
       <el-select v-model="query.status" placeholder="状态" clearable style="width: 140px">
         <el-option v-for="opt in statusOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
       </el-select>
-      <el-button type="primary" @click="onSearch">查询</el-button>
-      <el-button @click="openCreate">新增流水</el-button>
+      <div class="filter-actions">
+        <el-button type="primary" @click="onSearch">查询</el-button>
+        <el-button @click="openCreate">新增流水</el-button>
+      </div>
     </div>
 
-    <el-table v-loading="loading" :data="list" border>
-      <el-table-column prop="projectId" label="项目 ID" width="170" show-overflow-tooltip />
-      <el-table-column prop="transactionDate" label="交易日期" width="120" />
-      <el-table-column prop="amount" label="金额" width="110" />
-      <el-table-column label="收支类型" width="100">
-        <template #default="{ row }">
-          <el-tag size="small">{{ accountTypeLabels[(row as AccountVO).type] }}</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="状态" width="100">
-        <template #default="{ row }">
-          <el-tag size="small">{{ accountStatusLabels[(row as AccountVO).status] }}</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="分摊状态" width="110">
-        <template #default="{ row }">
-          <el-tag size="small">{{ allocationStatusLabels[(row as AccountVO).allocationStatus] }}</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column prop="paymentAccountId" label="付款账户 ID" width="170" show-overflow-tooltip />
-      <el-table-column prop="description" label="描述" min-width="140" show-overflow-tooltip />
-      <el-table-column label="操作" width="300" fixed="right">
-        <template #default="{ row }">
-          <el-button link type="primary" size="small" @click="openDetail(row as AccountVO)">详情</el-button>
-          <el-button link type="primary" size="small" @click="openEdit(row as AccountVO)">编辑</el-button>
-          <el-button
-            v-if="(row as AccountVO).status === 'DRAFT'"
-            link
-            type="success"
-            size="small"
-            @click="onConfirm(row as AccountVO)"
-          >
-            确认
-          </el-button>
-          <el-button
-            v-if="(row as AccountVO).status === 'DRAFT' || (row as AccountVO).status === 'CONFIRMED'"
-            link
-            type="warning"
-            size="small"
-            @click="onCancel(row as AccountVO)"
-          >
-            取消
-          </el-button>
-          <el-button link type="danger" size="small" @click="onRemove(row as AccountVO)">删除</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
+    <div class="data-card">
+      <el-table v-loading="loading" :data="list" border>
+        <el-table-column prop="projectId" label="项目 ID" width="170" show-overflow-tooltip />
+        <el-table-column prop="transactionDate" label="交易日期" width="120" />
+        <el-table-column label="金额" width="130" align="right" class-name="amount-col">
+          <template #default="{ row }">
+            <span :class="amountClass((row as AccountVO).type)">{{ (row as AccountVO).amount }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="收支类型" width="100">
+          <template #default="{ row }">
+            <el-tag size="small" :type="(row as AccountVO).type === 'INCOME' ? 'success' : 'danger'">
+              {{ accountTypeLabels[(row as AccountVO).type] }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="状态" width="100">
+          <template #default="{ row }">
+            <el-tag size="small" :type="statusTagType((row as AccountVO).status)">
+              {{ accountStatusLabels[(row as AccountVO).status] }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="分摊状态" width="110">
+          <template #default="{ row }">
+            <el-tag size="small" :type="allocationTagType((row as AccountVO).allocationStatus)">
+              {{ allocationStatusLabels[(row as AccountVO).allocationStatus] }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="paymentAccountId" label="付款账户 ID" width="170" show-overflow-tooltip />
+        <el-table-column prop="description" label="描述" min-width="140" show-overflow-tooltip />
+        <el-table-column label="操作" width="300" fixed="right">
+          <template #default="{ row }">
+            <el-button link type="primary" size="small" @click="openDetail(row as AccountVO)">详情</el-button>
+            <el-button link type="primary" size="small" @click="openEdit(row as AccountVO)">编辑</el-button>
+            <el-button
+              v-if="(row as AccountVO).status === 'DRAFT'"
+              link
+              type="success"
+              size="small"
+              @click="onConfirm(row as AccountVO)"
+            >
+              确认
+            </el-button>
+            <el-button
+              v-if="(row as AccountVO).status === 'DRAFT' || (row as AccountVO).status === 'CONFIRMED'"
+              link
+              type="warning"
+              size="small"
+              @click="onCancel(row as AccountVO)"
+            >
+              取消
+            </el-button>
+            <el-button link type="danger" size="small" @click="onRemove(row as AccountVO)">删除</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
 
-    <el-pagination
-      v-model:current-page="page"
-      v-model:page-size="size"
-      :total="total"
-      :page-sizes="[10, 20, 50, 100]"
-      layout="total, sizes, prev, pager, next, jumper"
-      class="pagination"
-      @size-change="onSearch"
-      @current-change="load"
-    />
+      <el-pagination
+        v-model:current-page="page"
+        v-model:page-size="size"
+        :total="total"
+        :page-sizes="[10, 20, 50, 100]"
+        layout="total, sizes, prev, pager, next, jumper"
+        class="pagination"
+        @size-change="onSearch"
+        @current-change="load"
+      />
+    </div>
 
     <el-dialog v-model="dialogVisible" :title="editingId ? '编辑收支流水' : '新增收支流水'" width="560px">
       <el-form ref="formRef" :model="form" :rules="rules" label-width="110px">
@@ -316,13 +349,40 @@ onMounted(load)
 </template>
 
 <style scoped>
-.toolbar {
+/* 筛选卡片：白色圆角、16px 20px 内边距，操作按钮靠右 */
+.filter-bar {
+  padding: 16px 20px;
+}
+.filter-actions {
   display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: var(--ceams-space-2, 8px);
+  margin-left: auto;
+}
+/* 表格卡片：20px 内边距 */
+.data-card {
+  padding: 20px;
+}
+/* 金额列：右对齐 + 等宽数字，收入绿色、支出红色 */
+:deep(.amount-col .cell) {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+}
+.amount-in {
+  color: var(--ceams-color-success);
+}
+.amount-out {
+  color: var(--ceams-color-danger);
 }
 .pagination {
-  margin-top: 12px;
+  margin-top: 16px;
   justify-content: flex-end;
+}
+/* 空态居中灰色，上下 40px 留白 */
+:deep(.el-table__empty-block) {
+  padding: 40px 0;
+  min-height: 0;
+}
+:deep(.el-table__empty-text) {
+  color: var(--ceams-text-secondary);
 }
 </style>

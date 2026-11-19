@@ -5,6 +5,7 @@ import {
   ElDescriptions,
   ElDescriptionsItem,
   ElDialog,
+  ElEmpty,
   ElForm,
   ElFormItem,
   ElInput,
@@ -216,51 +217,71 @@ onMounted(() => {
 
 <template>
   <div>
-    <div class="toolbar">
+    <!-- 筛选卡片：控件 12px 间距，查询按钮靠右 -->
+    <div class="data-card filter-card">
       <el-input v-model="query.keyword" placeholder="关键字（用户名/姓名）" clearable style="width: 220px" />
       <el-select v-model="query.status" placeholder="状态" clearable style="width: 140px">
         <el-option v-for="opt in statusOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
       </el-select>
-      <el-button type="primary" @click="onSearch">查询</el-button>
-      <el-button @click="openCreate">新增用户</el-button>
+      <div class="filter-actions">
+        <el-button type="primary" @click="onSearch">查询</el-button>
+      </div>
     </div>
 
-    <el-table v-loading="loading" :data="list" border>
-      <el-table-column prop="username" label="用户名" width="140" />
-      <el-table-column prop="name" label="姓名" width="120" />
-      <el-table-column prop="email" label="邮箱" min-width="160" />
-      <el-table-column prop="phone" label="手机号" width="140" />
-      <el-table-column label="状态" width="90">
-        <template #default="{ row }">
-          <el-tag size="small">{{ userStatusLabels[(row as UserVO).status] }}</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="角色" min-width="180">
-        <template #default="{ row }">
-          {{ row.roles?.map((r: RoleVO) => r.name).join('、') || '-' }}
-        </template>
-      </el-table-column>
-      <el-table-column label="操作" width="300" fixed="right">
-        <template #default="{ row }">
-          <el-button link type="primary" size="small" @click="openDetail(row as UserVO)">详情</el-button>
-          <el-button link type="primary" size="small" @click="openEdit(row as UserVO)">编辑</el-button>
-          <el-button link type="primary" size="small" @click="openAssignRoles(row as UserVO)">分配角色</el-button>
-          <el-button link type="warning" size="small" @click="onResetPassword(row as UserVO)">重置密码</el-button>
-          <el-button link type="danger" size="small" @click="onRemove(row as UserVO)">删除</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
+    <!-- 表格卡片：标题、条数与主操作，表格四周 20px -->
+    <div class="data-card table-card">
+      <div class="card-head">
+        <div class="card-heading">
+          <span class="card-title">用户列表</span>
+          <span class="card-sub">共 {{ total }} 条</span>
+        </div>
+        <div class="card-actions">
+          <el-button type="primary" @click="openCreate">新增用户</el-button>
+        </div>
+      </div>
 
-    <el-pagination
-      v-model:current-page="page"
-      v-model:page-size="size"
-      :total="total"
-      :page-sizes="[10, 20, 50, 100]"
-      layout="total, sizes, prev, pager, next, jumper"
-      class="pagination"
-      @size-change="onSearch"
-      @current-change="load"
-    />
+      <el-table v-loading="loading" :data="list" border>
+        <el-table-column prop="username" label="用户名" width="140" />
+        <el-table-column prop="name" label="姓名" width="120" />
+        <el-table-column prop="email" label="邮箱" min-width="160" show-overflow-tooltip />
+        <el-table-column prop="phone" label="手机号" width="140" />
+        <el-table-column label="状态" width="90">
+          <template #default="{ row }">
+            <el-tag size="small" :type="(row as UserVO).status === 'ACTIVE' ? 'success' : 'info'">
+              {{ userStatusLabels[(row as UserVO).status] }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="角色" min-width="180" show-overflow-tooltip>
+          <template #default="{ row }">
+            {{ row.roles?.map((r: RoleVO) => r.name).join('、') || '-' }}
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="300" fixed="right">
+          <template #default="{ row }">
+            <el-button link type="primary" size="small" @click="openDetail(row as UserVO)">详情</el-button>
+            <el-button link type="primary" size="small" @click="openEdit(row as UserVO)">编辑</el-button>
+            <el-button link type="primary" size="small" @click="openAssignRoles(row as UserVO)">分配角色</el-button>
+            <el-button link type="warning" size="small" @click="onResetPassword(row as UserVO)">重置密码</el-button>
+            <el-button link type="danger" size="small" @click="onRemove(row as UserVO)">删除</el-button>
+          </template>
+        </el-table-column>
+        <template #empty>
+          <el-empty description="暂无用户数据" />
+        </template>
+      </el-table>
+
+      <el-pagination
+        v-model:current-page="page"
+        v-model:page-size="size"
+        :total="total"
+        :page-sizes="[10, 20, 50, 100]"
+        layout="total, sizes, prev, pager, next, jumper"
+        class="pagination"
+        @size-change="onSearch"
+        @current-change="load"
+      />
+    </div>
 
     <el-dialog v-model="dialogVisible" :title="editingId ? '编辑用户' : '新增用户'" width="540px">
       <el-form ref="formRef" :model="form" :rules="rules" label-width="90px">
@@ -323,13 +344,74 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.toolbar {
+/* 筛选卡片：控件 12px 间距，查询按钮靠右 */
+.filter-card {
   display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ceams-space-3);
+  padding: 16px 20px;
+  margin-bottom: var(--ceams-space-4);
 }
+
+.filter-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--ceams-space-2);
+  margin-left: auto;
+}
+
+/* 表格卡片：20px 内边距 */
+.table-card {
+  padding: 20px;
+}
+
+.card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ceams-space-3);
+  margin-bottom: var(--ceams-space-4);
+}
+
+.card-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--ceams-space-2);
+}
+
+.card-title {
+  font-size: var(--ceams-font-size-md);
+  font-weight: 600;
+  color: var(--ceams-text-primary);
+}
+
+.card-sub {
+  font-size: var(--ceams-font-size-xs);
+  color: var(--ceams-text-secondary);
+}
+
+.card-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--ceams-space-2);
+}
+
+/* 分页右对齐，距表格 16px */
 .pagination {
-  margin-top: 12px;
+  margin-top: var(--ceams-space-4);
   justify-content: flex-end;
+}
+
+/* 空态：居中灰色 + 40px 留白 */
+:deep(.el-table__empty-block) {
+  padding: 40px 0;
+  min-height: 0;
+}
+
+:deep(.el-table__empty-text) {
+  color: var(--ceams-text-secondary);
 }
 </style>

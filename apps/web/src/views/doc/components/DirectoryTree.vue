@@ -265,7 +265,7 @@ async function onDelete(node: DirectoryNodeVO): Promise<void> {
     </div>
 
     <!-- 新建目录 -->
-    <el-dialog v-model="createVisible" title="新建目录" width="460px">
+    <el-dialog v-model="createVisible" class="doc-dialog" title="新建目录" width="460px">
       <el-form :model="createForm" label-width="90px">
         <el-form-item label="上级目录">
           <span>{{ createParent ? createParent.name : '库根' }}</span>
@@ -284,7 +284,7 @@ async function onDelete(node: DirectoryNodeVO): Promise<void> {
     </el-dialog>
 
     <!-- 改名 -->
-    <el-dialog v-model="renameVisible" title="目录改名" width="460px">
+    <el-dialog v-model="renameVisible" class="doc-dialog" title="目录改名" width="460px">
       <el-form :model="renameForm" label-width="90px">
         <el-form-item label="目录名称" required>
           <el-input v-model="renameForm.name" placeholder="请输入目录名称" maxlength="60" />
@@ -297,7 +297,7 @@ async function onDelete(node: DirectoryNodeVO): Promise<void> {
     </el-dialog>
 
     <!-- 移动 -->
-    <el-dialog v-model="moveVisible" title="移动目录" width="460px">
+    <el-dialog v-model="moveVisible" class="doc-dialog" title="移动目录" width="460px">
       <el-form :model="moveForm" label-width="90px">
         <el-form-item label="目标父目录">
           <el-tree-select
@@ -327,33 +327,69 @@ async function onDelete(node: DirectoryNodeVO): Promise<void> {
   height: 100%;
   min-width: 0;
 }
+
+/* 面板头部：标题与 12px 下间距 */
 .tree-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 4px 8px;
+  padding: 0 4px var(--ceams-space-3);
 }
+
 .tree-title {
+  font-size: var(--ceams-font-size-base);
   font-weight: 600;
-  color: #303133;
+  color: var(--ceams-text-primary);
 }
+
 .tree-body {
   flex: 1;
   min-height: 0;
 }
+
+/* 节点行高与圆角 */
+.directory-tree :deep(.el-tree-node__content) {
+  height: 34px;
+  border-radius: var(--ceams-radius-sm);
+}
+
+/* 选中节点：浅蓝底 + 主色文字 */
+.directory-tree :deep(.el-tree-node.is-current > .el-tree-node__content) {
+  background-color: var(--ceams-color-primary-light);
+  color: var(--ceams-color-primary);
+  font-weight: 600;
+}
+
+.directory-tree :deep(.el-tree__empty-text) {
+  color: var(--ceams-text-placeholder);
+}
+
+/* 右键菜单：白底圆角浮层 */
 .context-menu {
   position: fixed;
   z-index: 3000;
   display: flex;
   flex-direction: column;
+  align-items: stretch;
   gap: 2px;
-  padding: 6px;
-  background: #fff;
-  border: 1px solid #e4e7ed;
-  border-radius: 4px;
-  box-shadow: 0 2px 12px rgb(0 0 0 / 12%);
+  min-width: 120px;
+  padding: var(--ceams-space-1) var(--ceams-space-2);
+  background: var(--ceams-bg-card);
+  border: 1px solid var(--ceams-border-base);
+  border-radius: var(--ceams-radius-md);
+  box-shadow: var(--ceams-shadow-raised);
 }
+
 .context-menu :deep(.el-button + .el-button) {
   margin-left: 0;
+}
+
+.context-menu :deep(.el-button.is-link) {
+  justify-content: flex-start;
+}
+
+/* 弹窗内容 20px 24px */
+:global(.doc-dialog .el-dialog__body) {
+  padding: 20px 24px;
 }
 </style>

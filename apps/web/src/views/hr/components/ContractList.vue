@@ -291,7 +291,7 @@ async function onDownloadFile(row: ContractVO): Promise<void> {
 </script>
 
 <template>
-  <div>
+  <div class="list-page">
     <el-alert
       v-if="expiringCount > 0"
       :title="`近 ${EXPIRING_DAYS} 天内有 ${expiringCount} 份劳动合同即将到期，请及时续签`"
@@ -301,63 +301,78 @@ async function onDownloadFile(row: ContractVO): Promise<void> {
       class="expiring-alert"
     />
 
-    <div class="toolbar">
+    <!-- 筛选区：白色圆角卡片，控件 12px 间距，操作按钮靠右 -->
+    <div class="filter-bar">
       <el-select v-model="query.status" placeholder="合同状态" clearable style="width: 160px">
         <el-option v-for="opt in statusOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
       </el-select>
-      <el-button type="primary" @click="onSearch">查询</el-button>
-      <el-button @click="openCreate">新增合同</el-button>
+      <div class="filter-actions">
+        <el-button type="primary" @click="onSearch">查询</el-button>
+      </div>
     </div>
 
-    <el-table v-loading="loading" :data="list" border>
-      <el-table-column prop="contractNo" label="合同编号" width="160" />
-      <el-table-column label="员工" width="120">
-        <template #default="{ row }">{{ employeeName((row as ContractVO).employeeId) }}</template>
-      </el-table-column>
-      <el-table-column label="类型" width="120">
-        <template #default="{ row }">
-          {{ hrContractTypeLabels[(row as ContractVO).contractType] }}
-        </template>
-      </el-table-column>
-      <el-table-column prop="startDate" label="开始日期" width="120" />
-      <el-table-column prop="endDate" label="结束日期" width="120" />
-      <el-table-column prop="signDate" label="签订日期" width="120" />
-      <el-table-column prop="renewalRemindDate" label="续签提醒" width="120" />
-      <el-table-column label="状态" width="100">
-        <template #default="{ row }">
-          <el-tag size="small" :type="statusTagType((row as ContractVO).status)">
-            {{ hrContractStatusLabels[(row as ContractVO).status] }}
-          </el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="合同原件" width="120">
-        <template #default="{ row }">
-          <template v-if="(row as ContractVO).filePath">
-            <el-button link type="primary" size="small" @click="onPreviewFile(row as ContractVO)">
-              查看
-            </el-button>
-            <el-button link size="small" @click="onDownloadFile(row as ContractVO)">下载</el-button>
-          </template>
-          <span v-else class="empty-file">-</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="操作" width="100" fixed="right">
-        <template #default="{ row }">
-          <el-button link type="primary" size="small" @click="openEdit(row as ContractVO)">编辑</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
+    <!-- 表格卡片：头部放置标题、条数与主操作 -->
+    <div class="data-card">
+      <div class="card-head">
+        <div class="card-heading">
+          <span class="card-title">合同台账</span>
+          <span class="card-sub">共 {{ total }} 条</span>
+        </div>
+        <div class="card-actions">
+          <el-button type="primary" @click="openCreate">新增合同</el-button>
+        </div>
+      </div>
 
-    <el-pagination
-      v-model:current-page="page"
-      v-model:page-size="size"
-      :total="total"
-      :page-sizes="[10, 20, 50, 100]"
-      layout="total, sizes, prev, pager, next, jumper"
-      class="pagination"
-      @size-change="onSearch"
-      @current-change="load"
-    />
+      <el-table v-loading="loading" :data="list" border>
+        <el-table-column prop="contractNo" label="合同编号" width="160" />
+        <el-table-column label="员工" width="120">
+          <template #default="{ row }">{{ employeeName((row as ContractVO).employeeId) }}</template>
+        </el-table-column>
+        <el-table-column label="类型" width="120">
+          <template #default="{ row }">
+            {{ hrContractTypeLabels[(row as ContractVO).contractType] }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="startDate" label="开始日期" width="120" />
+        <el-table-column prop="endDate" label="结束日期" width="120" />
+        <el-table-column prop="signDate" label="签订日期" width="120" />
+        <el-table-column prop="renewalRemindDate" label="续签提醒" width="120" />
+        <el-table-column label="状态" width="100">
+          <template #default="{ row }">
+            <el-tag size="small" :type="statusTagType((row as ContractVO).status)">
+              {{ hrContractStatusLabels[(row as ContractVO).status] }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="合同原件" width="120">
+          <template #default="{ row }">
+            <template v-if="(row as ContractVO).filePath">
+              <el-button link type="primary" size="small" @click="onPreviewFile(row as ContractVO)">
+                查看
+              </el-button>
+              <el-button link size="small" @click="onDownloadFile(row as ContractVO)">下载</el-button>
+            </template>
+            <span v-else class="empty-file">-</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="100" fixed="right">
+          <template #default="{ row }">
+            <el-button link type="primary" size="small" @click="openEdit(row as ContractVO)">编辑</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+
+      <el-pagination
+        v-model:current-page="page"
+        v-model:page-size="size"
+        :total="total"
+        :page-sizes="[10, 20, 50, 100]"
+        layout="total, sizes, prev, pager, next, jumper"
+        class="pagination"
+        @size-change="onSearch"
+        @current-change="load"
+      />
+    </div>
 
     <el-dialog
       v-model="dialogVisible"
@@ -465,36 +480,116 @@ async function onDownloadFile(row: ContractVO): Promise<void> {
 </template>
 
 <style scoped>
+/* 到期预警提示与下方内容保持 16px 间距 */
 .expiring-alert {
-  margin-bottom: 12px;
+  margin-bottom: var(--ceams-space-4, 16px);
 }
-.toolbar {
+
+/* 筛选卡片：白色圆角、16px 20px 内边距，操作按钮靠右 */
+.filter-bar {
+  padding: 16px 20px;
+}
+
+.filter-actions {
   display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: var(--ceams-space-2, 8px);
+  margin-left: auto;
 }
+
+/* 表格卡片：20px 内边距 */
+.data-card {
+  padding: 20px;
+}
+
+/* 卡片头部：左侧标题与条数，右侧主操作 */
+.card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ceams-space-3, 12px);
+  margin-bottom: var(--ceams-space-4, 16px);
+}
+
+.card-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--ceams-space-2, 8px);
+}
+
+.card-title {
+  font-size: var(--ceams-font-size-md, 16px);
+  font-weight: 600;
+  color: var(--ceams-text-primary);
+}
+
+.card-sub {
+  font-size: var(--ceams-font-size-xs, 12px);
+  color: var(--ceams-text-secondary);
+}
+
+.card-actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--ceams-space-2, 8px);
+}
+
+/* 分页右对齐，距表格 16px */
 .pagination {
-  margin-top: 12px;
+  margin-top: var(--ceams-space-4, 16px);
   justify-content: flex-end;
 }
+
+/* 空态居中灰色，上下 40px 留白 */
+:deep(.el-table__empty-block) {
+  padding: 40px 0;
+  min-height: 0;
+}
+
+:deep(.el-table__empty-text) {
+  color: var(--ceams-text-secondary);
+}
+
+/* 附件字段 */
 .file-field {
   width: 100%;
 }
+
 .file-field__row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: var(--ceams-space-2, 8px);
 }
+
 .file-name {
-  color: #303133;
+  color: var(--ceams-text-primary);
   word-break: break-all;
 }
+
 .form-tip {
-  margin-top: 4px;
-  font-size: 12px;
-  color: #909399;
+  margin-top: var(--ceams-space-1, 4px);
+  font-size: var(--ceams-font-size-xs, 12px);
+  color: var(--ceams-text-placeholder);
 }
+
 .empty-file {
-  color: #909399;
+  color: var(--ceams-text-secondary);
+}
+
+/* 弹窗：标题加粗，内容 20px 24px，底部操作条靠右并带顶部细边框 */
+:deep(.el-dialog__title) {
+  font-weight: 600;
+}
+
+:deep(.el-dialog__body) {
+  padding: 20px 24px;
+}
+
+:deep(.el-dialog__footer) {
+  padding: 12px 24px 18px;
+  border-top: 1px solid var(--ceams-border-divider);
+  text-align: right;
 }
 </style>

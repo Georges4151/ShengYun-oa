@@ -5,6 +5,7 @@ import {
   ElDescriptions,
   ElDescriptionsItem,
   ElDialog,
+  ElEmpty,
   ElForm,
   ElFormItem,
   ElInput,
@@ -176,42 +177,62 @@ onMounted(load)
 
 <template>
   <div>
-    <div class="toolbar">
+    <!-- 筛选卡片：控件 12px 间距，查询按钮靠右 -->
+    <div class="data-card filter-card">
       <el-input v-model="query.keyword" placeholder="关键字（编码/名称）" clearable style="width: 220px" />
-      <el-button type="primary" @click="onSearch">查询</el-button>
-      <el-button @click="openCreate">新增角色</el-button>
+      <div class="filter-actions">
+        <el-button type="primary" @click="onSearch">查询</el-button>
+      </div>
     </div>
 
-    <el-table v-loading="loading" :data="list" border>
-      <el-table-column prop="code" label="编码" width="160" />
-      <el-table-column prop="name" label="名称" min-width="160" />
-      <el-table-column prop="description" label="描述" min-width="180" show-overflow-tooltip />
-      <el-table-column label="状态" width="100">
-        <template #default="{ row }">
-          <el-tag size="small">{{ roleStatusLabels[(row as RoleVO).status] }}</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column prop="createTime" label="创建时间" width="180" />
-      <el-table-column label="操作" width="240" fixed="right">
-        <template #default="{ row }">
-          <el-button link type="primary" size="small" @click="openDetail(row as RoleVO)">详情</el-button>
-          <el-button link type="primary" size="small" @click="openEdit(row as RoleVO)">编辑</el-button>
-          <el-button link type="primary" size="small" @click="openAssignPermissions(row as RoleVO)">赋权</el-button>
-          <el-button link type="danger" size="small" @click="onRemove(row as RoleVO)">删除</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
+    <!-- 表格卡片：标题、条数与主操作 -->
+    <div class="data-card table-card">
+      <div class="card-head">
+        <div class="card-heading">
+          <span class="card-title">角色列表</span>
+          <span class="card-sub">共 {{ total }} 条</span>
+        </div>
+        <div class="card-actions">
+          <el-button type="primary" @click="openCreate">新增角色</el-button>
+        </div>
+      </div>
 
-    <el-pagination
-      v-model:current-page="page"
-      v-model:page-size="size"
-      :total="total"
-      :page-sizes="[10, 20, 50, 100]"
-      layout="total, sizes, prev, pager, next, jumper"
-      class="pagination"
-      @size-change="onSearch"
-      @current-change="load"
-    />
+      <el-table v-loading="loading" :data="list" border>
+        <el-table-column prop="code" label="编码" width="160" />
+        <el-table-column prop="name" label="名称" min-width="160" />
+        <el-table-column prop="description" label="描述" min-width="180" show-overflow-tooltip />
+        <el-table-column label="状态" width="100">
+          <template #default="{ row }">
+            <el-tag size="small" :type="(row as RoleVO).status === 'ACTIVE' ? 'success' : 'info'">
+              {{ roleStatusLabels[(row as RoleVO).status] }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="createTime" label="创建时间" width="180" />
+        <el-table-column label="操作" width="240" fixed="right">
+          <template #default="{ row }">
+            <el-button link type="primary" size="small" @click="openDetail(row as RoleVO)">详情</el-button>
+            <el-button link type="primary" size="small" @click="openEdit(row as RoleVO)">编辑</el-button>
+            <el-button link type="primary" size="small" @click="openAssignPermissions(row as RoleVO)">赋权</el-button>
+            <el-button link type="danger" size="small" @click="onRemove(row as RoleVO)">删除</el-button>
+          </template>
+        </el-table-column>
+        <template #empty>
+          <el-empty description="暂无角色数据" />
+        </template>
+      </el-table>
+
+      <el-pagination
+        v-model:current-page="page"
+        v-model:page-size="size"
+        :total="total"
+        :page-sizes="[10, 20, 50, 100]"
+        layout="total, sizes, prev, pager, next, jumper"
+        class="pagination"
+        @size-change="onSearch"
+        @current-change="load"
+      />
+    </div>
 
     <el-dialog v-model="dialogVisible" :title="editingId ? '编辑角色' : '新增角色'" width="500px">
       <el-form ref="formRef" :model="form" :rules="rules" label-width="90px">
@@ -264,13 +285,74 @@ onMounted(load)
 </template>
 
 <style scoped>
-.toolbar {
+/* 筛选卡片：控件 12px 间距，查询按钮靠右 */
+.filter-card {
   display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ceams-space-3);
+  padding: 16px 20px;
+  margin-bottom: var(--ceams-space-4);
 }
+
+.filter-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--ceams-space-2);
+  margin-left: auto;
+}
+
+/* 表格卡片：20px 内边距 */
+.table-card {
+  padding: 20px;
+}
+
+.card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ceams-space-3);
+  margin-bottom: var(--ceams-space-4);
+}
+
+.card-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--ceams-space-2);
+}
+
+.card-title {
+  font-size: var(--ceams-font-size-md);
+  font-weight: 600;
+  color: var(--ceams-text-primary);
+}
+
+.card-sub {
+  font-size: var(--ceams-font-size-xs);
+  color: var(--ceams-text-secondary);
+}
+
+.card-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--ceams-space-2);
+}
+
+/* 分页右对齐，距表格 16px */
 .pagination {
-  margin-top: 12px;
+  margin-top: var(--ceams-space-4);
   justify-content: flex-end;
+}
+
+/* 空态：居中灰色 + 40px 留白 */
+:deep(.el-table__empty-block) {
+  padding: 40px 0;
+  min-height: 0;
+}
+
+:deep(.el-table__empty-text) {
+  color: var(--ceams-text-secondary);
 }
 </style>

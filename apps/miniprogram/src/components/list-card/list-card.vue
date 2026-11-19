@@ -36,10 +36,11 @@ const props = withDefaults(
 <style scoped>
 .ceams-list-card {
   margin-bottom: var(--ceams-space-md);
-  padding: var(--ceams-space-lg);
+  padding: 24rpx;
   background-color: var(--ceams-bg-card);
-  border-radius: var(--ceams-radius-card);
-  box-shadow: var(--ceams-shadow-card);
+  border-radius: 16rpx;
+  /* 极轻阴影：与首页工作台卡片观感一致，避免列表页视觉过重 */
+  box-shadow: 0 2rpx 8rpx rgba(15, 23, 42, 0.04);
   box-sizing: border-box;
 }
 
@@ -57,7 +58,7 @@ const props = withDefaults(
 .ceams-list-card__title {
   display: block;
   color: var(--ceams-text-primary);
-  font-size: var(--ceams-font-size-heading);
+  font-size: 28rpx;
   font-weight: var(--ceams-font-weight-semibold);
   line-height: var(--ceams-line-height-tight);
 }
@@ -66,7 +67,7 @@ const props = withDefaults(
   display: block;
   margin-top: var(--ceams-space-2xs);
   color: var(--ceams-text-secondary);
-  font-size: var(--ceams-font-size-caption);
+  font-size: 24rpx;
   line-height: var(--ceams-line-height-normal);
 }
 
@@ -77,7 +78,7 @@ const props = withDefaults(
 
 .ceams-list-card__meta {
   color: var(--ceams-text-secondary);
-  font-size: var(--ceams-font-size-caption);
+  font-size: 24rpx;
   line-height: var(--ceams-line-height-normal);
 }
 

@@ -93,7 +93,6 @@ onReachBottom(() => {
       v-else-if="list.length === 0"
       title="暂无项目"
       description="调整关键词后重新查询"
-      icon="◈"
     />
 
     <view
@@ -117,7 +116,7 @@ onReachBottom(() => {
             <text class="project-list__metric-label">合同金额</text>
             <amount-text :value="item.contractAmount ?? '--'" size="md" />
           </view>
-          <view class="project-list__metric project-list__metric--end">
+          <view class="project-list__metric project-list__metric--spaced">
             <text class="project-list__metric-label">实际金额</text>
             <amount-text
               :value="item.actualAmount ?? '--'"
@@ -216,26 +215,26 @@ onReachBottom(() => {
 }
 
 .project-list__metrics {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
   padding-top: var(--ceams-space-sm);
   border-top: var(--ceams-border-width) solid var(--ceams-divider);
 }
 
+/* 金额行：标签在左、金额右对齐，便于纵向快速比对 */
 .project-list__metric {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
 }
 
-.project-list__metric--end {
-  align-items: flex-end;
+.project-list__metric--spaced {
+  margin-top: var(--ceams-space-xs);
 }
 
 .project-list__metric-label {
-  margin-bottom: var(--ceams-space-2xs);
+  flex-shrink: 0;
+  margin-right: var(--ceams-space-md);
   color: var(--ceams-text-secondary);
-  font-size: var(--ceams-font-size-caption);
+  font-size: 24rpx;
 }
 
 .project-list__loadmore {

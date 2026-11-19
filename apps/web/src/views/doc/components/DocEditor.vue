@@ -193,6 +193,7 @@ function onClose(): void {
 <template>
   <el-dialog
     v-model="visible"
+    class="doc-dialog doc-editor-dialog"
     :title="mode === 'edit' ? '在线编辑' : '在线预览'"
     width="88%"
     top="4vh"
@@ -223,27 +224,39 @@ function onClose(): void {
 </template>
 
 <style scoped>
+/* 编辑器容器：仅调整留白与圆角，不改变尺寸设置 */
 .editor-wrapper {
   height: 70vh;
   min-height: 320px;
   /* 允许用户拖拽右下角自行调整高度 */
   resize: vertical;
   overflow: hidden;
+  border: 1px solid var(--ceams-border-base);
+  border-radius: var(--ceams-radius-md);
 }
+
 .editor-wrapper.is-fullscreen {
   height: calc(100vh - 168px);
   min-height: 0;
 }
+
 .editor-container {
   height: 100%;
 }
+
 .editor-wrapper :deep(iframe) {
   display: block;
   width: 100% !important;
   height: 100% !important;
   border: 0;
 }
+
 .degraded-alert {
-  margin-bottom: 12px;
+  margin-bottom: var(--ceams-space-4);
+}
+
+/* 弹窗内容 20px 24px，底部操作条由全局样式右对齐 */
+:global(.doc-dialog .el-dialog__body) {
+  padding: 20px 24px;
 }
 </style>

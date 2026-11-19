@@ -2,16 +2,14 @@
 import { computed, onMounted, ref } from 'vue'
 import {
   ElButton,
-  ElCard,
-  ElCol,
   ElMessage,
-  ElRow,
   ElTable,
   ElTableColumn,
   ElTabPane,
   ElTabs,
   ElTag
 } from 'element-plus'
+import { PageContainer } from '@ceams/ui-web'
 import { ApiError } from '@ceams/api-client'
 import { hasPermission } from '@/composables/usePermission'
 import { ceamsApi, fetchBlob } from '@/services/http'
@@ -289,301 +287,314 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="report-view">
-    <el-row :gutter="16" class="card-row">
-      <el-col :span="6">
-        <el-card shadow="never">
-          <div class="metric">
-            <div class="metric-label">待审批报销</div>
-            <div class="metric-value">{{ dashboard?.pendingReceiptCount ?? 0 }}</div>
-          </div>
-        </el-card>
-      </el-col>
-      <el-col :span="6">
-        <el-card shadow="never">
-          <div class="metric">
-            <div class="metric-label">待审批用印</div>
-            <div class="metric-value">{{ dashboard?.pendingSealApplicationCount ?? 0 }}</div>
-          </div>
-        </el-card>
-      </el-col>
-      <el-col :span="6">
-        <el-card shadow="never">
-          <div class="metric">
-            <div class="metric-label">未读通知</div>
-            <div class="metric-value">{{ dashboard?.unreadNotificationCount ?? 0 }}</div>
-          </div>
-        </el-card>
-      </el-col>
-      <el-col :span="6">
-        <el-card shadow="never">
-          <div class="metric">
-            <div class="metric-label">项目（进行中 / 总数）</div>
-            <div class="metric-value">
-              {{ dashboard?.inProgressProjectCount ?? 0 }} / {{ dashboard?.projectCount ?? 0 }}
-            </div>
-          </div>
-        </el-card>
-      </el-col>
-    </el-row>
-
-    <el-row :gutter="16" class="card-row">
-      <el-col :span="6">
-        <el-card shadow="never">
-          <div class="metric">
-            <div class="metric-label">本月收入</div>
-            <div class="metric-value">{{ dashboard?.monthIncome ?? '0' }}</div>
-          </div>
-        </el-card>
-      </el-col>
-      <el-col :span="6">
-        <el-card shadow="never">
-          <div class="metric">
-            <div class="metric-label">本月支出</div>
-            <div class="metric-value">{{ dashboard?.monthExpense ?? '0' }}</div>
-          </div>
-        </el-card>
-      </el-col>
-      <el-col :span="6">
-        <el-card shadow="never">
-          <div class="metric">
-            <div class="metric-label">累计收入</div>
-            <div class="metric-value">{{ dashboard?.totalIncome ?? '0' }}</div>
-          </div>
-        </el-card>
-      </el-col>
-      <el-col :span="6">
-        <el-card shadow="never">
-          <div class="metric">
-            <div class="metric-label">累计支出</div>
-            <div class="metric-value">{{ dashboard?.totalExpense ?? '0' }}</div>
-          </div>
-        </el-card>
-      </el-col>
-    </el-row>
-
-    <el-row :gutter="16" class="card-row">
-      <el-col v-if="hasPermission('report:hr-cost:view')" :span="6">
-        <el-card shadow="never">
-          <div class="metric">
-            <div class="metric-label">在职人数（含试用）</div>
-            <div class="metric-value">{{ hrCost?.headcount ?? 0 }}</div>
-          </div>
-        </el-card>
-      </el-col>
-      <el-col v-if="hasPermission('report:hr-cost:view')" :span="6">
-        <el-card shadow="never">
-          <div class="metric">
-            <div class="metric-label">本月人力成本</div>
-            <div class="metric-value">{{ hrCost?.netPay ?? '0' }}</div>
-          </div>
-        </el-card>
-      </el-col>
-      <el-col v-if="hasPermission('report:admin-assets:view')" :span="6">
-        <el-card shadow="never">
-          <div class="metric">
-            <div class="metric-label">在借资产（含逾期）</div>
-            <div class="metric-value">{{ adminAssets?.borrowingCount ?? 0 }}</div>
-            <div class="metric-sub">逾期 {{ adminAssets?.overdueCount ?? 0 }}</div>
-          </div>
-        </el-card>
-      </el-col>
-      <el-col v-if="hasPermission('bpm:report:view')" :span="6">
-        <el-card shadow="never">
-          <div class="metric">
-            <div class="metric-label">审批超时率</div>
-            <div class="metric-value">{{ overdueRatePercent }}</div>
-          </div>
-        </el-card>
-      </el-col>
-    </el-row>
-
-    <div class="report-toolbar">
+  <PageContainer title="报表" subtitle="经营、项目、人力与审批等统计报表汇总">
+    <template #extra>
       <el-button type="primary" :loading="exporting" @click="onExport">导出当前报表</el-button>
+    </template>
+
+    <div class="report-view">
+      <div class="metric-grid">
+        <div class="stat-card">
+          <div class="metric-label">待审批报销</div>
+          <div class="metric-value">{{ dashboard?.pendingReceiptCount ?? 0 }}</div>
+        </div>
+        <div class="stat-card">
+          <div class="metric-label">待审批用印</div>
+          <div class="metric-value">{{ dashboard?.pendingSealApplicationCount ?? 0 }}</div>
+        </div>
+        <div class="stat-card">
+          <div class="metric-label">未读通知</div>
+          <div class="metric-value">{{ dashboard?.unreadNotificationCount ?? 0 }}</div>
+        </div>
+        <div class="stat-card">
+          <div class="metric-label">项目（进行中 / 总数）</div>
+          <div class="metric-value">
+            {{ dashboard?.inProgressProjectCount ?? 0 }} / {{ dashboard?.projectCount ?? 0 }}
+          </div>
+        </div>
+      </div>
+
+      <div class="metric-grid">
+        <div class="stat-card">
+          <div class="metric-label">本月收入</div>
+          <div class="metric-value metric-value--income">{{ dashboard?.monthIncome ?? '0' }}</div>
+        </div>
+        <div class="stat-card">
+          <div class="metric-label">本月支出</div>
+          <div class="metric-value metric-value--expense">{{ dashboard?.monthExpense ?? '0' }}</div>
+        </div>
+        <div class="stat-card">
+          <div class="metric-label">累计收入</div>
+          <div class="metric-value metric-value--income">{{ dashboard?.totalIncome ?? '0' }}</div>
+        </div>
+        <div class="stat-card">
+          <div class="metric-label">累计支出</div>
+          <div class="metric-value metric-value--expense">{{ dashboard?.totalExpense ?? '0' }}</div>
+        </div>
+      </div>
+
+      <div v-if="hasPermission('report:hr-cost:view') || hasPermission('report:admin-assets:view') || hasPermission('bpm:report:view')" class="metric-grid">
+        <div v-if="hasPermission('report:hr-cost:view')" class="stat-card">
+          <div class="metric-label">在职人数（含试用）</div>
+          <div class="metric-value">{{ hrCost?.headcount ?? 0 }}</div>
+        </div>
+        <div v-if="hasPermission('report:hr-cost:view')" class="stat-card">
+          <div class="metric-label">本月人力成本</div>
+          <div class="metric-value">{{ hrCost?.netPay ?? '0' }}</div>
+        </div>
+        <div v-if="hasPermission('report:admin-assets:view')" class="stat-card">
+          <div class="metric-label">在借资产（含逾期）</div>
+          <div class="metric-value">{{ adminAssets?.borrowingCount ?? 0 }}</div>
+          <div class="metric-sub">逾期 {{ adminAssets?.overdueCount ?? 0 }}</div>
+        </div>
+        <div v-if="hasPermission('bpm:report:view')" class="stat-card">
+          <div class="metric-label">审批超时率</div>
+          <div class="metric-value">{{ overdueRatePercent }}</div>
+        </div>
+      </div>
+
+      <el-tabs v-model="activeTab" class="report-tabs" @tab-change="onTabChange">
+        <el-tab-pane label="财务报表" name="financial">
+          <div class="data-card">
+            <div class="report-summary" v-if="financial">
+              <span>合计收入：{{ financial.totalIncome }}</span>
+              <span>合计支出：{{ financial.totalExpense }}</span>
+              <span>净额：{{ financial.netAmount }}</span>
+            </div>
+            <el-table :data="financial?.items ?? []" border>
+              <el-table-column prop="transactionDate" label="交易时间" width="170" />
+              <el-table-column label="来源" width="110">
+                <template #default="{ row }">
+                  <el-tag size="small" effect="plain">{{ financialSourceTypeLabels[(row as FinancialReportItemVO).sourceType] }}</el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column label="收支" width="90">
+                <template #default="{ row }">
+                  <el-tag size="small" :type="(row as FinancialReportItemVO).type === 'INCOME' ? 'success' : 'danger'">
+                    {{ transactionTypeLabels[(row as FinancialReportItemVO).type] }}
+                  </el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column prop="projectName" label="项目" width="150" show-overflow-tooltip />
+              <el-table-column prop="accountName" label="账户" width="150" show-overflow-tooltip />
+              <el-table-column prop="amount" label="金额" width="130" align="right" class-name="amount-col" />
+              <el-table-column prop="description" label="描述" min-width="200" show-overflow-tooltip />
+            </el-table>
+          </div>
+        </el-tab-pane>
+
+        <el-tab-pane label="项目成本" name="project-cost">
+          <div class="data-card">
+            <div class="report-summary" v-if="projectCost">
+              <span>预算合计：{{ projectCost.totalBudget }}</span>
+              <span>变更合计：{{ projectCost.totalChanged }}</span>
+              <span>已付合计：{{ projectCost.totalPaid }}</span>
+              <span>分摊合计：{{ projectCost.totalAllocated }}</span>
+            </div>
+            <el-table :data="projectCost?.items ?? []" border>
+              <el-table-column prop="projectName" label="项目" min-width="160" show-overflow-tooltip />
+              <el-table-column prop="contractAmount" label="合同金额" width="130" align="right" class-name="amount-col" />
+              <el-table-column prop="budgetAmount" label="预算金额" width="130" align="right" class-name="amount-col" />
+              <el-table-column prop="changedAmount" label="已变更" width="130" align="right" class-name="amount-col" />
+              <el-table-column prop="paidAmount" label="已付进度款" width="130" align="right" class-name="amount-col" />
+              <el-table-column prop="allocatedAmount" label="成本分摊" width="130" align="right" class-name="amount-col" />
+              <el-table-column prop="actualAmount" label="实际已发生" width="130" align="right" class-name="amount-col" />
+            </el-table>
+          </div>
+        </el-tab-pane>
+
+        <el-tab-pane label="材料报表" name="material">
+          <div class="data-card">
+            <div class="report-summary" v-if="material">
+              <span>材料总数：{{ material.totalCount }}</span>
+              <span>金额总计：{{ material.totalAmount }}</span>
+            </div>
+            <el-table :data="material?.items ?? []" border>
+              <el-table-column prop="materialCode" label="材料编码" width="130" />
+              <el-table-column prop="materialName" label="材料名" min-width="150" show-overflow-tooltip />
+              <el-table-column prop="specification" label="规格" width="140" show-overflow-tooltip />
+              <el-table-column prop="unit" label="单位" width="80" />
+              <el-table-column prop="currentPrice" label="当前单价" width="120" align="right" class-name="amount-col" />
+              <el-table-column prop="transactionCount" label="领用/采购笔数" width="130" align="right" />
+              <el-table-column prop="totalAmount" label="金额合计" width="130" align="right" class-name="amount-col" />
+            </el-table>
+          </div>
+        </el-tab-pane>
+
+        <el-tab-pane v-for="tab in p2Tabs" :key="tab.name" :label="tab.label" :name="tab.name">
+          <template v-if="tab.name === 'hr-cost'">
+            <div class="data-card">
+              <div class="report-summary" v-if="hrCost">
+                <span>月份：{{ hrCost.month }}</span>
+                <span>在职人数：{{ hrCost.headcount }}</span>
+                <span>工资人数：{{ hrCost.payrollHeadcount }}</span>
+                <span>应发：{{ hrCost.grossPay }}</span>
+                <span>实发：{{ hrCost.netPay }}</span>
+                <span>人均实发：{{ hrCost.avgNetPay }}</span>
+              </div>
+              <el-table :data="hrCost?.byDept ?? []" border>
+                <el-table-column prop="deptName" label="部门" min-width="140" show-overflow-tooltip />
+                <el-table-column prop="headcount" label="在职人数" width="110" align="right" />
+                <el-table-column prop="payrollHeadcount" label="工资人数" width="110" align="right" />
+                <el-table-column prop="grossPay" label="应发合计" width="130" align="right" class-name="amount-col" />
+                <el-table-column prop="netPay" label="实发合计" width="130" align="right" class-name="amount-col" />
+                <el-table-column prop="socialInsurance" label="社保" width="130" align="right" class-name="amount-col" />
+                <el-table-column prop="housingFund" label="公积金" width="130" align="right" class-name="amount-col" />
+                <el-table-column prop="tax" label="个税" width="130" align="right" class-name="amount-col" />
+              </el-table>
+            </div>
+          </template>
+
+          <template v-else-if="tab.name === 'hr-performance'">
+            <div class="data-card">
+              <div class="report-summary" v-if="hrPerformance">
+                <span>周期：{{ hrPerformance.period }}</span>
+                <span>评审数：{{ hrPerformance.reviewCount }}</span>
+                <span>定稿数：{{ hrPerformance.finalizedCount }}</span>
+                <span>平均分：{{ hrPerformance.avgFinalScore }}</span>
+                <span>
+                  分布 A/B/C/D：{{ hrPerformance.distribution.a }} / {{ hrPerformance.distribution.b }} /
+                  {{ hrPerformance.distribution.c }} / {{ hrPerformance.distribution.d }}
+                </span>
+              </div>
+              <el-table :data="hrPerformance?.byDept ?? []" border>
+                <el-table-column prop="deptName" label="部门" min-width="160" show-overflow-tooltip />
+                <el-table-column prop="reviewCount" label="评审数" width="120" align="right" />
+                <el-table-column prop="finalizedCount" label="定稿数" width="120" align="right" />
+                <el-table-column prop="avgFinalScore" label="平均分" width="120" align="right" class-name="amount-col" />
+              </el-table>
+            </div>
+          </template>
+
+          <template v-else-if="tab.name === 'admin-assets'">
+            <div class="data-card">
+              <div class="report-summary" v-if="adminAssets">
+                <span>总数：{{ adminAssets.totalCount }}</span>
+                <span>总价值：{{ adminAssets.totalValue }}</span>
+                <span>借用中：{{ adminAssets.borrowingCount }}</span>
+                <span>逾期：{{ adminAssets.overdueCount }}</span>
+                <span>借用率：{{ adminAssets.borrowRate }}</span>
+              </div>
+              <el-table :data="adminAssets?.byCategory ?? []" border>
+                <el-table-column prop="category" label="分类" width="180" />
+                <el-table-column prop="count" label="数量" width="120" align="right" />
+                <el-table-column prop="totalValue" label="购置金额合计" width="160" align="right" class-name="amount-col" />
+              </el-table>
+            </div>
+          </template>
+
+          <template v-else-if="tab.name === 'bpm-efficiency'">
+            <div class="data-card">
+              <div class="report-summary" v-if="bpmEfficiency">
+                <span>实例数：{{ bpmEfficiency.instanceCount }}</span>
+                <span>通过数：{{ bpmEfficiency.approvedCount }}</span>
+                <span>平均时长（h）：{{ bpmEfficiency.avgDurationHours }}</span>
+                <span>超时任务：{{ bpmEfficiency.overdueTaskCount }}</span>
+                <span>超时率：{{ (Number(bpmEfficiency.overdueRate) * 100).toFixed(2) }}%</span>
+              </div>
+              <div class="section-title">按业务类型</div>
+              <el-table :data="bpmEfficiency?.byBizType ?? []" border>
+                <el-table-column prop="bizType" label="业务类型" min-width="160" />
+                <el-table-column prop="instanceCount" label="实例数" width="120" align="right" />
+                <el-table-column prop="approvedCount" label="通过数" width="120" align="right" />
+                <el-table-column prop="avgDurationHours" label="平均时长（h）" width="150" align="right" class-name="amount-col" />
+              </el-table>
+              <div class="section-title">待办积压节点</div>
+              <el-table :data="bpmEfficiency?.backlogByNode ?? []" border>
+                <el-table-column prop="nodeKey" label="节点编码" min-width="200" />
+                <el-table-column prop="pendingCount" label="待处理数" width="140" align="right" />
+              </el-table>
+            </div>
+          </template>
+        </el-tab-pane>
+      </el-tabs>
     </div>
-
-    <el-tabs v-model="activeTab" @tab-change="onTabChange">
-      <el-tab-pane label="财务报表" name="financial">
-        <div class="report-summary" v-if="financial">
-          <span>合计收入：{{ financial.totalIncome }}</span>
-          <span>合计支出：{{ financial.totalExpense }}</span>
-          <span>净额：{{ financial.netAmount }}</span>
-        </div>
-        <el-table :data="financial?.items ?? []" border>
-          <el-table-column prop="transactionDate" label="交易时间" width="170" />
-          <el-table-column label="来源" width="110">
-            <template #default="{ row }">
-              <el-tag size="small">{{ financialSourceTypeLabels[(row as FinancialReportItemVO).sourceType] }}</el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column label="收支" width="90">
-            <template #default="{ row }">
-              <el-tag size="small" :type="(row as FinancialReportItemVO).type === 'INCOME' ? 'success' : 'danger'">
-                {{ transactionTypeLabels[(row as FinancialReportItemVO).type] }}
-              </el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column prop="projectName" label="项目" width="150" show-overflow-tooltip />
-          <el-table-column prop="accountName" label="账户" width="150" show-overflow-tooltip />
-          <el-table-column prop="amount" label="金额" width="120" />
-          <el-table-column prop="description" label="描述" min-width="200" show-overflow-tooltip />
-        </el-table>
-      </el-tab-pane>
-
-      <el-tab-pane label="项目成本" name="project-cost">
-        <div class="report-summary" v-if="projectCost">
-          <span>预算合计：{{ projectCost.totalBudget }}</span>
-          <span>变更合计：{{ projectCost.totalChanged }}</span>
-          <span>已付合计：{{ projectCost.totalPaid }}</span>
-          <span>分摊合计：{{ projectCost.totalAllocated }}</span>
-        </div>
-        <el-table :data="projectCost?.items ?? []" border>
-          <el-table-column prop="projectName" label="项目" min-width="160" show-overflow-tooltip />
-          <el-table-column prop="contractAmount" label="合同金额" width="120" />
-          <el-table-column prop="budgetAmount" label="预算金额" width="120" />
-          <el-table-column prop="changedAmount" label="已变更" width="120" />
-          <el-table-column prop="paidAmount" label="已付进度款" width="120" />
-          <el-table-column prop="allocatedAmount" label="成本分摊" width="120" />
-          <el-table-column prop="actualAmount" label="实际已发生" width="120" />
-        </el-table>
-      </el-tab-pane>
-
-      <el-tab-pane label="材料报表" name="material">
-        <div class="report-summary" v-if="material">
-          <span>材料总数：{{ material.totalCount }}</span>
-          <span>金额总计：{{ material.totalAmount }}</span>
-        </div>
-        <el-table :data="material?.items ?? []" border>
-          <el-table-column prop="materialCode" label="材料编码" width="130" />
-          <el-table-column prop="materialName" label="材料名" min-width="150" show-overflow-tooltip />
-          <el-table-column prop="specification" label="规格" width="140" show-overflow-tooltip />
-          <el-table-column prop="unit" label="单位" width="80" />
-          <el-table-column prop="currentPrice" label="当前单价" width="110" />
-          <el-table-column prop="transactionCount" label="领用/采购笔数" width="130" />
-          <el-table-column prop="totalAmount" label="金额合计" width="120" />
-        </el-table>
-      </el-tab-pane>
-
-      <el-tab-pane v-for="tab in p2Tabs" :key="tab.name" :label="tab.label" :name="tab.name">
-        <template v-if="tab.name === 'hr-cost'">
-          <div class="report-summary" v-if="hrCost">
-            <span>月份：{{ hrCost.month }}</span>
-            <span>在职人数：{{ hrCost.headcount }}</span>
-            <span>工资人数：{{ hrCost.payrollHeadcount }}</span>
-            <span>应发：{{ hrCost.grossPay }}</span>
-            <span>实发：{{ hrCost.netPay }}</span>
-            <span>人均实发：{{ hrCost.avgNetPay }}</span>
-          </div>
-          <el-table :data="hrCost?.byDept ?? []" border>
-            <el-table-column prop="deptName" label="部门" min-width="140" show-overflow-tooltip />
-            <el-table-column prop="headcount" label="在职人数" width="110" />
-            <el-table-column prop="payrollHeadcount" label="工资人数" width="110" />
-            <el-table-column prop="grossPay" label="应发合计" width="130" />
-            <el-table-column prop="netPay" label="实发合计" width="130" />
-            <el-table-column prop="socialInsurance" label="社保" width="120" />
-            <el-table-column prop="housingFund" label="公积金" width="120" />
-            <el-table-column prop="tax" label="个税" width="120" />
-          </el-table>
-        </template>
-
-        <template v-else-if="tab.name === 'hr-performance'">
-          <div class="report-summary" v-if="hrPerformance">
-            <span>周期：{{ hrPerformance.period }}</span>
-            <span>评审数：{{ hrPerformance.reviewCount }}</span>
-            <span>定稿数：{{ hrPerformance.finalizedCount }}</span>
-            <span>平均分：{{ hrPerformance.avgFinalScore }}</span>
-            <span>
-              分布 A/B/C/D：{{ hrPerformance.distribution.a }} / {{ hrPerformance.distribution.b }} /
-              {{ hrPerformance.distribution.c }} / {{ hrPerformance.distribution.d }}
-            </span>
-          </div>
-          <el-table :data="hrPerformance?.byDept ?? []" border>
-            <el-table-column prop="deptName" label="部门" min-width="160" show-overflow-tooltip />
-            <el-table-column prop="reviewCount" label="评审数" width="120" />
-            <el-table-column prop="finalizedCount" label="定稿数" width="120" />
-            <el-table-column prop="avgFinalScore" label="平均分" width="120" />
-          </el-table>
-        </template>
-
-        <template v-else-if="tab.name === 'admin-assets'">
-          <div class="report-summary" v-if="adminAssets">
-            <span>总数：{{ adminAssets.totalCount }}</span>
-            <span>总价值：{{ adminAssets.totalValue }}</span>
-            <span>借用中：{{ adminAssets.borrowingCount }}</span>
-            <span>逾期：{{ adminAssets.overdueCount }}</span>
-            <span>借用率：{{ adminAssets.borrowRate }}</span>
-          </div>
-          <el-table :data="adminAssets?.byCategory ?? []" border>
-            <el-table-column prop="category" label="分类" width="180" />
-            <el-table-column prop="count" label="数量" width="120" />
-            <el-table-column prop="totalValue" label="购置金额合计" width="160" />
-          </el-table>
-        </template>
-
-        <template v-else-if="tab.name === 'bpm-efficiency'">
-          <div class="report-summary" v-if="bpmEfficiency">
-            <span>实例数：{{ bpmEfficiency.instanceCount }}</span>
-            <span>通过数：{{ bpmEfficiency.approvedCount }}</span>
-            <span>平均时长（h）：{{ bpmEfficiency.avgDurationHours }}</span>
-            <span>超时任务：{{ bpmEfficiency.overdueTaskCount }}</span>
-            <span>超时率：{{ (Number(bpmEfficiency.overdueRate) * 100).toFixed(2) }}%</span>
-          </div>
-          <div class="section-title">按业务类型</div>
-          <el-table :data="bpmEfficiency?.byBizType ?? []" border>
-            <el-table-column prop="bizType" label="业务类型" min-width="160" />
-            <el-table-column prop="instanceCount" label="实例数" width="120" />
-            <el-table-column prop="approvedCount" label="通过数" width="120" />
-            <el-table-column prop="avgDurationHours" label="平均时长（h）" width="150" />
-          </el-table>
-          <div class="section-title">待办积压节点</div>
-          <el-table :data="bpmEfficiency?.backlogByNode ?? []" border>
-            <el-table-column prop="nodeKey" label="节点编码" min-width="200" />
-            <el-table-column prop="pendingCount" label="待处理数" width="140" />
-          </el-table>
-        </template>
-      </el-tab-pane>
-    </el-tabs>
-  </div>
+  </PageContainer>
 </template>
 
 <style scoped>
-.report-toolbar {
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 8px;
-}
-.card-row {
+/* 指标卡网格：桌面 4 列，窄屏 2 列 */
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
   margin-bottom: 16px;
 }
-.metric {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+/* 指标卡：白底、圆角、轻阴影，标签在上、数值在下 */
+.metric-grid .stat-card {
+  padding: 18px 20px;
 }
 .metric-label {
-  font-size: 13px;
-  color: #909399;
+  font-size: var(--ceams-font-size-xs, 12px);
+  color: var(--ceams-text-secondary);
 }
 .metric-value {
+  margin-top: 8px;
   font-size: 24px;
+  line-height: 1.2;
   font-weight: 600;
-  color: #303133;
+  color: var(--ceams-text-primary);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+}
+.metric-value--income {
+  color: var(--ceams-color-success);
+}
+.metric-value--expense {
+  color: var(--ceams-color-danger);
 }
 .metric-sub {
-  font-size: 12px;
-  color: #909399;
+  margin-top: 4px;
+  font-size: var(--ceams-font-size-xs, 12px);
+  color: var(--ceams-text-secondary);
 }
+/* 页签内容卡片：20px 内边距 */
+.report-view :deep(.data-card) {
+  padding: 20px;
+}
+.report-view :deep(.el-tabs__header) {
+  margin-bottom: 16px;
+}
+/* 汇总信息条：浅色底、圆角，与表格保持 16px 间距 */
 .report-summary {
   display: flex;
-  gap: 24px;
-  padding: 8px 0 12px;
-  color: #606266;
-  font-size: 14px;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: var(--ceams-bg-elevated);
+  border: 1px solid var(--ceams-border-base);
+  border-radius: var(--ceams-radius-md);
+  color: var(--ceams-text-secondary);
+  font-size: var(--ceams-font-size-sm, 13px);
+  font-variant-numeric: tabular-nums;
 }
+/* 表格内二级标题 */
 .section-title {
-  margin: 12px 0 8px;
-  font-size: 14px;
+  margin: 20px 0 12px;
+  font-size: var(--ceams-font-size-base, 14px);
   font-weight: 600;
-  color: #303133;
+  color: var(--ceams-text-primary);
+}
+.section-title:first-child {
+  margin-top: 0;
+}
+/* 金额列：等宽数字 */
+.report-view :deep(.amount-col .cell) {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+}
+/* 空态居中灰色，上下 40px 留白 */
+.report-view :deep(.el-table__empty-block) {
+  padding: 40px 0;
+  min-height: 0;
+}
+.report-view :deep(.el-table__empty-text) {
+  color: var(--ceams-text-secondary);
+}
+@media (max-width: 1200px) {
+  .metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 </style>

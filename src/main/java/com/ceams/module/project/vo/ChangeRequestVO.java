@@ -17,6 +17,9 @@ public class ChangeRequestVO {
     @JsonSerialize(using = ToStringSerializer.class)
     private Long projectId;
 
+    /** 项目名称（列表/详情展示用，非持久化字段）。 */
+    private String projectName;
+
     private String requestType;
 
     private String description;

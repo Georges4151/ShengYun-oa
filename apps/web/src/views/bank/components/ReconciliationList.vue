@@ -63,6 +63,19 @@ const matchRules: FormRules<typeof matchForm> = {
   accountId: [{ required: true, message: '请输入银行账户 ID', trigger: 'blur' }]
 }
 
+/** 匹配状态标签视觉映射：仅决定颜色，状态值与文案保持原样。 */
+function statusTagType(status: ReconciliationStatus): 'success' | 'warning' | 'danger' | 'info' {
+  if (status === 'MATCHED') return 'success'
+  if (status === 'PARTIAL_MATCHED') return 'warning'
+  if (status === 'UNMATCHED') return 'danger'
+  return 'info'
+}
+
+/** 处理状态标签视觉映射：仅决定颜色。 */
+function resolutionTagType(status: ResolutionStatus): 'success' | 'warning' {
+  return status === 'RESOLVED' ? 'success' : 'warning'
+}
+
 async function load(): Promise<void> {
   loading.value = true
   try {
@@ -145,8 +158,8 @@ onMounted(load)
 </script>
 
 <template>
-  <div>
-    <div class="toolbar">
+  <div class="list-page">
+    <div class="filter-bar">
       <el-input v-model="query.accountId" placeholder="银行账户 ID" clearable style="width: 200px" />
       <el-select v-model="query.status" placeholder="匹配状态" clearable style="width: 140px">
         <el-option v-for="opt in statusOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
@@ -154,58 +167,66 @@ onMounted(load)
       <el-select v-model="query.resolutionStatus" placeholder="处理状态" clearable style="width: 140px">
         <el-option v-for="opt in resolutionOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
       </el-select>
-      <el-button type="primary" @click="onSearch">查询</el-button>
-      <el-button @click="openMatch">自动匹配</el-button>
+      <div class="filter-actions">
+        <el-button type="primary" @click="onSearch">查询</el-button>
+        <el-button @click="openMatch">自动匹配</el-button>
+      </div>
     </div>
 
-    <el-table v-loading="loading" :data="list" border>
-      <el-table-column prop="accountId" label="银行账户 ID" width="180" show-overflow-tooltip />
-      <el-table-column label="匹配状态" width="110">
-        <template #default="{ row }">
-          <el-tag size="small">{{ reconciliationStatusLabels[(row as ReconciliationResultVO).status] }}</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="处理状态" width="100">
-        <template #default="{ row }">
-          <el-tag size="small">{{ resolutionStatusLabels[(row as ReconciliationResultVO).resolutionStatus] }}</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="差异类型" width="130">
-        <template #default="{ row }">
-          {{ (row as ReconciliationResultVO).discrepancyType ? discrepancyTypeLabels[(row as ReconciliationResultVO).discrepancyType!] : '-' }}
-        </template>
-      </el-table-column>
-      <el-table-column prop="bankAmount" label="银行金额" width="110" />
-      <el-table-column prop="systemAmount" label="系统金额" width="110" />
-      <el-table-column prop="statementReference" label="银行流水号" width="160" show-overflow-tooltip />
-      <el-table-column prop="transactionReference" label="系统流水号" width="160" show-overflow-tooltip />
-      <el-table-column prop="reconciliationDate" label="对账日期" width="180" />
-      <el-table-column label="操作" width="180" fixed="right">
-        <template #default="{ row }">
-          <el-button link type="primary" size="small" @click="openDetail(row as ReconciliationResultVO)">详情</el-button>
-          <el-button
-            v-if="(row as ReconciliationResultVO).resolutionStatus === 'UNRESOLVED'"
-            link
-            type="success"
-            size="small"
-            @click="onResolve(row as ReconciliationResultVO)"
-          >
-            标记已处理
-          </el-button>
-        </template>
-      </el-table-column>
-    </el-table>
+    <div class="data-card">
+      <el-table v-loading="loading" :data="list" border>
+        <el-table-column prop="accountId" label="银行账户 ID" width="180" show-overflow-tooltip />
+        <el-table-column label="匹配状态" width="110">
+          <template #default="{ row }">
+            <el-tag size="small" :type="statusTagType((row as ReconciliationResultVO).status)">
+              {{ reconciliationStatusLabels[(row as ReconciliationResultVO).status] }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="处理状态" width="100">
+          <template #default="{ row }">
+            <el-tag size="small" :type="resolutionTagType((row as ReconciliationResultVO).resolutionStatus)">
+              {{ resolutionStatusLabels[(row as ReconciliationResultVO).resolutionStatus] }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="差异类型" width="130">
+          <template #default="{ row }">
+            {{ (row as ReconciliationResultVO).discrepancyType ? discrepancyTypeLabels[(row as ReconciliationResultVO).discrepancyType!] : '-' }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="bankAmount" label="银行金额" width="130" align="right" class-name="amount-col" />
+        <el-table-column prop="systemAmount" label="系统金额" width="130" align="right" class-name="amount-col" />
+        <el-table-column prop="statementReference" label="银行流水号" width="160" show-overflow-tooltip />
+        <el-table-column prop="transactionReference" label="系统流水号" width="160" show-overflow-tooltip />
+        <el-table-column prop="reconciliationDate" label="对账日期" width="180" />
+        <el-table-column label="操作" width="180" fixed="right">
+          <template #default="{ row }">
+            <el-button link type="primary" size="small" @click="openDetail(row as ReconciliationResultVO)">详情</el-button>
+            <el-button
+              v-if="(row as ReconciliationResultVO).resolutionStatus === 'UNRESOLVED'"
+              link
+              type="success"
+              size="small"
+              @click="onResolve(row as ReconciliationResultVO)"
+            >
+              标记已处理
+            </el-button>
+          </template>
+        </el-table-column>
+      </el-table>
 
-    <el-pagination
-      v-model:current-page="page"
-      v-model:page-size="size"
-      :total="total"
-      :page-sizes="[10, 20, 50, 100]"
-      layout="total, sizes, prev, pager, next, jumper"
-      class="pagination"
-      @size-change="onSearch"
-      @current-change="load"
-    />
+      <el-pagination
+        v-model:current-page="page"
+        v-model:page-size="size"
+        :total="total"
+        :page-sizes="[10, 20, 50, 100]"
+        layout="total, sizes, prev, pager, next, jumper"
+        class="pagination"
+        @size-change="onSearch"
+        @current-change="load"
+      />
+    </div>
 
     <el-dialog v-model="detailVisible" title="对账结果详情" width="640px">
       <el-descriptions v-if="detail" :column="2" border>
@@ -249,14 +270,35 @@ onMounted(load)
 </template>
 
 <style scoped>
-.toolbar {
+/* 筛选卡片：白色圆角、16px 20px 内边距，操作按钮靠右 */
+.filter-bar {
+  padding: 16px 20px;
+}
+.filter-actions {
   display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: var(--ceams-space-2, 8px);
+  margin-left: auto;
+}
+/* 表格卡片：20px 内边距 */
+.data-card {
+  padding: 20px;
+}
+/* 金额列：右对齐 + 等宽数字 */
+:deep(.amount-col .cell) {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
 }
 .pagination {
-  margin-top: 12px;
+  margin-top: 16px;
   justify-content: flex-end;
+}
+/* 空态居中灰色，上下 40px 留白 */
+:deep(.el-table__empty-block) {
+  padding: 40px 0;
+  min-height: 0;
+}
+:deep(.el-table__empty-text) {
+  color: var(--ceams-text-secondary);
 }
 .match-result {
   margin-top: 8px;

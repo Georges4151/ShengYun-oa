@@ -124,10 +124,12 @@ function assigneeName(id: Id | null): string {
 
 function repairTagType(status: RepairStatus): 'success' | 'warning' | 'info' | 'danger' {
   switch (status) {
+    case 'DONE':
     case 'ACCEPTED':
       return 'success'
-    case 'PROCESSING':
+    case 'SUBMITTED':
     case 'ASSIGNED':
+    case 'PROCESSING':
       return 'warning'
     case 'REJECTED':
       return 'danger'
@@ -334,8 +336,9 @@ onMounted(() => {
 </script>
 
 <template>
-  <div>
-    <div class="toolbar">
+  <div class="repair-panel">
+    <!-- 筛选区 -->
+    <div class="filter-bar">
       <el-select v-model="query.status" placeholder="工单状态" clearable style="width: 150px">
         <el-option
           v-for="opt in statusOptions"
@@ -344,9 +347,20 @@ onMounted(() => {
           :value="opt.value"
         />
       </el-select>
-      <el-button type="primary" @click="onSearch">查询</el-button>
-      <el-button @click="openCreate">新建报修</el-button>
+      <div class="filter-actions">
+        <el-button type="primary" @click="onSearch">查询</el-button>
+      </div>
     </div>
+
+    <!-- 工单列表卡片 -->
+    <div class="data-card panel-card">
+      <div class="card-header">
+        <div class="card-heading">
+          <span class="card-title">报修工单</span>
+          <span class="card-count">共 {{ total }} 单</span>
+        </div>
+        <el-button type="primary" @click="openCreate">新建报修</el-button>
+      </div>
 
     <el-table v-loading="loading" :data="list" border>
       <el-table-column type="expand">
@@ -466,20 +480,27 @@ onMounted(() => {
       </el-table-column>
     </el-table>
 
-    <el-pagination
-      v-model:current-page="page"
-      v-model:page-size="size"
-      :total="total"
-      :page-sizes="[10, 20, 50, 100]"
-      layout="total, sizes, prev, pager, next, jumper"
-      class="pagination"
-      @size-change="onSearch"
-      @current-change="load"
-    />
+      <!-- 分页右对齐，距表 16px -->
+      <el-pagination
+        v-model:current-page="page"
+        v-model:page-size="size"
+        :total="total"
+        :page-sizes="[10, 20, 50, 100]"
+        layout="total, sizes, prev, pager, next, jumper"
+        class="pagination"
+        @size-change="onSearch"
+        @current-change="load"
+      />
+    </div>
 
-    <!-- 我的报修 -->
-    <div class="section">
-      <div class="section-title">我的报修</div>
+    <!-- 我的报修卡片 -->
+    <div class="data-card panel-card">
+      <div class="card-header">
+        <div class="card-heading">
+          <span class="card-title">我的报修</span>
+          <span class="card-count">共 {{ myRepairs.length }} 条</span>
+        </div>
+      </div>
       <el-table v-loading="myLoading" :data="myRepairs" border size="small">
         <el-table-column prop="repairNo" label="工单号" width="170" />
         <el-table-column prop="location" label="报修位置" min-width="150" />
@@ -510,7 +531,13 @@ onMounted(() => {
     </div>
 
     <!-- 新建报修 -->
-    <el-dialog v-model="createVisible" title="新建报修" width="560px" @closed="clearCreateImages">
+    <el-dialog
+      v-model="createVisible"
+      class="admin-dialog"
+      title="新建报修"
+      width="560px"
+      @closed="clearCreateImages"
+    >
       <el-form ref="createFormRef" :model="createForm" :rules="createRules" label-width="90px">
         <el-form-item label="报修位置" prop="location">
           <el-input v-model="createForm.location" placeholder="如：3 号楼 2 层 201 室" />
@@ -561,7 +588,7 @@ onMounted(() => {
     </el-dialog>
 
     <!-- 派单 -->
-    <el-dialog v-model="assignVisible" title="工单派单" width="480px">
+    <el-dialog v-model="assignVisible" class="admin-dialog" title="工单派单" width="480px">
       <el-form ref="assignFormRef" :model="assignForm" :rules="assignRules" label-width="90px">
         <el-form-item label="工单号">
           <span>{{ assignRepair?.repairNo }}</span>
@@ -584,6 +611,7 @@ onMounted(() => {
     <!-- 处理 / 完工 -->
     <el-dialog
       v-model="remarkVisible"
+      class="admin-dialog"
       :title="remarkMode === 'process' ? '提交处理进度' : '完成维修'"
       width="560px"
       @closed="clearFinishImages"
@@ -630,99 +658,164 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.toolbar {
+/* 模块容器：各卡片之间保持 16px 间距 */
+.repair-panel {
   display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
+  flex-direction: column;
+  gap: var(--ceams-space-4);
 }
-.section {
-  margin-bottom: 24px;
+
+/* 筛选卡片：16px 20px 内边距，控件 12px 间距 */
+.filter-bar {
+  padding: 16px 20px;
+  margin-bottom: 0;
+  gap: var(--ceams-space-3);
 }
-.section-title {
-  margin-bottom: 10px;
-  font-size: 15px;
+
+.filter-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--ceams-space-3);
+  margin-left: auto;
+}
+
+/* 列表卡片：20px 内边距 */
+.panel-card {
+  padding: var(--ceams-space-5);
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ceams-space-3);
+  margin-bottom: var(--ceams-space-4);
+}
+
+.card-heading {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ceams-space-2);
+  min-width: 0;
+}
+
+.card-title {
+  font-size: var(--ceams-font-size-md);
   font-weight: 600;
-  color: #111827;
+  color: var(--ceams-text-primary);
 }
+
+.card-count {
+  font-size: var(--ceams-font-size-sm);
+  color: var(--ceams-text-secondary);
+}
+
+/* 分页右对齐，距表 16px */
 .pagination {
-  margin-top: 12px;
+  margin-top: var(--ceams-space-4);
   justify-content: flex-end;
 }
-.detail {
-  padding: 4px 16px;
+
+/* 空态居中灰色、40px 留白 */
+.panel-card :deep(.el-table__empty-text) {
+  color: var(--ceams-text-placeholder);
 }
+
+.panel-card :deep(.el-table__empty-block) {
+  padding: var(--ceams-space-10) 0;
+  min-height: 0;
+}
+
+.detail {
+  padding: var(--ceams-space-1) var(--ceams-space-4);
+}
+
 .detail-item {
   display: flex;
-  gap: 12px;
-  margin-bottom: 8px;
-  font-size: 13px;
-  color: #374151;
+  gap: var(--ceams-space-3);
+  margin-bottom: var(--ceams-space-2);
+  font-size: var(--ceams-font-size-sm);
+  color: var(--ceams-text-primary);
 }
+
 .detail-label {
   flex: 0 0 80px;
-  color: #6b7280;
+  color: var(--ceams-text-secondary);
 }
+
 .timeline-item {
   align-items: flex-start;
 }
+
 .image-field {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: var(--ceams-space-2);
 }
+
 .image-item {
   position: relative;
   width: 72px;
   height: 72px;
   overflow: hidden;
-  border: 1px solid #e5e7eb;
-  border-radius: 6px;
-  background: #f3f4f6;
+  border: 1px solid var(--ceams-border-base);
+  border-radius: var(--ceams-radius-md);
+  background: var(--ceams-bg-elevated);
 }
+
 .image-item__thumb {
   display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
+
 .image-item__remove {
   position: absolute;
   top: 0;
   right: 0;
   width: 18px;
   height: 18px;
-  color: #fff;
-  font-size: 14px;
+  color: var(--ceams-text-inverse);
+  font-size: var(--ceams-font-size-base);
   line-height: 18px;
   text-align: center;
   background: rgba(17, 24, 39, 0.6);
-  border-bottom-left-radius: 6px;
+  border-bottom-left-radius: var(--ceams-radius-md);
   cursor: pointer;
 }
+
 .image-uploader :deep(.el-upload) {
   width: 72px;
   height: 72px;
   overflow: hidden;
-  border: 1px dashed #d1d5db;
-  border-radius: 6px;
-  background: #fafafa;
+  border: 1px dashed var(--ceams-border-strong);
+  border-radius: var(--ceams-radius-md);
+  background: var(--ceams-bg-elevated);
 }
+
 .image-add {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 72px;
   height: 72px;
-  color: #9ca3af;
-  font-size: 20px;
+  color: var(--ceams-text-placeholder);
+  font-size: var(--ceams-font-size-xl);
   line-height: 1;
 }
+
 .image-tip {
   width: 100%;
-  margin-top: 4px;
-  color: #9ca3af;
-  font-size: 12px;
+  margin-top: var(--ceams-space-1);
+  color: var(--ceams-text-placeholder);
+  font-size: var(--ceams-font-size-xs);
   line-height: 1.5;
+}
+
+/* 弹窗内容 20px 24px */
+:global(.admin-dialog .el-dialog__body) {
+  padding: 20px 24px;
 }
 </style>

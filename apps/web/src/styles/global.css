@@ -1,0 +1,490 @@
+/**
+ * CEAMS 全局视觉基线
+ * 说明：本文件在 element-plus/dist/index.css 之后加载，用于覆盖默认主题令牌与常见组件外观。
+ * 仅做视觉层统一，不改变任何组件行为。
+ */
+
+/* ===================== 1. 基础重置 ===================== */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB',
+    'Microsoft YaHei', 'Helvetica Neue', Arial, sans-serif;
+  font-size: var(--ceams-font-size-base);
+  line-height: 1.5;
+  color: var(--ceams-text-primary);
+  background-color: var(--ceams-bg-page);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+figure,
+blockquote,
+dl,
+dd {
+  margin: 0;
+}
+
+a {
+  color: var(--ceams-color-primary);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--ceams-color-primary-dark);
+}
+
+/* ===================== 2. 滚动条与选中色 ===================== */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  background-clip: content-box;
+  border: 2px solid transparent;
+  border-radius: 8px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: #aab6c6;
+  background-clip: content-box;
+}
+
+::selection {
+  background-color: rgba(37, 99, 235, 0.18);
+  color: inherit;
+}
+
+/* ===================== 3. Element Plus 主题变量覆盖 ===================== */
+:root {
+  /* 字号与字体 */
+  --el-font-size-base: 14px;
+  --el-font-size-small: 13px;
+  --el-font-size-extra-small: 12px;
+
+  /* 主色梯度（light-3/5/7/8/9 由主色与白色混合得出） */
+  --el-color-primary: #2563eb;
+  --el-color-primary-light-3: #6692f1;
+  --el-color-primary-light-5: #92b1f5;
+  --el-color-primary-light-7: #bed0f9;
+  --el-color-primary-light-8: #d3e0fb;
+  --el-color-primary-light-9: #e9effd;
+  --el-color-primary-dark-2: #1d4ed8;
+
+  /* 文字色 */
+  --el-text-color-primary: #1f2937;
+  --el-text-color-regular: #374151;
+  --el-text-color-secondary: #6b7280;
+  --el-text-color-placeholder: #9ca3af;
+  --el-text-color-disabled: #b6bdc7;
+
+  /* 边框色 */
+  --el-border-color: #d1d5db;
+  --el-border-color-light: #e5e7eb;
+  --el-border-color-lighter: #eef2f7;
+  --el-border-color-extra-light: #f4f6fa;
+  --el-border-color-dark: #c3cad4;
+  --el-border-color-darker: #aab3c0;
+
+  /* 填充与背景 */
+  --el-fill-color-blank: #ffffff;
+  --el-fill-color: #f4f6fa;
+  --el-fill-color-light: #f8fafc;
+  --el-fill-color-lighter: #fbfcfe;
+  --el-bg-color: #ffffff;
+  --el-bg-color-page: #f4f6fa;
+  --el-bg-color-overlay: #ffffff;
+
+  /* 圆角 */
+  --el-border-radius-base: 6px;
+  --el-border-radius-small: 4px;
+  --el-border-radius-round: 20px;
+
+  /* 阴影 */
+  --el-box-shadow: var(--ceams-shadow-overlay);
+  --el-box-shadow-light: var(--ceams-shadow-raised);
+  --el-box-shadow-lighter: var(--ceams-shadow-card);
+  --el-box-shadow-dark: 0 16px 48px rgba(15, 23, 42, 0.2);
+
+  /* 功能色 */
+  --el-color-success: #16a34a;
+  --el-color-success-light-9: #ecfdf3;
+  --el-color-warning: #d97706;
+  --el-color-warning-light-9: #fffbeb;
+  --el-color-danger: #dc2626;
+  --el-color-danger-light-9: #fef2f2;
+  --el-color-error: #dc2626;
+  --el-color-info: #64748b;
+  --el-color-info-light-9: #f1f5f9;
+}
+
+/* ===================== 4. 组件级视觉统一 ===================== */
+
+/* ---------- 卡片 ---------- */
+.el-card {
+  border: 1px solid var(--ceams-border-base);
+  border-radius: var(--ceams-radius-lg);
+  box-shadow: var(--ceams-shadow-card);
+  overflow: hidden;
+}
+
+.el-card__header {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--ceams-border-divider);
+  font-size: var(--ceams-font-size-base);
+  font-weight: 600;
+  color: var(--ceams-text-primary);
+}
+
+.el-card__body {
+  padding: 18px;
+}
+
+/* ---------- 表格 ---------- */
+.el-table {
+  --el-table-header-bg-color: var(--ceams-bg-elevated);
+  --el-table-header-text-color: #4b5563;
+  --el-table-text-color: var(--ceams-text-primary);
+  --el-table-row-hover-bg-color: #f2f7ff;
+  --el-table-border-color: var(--ceams-border-divider);
+  --el-table-tr-bg-color: #ffffff;
+  font-size: var(--ceams-font-size-base);
+}
+
+.el-table th.el-table__cell {
+  height: 42px;
+  padding: 8px 0;
+  background-color: var(--ceams-bg-elevated);
+  font-size: var(--ceams-font-size-sm);
+  font-weight: 600;
+  color: #4b5563;
+  border-bottom: 1px solid var(--ceams-border-base);
+}
+
+.el-table td.el-table__cell {
+  padding: 9px 0;
+  border-bottom: 1px solid var(--ceams-border-divider);
+}
+
+.el-table--striped .el-table__body tr.el-table__row--striped td.el-table__cell {
+  background-color: #fbfcfe;
+}
+
+/* 表格底部留白，避免最后一行贴边 */
+.el-table::before,
+.el-table__inner-wrapper::before {
+  display: none;
+}
+
+/* ---------- 按钮 ---------- */
+.el-button {
+  border-radius: var(--ceams-radius-sm);
+  font-weight: 500;
+}
+
+.el-button--primary:not(.is-plain):not(.is-text):not(.is-link) {
+  box-shadow: 0 1px 2px rgba(37, 99, 235, 0.24);
+}
+
+.el-button--primary:not(.is-plain):not(.is-text):not(.is-link):hover,
+.el-button--primary:not(.is-plain):not(.is-text):not(.is-link):focus {
+  background-color: var(--ceams-color-primary-dark);
+  border-color: var(--ceams-color-primary-dark);
+}
+
+.el-button.is-text,
+.el-button.is-link {
+  box-shadow: none;
+}
+
+/* ---------- 输入框 / 选择器 ---------- */
+.el-input__wrapper,
+.el-select__wrapper,
+.el-textarea__inner {
+  border-radius: var(--ceams-radius-sm);
+}
+
+.el-input__wrapper,
+.el-select__wrapper {
+  box-shadow: 0 0 0 1px var(--ceams-border-strong) inset;
+}
+
+.el-input__wrapper:hover,
+.el-select__wrapper.is-hovering:not(.is-focused) {
+  box-shadow: 0 0 0 1px #9aa7b8 inset;
+}
+
+.el-input__wrapper.is-focus,
+.el-select__wrapper.is-focused {
+  box-shadow: 0 0 0 1px var(--ceams-color-primary) inset, 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+/* 表单标签与表单项间距微调 */
+.el-form-item__label {
+  font-weight: 500;
+  color: var(--ceams-text-secondary);
+}
+
+/* ---------- 分页 ---------- */
+.el-pagination {
+  --el-pagination-button-bg-color: transparent;
+  --el-pagination-hover-color: var(--ceams-color-primary);
+  justify-content: flex-end;
+  font-size: var(--ceams-font-size-sm);
+}
+
+.el-pagination button,
+.el-pagination .el-pager li {
+  border-radius: var(--ceams-radius-sm);
+}
+
+.el-pagination .el-pager li.is-active {
+  background-color: var(--ceams-color-primary);
+  color: var(--ceams-text-inverse);
+  font-weight: 600;
+}
+
+/* ---------- 标签 ---------- */
+.el-tag {
+  border-radius: var(--ceams-radius-xs);
+  border-color: transparent;
+  font-weight: 500;
+}
+
+.el-tag--primary {
+  background-color: var(--ceams-color-primary-light);
+  color: var(--ceams-color-primary-dark);
+}
+
+.el-tag--success {
+  background-color: var(--ceams-color-success-light);
+  color: var(--ceams-color-success);
+}
+
+.el-tag--warning {
+  background-color: var(--ceams-color-warning-light);
+  color: var(--ceams-color-warning);
+}
+
+.el-tag--danger {
+  background-color: var(--ceams-color-danger-light);
+  color: var(--ceams-color-danger);
+}
+
+.el-tag--info {
+  background-color: var(--ceams-color-info-light);
+  color: var(--ceams-color-info);
+}
+
+/* ---------- 弹窗 / 抽屉 ---------- */
+.el-dialog {
+  border-radius: var(--ceams-radius-xl);
+  box-shadow: var(--ceams-shadow-overlay);
+  overflow: hidden;
+}
+
+.el-dialog__header {
+  padding: 18px 22px 12px;
+  margin-right: 0;
+}
+
+.el-dialog__title {
+  font-size: var(--ceams-font-size-md);
+  font-weight: 600;
+  color: var(--ceams-text-primary);
+}
+
+.el-dialog__body {
+  padding: 8px 22px 16px;
+}
+
+.el-dialog__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 14px 22px 18px;
+  border-top: 1px solid var(--ceams-border-divider);
+}
+
+/* 底部操作条内按钮由 gap 控制间距，避免与默认外边距叠加 */
+.el-dialog__footer .el-button + .el-button {
+  margin-left: 0;
+}
+
+.el-drawer {
+  box-shadow: var(--ceams-shadow-overlay);
+}
+
+.el-drawer__header {
+  padding: 18px 20px;
+  margin-bottom: 0;
+  border-bottom: 1px solid var(--ceams-border-divider);
+  font-size: var(--ceams-font-size-md);
+  font-weight: 600;
+  color: var(--ceams-text-primary);
+}
+
+.el-drawer__body {
+  padding: 16px 20px;
+}
+
+/* ---------- 下拉 / 浮层 ---------- */
+.el-popper.is-light {
+  border-radius: var(--ceams-radius-md);
+  box-shadow: var(--ceams-shadow-raised);
+}
+
+/* ===================== 5. 深色侧边栏菜单 ===================== */
+/* 作用域限定在 AppShell 侧边栏内，不影响其他位置的 el-menu */
+.ceams-shell__aside .el-menu {
+  --el-menu-bg-color: transparent;
+  --el-menu-text-color: var(--ceams-sidebar-text);
+  --el-menu-hover-text-color: var(--ceams-sidebar-text-active);
+  --el-menu-hover-bg-color: var(--ceams-sidebar-hover-bg);
+  --el-menu-active-color: var(--ceams-sidebar-text-active);
+  --el-menu-item-height: 42px;
+  --el-menu-base-level-padding: 14px;
+  width: 100%;
+  padding: 4px 0;
+  background-color: transparent;
+  border-right: none;
+}
+
+.ceams-shell__aside .el-menu-item {
+  position: relative;
+  height: 42px;
+  margin: 2px 10px;
+  padding: 0 14px;
+  line-height: 42px;
+  border-radius: var(--ceams-radius-sm);
+  font-size: var(--ceams-font-size-base);
+  color: var(--ceams-sidebar-text);
+  transition: background-color 0.16s ease, color 0.16s ease;
+}
+
+.ceams-shell__aside .el-menu-item .el-icon {
+  color: inherit;
+  margin-right: 8px;
+}
+
+.ceams-shell__aside .el-menu-item:hover {
+  background-color: var(--ceams-sidebar-hover-bg);
+  color: var(--ceams-sidebar-text-active);
+}
+
+.ceams-shell__aside .el-menu-item.is-active {
+  background-color: var(--ceams-sidebar-active-bg);
+  color: var(--ceams-sidebar-text-active);
+  font-weight: 500;
+}
+
+/* 激活项左侧 3px 竖条 */
+.ceams-shell__aside .el-menu-item.is-active::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 3px;
+  height: 18px;
+  margin-top: -9px;
+  border-radius: 0 3px 3px 0;
+  background-color: rgba(255, 255, 255, 0.9);
+}
+
+.ceams-shell__aside .el-menu-item.is-active .el-icon {
+  color: var(--ceams-sidebar-text-active);
+}
+
+/* ===================== 6. 通用工具类 ===================== */
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--ceams-space-4);
+  margin-bottom: var(--ceams-space-4);
+}
+
+.page-title {
+  margin: 0;
+  font-size: var(--ceams-font-size-xl);
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--ceams-text-primary);
+}
+
+.page-subtitle {
+  margin: 6px 0 0;
+  font-size: var(--ceams-font-size-sm);
+  line-height: 1.5;
+  color: var(--ceams-text-secondary);
+}
+
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ceams-space-3);
+  padding: 14px 16px;
+  margin-bottom: var(--ceams-space-4);
+  background-color: var(--ceams-bg-card);
+  border: 1px solid var(--ceams-border-base);
+  border-radius: var(--ceams-radius-lg);
+}
+
+.stat-card {
+  padding: 16px 18px;
+  background-color: var(--ceams-bg-card);
+  border: 1px solid var(--ceams-border-base);
+  border-radius: var(--ceams-radius-lg);
+  box-shadow: var(--ceams-shadow-card);
+}
+
+.data-card {
+  padding: 18px;
+  background-color: var(--ceams-bg-card);
+  border: 1px solid var(--ceams-border-base);
+  border-radius: var(--ceams-radius-lg);
+  box-shadow: var(--ceams-shadow-card);
+}
+
+.text-secondary {
+  color: var(--ceams-text-secondary);
+}
+
+.amount {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+  font-weight: 600;
+  color: var(--ceams-text-primary);
+  letter-spacing: 0.01em;
+}

@@ -6,6 +6,7 @@ import {
   ElDescriptions,
   ElDescriptionsItem,
   ElDialog,
+  ElEmpty,
   ElForm,
   ElFormItem,
   ElInput,
@@ -23,6 +24,7 @@ import type { FormInstance, FormRules, UploadFile } from 'element-plus'
 import { ceamsApi, fetchBlob } from '@/services/http'
 import type {
   PaymentMethod,
+  PaymentStatus,
   ReceiptApprovalStatus,
   ReceiptType,
   ReceiptVO,
@@ -43,6 +45,35 @@ import {
 import BpmInstanceDrawer from '@/views/bpm/components/BpmInstanceDrawer.vue'
 
 defineOptions({ name: 'ReceiptList' })
+
+// ---------------- 状态标签配色（仅视觉映射，不改动状态值） ----------------
+type TagType = 'primary' | 'success' | 'info' | 'warning' | 'danger'
+
+/** 核验状态 -> 标签颜色：已核验成功、驳回危险、待核验警告 */
+function verificationTagType(status: VerificationStatus): TagType {
+  if (status === 'VERIFIED') return 'success'
+  if (status === 'REJECTED') return 'danger'
+  return 'warning'
+}
+
+/** 付款状态 -> 标签颜色：已付清成功，未付/部分支付警告 */
+function paymentTagType(status: PaymentStatus): TagType {
+  return status === 'PAID' ? 'success' : 'warning'
+}
+
+/** 审批状态 -> 标签颜色：审批中警告、通过成功、驳回危险、草稿/终止中性 */
+function approvalTagType(status: ReceiptApprovalStatus): TagType {
+  switch (status) {
+    case 'PENDING':
+      return 'warning'
+    case 'APPROVED':
+      return 'success'
+    case 'REJECTED':
+      return 'danger'
+    default:
+      return 'info'
+  }
+}
 
 const typeOptions = toOptions(receiptTypeLabels)
 const verificationOptions = toOptions(verificationStatusLabels)
@@ -385,7 +416,8 @@ onMounted(load)
 
 <template>
   <div>
-    <div class="toolbar">
+    <!-- 筛选卡片：控件 12px 间距，查询按钮靠右 -->
+    <div class="data-card filter-card">
       <el-input v-model="query.receiptNumber" placeholder="票据编号" clearable style="width: 200px" />
       <el-select v-model="query.verificationStatus" placeholder="核验状态" clearable style="width: 150px">
         <el-option v-for="opt in verificationOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
@@ -393,86 +425,113 @@ onMounted(load)
       <el-select v-model="query.approvalStatus" placeholder="审批状态" clearable style="width: 150px">
         <el-option v-for="opt in approvalOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
       </el-select>
-      <el-button type="primary" @click="onSearch">查询</el-button>
-      <el-button @click="openCreate">新增票据</el-button>
+      <div class="filter-actions">
+        <el-button type="primary" @click="onSearch">查询</el-button>
+      </div>
     </div>
 
-    <el-table v-loading="loading" :data="list" border>
-      <el-table-column prop="receiptNumber" label="票据编号" min-width="160" />
-      <el-table-column prop="reporterName" label="报销人" width="110" />
-      <el-table-column prop="amount" label="金额" width="110" />
-      <el-table-column label="类型" width="100">
-        <template #default="{ row }">
-          <el-tag size="small">{{ receiptTypeLabels[(row as ReceiptVO).type] }}</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="核验状态" width="110">
-        <template #default="{ row }">
-          <el-tag size="small">{{ verificationStatusLabels[(row as ReceiptVO).verificationStatus] }}</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="付款状态" width="110">
-        <template #default="{ row }">
-          <el-tag size="small">{{ paymentStatusLabels[(row as ReceiptVO).paymentStatus] }}</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="审批状态" width="110">
-        <template #default="{ row }">
-          <el-tag size="small">{{ receiptApprovalStatusLabels[(row as ReceiptVO).approvalStatus] }}</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column prop="receiptDate" label="票据日期" width="120" />
-      <el-table-column label="附件" width="90">
-        <template #default="{ row }">
-          <el-button
-            v-if="(row as ReceiptVO).filePath"
-            link
-            type="primary"
-            size="small"
-            @click="previewReceiptFile((row as ReceiptVO).filePath!)"
-          >
-            查看
-          </el-button>
-          <span v-else>-</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="操作" width="300" fixed="right">
-        <template #default="{ row }">
-          <el-button link type="primary" size="small" @click="openDetail(row as ReceiptVO)">详情</el-button>
-          <el-button link type="primary" size="small" @click="openEdit(row as ReceiptVO)">编辑</el-button>
-          <el-button
-            v-if="(row as ReceiptVO).approvalStatus === 'DRAFT' || (row as ReceiptVO).approvalStatus === 'REJECTED'"
-            link
-            type="success"
-            size="small"
-            @click="submitReceipt(row as ReceiptVO)"
-          >
-            提交审批
-          </el-button>
-          <el-button
-            v-if="(row as ReceiptVO).bpmInstanceId"
-            link
-            type="primary"
-            size="small"
-            @click="openInstance((row as ReceiptVO).bpmInstanceId)"
-          >
-            查看流程
-          </el-button>
-          <el-button link type="danger" size="small" @click="onRemove(row as ReceiptVO)">删除</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
+    <!-- 表格卡片：头部标题与主操作，表格四周留 20px -->
+    <div class="data-card table-card">
+      <div class="card-head">
+        <div class="card-heading">
+          <span class="card-title">票据列表</span>
+          <span class="card-sub">共 {{ total }} 条</span>
+        </div>
+        <div class="card-actions">
+          <el-button type="primary" @click="openCreate">新增票据</el-button>
+        </div>
+      </div>
 
-    <el-pagination
-      v-model:current-page="page"
-      v-model:page-size="size"
-      :total="total"
-      :page-sizes="[10, 20, 50, 100]"
-      layout="total, sizes, prev, pager, next, jumper"
-      class="pagination"
-      @size-change="onSearch"
-      @current-change="load"
-    />
+      <el-table v-loading="loading" :data="list" border>
+        <el-table-column prop="receiptNumber" label="票据编号" min-width="160" />
+        <el-table-column prop="reporterName" label="报销人" width="110" />
+        <el-table-column label="金额" width="120" align="right">
+          <template #default="{ row }">
+            <span class="amount">{{ (row as ReceiptVO).amount }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="类型" width="100">
+          <template #default="{ row }">
+            <el-tag size="small">{{ receiptTypeLabels[(row as ReceiptVO).type] }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="核验状态" width="110">
+          <template #default="{ row }">
+            <el-tag size="small" :type="verificationTagType((row as ReceiptVO).verificationStatus)">
+              {{ verificationStatusLabels[(row as ReceiptVO).verificationStatus] }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="付款状态" width="110">
+          <template #default="{ row }">
+            <el-tag size="small" :type="paymentTagType((row as ReceiptVO).paymentStatus)">
+              {{ paymentStatusLabels[(row as ReceiptVO).paymentStatus] }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="审批状态" width="110">
+          <template #default="{ row }">
+            <el-tag size="small" :type="approvalTagType((row as ReceiptVO).approvalStatus)">
+              {{ receiptApprovalStatusLabels[(row as ReceiptVO).approvalStatus] }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="receiptDate" label="票据日期" width="120" />
+        <el-table-column label="附件" width="90">
+          <template #default="{ row }">
+            <el-button
+              v-if="(row as ReceiptVO).filePath"
+              link
+              type="primary"
+              size="small"
+              @click="previewReceiptFile((row as ReceiptVO).filePath!)"
+            >
+              查看
+            </el-button>
+            <span v-else>-</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="300" fixed="right">
+          <template #default="{ row }">
+            <el-button link type="primary" size="small" @click="openDetail(row as ReceiptVO)">详情</el-button>
+            <el-button link type="primary" size="small" @click="openEdit(row as ReceiptVO)">编辑</el-button>
+            <el-button
+              v-if="(row as ReceiptVO).approvalStatus === 'DRAFT' || (row as ReceiptVO).approvalStatus === 'REJECTED'"
+              link
+              type="success"
+              size="small"
+              @click="submitReceipt(row as ReceiptVO)"
+            >
+              提交审批
+            </el-button>
+            <el-button
+              v-if="(row as ReceiptVO).bpmInstanceId"
+              link
+              type="primary"
+              size="small"
+              @click="openInstance((row as ReceiptVO).bpmInstanceId)"
+            >
+              查看流程
+            </el-button>
+            <el-button link type="danger" size="small" @click="onRemove(row as ReceiptVO)">删除</el-button>
+          </template>
+        </el-table-column>
+        <template #empty>
+          <el-empty description="暂无票据数据" />
+        </template>
+      </el-table>
+
+      <el-pagination
+        v-model:current-page="page"
+        v-model:page-size="size"
+        :total="total"
+        :page-sizes="[10, 20, 50, 100]"
+        layout="total, sizes, prev, pager, next, jumper"
+        class="pagination"
+        @size-change="onSearch"
+        @current-change="load"
+      />
+    </div>
 
     <el-dialog v-model="dialogVisible" :title="editingId ? '编辑票据' : '新增票据'" width="640px">
       <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
@@ -573,8 +632,8 @@ onMounted(load)
       <el-descriptions v-if="detail" :column="2" border>
         <el-descriptions-item label="票据编号">{{ detail.receiptNumber }}</el-descriptions-item>
         <el-descriptions-item label="报销人">{{ detail.reporterName ?? '-' }}</el-descriptions-item>
-        <el-descriptions-item label="金额">{{ detail.amount }}</el-descriptions-item>
-        <el-descriptions-item label="已付金额">{{ detail.paidAmount ?? '-' }}</el-descriptions-item>
+        <el-descriptions-item label="金额"><span class="amount">{{ detail.amount }}</span></el-descriptions-item>
+        <el-descriptions-item label="已付金额"><span class="amount">{{ detail.paidAmount ?? '-' }}</span></el-descriptions-item>
         <el-descriptions-item label="票据类型">{{ receiptTypeLabels[detail.type] }}</el-descriptions-item>
         <el-descriptions-item label="核验状态">{{ verificationStatusLabels[detail.verificationStatus] }}</el-descriptions-item>
         <el-descriptions-item label="付款状态">{{ paymentStatusLabels[detail.paymentStatus] }}</el-descriptions-item>
@@ -604,15 +663,75 @@ onMounted(load)
 </template>
 
 <style scoped>
-.toolbar {
+/* 筛选卡片：控件 12px 间距，按钮组靠右 */
+.filter-card {
   display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ceams-space-3);
+  padding: 16px 20px;
+  margin-bottom: var(--ceams-space-4);
 }
+
+.filter-actions {
+  display: flex;
+  gap: var(--ceams-space-2);
+  align-items: center;
+  margin-left: auto;
+}
+
+/* 表格卡片：头部标题与操作，表格四周 20px 内边距 */
+.table-card {
+  padding: 20px;
+}
+
+.card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ceams-space-3);
+  margin-bottom: var(--ceams-space-4);
+}
+
+.card-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--ceams-space-2);
+}
+
+.card-title {
+  font-size: var(--ceams-font-size-md);
+  font-weight: 600;
+  color: var(--ceams-text-primary);
+}
+
+.card-sub {
+  font-size: var(--ceams-font-size-xs);
+  color: var(--ceams-text-secondary);
+}
+
+.card-actions {
+  display: flex;
+  gap: var(--ceams-space-2);
+  align-items: center;
+}
+
+/* 金额：右对齐 + 等宽数字 */
+.amount {
+  display: inline-block;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+  font-weight: 600;
+  color: var(--ceams-text-primary);
+}
+
 .pagination {
-  margin-top: 12px;
+  margin-top: var(--ceams-space-4);
   justify-content: flex-end;
 }
+
 .file-field {
   width: 100%;
 }
@@ -625,8 +744,8 @@ onMounted(load)
 .file-name {
   max-width: 180px;
   overflow: hidden;
-  color: #606266;
-  font-size: 12px;
+  font-size: var(--ceams-font-size-xs);
+  color: var(--ceams-text-secondary);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -639,24 +758,39 @@ onMounted(load)
 .receipt-uploader :deep(.el-upload-dragger) {
   width: 100%;
   padding: 18px 12px;
-  border-radius: 8px;
+  border-radius: var(--ceams-radius-md);
 }
 .dropzone__title {
-  color: #606266;
-  font-size: 13px;
+  font-size: var(--ceams-font-size-sm);
   line-height: 1.6;
+  color: var(--ceams-text-secondary);
 }
 .dropzone__hint {
   margin-top: 4px;
-  color: #909399;
-  font-size: 12px;
+  font-size: var(--ceams-font-size-xs);
+  color: var(--ceams-text-placeholder);
 }
 .file-field__actions {
   margin-top: 8px;
 }
 .form-tip {
-  color: #909399;
-  font-size: 12px;
+  font-size: var(--ceams-font-size-xs);
   line-height: 1.5;
+  color: var(--ceams-text-placeholder);
+}
+
+/* 弹窗：标题加粗，内容区 20px 24px，底部操作条靠右并带顶部细边框 */
+:deep(.el-dialog__title) {
+  font-weight: 600;
+}
+
+:deep(.el-dialog__body) {
+  padding: 20px 24px;
+}
+
+:deep(.el-dialog__footer) {
+  padding: 12px 24px 18px;
+  border-top: 1px solid var(--ceams-border-divider);
+  text-align: right;
 }
 </style>

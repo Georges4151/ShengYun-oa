@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import {
   ElButton,
+  ElEmpty,
   ElInput,
   ElPagination,
   ElTable,
@@ -69,47 +70,118 @@ function onSizeChange(): void {
 
 <template>
   <div>
-    <div class="toolbar">
+    <!-- 筛选卡片：控件 12px 间距，查询按钮靠右 -->
+    <div class="data-card filter-card">
       <el-input v-model="receiptId" placeholder="票据 ID" clearable style="width: 240px" @keyup.enter="onSearch" />
-      <el-button type="primary" @click="onSearch">查询</el-button>
+      <div class="filter-actions">
+        <el-button type="primary" @click="onSearch">查询</el-button>
+      </div>
     </div>
 
-    <el-table v-loading="loading" :data="list" border>
-      <el-table-column prop="receiptId" label="票据 ID" width="180" />
-      <el-table-column prop="paymentAccountId" label="付款账户 ID" width="180" />
-      <el-table-column prop="amount" label="核验金额" width="120" />
-      <el-table-column label="支付方式" width="110">
-        <template #default="{ row }">
-          {{ (row as ReceiptVerificationVO).paymentMethod ? paymentMethodLabels[(row as ReceiptVerificationVO).paymentMethod!] : '-' }}
-        </template>
-      </el-table-column>
-      <el-table-column prop="verifiedBy" label="核验人 ID" width="180" />
-      <el-table-column prop="verificationTime" label="核验时间" width="180" />
-      <el-table-column prop="remark" label="备注" min-width="160" show-overflow-tooltip />
-      <el-table-column prop="createTime" label="创建时间" width="180" />
-    </el-table>
+    <!-- 表格卡片：头部标题，表格四周留 20px -->
+    <div class="data-card table-card">
+      <div class="card-head">
+        <div class="card-heading">
+          <span class="card-title">核验记录</span>
+          <span class="card-sub">共 {{ total }} 条</span>
+        </div>
+      </div>
 
-    <el-pagination
-      v-model:current-page="page"
-      v-model:page-size="size"
-      :total="total"
-      :page-sizes="[10, 20, 50, 100]"
-      layout="total, sizes, prev, pager, next, jumper"
-      class="pagination"
-      @size-change="onSizeChange"
-      @current-change="onPageChange"
-    />
+      <el-table v-loading="loading" :data="list" border>
+        <el-table-column prop="receiptId" label="票据 ID" width="180" />
+        <el-table-column prop="paymentAccountId" label="付款账户 ID" width="180" />
+        <el-table-column label="核验金额" width="130" align="right">
+          <template #default="{ row }">
+            <span class="amount">{{ (row as ReceiptVerificationVO).amount }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="支付方式" width="110">
+          <template #default="{ row }">
+            {{ (row as ReceiptVerificationVO).paymentMethod ? paymentMethodLabels[(row as ReceiptVerificationVO).paymentMethod!] : '-' }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="verifiedBy" label="核验人 ID" width="180" />
+        <el-table-column prop="verificationTime" label="核验时间" width="180" />
+        <el-table-column prop="remark" label="备注" min-width="160" show-overflow-tooltip />
+        <el-table-column prop="createTime" label="创建时间" width="180" />
+        <template #empty>
+          <el-empty description="暂无核验记录" />
+        </template>
+      </el-table>
+
+      <el-pagination
+        v-model:current-page="page"
+        v-model:page-size="size"
+        :total="total"
+        :page-sizes="[10, 20, 50, 100]"
+        layout="total, sizes, prev, pager, next, jumper"
+        class="pagination"
+        @size-change="onSizeChange"
+        @current-change="onPageChange"
+      />
+    </div>
   </div>
 </template>
 
 <style scoped>
-.toolbar {
+/* 筛选卡片：控件 12px 间距，按钮组靠右 */
+.filter-card {
   display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ceams-space-3);
+  padding: 16px 20px;
+  margin-bottom: var(--ceams-space-4);
 }
+
+.filter-actions {
+  display: flex;
+  gap: var(--ceams-space-2);
+  align-items: center;
+  margin-left: auto;
+}
+
+/* 表格卡片：头部标题，表格四周 20px 内边距 */
+.table-card {
+  padding: 20px;
+}
+
+.card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ceams-space-3);
+  margin-bottom: var(--ceams-space-4);
+}
+
+.card-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--ceams-space-2);
+}
+
+.card-title {
+  font-size: var(--ceams-font-size-md);
+  font-weight: 600;
+  color: var(--ceams-text-primary);
+}
+
+.card-sub {
+  font-size: var(--ceams-font-size-xs);
+  color: var(--ceams-text-secondary);
+}
+
+/* 金额：右对齐 + 等宽数字 */
+.amount {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+  font-weight: 600;
+  color: var(--ceams-text-primary);
+}
+
 .pagination {
-  margin-top: 12px;
+  margin-top: var(--ceams-space-4);
   justify-content: flex-end;
 }
 </style>

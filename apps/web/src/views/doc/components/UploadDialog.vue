@@ -229,6 +229,7 @@ function onClose(): void {
 <template>
   <el-dialog
     v-model="visible"
+    class="doc-dialog"
     title="上传文件"
     width="580px"
     :close-on-click-modal="false"
@@ -290,22 +291,45 @@ function onClose(): void {
 </template>
 
 <style scoped>
+/* 上传区域与提示信息间距 */
 .upload-area {
-  margin-top: 12px;
+  margin-top: var(--ceams-space-4);
 }
+
+/* 拖拽区统一圆角与描边 */
+.upload-area :deep(.el-upload-dragger) {
+  padding: var(--ceams-space-6) var(--ceams-space-4);
+  background: var(--ceams-bg-elevated);
+  border: 1px dashed var(--ceams-border-strong);
+  border-radius: var(--ceams-radius-md);
+}
+
+.upload-area :deep(.el-upload-dragger:hover) {
+  border-color: var(--ceams-color-primary);
+  background: var(--ceams-color-primary-light);
+}
+
 .upload-tip {
-  color: #606266;
+  color: var(--ceams-text-secondary);
 }
+
 .upload-tip em {
-  color: #409eff;
+  color: var(--ceams-color-primary);
   font-style: normal;
 }
+
 .progress-area {
-  margin-top: 12px;
+  margin-top: var(--ceams-space-4);
 }
+
 .chunk-tip {
-  margin-top: 8px;
-  color: #909399;
-  font-size: 12px;
+  margin-top: var(--ceams-space-2);
+  color: var(--ceams-text-secondary);
+  font-size: var(--ceams-font-size-xs);
+}
+
+/* 弹窗内容 20px 24px */
+:global(.doc-dialog .el-dialog__body) {
+  padding: 20px 24px;
 }
 </style>

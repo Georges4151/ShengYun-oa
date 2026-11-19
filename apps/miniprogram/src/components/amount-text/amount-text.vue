@@ -37,6 +37,9 @@ const colorStyle = computed<CSSProperties>(() => (props.color ? { color: props.c
 .ceams-amount-text {
   display: inline-block;
   color: var(--ceams-text-amount);
+  /* 等宽数字：列表内多行金额上下对齐，避免数字宽度跳动 */
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
   font-weight: var(--ceams-font-weight-semibold);
   letter-spacing: var(--ceams-letter-spacing-number);
   line-height: var(--ceams-line-height-tight);
@@ -44,7 +47,6 @@ const colorStyle = computed<CSSProperties>(() => (props.color ? { color: props.c
 
 .ceams-amount-text--lg {
   font-size: var(--ceams-font-size-amount-lg);
-  font-weight: var(--ceams-font-weight-bold);
 }
 
 .ceams-amount-text--md {
@@ -53,6 +55,5 @@ const colorStyle = computed<CSSProperties>(() => (props.color ? { color: props.c
 
 .ceams-amount-text--sm {
   font-size: var(--ceams-font-size-amount-sm);
-  font-weight: var(--ceams-font-weight-medium);
 }
 </style>

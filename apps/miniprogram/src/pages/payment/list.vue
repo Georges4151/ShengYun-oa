@@ -84,7 +84,7 @@ onReachBottom(() => {
   <view class="ceams-page payment-list">
     <view v-if="activeTab === 'account'" class="ceams-card payment-list__summary">
       <view class="payment-list__summary-head">
-        <text class="payment-list__summary-title">账目汇总</text>
+        <view class="ceams-section-title payment-list__summary-title">账目汇总</view>
         <text class="payment-list__summary-hint">已加载 {{ accounts.length }} 条</text>
       </view>
       <view class="payment-list__summary-body">
@@ -216,10 +216,10 @@ onReachBottom(() => {
   margin-bottom: var(--ceams-space-md);
 }
 
+/* 汇总标题沿用全局 .ceams-section-title */
 .payment-list__summary-title {
-  color: var(--ceams-text-primary);
-  font-size: var(--ceams-font-size-heading);
-  font-weight: var(--ceams-font-weight-semibold);
+  flex-shrink: 0;
+  margin-right: var(--ceams-space-md);
 }
 
 .payment-list__summary-hint {
@@ -304,8 +304,8 @@ onReachBottom(() => {
 .payment-list__date {
   margin-right: var(--ceams-space-sm);
   color: var(--ceams-text-primary);
-  font-size: var(--ceams-font-size-body);
-  font-weight: var(--ceams-font-weight-medium);
+  font-size: 28rpx;
+  font-weight: var(--ceams-font-weight-semibold);
   letter-spacing: var(--ceams-letter-spacing-number);
 }
 
@@ -313,14 +313,14 @@ onReachBottom(() => {
   display: block;
   margin-top: var(--ceams-space-2xs);
   color: var(--ceams-text-secondary);
-  font-size: var(--ceams-font-size-caption);
+  font-size: 24rpx;
 }
 
 .payment-list__allocation {
   display: block;
   margin-top: var(--ceams-space-2xs);
   color: var(--ceams-text-placeholder);
-  font-size: var(--ceams-font-size-mini);
+  font-size: 24rpx;
 }
 
 .payment-list__row-amount {
@@ -348,7 +348,7 @@ onReachBottom(() => {
   margin-right: var(--ceams-space-sm);
   overflow: hidden;
   color: var(--ceams-text-primary);
-  font-size: var(--ceams-font-size-body);
+  font-size: 28rpx;
   font-weight: var(--ceams-font-weight-semibold);
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -357,7 +357,7 @@ onReachBottom(() => {
 .payment-list__account-type {
   flex-shrink: 0;
   color: var(--ceams-text-secondary);
-  font-size: var(--ceams-font-size-mini);
+  font-size: 24rpx;
 }
 
 .payment-list__account-foot {
@@ -372,6 +372,6 @@ onReachBottom(() => {
   min-width: 0;
   margin-right: var(--ceams-space-md);
   color: var(--ceams-text-secondary);
-  font-size: var(--ceams-font-size-caption);
+  font-size: 24rpx;
 }
 </style>

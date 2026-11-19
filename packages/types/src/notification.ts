@@ -77,6 +77,33 @@ export interface NotificationUpdateRequest {
   validEndTime?: DateTime | null
 }
 
+// ---------- 发布接收范围 ----------
+/** 发布接收范围：全员 / 按角色 / 按用户 */
+export type NotificationPublishScope = 'ALL' | 'ROLES' | 'USERS'
+
+/** 发布通知请求体：scope 为 ALL 时无需携带 roleIds / userIds */
+export interface NotificationPublishRequest {
+  scope: NotificationPublishScope
+  /** 按角色发布时必填，至少 1 个 */
+  roleIds?: Id[]
+  /** 按用户发布时必填，至少 1 个 */
+  userIds?: Id[]
+}
+
+/** 可选接收角色（发布弹窗「按角色」下拉选项） */
+export interface NotificationRecipientRoleVO {
+  id: Id
+  name: string
+  code: string
+}
+
+/** 可选接收用户（发布弹窗「按用户」远程搜索选项） */
+export interface NotificationRecipientUserVO {
+  id: Id
+  name: string
+  username: string
+}
+
 // ---------- 用户通知 ----------
 export interface UserNotificationVO {
   id: Id

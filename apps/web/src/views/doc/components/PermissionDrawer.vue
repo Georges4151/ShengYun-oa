@@ -210,7 +210,7 @@ async function onRevoke(item: DocPermissionVO): Promise<void> {
 </script>
 
 <template>
-  <el-drawer v-model="visible" title="文档授权" size="560px">
+  <el-drawer v-model="visible" class="doc-drawer" title="文档授权" size="560px">
     <div class="file-tip">文件：{{ fileName || fileId }}</div>
 
     <el-form :model="form" label-width="90px">
@@ -279,10 +279,6 @@ async function onRevoke(item: DocPermissionVO): Promise<void> {
           </el-checkbox>
         </el-checkbox-group>
       </el-form-item>
-
-      <el-form-item>
-        <el-button type="primary" :loading="submitting" @click="submitGrant">保存授权</el-button>
-      </el-form-item>
     </el-form>
 
     <div class="list-title">已有授权</div>
@@ -310,21 +306,46 @@ async function onRevoke(item: DocPermissionVO): Promise<void> {
         </template>
       </el-table-column>
     </el-table>
+
+    <!-- 底部操作条：右对齐 -->
+    <template #footer>
+      <el-button @click="visible = false">关闭</el-button>
+      <el-button type="primary" :loading="submitting" @click="submitGrant">保存授权</el-button>
+    </template>
   </el-drawer>
 </template>
 
 <style scoped>
 .file-tip {
-  margin-bottom: 12px;
-  color: #606266;
-  font-size: 13px;
+  margin-bottom: var(--ceams-space-4);
+  color: var(--ceams-text-secondary);
+  font-size: var(--ceams-font-size-sm);
 }
+
 .list-title {
-  margin: 8px 0 12px;
+  margin: var(--ceams-space-4) 0 var(--ceams-space-3);
   font-weight: 600;
-  color: #303133;
+  color: var(--ceams-text-primary);
 }
+
 .action-tag {
-  margin-right: 4px;
+  margin-right: var(--ceams-space-1);
+}
+
+/* 抽屉内容 20px 24px，底部操作条右对齐并带顶部细边框 */
+:global(.doc-drawer .el-drawer__body) {
+  padding: 20px 24px;
+}
+
+:global(.doc-drawer .el-drawer__footer) {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--ceams-space-2);
+  padding: 14px 24px 18px;
+  border-top: 1px solid var(--ceams-border-divider);
+}
+
+:global(.doc-drawer .el-drawer__footer .el-button + .el-button) {
+  margin-left: 0;
 }
 </style>

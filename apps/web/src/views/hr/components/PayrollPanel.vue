@@ -298,8 +298,9 @@ onMounted(load)
 </script>
 
 <template>
-  <div>
-    <div class="toolbar">
+  <div class="panel-page">
+    <!-- 筛选区：白色圆角卡片，控件 12px 间距，操作按钮靠右 -->
+    <div class="filter-bar">
       <el-date-picker
         v-model="month"
         type="month"
@@ -316,24 +317,52 @@ onMounted(load)
           :value="opt.value"
         />
       </el-select>
-      <el-button type="primary" @click="onSearch">查询</el-button>
-      <template v-if="canConfirm">
-        <el-button type="primary" :loading="calculating" @click="runCalc">核算</el-button>
-        <el-button :loading="confirming" @click="confirmAll">批量确认</el-button>
-        <el-button :loading="publishing" @click="publishSlips">发布工资条</el-button>
-      </template>
-      <el-button v-if="canExport" :loading="exporting" @click="exportSlips">导出 xlsx</el-button>
+      <div class="filter-actions">
+        <el-button type="primary" @click="onSearch">查询</el-button>
+      </div>
     </div>
 
-    <!-- 核算结果 -->
-    <el-alert
-      v-if="calcResult"
-      type="success"
-      show-icon
-      :closable="false"
-      class="result-alert"
-      :title="`核算完成：总数 ${calcResult.total}，新建 ${calcResult.created}，重算 ${calcResult.recalculated}，跳过 ${calcResult.skipped}，锁定 ${calcResult.locked}`"
-    />
+    <!-- 统计指标：核算与工资条发布结果 -->
+    <div v-if="calcResult || publishResult" class="stat-grid">
+      <template v-if="calcResult">
+        <div class="stat-card">
+          <div class="stat-label">核算总数</div>
+          <div class="stat-value">{{ calcResult.total }}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">新建</div>
+          <div class="stat-value">{{ calcResult.created }}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">重算</div>
+          <div class="stat-value">{{ calcResult.recalculated }}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">跳过</div>
+          <div class="stat-value">{{ calcResult.skipped }}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">锁定</div>
+          <div class="stat-value">{{ calcResult.locked }}</div>
+        </div>
+      </template>
+      <template v-if="publishResult">
+        <div class="stat-card">
+          <div class="stat-label">工资条总数</div>
+          <div class="stat-value">{{ publishResult.total }}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">已发布</div>
+          <div class="stat-value">{{ publishResult.published }}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">发布跳过</div>
+          <div class="stat-value">{{ publishResult.skipped }}</div>
+        </div>
+      </template>
+    </div>
+
+    <!-- 核算警告信息 -->
     <el-alert
       v-for="(warning, index) in calcResult?.warnings ?? []"
       :key="`calc-warning-${index}`"
@@ -342,16 +371,6 @@ onMounted(load)
       :closable="false"
       class="result-alert"
       :title="warning"
-    />
-
-    <!-- 工资条发布结果 -->
-    <el-alert
-      v-if="publishResult"
-      type="success"
-      show-icon
-      :closable="false"
-      class="result-alert"
-      :title="`工资条发布完成：共 ${publishResult.total} 条，发布 ${publishResult.published}，跳过 ${publishResult.skipped}`"
     />
     <el-alert
       v-for="(warning, index) in publishResult?.warnings ?? []"
@@ -363,85 +382,103 @@ onMounted(load)
       :title="warning"
     />
 
-    <el-table v-loading="loading" :data="list" border>
-      <el-table-column prop="employeeName" label="员工" width="110" fixed="left">
-        <template #default="{ row }">
-          {{ (row as SalaryCalcVO).employeeName }}（{{ (row as SalaryCalcVO).employeeNo }}）
-        </template>
-      </el-table-column>
-      <el-table-column prop="calcMonth" label="核算月" width="100" />
-      <el-table-column label="考勤" width="130">
-        <template #default="{ row }">
-          出勤 {{ (row as SalaryCalcVO).attendanceDays }} / 缺勤 {{ (row as SalaryCalcVO).absentDays }} /
-          迟到 {{ (row as SalaryCalcVO).lateCount ?? 0 }}
-        </template>
-      </el-table-column>
-      <el-table-column label="基本工资" width="110" align="right">
-        <template #default="{ row }">{{ formatMoney((row as SalaryCalcVO).baseSalary) }}</template>
-      </el-table-column>
-      <el-table-column label="岗位工资" width="110" align="right">
-        <template #default="{ row }">{{ formatMoney((row as SalaryCalcVO).postSalary) }}</template>
-      </el-table-column>
-      <el-table-column label="绩效系数" width="95" align="right">
-        <template #default="{ row }">{{ (row as SalaryCalcVO).performanceCoefficient }}</template>
-      </el-table-column>
-      <el-table-column label="绩效工资" width="110" align="right">
-        <template #default="{ row }">{{ formatMoney((row as SalaryCalcVO).performanceAmount) }}</template>
-      </el-table-column>
-      <el-table-column label="补贴" width="100" align="right">
-        <template #default="{ row }">{{ formatMoney((row as SalaryCalcVO).allowance) }}</template>
-      </el-table-column>
-      <el-table-column label="考勤扣款" width="110" align="right">
-        <template #default="{ row }">{{ formatMoney((row as SalaryCalcVO).attendanceDeduction) }}</template>
-      </el-table-column>
-      <el-table-column label="社保" width="100" align="right">
-        <template #default="{ row }">{{ formatMoney((row as SalaryCalcVO).socialInsurance) }}</template>
-      </el-table-column>
-      <el-table-column label="公积金" width="100" align="right">
-        <template #default="{ row }">{{ formatMoney((row as SalaryCalcVO).housingFund) }}</template>
-      </el-table-column>
-      <el-table-column label="个税" width="100" align="right">
-        <template #default="{ row }">{{ formatMoney((row as SalaryCalcVO).tax) }}</template>
-      </el-table-column>
-      <el-table-column label="应发" width="110" align="right">
-        <template #default="{ row }">{{ formatMoney((row as SalaryCalcVO).grossPay) }}</template>
-      </el-table-column>
-      <el-table-column label="实发" width="110" align="right">
-        <template #default="{ row }">{{ formatMoney((row as SalaryCalcVO).netPay) }}</template>
-      </el-table-column>
-      <el-table-column label="状态" width="100">
-        <template #default="{ row }">
-          <el-tag size="small" :type="statusTagType((row as SalaryCalcVO).status)">
-            {{ hrPayrollStatusLabels[(row as SalaryCalcVO).status] }}
-          </el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column v-if="canConfirm" label="操作" width="90" fixed="right">
-        <template #default="{ row }">
-          <el-button
-            v-if="(row as SalaryCalcVO).status === 'DRAFT'"
-            link
-            type="primary"
-            size="small"
-            @click="openAdjust(row as SalaryCalcVO)"
-          >
-            调整
-          </el-button>
-          <span v-else>-</span>
-        </template>
-      </el-table-column>
-    </el-table>
+    <!-- 表格卡片：头部放置标题、条数与主操作 -->
+    <div class="data-card">
+      <div class="card-head">
+        <div class="card-heading">
+          <span class="card-title">工资核算明细</span>
+          <span class="card-sub">共 {{ total }} 条</span>
+        </div>
+        <div class="card-actions">
+          <template v-if="canConfirm">
+            <el-button type="primary" :loading="calculating" @click="runCalc">核算</el-button>
+            <el-button :loading="confirming" @click="confirmAll">批量确认</el-button>
+            <el-button :loading="publishing" @click="publishSlips">发布工资条</el-button>
+          </template>
+          <el-button v-if="canExport" :loading="exporting" @click="exportSlips">导出 xlsx</el-button>
+        </div>
+      </div>
 
-    <el-pagination
-      v-model:current-page="page"
-      v-model:page-size="size"
-      :total="total"
-      :page-sizes="[10, 20, 50, 100]"
-      layout="total, sizes, prev, pager, next, jumper"
-      class="pagination"
-      @size-change="onSearch"
-      @current-change="load"
-    />
+      <el-table v-loading="loading" :data="list" border>
+        <el-table-column prop="employeeName" label="员工" width="110" fixed="left">
+          <template #default="{ row }">
+            {{ (row as SalaryCalcVO).employeeName }}（{{ (row as SalaryCalcVO).employeeNo }}）
+          </template>
+        </el-table-column>
+        <el-table-column prop="calcMonth" label="核算月" width="100" />
+        <el-table-column label="考勤" width="130">
+          <template #default="{ row }">
+            出勤 {{ (row as SalaryCalcVO).attendanceDays }} / 缺勤 {{ (row as SalaryCalcVO).absentDays }} /
+            迟到 {{ (row as SalaryCalcVO).lateCount ?? 0 }}
+          </template>
+        </el-table-column>
+        <el-table-column label="基本工资" width="110" align="right" class-name="amount-col">
+          <template #default="{ row }">{{ formatMoney((row as SalaryCalcVO).baseSalary) }}</template>
+        </el-table-column>
+        <el-table-column label="岗位工资" width="110" align="right" class-name="amount-col">
+          <template #default="{ row }">{{ formatMoney((row as SalaryCalcVO).postSalary) }}</template>
+        </el-table-column>
+        <el-table-column label="绩效系数" width="95" align="right" class-name="amount-col">
+          <template #default="{ row }">{{ (row as SalaryCalcVO).performanceCoefficient }}</template>
+        </el-table-column>
+        <el-table-column label="绩效工资" width="110" align="right" class-name="amount-col">
+          <template #default="{ row }">{{ formatMoney((row as SalaryCalcVO).performanceAmount) }}</template>
+        </el-table-column>
+        <el-table-column label="补贴" width="100" align="right" class-name="amount-col">
+          <template #default="{ row }">{{ formatMoney((row as SalaryCalcVO).allowance) }}</template>
+        </el-table-column>
+        <el-table-column label="考勤扣款" width="110" align="right" class-name="amount-col">
+          <template #default="{ row }">{{ formatMoney((row as SalaryCalcVO).attendanceDeduction) }}</template>
+        </el-table-column>
+        <el-table-column label="社保" width="100" align="right" class-name="amount-col">
+          <template #default="{ row }">{{ formatMoney((row as SalaryCalcVO).socialInsurance) }}</template>
+        </el-table-column>
+        <el-table-column label="公积金" width="100" align="right" class-name="amount-col">
+          <template #default="{ row }">{{ formatMoney((row as SalaryCalcVO).housingFund) }}</template>
+        </el-table-column>
+        <el-table-column label="个税" width="100" align="right" class-name="amount-col">
+          <template #default="{ row }">{{ formatMoney((row as SalaryCalcVO).tax) }}</template>
+        </el-table-column>
+        <el-table-column label="应发" width="110" align="right" class-name="amount-col">
+          <template #default="{ row }">{{ formatMoney((row as SalaryCalcVO).grossPay) }}</template>
+        </el-table-column>
+        <el-table-column label="实发" width="110" align="right" class-name="amount-col">
+          <template #default="{ row }">{{ formatMoney((row as SalaryCalcVO).netPay) }}</template>
+        </el-table-column>
+        <el-table-column label="状态" width="100">
+          <template #default="{ row }">
+            <el-tag size="small" :type="statusTagType((row as SalaryCalcVO).status)">
+              {{ hrPayrollStatusLabels[(row as SalaryCalcVO).status] }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column v-if="canConfirm" label="操作" width="90" fixed="right">
+          <template #default="{ row }">
+            <el-button
+              v-if="(row as SalaryCalcVO).status === 'DRAFT'"
+              link
+              type="primary"
+              size="small"
+              @click="openAdjust(row as SalaryCalcVO)"
+            >
+              调整
+            </el-button>
+            <span v-else>-</span>
+          </template>
+        </el-table-column>
+      </el-table>
+
+      <el-pagination
+        v-model:current-page="page"
+        v-model:page-size="size"
+        :total="total"
+        :page-sizes="[10, 20, 50, 100]"
+        layout="total, sizes, prev, pager, next, jumper"
+        class="pagination"
+        @size-change="onSearch"
+        @current-change="load"
+      />
+    </div>
 
     <!-- 手工调整 -->
     <el-drawer v-model="adjustVisible" title="调整工资核算" size="480px">
@@ -478,22 +515,127 @@ onMounted(load)
 </template>
 
 <style scoped>
-.toolbar {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
-  flex-wrap: wrap;
+/* 筛选卡片：白色圆角、16px 20px 内边距，操作按钮靠右 */
+.filter-bar {
+  padding: 16px 20px;
 }
+
+.filter-actions {
+  display: flex;
+  gap: var(--ceams-space-2, 8px);
+  margin-left: auto;
+}
+
+/* 指标卡网格：等宽自适应排布 */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--ceams-space-3, 12px);
+  margin-bottom: var(--ceams-space-4, 16px);
+}
+
+.stat-label {
+  font-size: var(--ceams-font-size-xs, 12px);
+  color: var(--ceams-text-secondary);
+}
+
+.stat-value {
+  margin-top: var(--ceams-space-1, 4px);
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--ceams-text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 表格卡片：20px 内边距 */
+.data-card {
+  padding: 20px;
+}
+
+/* 卡片头部：左侧标题与条数，右侧主操作 */
+.card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ceams-space-3, 12px);
+  margin-bottom: var(--ceams-space-4, 16px);
+}
+
+.card-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--ceams-space-2, 8px);
+}
+
+.card-title {
+  font-size: var(--ceams-font-size-md, 16px);
+  font-weight: 600;
+  color: var(--ceams-text-primary);
+}
+
+.card-sub {
+  font-size: var(--ceams-font-size-xs, 12px);
+  color: var(--ceams-text-secondary);
+}
+
+.card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--ceams-space-2, 8px);
+}
+
+.card-actions .el-button + .el-button {
+  margin-left: 0;
+}
+
+/* 金额与数值列：等宽数字，避免金额跳动 */
+:deep(.amount-col .cell) {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+}
+
+/* 分页右对齐，距表格 16px */
 .pagination {
-  margin-top: 12px;
+  margin-top: var(--ceams-space-4, 16px);
   justify-content: flex-end;
 }
-.result-alert {
-  margin-bottom: 8px;
+
+/* 空态居中灰色，上下 40px 留白 */
+:deep(.el-table__empty-block) {
+  padding: 40px 0;
+  min-height: 0;
 }
+
+:deep(.el-table__empty-text) {
+  color: var(--ceams-text-secondary);
+}
+
+.result-alert {
+  margin-bottom: var(--ceams-space-2, 8px);
+}
+
 .target-tip {
-  margin-bottom: 12px;
-  color: #4b5563;
-  font-size: 13px;
+  margin-bottom: var(--ceams-space-3, 12px);
+  color: var(--ceams-text-secondary);
+  font-size: var(--ceams-font-size-sm, 13px);
+}
+
+/* 抽屉：标题加粗，内容 20px 24px，底部操作条靠右并带顶部细边框 */
+:deep(.el-drawer__title) {
+  font-weight: 600;
+}
+
+:deep(.el-drawer__body) {
+  padding: 20px 24px;
+}
+
+:deep(.el-drawer__footer) {
+  padding: 12px 24px 18px;
+  border-top: 1px solid var(--ceams-border-divider);
+  text-align: right;
 }
 </style>

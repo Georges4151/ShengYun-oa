@@ -5,6 +5,7 @@ import {
   ElButton,
   ElDatePicker,
   ElDialog,
+  ElEmpty,
   ElForm,
   ElFormItem,
   ElInput,
@@ -53,6 +54,47 @@ const auth = useAuthStore()
 const isAdmin = computed(() => auth.roles.some((role) => role.code === 'SYS_ADMIN'))
 
 const activeTab = ref('pending')
+
+// ---------------- 状态标签配色（仅视觉映射，不改动状态值） ----------------
+type TagType = 'primary' | 'success' | 'info' | 'warning' | 'danger'
+
+/** 流程实例状态 -> 标签颜色：审批中警告、通过成功、驳回危险、其余中性 */
+function instanceStatusTagType(status: string): TagType {
+  switch (status) {
+    case 'APPROVED':
+      return 'success'
+    case 'RUNNING':
+      return 'warning'
+    case 'REJECTED':
+      return 'danger'
+    default:
+      return 'info'
+  }
+}
+
+/** 任务状态 -> 标签颜色：待处理警告、同意成功、驳回危险、关闭中性 */
+function taskStatusTagType(status: string): TagType {
+  switch (status) {
+    case 'APPROVED':
+      return 'success'
+    case 'REJECTED':
+      return 'danger'
+    case 'CLOSED':
+      return 'info'
+    default:
+      return 'warning'
+  }
+}
+
+/** 模板状态 -> 标签颜色 */
+function templateStatusTagType(status: string): TagType {
+  return status === 'ENABLED' ? 'success' : 'info'
+}
+
+/** 模板版本状态 -> 标签颜色：仅已发布为成功色 */
+function versionStatusTagType(status: string): TagType {
+  return status === 'PUBLISHED' ? 'success' : 'info'
+}
 
 // ---------------- 待办 ----------------
 const pending = reactive({ page: 1, size: 20, total: 0 })
@@ -493,10 +535,18 @@ watch(
 </script>
 
 <template>
-  <div>
-    <el-tabs v-model="activeTab" @tab-change="onTabChange">
+  <div class="bpm-view">
+    <!-- 页头：主标题 + 说明文字 -->
+    <div class="page-header">
+      <div>
+        <h2 class="page-title">待办中心</h2>
+        <p class="page-subtitle">处理审批待办、跟踪我发起的流程，并管理抄送、代理与流程模板</p>
+      </div>
+    </div>
+
+    <el-tabs v-model="activeTab" class="bpm-tabs" @tab-change="onTabChange">
       <el-tab-pane label="我的待办" name="pending">
-        <div class="toolbar">
+        <div class="data-card filter-card">
           <el-select v-model="pendingBizType" placeholder="业务类型" clearable style="width: 160px">
             <el-option v-for="(label, value) in bpmBizTypeLabels" :key="value" :label="label" :value="value" />
           </el-select>
@@ -504,299 +554,391 @@ watch(
             仅看超时
             <el-switch v-model="onlyOverdue" @change="loadPending" />
           </span>
-          <el-button type="primary" @click="loadPending">刷新</el-button>
+          <div class="filter-actions">
+            <el-button type="primary" @click="loadPending">刷新</el-button>
+          </div>
         </div>
-        <el-table v-loading="pendingLoading" :data="pendingList" border>
-          <el-table-column label="业务类型" width="110">
-            <template #default="{ row }">
-              <el-tag size="small">{{ bpmBizTypeLabels[(row as TaskVO).bizType ?? ''] ?? row.bizType }}</el-tag>
+
+        <div class="data-card table-card">
+          <div class="card-head">
+            <div class="card-heading">
+              <span class="card-title">待办任务</span>
+              <span class="card-sub">共 {{ pending.total }} 条</span>
+            </div>
+          </div>
+
+          <el-table v-loading="pendingLoading" :data="pendingList" border>
+            <el-table-column label="业务类型" width="110">
+              <template #default="{ row }">
+                <el-tag size="small">{{ bpmBizTypeLabels[(row as TaskVO).bizType ?? ''] ?? row.bizType }}</el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column prop="bizId" label="单据 ID" width="120" />
+            <el-table-column prop="initiatorName" label="发起人" width="110" />
+            <el-table-column label="代理" width="120">
+              <template #default="{ row }">
+                <el-tag v-if="(row as TaskVO).ownerAssigneeId" size="small" type="warning">
+                  代 {{ (row as TaskVO).ownerAssigneeName || (row as TaskVO).ownerAssigneeId }}
+                </el-tag>
+                <span v-else>-</span>
+              </template>
+            </el-table-column>
+            <el-table-column prop="currentNodeName" label="当前节点" width="140" />
+            <el-table-column prop="dueAt" label="到期时间" width="170" />
+            <el-table-column label="状态" width="120">
+              <template #default="{ row }">
+                <el-tag size="small" :type="taskStatusTagType((row as TaskVO).status)">
+                  {{ bpmTaskStatusLabels[(row as TaskVO).status] ?? row.status }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" width="220" fixed="right">
+              <template #default="{ row }">
+                <el-button link type="primary" size="small" @click="openInstance((row as TaskVO).instanceId)">查看流程</el-button>
+                <el-button
+                  v-if="(row as TaskVO).status === 'PENDING'"
+                  link
+                  type="success"
+                  size="small"
+                  @click="approve(row as TaskVO)"
+                >
+                  同意
+                </el-button>
+                <el-button
+                  v-if="(row as TaskVO).status === 'PENDING'"
+                  link
+                  type="warning"
+                  size="small"
+                  @click="openReject(row as TaskVO)"
+                >
+                  驳回
+                </el-button>
+              </template>
+            </el-table-column>
+            <template #empty>
+              <el-empty description="暂无待办任务" />
             </template>
-          </el-table-column>
-          <el-table-column prop="bizId" label="单据 ID" width="120" />
-          <el-table-column prop="initiatorName" label="发起人" width="110" />
-          <el-table-column label="代理" width="120">
-            <template #default="{ row }">
-              <el-tag v-if="(row as TaskVO).ownerAssigneeId" size="small" type="warning">
-                代 {{ (row as TaskVO).ownerAssigneeName || (row as TaskVO).ownerAssigneeId }}
-              </el-tag>
-              <span v-else>-</span>
-            </template>
-          </el-table-column>
-          <el-table-column prop="currentNodeName" label="当前节点" width="140" />
-          <el-table-column prop="dueAt" label="到期时间" width="170" />
-          <el-table-column label="状态" width="120">
-            <template #default="{ row }">
-              <el-tag
-                size="small"
-                :type="(row as TaskVO).status === 'PENDING' ? 'primary' : 'warning'"
-              >
-                {{ bpmTaskStatusLabels[(row as TaskVO).status] ?? row.status }}
-              </el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column label="操作" width="220" fixed="right">
-            <template #default="{ row }">
-              <el-button link type="primary" size="small" @click="openInstance((row as TaskVO).instanceId)">查看流程</el-button>
-              <el-button
-                v-if="(row as TaskVO).status === 'PENDING'"
-                link
-                type="success"
-                size="small"
-                @click="approve(row as TaskVO)"
-              >
-                同意
-              </el-button>
-              <el-button
-                v-if="(row as TaskVO).status === 'PENDING'"
-                link
-                type="warning"
-                size="small"
-                @click="openReject(row as TaskVO)"
-              >
-                驳回
-              </el-button>
-            </template>
-          </el-table-column>
-        </el-table>
-        <el-pagination
-          v-model:current-page="pending.page"
-          v-model:page-size="pending.size"
-          :total="pending.total"
-          :page-sizes="[10, 20, 50]"
-          layout="total, sizes, prev, pager, next"
-          class="pagination"
-          @size-change="loadPending"
-          @current-change="loadPending"
-        />
+          </el-table>
+
+          <el-pagination
+            v-model:current-page="pending.page"
+            v-model:page-size="pending.size"
+            :total="pending.total"
+            :page-sizes="[10, 20, 50]"
+            layout="total, sizes, prev, pager, next"
+            class="pagination"
+            @size-change="loadPending"
+            @current-change="loadPending"
+          />
+        </div>
       </el-tab-pane>
 
       <el-tab-pane label="我发起" name="initiated">
-        <el-table v-loading="initiatedLoading" :data="initiatedList" border>
-          <el-table-column label="业务类型" width="110">
-            <template #default="{ row }">
-              <el-tag size="small">{{ bpmBizTypeLabels[(row as InstanceVO).bizType] ?? row.bizType }}</el-tag>
+        <div class="data-card table-card">
+          <div class="card-head">
+            <div class="card-heading">
+              <span class="card-title">我发起的流程</span>
+              <span class="card-sub">共 {{ initiated.total }} 条</span>
+            </div>
+          </div>
+
+          <el-table v-loading="initiatedLoading" :data="initiatedList" border>
+            <el-table-column label="业务类型" width="110">
+              <template #default="{ row }">
+                <el-tag size="small">{{ bpmBizTypeLabels[(row as InstanceVO).bizType] ?? row.bizType }}</el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column prop="bizId" label="单据 ID" width="120" />
+            <el-table-column label="状态" width="110">
+              <template #default="{ row }">
+                <el-tag size="small" :type="instanceStatusTagType((row as InstanceVO).status)">
+                  {{ bpmInstanceStatusLabels[(row as InstanceVO).status] }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column prop="startedAt" label="发起时间" width="180" />
+            <el-table-column prop="endedAt" label="结束时间" width="180" />
+            <el-table-column label="操作" width="220" fixed="right">
+              <template #default="{ row }">
+                <el-button link type="primary" size="small" @click="openInstance((row as InstanceVO).id)">查看流程</el-button>
+                <el-button
+                  v-if="(row as InstanceVO).status === 'RUNNING'"
+                  link
+                  type="warning"
+                  size="small"
+                  @click="withdraw(row as InstanceVO)"
+                >
+                  撤回
+                </el-button>
+                <el-button
+                  v-if="isAdmin && (row as InstanceVO).status === 'RUNNING'"
+                  link
+                  type="danger"
+                  size="small"
+                  @click="terminate(row as InstanceVO)"
+                >
+                  终止
+                </el-button>
+              </template>
+            </el-table-column>
+            <template #empty>
+              <el-empty description="暂无发起的流程" />
             </template>
-          </el-table-column>
-          <el-table-column prop="bizId" label="单据 ID" width="120" />
-          <el-table-column label="状态" width="110">
-            <template #default="{ row }">
-              <el-tag size="small">{{ bpmInstanceStatusLabels[(row as InstanceVO).status] }}</el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column prop="startedAt" label="发起时间" width="180" />
-          <el-table-column prop="endedAt" label="结束时间" width="180" />
-          <el-table-column label="操作" width="220" fixed="right">
-            <template #default="{ row }">
-              <el-button link type="primary" size="small" @click="openInstance((row as InstanceVO).id)">查看流程</el-button>
-              <el-button
-                v-if="(row as InstanceVO).status === 'RUNNING'"
-                link
-                type="warning"
-                size="small"
-                @click="withdraw(row as InstanceVO)"
-              >
-                撤回
-              </el-button>
-              <el-button
-                v-if="isAdmin && (row as InstanceVO).status === 'RUNNING'"
-                link
-                type="danger"
-                size="small"
-                @click="terminate(row as InstanceVO)"
-              >
-                终止
-              </el-button>
-            </template>
-          </el-table-column>
-        </el-table>
-        <el-pagination
-          v-model:current-page="initiated.page"
-          v-model:page-size="initiated.size"
-          :total="initiated.total"
-          :page-sizes="[10, 20, 50]"
-          layout="total, sizes, prev, pager, next"
-          class="pagination"
-          @size-change="loadInitiated"
-          @current-change="loadInitiated"
-        />
+          </el-table>
+
+          <el-pagination
+            v-model:current-page="initiated.page"
+            v-model:page-size="initiated.size"
+            :total="initiated.total"
+            :page-sizes="[10, 20, 50]"
+            layout="total, sizes, prev, pager, next"
+            class="pagination"
+            @size-change="loadInitiated"
+            @current-change="loadInitiated"
+          />
+        </div>
       </el-tab-pane>
 
       <el-tab-pane label="我已办" name="done">
-        <el-table v-loading="doneLoading" :data="doneList" border>
-          <el-table-column label="业务类型" width="110">
-            <template #default="{ row }">
-              <el-tag size="small">{{ bpmBizTypeLabels[(row as TaskVO).bizType ?? ''] ?? row.bizType }}</el-tag>
+        <div class="data-card table-card">
+          <div class="card-head">
+            <div class="card-heading">
+              <span class="card-title">我已办任务</span>
+              <span class="card-sub">共 {{ done.total }} 条</span>
+            </div>
+          </div>
+
+          <el-table v-loading="doneLoading" :data="doneList" border>
+            <el-table-column label="业务类型" width="110">
+              <template #default="{ row }">
+                <el-tag size="small">{{ bpmBizTypeLabels[(row as TaskVO).bizType ?? ''] ?? row.bizType }}</el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column prop="bizId" label="单据 ID" width="120" />
+            <el-table-column prop="initiatorName" label="发起人" width="110" />
+            <el-table-column prop="currentNodeName" label="节点" width="140" />
+            <el-table-column label="处理结果" width="110">
+              <template #default="{ row }">
+                <el-tag size="small" :type="taskStatusTagType((row as TaskVO).status)">
+                  {{ bpmTaskStatusLabels[(row as TaskVO).status] ?? row.status }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column prop="updateTime" label="处理时间" min-width="170" />
+            <el-table-column label="操作" width="120" fixed="right">
+              <template #default="{ row }">
+                <el-button link type="primary" size="small" @click="openInstance((row as TaskVO).instanceId)">查看流程</el-button>
+              </template>
+            </el-table-column>
+            <template #empty>
+              <el-empty description="暂无已办任务" />
             </template>
-          </el-table-column>
-          <el-table-column prop="bizId" label="单据 ID" width="120" />
-          <el-table-column prop="initiatorName" label="发起人" width="110" />
-          <el-table-column prop="currentNodeName" label="节点" width="140" />
-          <el-table-column label="处理结果" width="110">
-            <template #default="{ row }">
-              <el-tag size="small">{{ bpmTaskStatusLabels[(row as TaskVO).status] ?? row.status }}</el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column prop="updateTime" label="处理时间" min-width="170" />
-          <el-table-column label="操作" width="120" fixed="right">
-            <template #default="{ row }">
-              <el-button link type="primary" size="small" @click="openInstance((row as TaskVO).instanceId)">查看流程</el-button>
-            </template>
-          </el-table-column>
-        </el-table>
-        <el-pagination
-          v-model:current-page="done.page"
-          v-model:page-size="done.size"
-          :total="done.total"
-          :page-sizes="[10, 20, 50]"
-          layout="total, sizes, prev, pager, next"
-          class="pagination"
-          @size-change="loadDone"
-          @current-change="loadDone"
-        />
+          </el-table>
+
+          <el-pagination
+            v-model:current-page="done.page"
+            v-model:page-size="done.size"
+            :total="done.total"
+            :page-sizes="[10, 20, 50]"
+            layout="total, sizes, prev, pager, next"
+            class="pagination"
+            @size-change="loadDone"
+            @current-change="loadDone"
+          />
+        </div>
       </el-tab-pane>
 
       <el-tab-pane label="抄送我的" name="cc">
-        <el-table v-loading="ccLoading" :data="ccList" border>
-          <el-table-column label="业务类型" width="110">
-            <template #default="{ row }">
-              <el-tag size="small">{{ bpmBizTypeLabels[(row as CcRecordVO).bizType ?? ''] ?? row.bizType }}</el-tag>
+        <div class="data-card table-card">
+          <div class="card-head">
+            <div class="card-heading">
+              <span class="card-title">抄送我的单据</span>
+              <span class="card-sub">共 {{ cc.total }} 条</span>
+            </div>
+          </div>
+
+          <el-table v-loading="ccLoading" :data="ccList" border>
+            <el-table-column label="业务类型" width="110">
+              <template #default="{ row }">
+                <el-tag size="small">{{ bpmBizTypeLabels[(row as CcRecordVO).bizType ?? ''] ?? row.bizType }}</el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column prop="bizId" label="单据 ID" width="120" />
+            <el-table-column prop="initiatorName" label="发起人" width="110" />
+            <el-table-column label="状态" width="100">
+              <template #default="{ row }">
+                <el-tag size="small" :type="(row as CcRecordVO).readStatus === 'UNREAD' ? 'warning' : 'info'">
+                  {{ (row as CcRecordVO).readStatus === 'UNREAD' ? '未读' : '已读' }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column prop="createTime" label="抄送时间" width="180" />
+            <el-table-column label="操作" width="120" fixed="right">
+              <template #default="{ row }">
+                <el-button link type="primary" size="small" @click="openInstance((row as CcRecordVO).instanceId)">查看流程</el-button>
+              </template>
+            </el-table-column>
+            <template #empty>
+              <el-empty description="暂无抄送记录" />
             </template>
-          </el-table-column>
-          <el-table-column prop="bizId" label="单据 ID" width="120" />
-          <el-table-column prop="initiatorName" label="发起人" width="110" />
-          <el-table-column label="状态" width="100">
-            <template #default="{ row }">
-              <el-tag size="small" :type="(row as CcRecordVO).readStatus === 'UNREAD' ? 'warning' : 'info'">
-                {{ (row as CcRecordVO).readStatus === 'UNREAD' ? '未读' : '已读' }}
-              </el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column prop="createTime" label="抄送时间" width="180" />
-          <el-table-column label="操作" width="120" fixed="right">
-            <template #default="{ row }">
-              <el-button link type="primary" size="small" @click="openInstance((row as CcRecordVO).instanceId)">查看流程</el-button>
-            </template>
-          </el-table-column>
-        </el-table>
-        <el-pagination
-          v-model:current-page="cc.page"
-          v-model:page-size="cc.size"
-          :total="cc.total"
-          :page-sizes="[10, 20, 50]"
-          layout="total, sizes, prev, pager, next"
-          class="pagination"
-          @size-change="loadCc"
-          @current-change="loadCc"
-        />
+          </el-table>
+
+          <el-pagination
+            v-model:current-page="cc.page"
+            v-model:page-size="cc.size"
+            :total="cc.total"
+            :page-sizes="[10, 20, 50]"
+            layout="total, sizes, prev, pager, next"
+            class="pagination"
+            @size-change="loadCc"
+            @current-change="loadCc"
+          />
+        </div>
       </el-tab-pane>
 
       <el-tab-pane label="代理设置" name="delegate">
-        <div class="toolbar">
-          <el-button type="primary" @click="openDelegateCreate">新建代理</el-button>
-          <el-button @click="loadDelegates">刷新</el-button>
+        <div class="data-card filter-card">
           <span class="hint">代理时段内到达的待办自动转交代理人，代理人处理后记录仍归属原审批人</span>
+          <div class="filter-actions">
+            <el-button @click="loadDelegates">刷新</el-button>
+            <el-button type="primary" @click="openDelegateCreate">新建代理</el-button>
+          </div>
         </div>
-        <el-table v-loading="delegateLoading" :data="delegateList" border>
-          <el-table-column label="代理人" min-width="130">
-            <template #default="{ row }">
-              {{ (row as DelegateVO).delegateName || (row as DelegateVO).delegateId }}
+
+        <div class="data-card table-card">
+          <div class="card-head">
+            <div class="card-heading">
+              <span class="card-title">代理记录</span>
+              <span class="card-sub">共 {{ delegates.total }} 条</span>
+            </div>
+          </div>
+
+          <el-table v-loading="delegateLoading" :data="delegateList" border>
+            <el-table-column label="代理人" min-width="130">
+              <template #default="{ row }">
+                {{ (row as DelegateVO).delegateName || (row as DelegateVO).delegateId }}
+              </template>
+            </el-table-column>
+            <el-table-column label="适用范围" width="120">
+              <template #default="{ row }">
+                {{ (row as DelegateVO).bizType ? bpmBizTypeLabels[(row as DelegateVO).bizType!] ?? (row as DelegateVO).bizType : '全部业务' }}
+              </template>
+            </el-table-column>
+            <el-table-column prop="startTime" label="开始时间" width="180" />
+            <el-table-column prop="endTime" label="结束时间" width="180" />
+            <el-table-column label="状态" width="100">
+              <template #default="{ row }">
+                <el-tag size="small" :type="(row as DelegateVO).effective ? 'success' : 'info'">
+                  {{ delegateStateText(row as DelegateVO) }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column prop="reason" label="原因" min-width="160" show-overflow-tooltip />
+            <el-table-column label="操作" width="100" fixed="right">
+              <template #default="{ row }">
+                <el-button
+                  v-if="(row as DelegateVO).status === 'ENABLED'"
+                  link
+                  type="warning"
+                  size="small"
+                  @click="cancelDelegate(row as DelegateVO)"
+                >
+                  停用
+                </el-button>
+                <span v-else>-</span>
+              </template>
+            </el-table-column>
+            <template #empty>
+              <el-empty description="暂无代理记录" />
             </template>
-          </el-table-column>
-          <el-table-column label="适用范围" width="120">
-            <template #default="{ row }">
-              {{ (row as DelegateVO).bizType ? bpmBizTypeLabels[(row as DelegateVO).bizType!] ?? (row as DelegateVO).bizType : '全部业务' }}
-            </template>
-          </el-table-column>
-          <el-table-column prop="startTime" label="开始时间" width="180" />
-          <el-table-column prop="endTime" label="结束时间" width="180" />
-          <el-table-column label="状态" width="100">
-            <template #default="{ row }">
-              <el-tag
-                size="small"
-                :type="(row as DelegateVO).effective ? 'success' : 'info'"
-              >
-                {{ delegateStateText(row as DelegateVO) }}
-              </el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column prop="reason" label="原因" min-width="160" show-overflow-tooltip />
-          <el-table-column label="操作" width="100" fixed="right">
-            <template #default="{ row }">
-              <el-button
-                v-if="(row as DelegateVO).status === 'ENABLED'"
-                link
-                type="warning"
-                size="small"
-                @click="cancelDelegate(row as DelegateVO)"
-              >
-                停用
-              </el-button>
-              <span v-else>-</span>
-            </template>
-          </el-table-column>
-        </el-table>
-        <el-pagination
-          v-model:current-page="delegates.page"
-          v-model:page-size="delegates.size"
-          :total="delegates.total"
-          :page-sizes="[10, 20, 50]"
-          layout="total, sizes, prev, pager, next"
-          class="pagination"
-          @size-change="loadDelegates"
-          @current-change="loadDelegates"
-        />
+          </el-table>
+
+          <el-pagination
+            v-model:current-page="delegates.page"
+            v-model:page-size="delegates.size"
+            :total="delegates.total"
+            :page-sizes="[10, 20, 50]"
+            layout="total, sizes, prev, pager, next"
+            class="pagination"
+            @size-change="loadDelegates"
+            @current-change="loadDelegates"
+          />
+        </div>
       </el-tab-pane>
 
       <el-tab-pane v-if="isAdmin" label="流程模板" name="template">
-        <div class="toolbar">
-          <el-button type="primary" @click="loadTemplates">刷新</el-button>
-          <el-button v-if="hasPermission('bpm:template:create')" @click="openCreateTemplate">新增模板</el-button>
+        <div class="data-card filter-card">
           <span class="hint">发布新版本只对新发起的单据生效，历史实例锁定原版本</span>
+          <div class="filter-actions">
+            <el-button @click="loadTemplates">刷新</el-button>
+            <el-button v-if="hasPermission('bpm:template:create')" type="primary" @click="openCreateTemplate">
+              新增模板
+            </el-button>
+          </div>
         </div>
-        <el-table v-loading="templateLoading" :data="templates" border>
-          <el-table-column prop="code" label="模板编码" width="160" />
-          <el-table-column prop="name" label="模板名称" width="160" />
-          <el-table-column label="业务类型" width="110">
-            <template #default="{ row }">
-              {{ bpmBizTypeLabels[(row as TemplateVO).bizType] ?? row.bizType }}
+
+        <div class="data-card table-card">
+          <div class="card-head">
+            <div class="card-heading">
+              <span class="card-title">流程模板</span>
+              <span class="card-sub">共 {{ templates.length }} 个</span>
+            </div>
+          </div>
+
+          <el-table v-loading="templateLoading" :data="templates" border>
+            <el-table-column prop="code" label="模板编码" width="160" />
+            <el-table-column prop="name" label="模板名称" width="160" />
+            <el-table-column label="业务类型" width="110">
+              <template #default="{ row }">
+                {{ bpmBizTypeLabels[(row as TemplateVO).bizType] ?? row.bizType }}
+              </template>
+            </el-table-column>
+            <el-table-column label="状态" width="100">
+              <template #default="{ row }">
+                <el-tag size="small" :type="templateStatusTagType((row as TemplateVO).status)">
+                  {{ bpmTemplateStatusLabels[(row as TemplateVO).status] }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column label="当前版本" width="110">
+              <template #default="{ row }">
+                {{ (row as TemplateVO).currentVersion?.versionNo ?? '-' }}
+              </template>
+            </el-table-column>
+            <el-table-column label="版本状态" width="110">
+              <template #default="{ row }">
+                <el-tag
+                  v-if="(row as TemplateVO).currentVersion"
+                  size="small"
+                  :type="versionStatusTagType((row as TemplateVO).currentVersion!.status)"
+                >
+                  {{ bpmTemplateVersionStatusLabels[(row as TemplateVO).currentVersion!.status] }}
+                </el-tag>
+                <span v-else>-</span>
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" width="260" fixed="right">
+              <template #default="{ row }">
+                <el-button link type="primary" size="small" @click="openPublish(row as TemplateVO)">发布新版本</el-button>
+                <el-button link type="warning" size="small" @click="toggleTemplate(row as TemplateVO)">
+                  {{ (row as TemplateVO).status === 'ENABLED' ? '停用' : '启用' }}
+                </el-button>
+                <el-button
+                  v-if="hasPermission('bpm:template:delete')"
+                  link
+                  type="danger"
+                  size="small"
+                  @click="deleteTemplate(row as TemplateVO)"
+                >
+                  删除
+                </el-button>
+              </template>
+            </el-table-column>
+            <template #empty>
+              <el-empty description="暂无流程模板" />
             </template>
-          </el-table-column>
-          <el-table-column label="状态" width="100">
-            <template #default="{ row }">
-              <el-tag size="small">{{ bpmTemplateStatusLabels[(row as TemplateVO).status] }}</el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column label="当前版本" width="110">
-            <template #default="{ row }">
-              {{ (row as TemplateVO).currentVersion?.versionNo ?? '-' }}
-            </template>
-          </el-table-column>
-          <el-table-column label="版本状态" width="110">
-            <template #default="{ row }">
-              <el-tag v-if="(row as TemplateVO).currentVersion" size="small" type="success">
-                {{ bpmTemplateVersionStatusLabels[(row as TemplateVO).currentVersion!.status] }}
-              </el-tag>
-              <span v-else>-</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="操作" width="260" fixed="right">
-            <template #default="{ row }">
-              <el-button link type="primary" size="small" @click="openPublish(row as TemplateVO)">发布新版本</el-button>
-              <el-button link type="warning" size="small" @click="toggleTemplate(row as TemplateVO)">
-                {{ (row as TemplateVO).status === 'ENABLED' ? '停用' : '启用' }}
-              </el-button>
-              <el-button
-                v-if="hasPermission('bpm:template:delete')"
-                link
-                type="danger"
-                size="small"
-                @click="deleteTemplate(row as TemplateVO)"
-              >
-                删除
-              </el-button>
-            </template>
-          </el-table-column>
-        </el-table>
+          </el-table>
+        </div>
       </el-tab-pane>
     </el-tabs>
 
@@ -940,34 +1082,100 @@ watch(
 </template>
 
 <style scoped>
-.toolbar {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  margin-bottom: 12px;
+/* 页签头部与内容的间距 */
+.bpm-tabs :deep(.el-tabs__header) {
+  margin-bottom: var(--ceams-space-4);
 }
+
+/* 筛选卡片：控件 12px 间距，操作按钮靠右 */
+.filter-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ceams-space-3);
+  padding: 16px 20px;
+  margin-bottom: var(--ceams-space-4);
+}
+
+.filter-actions {
+  display: flex;
+  gap: var(--ceams-space-2);
+  align-items: center;
+  margin-left: auto;
+}
+
+/* 表格卡片：头部标题 + 表格四周 20px 内边距 */
+.table-card {
+  padding: 20px;
+}
+
+.card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--ceams-space-3);
+  margin-bottom: var(--ceams-space-4);
+}
+
+.card-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--ceams-space-2);
+}
+
+.card-title {
+  font-size: var(--ceams-font-size-md);
+  font-weight: 600;
+  color: var(--ceams-text-primary);
+}
+
+.card-sub {
+  font-size: var(--ceams-font-size-xs);
+  color: var(--ceams-text-secondary);
+}
+
 .overdue {
   display: flex;
   gap: 6px;
   align-items: center;
-  font-size: 13px;
-  color: #4b5563;
+  font-size: var(--ceams-font-size-sm);
+  color: var(--ceams-text-secondary);
 }
+
 .hint {
-  font-size: 12px;
-  color: #6b7280;
+  font-size: var(--ceams-font-size-xs);
+  color: var(--ceams-text-secondary);
 }
+
 .pagination {
-  margin-top: 12px;
+  margin-top: var(--ceams-space-4);
   justify-content: flex-end;
 }
+
 .publish-head {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 12px;
+  gap: var(--ceams-space-3);
+  margin-bottom: var(--ceams-space-3);
 }
+
 .publish-designer {
-  margin-bottom: 12px;
+  margin-bottom: var(--ceams-space-3);
+}
+
+/* 弹窗：内容区 20px 24px，底部操作条靠右并带顶部细边框 */
+:deep(.el-dialog__title) {
+  font-weight: 600;
+}
+
+:deep(.el-dialog__body) {
+  padding: 20px 24px;
+}
+
+:deep(.el-dialog__footer) {
+  padding: 12px 24px 18px;
+  border-top: 1px solid var(--ceams-border-divider);
+  text-align: right;
 }
 </style>

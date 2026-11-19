@@ -154,7 +154,7 @@ onReachBottom(() => {
 .item__title {
   display: block;
   color: var(--ceams-text-primary);
-  font-size: var(--ceams-font-size-heading);
+  font-size: 28rpx;
   font-weight: var(--ceams-font-weight-semibold);
   line-height: var(--ceams-line-height-tight);
 }
@@ -171,7 +171,7 @@ onReachBottom(() => {
   display: block;
   margin-top: var(--ceams-space-2xs);
   color: var(--ceams-text-secondary);
-  font-size: var(--ceams-font-size-caption);
+  font-size: 24rpx;
   line-height: var(--ceams-line-height-normal);
 }
 

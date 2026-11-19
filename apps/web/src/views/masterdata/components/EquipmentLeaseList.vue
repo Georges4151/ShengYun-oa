@@ -7,6 +7,7 @@ import {
   ElDescriptions,
   ElDescriptionsItem,
   ElDialog,
+  ElEmpty,
   ElForm,
   ElFormItem,
   ElInput,
@@ -99,6 +100,20 @@ const rules: FormRules<typeof form> = {
   projectId: [{ required: true, message: '请选择项目', trigger: 'change' }],
   leaseStartDate: [{ required: true, message: '请选择租赁开始日期', trigger: 'change' }],
   leaseEndDate: [{ required: true, message: '请选择租赁结束日期', trigger: 'change' }]
+}
+
+/** 付款状态标签配色：仅影响展示，不改变状态枚举与文案。 */
+function paymentTagType(status?: PaymentStatus): 'success' | 'warning' | 'danger' | 'info' {
+  switch (status) {
+    case 'PAID':
+      return 'success'
+    case 'PARTIAL':
+      return 'warning'
+    case 'UNPAID':
+      return 'danger'
+    default:
+      return 'info'
+  }
 }
 
 async function load(): Promise<void> {
@@ -220,62 +235,100 @@ onMounted(() => {
 
 <template>
   <div>
-    <div class="toolbar">
+    <!-- 筛选卡片：控件 12px 间距，查询按钮靠右 -->
+    <div class="data-card filter-card">
       <el-select v-model="query.equipmentId" placeholder="设备（可选）" clearable filterable style="width: 200px">
         <el-option v-for="opt in equipmentOptions" :key="opt.id" :label="opt.label" :value="opt.id" />
       </el-select>
       <el-select v-model="query.projectId" placeholder="项目（可选）" clearable filterable style="width: 200px">
         <el-option v-for="opt in projectOptions" :key="opt.id" :label="opt.label" :value="opt.id" />
       </el-select>
-      <el-button type="primary" @click="onSearch">查询</el-button>
-      <el-button @click="openCreate">新增租赁</el-button>
+      <div class="filter-actions">
+        <el-button type="primary" @click="onSearch">查询</el-button>
+      </div>
     </div>
 
-    <el-table v-loading="loading" :data="list" border>
-      <el-table-column label="设备" min-width="160">
-        <template #default="{ row }">
-          {{ (row as EquipmentLeaseVO).equipmentName || (row as EquipmentLeaseVO).equipmentId }}
-        </template>
-      </el-table-column>
-      <el-table-column label="项目" min-width="160">
-        <template #default="{ row }">
-          {{ (row as EquipmentLeaseVO).projectName || (row as EquipmentLeaseVO).projectId }}
-        </template>
-      </el-table-column>
-      <el-table-column label="出租方" min-width="160">
-        <template #default="{ row }">
-          {{ (row as EquipmentLeaseVO).lessorName || '-' }}
-        </template>
-      </el-table-column>
-      <el-table-column prop="leaseStartDate" label="开始日期" width="120" />
-      <el-table-column prop="leaseEndDate" label="结束日期" width="120" />
-      <el-table-column prop="dailyRent" label="日租金" width="110" />
-      <el-table-column prop="totalRent" label="总租金" width="120" />
-      <el-table-column label="付款状态" width="110">
-        <template #default="{ row }">
-          <el-tag v-if="row.paymentStatus" size="small">{{ paymentStatusLabels[(row as EquipmentLeaseVO).paymentStatus!] }}</el-tag>
-          <span v-else>-</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="操作" width="200" fixed="right">
-        <template #default="{ row }">
-          <el-button link type="primary" size="small" @click="openDetail(row as EquipmentLeaseVO)">详情</el-button>
-          <el-button link type="primary" size="small" @click="openEdit(row as EquipmentLeaseVO)">编辑</el-button>
-          <el-button link type="danger" size="small" @click="onRemove(row as EquipmentLeaseVO)">删除</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
+    <!-- 表格卡片：头部标题、条数与主操作，表格四周 20px 内边距 -->
+    <div class="data-card table-card">
+      <div class="card-head">
+        <div class="card-heading">
+          <span class="card-title">设备租赁</span>
+          <span class="card-sub">共 {{ total }} 条</span>
+        </div>
+        <div class="card-actions">
+          <el-button type="primary" @click="openCreate">新增租赁</el-button>
+        </div>
+      </div>
 
-    <el-pagination
-      v-model:current-page="page"
-      v-model:page-size="size"
-      :total="total"
-      :page-sizes="[10, 20, 50, 100]"
-      layout="total, sizes, prev, pager, next, jumper"
-      class="pagination"
-      @size-change="onSearch"
-      @current-change="load"
-    />
+      <el-table v-loading="loading" :data="list" border>
+        <el-table-column label="设备" min-width="160">
+          <template #default="{ row }">
+            {{ (row as EquipmentLeaseVO).equipmentName || (row as EquipmentLeaseVO).equipmentId }}
+          </template>
+        </el-table-column>
+        <el-table-column label="项目" min-width="160">
+          <template #default="{ row }">
+            {{ (row as EquipmentLeaseVO).projectName || (row as EquipmentLeaseVO).projectId }}
+          </template>
+        </el-table-column>
+        <el-table-column label="出租方" min-width="160">
+          <template #default="{ row }">
+            {{ (row as EquipmentLeaseVO).lessorName || '-' }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="leaseStartDate" label="开始日期" width="120" />
+        <el-table-column prop="leaseEndDate" label="结束日期" width="120" />
+        <el-table-column label="日租金" width="110" align="right">
+          <template #default="{ row }">
+            <span v-if="(row as EquipmentLeaseVO).dailyRent" class="amount">
+              {{ (row as EquipmentLeaseVO).dailyRent }}
+            </span>
+            <span v-else>-</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="总租金" width="120" align="right">
+          <template #default="{ row }">
+            <span v-if="(row as EquipmentLeaseVO).totalRent" class="amount">
+              {{ (row as EquipmentLeaseVO).totalRent }}
+            </span>
+            <span v-else>-</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="付款状态" width="110">
+          <template #default="{ row }">
+            <el-tag
+              v-if="(row as EquipmentLeaseVO).paymentStatus"
+              size="small"
+              :type="paymentTagType((row as EquipmentLeaseVO).paymentStatus)"
+            >
+              {{ paymentStatusLabels[(row as EquipmentLeaseVO).paymentStatus!] }}
+            </el-tag>
+            <span v-else>-</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="200" fixed="right">
+          <template #default="{ row }">
+            <el-button link type="primary" size="small" @click="openDetail(row as EquipmentLeaseVO)">详情</el-button>
+            <el-button link type="primary" size="small" @click="openEdit(row as EquipmentLeaseVO)">编辑</el-button>
+            <el-button link type="danger" size="small" @click="onRemove(row as EquipmentLeaseVO)">删除</el-button>
+          </template>
+        </el-table-column>
+        <template #empty>
+          <el-empty description="暂无设备租赁数据" />
+        </template>
+      </el-table>
+
+      <el-pagination
+        v-model:current-page="page"
+        v-model:page-size="size"
+        :total="total"
+        :page-sizes="[10, 20, 50, 100]"
+        layout="total, sizes, prev, pager, next, jumper"
+        class="pagination"
+        @size-change="onSearch"
+        @current-change="load"
+      />
+    </div>
 
     <el-dialog v-model="dialogVisible" :title="editingId ? '编辑设备租赁' : '新增设备租赁'" width="540px">
       <el-form ref="formRef" :model="form" :rules="rules" label-width="110px">
@@ -349,13 +402,102 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.toolbar {
+/* 筛选卡片：控件 12px 间距，查询按钮靠右 */
+.filter-card {
   display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ceams-space-3);
+  padding: 16px 20px;
+  margin-bottom: var(--ceams-space-4);
 }
+
+.filter-actions {
+  display: flex;
+  gap: var(--ceams-space-2);
+  align-items: center;
+  margin-left: auto;
+}
+
+/* 表格卡片：头部标题、条数与主操作，表格四周 20px 内边距 */
+.table-card {
+  padding: 20px;
+}
+
+.card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ceams-space-3);
+  margin-bottom: var(--ceams-space-4);
+}
+
+.card-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--ceams-space-2);
+}
+
+.card-title {
+  font-size: var(--ceams-font-size-md);
+  font-weight: 600;
+  color: var(--ceams-text-primary);
+}
+
+.card-sub {
+  font-size: var(--ceams-font-size-xs);
+  color: var(--ceams-text-secondary);
+}
+
+.card-actions {
+  display: flex;
+  gap: var(--ceams-space-2);
+  align-items: center;
+}
+
+/* 金额列：右对齐 + 等宽数字 */
+.amount {
+  display: inline-block;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+  font-weight: 600;
+  color: var(--ceams-text-primary);
+}
+
+/* 分页右对齐，距表格 16px */
 .pagination {
-  margin-top: 12px;
+  margin-top: var(--ceams-space-4);
   justify-content: flex-end;
+}
+
+/* 空态：居中灰色，上下 40px 留白 */
+:deep(.el-table__empty-block) {
+  padding: 40px 0;
+  min-height: 0;
+}
+
+:deep(.el-table__empty-text) {
+  color: var(--ceams-text-secondary);
+}
+
+:deep(.el-empty) {
+  padding: 0;
+}
+
+/* 弹窗：标题加粗，内容区 20px 24px，底部操作条靠右并带顶部细边框 */
+:deep(.el-dialog__title) {
+  font-weight: 600;
+}
+
+:deep(.el-dialog__body) {
+  padding: 20px 24px;
+}
+
+:deep(.el-dialog__footer) {
+  padding: 12px 24px 18px;
+  border-top: 1px solid var(--ceams-border-divider);
+  text-align: right;
 }
 </style>

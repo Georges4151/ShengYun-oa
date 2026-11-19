@@ -20,7 +20,10 @@ import com.ceams.module.project.util.PageUtil;
 import com.ceams.module.project.vo.ProgressPaymentVO;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -50,16 +53,16 @@ public class ProgressPaymentServiceImpl implements ProgressPaymentService {
         }
         wrapper.orderByDesc(ProgressPayment::getCreateTime);
         IPage<ProgressPayment> result = progressPaymentMapper.selectPage(p, wrapper);
-        return new PageResult<>(
-                progressPaymentConverter.toVOList(result.getRecords()),
-                result.getTotal(),
-                result.getCurrent(),
-                result.getSize());
+        List<ProgressPaymentVO> records = progressPaymentConverter.toVOList(result.getRecords());
+        fillProjectNames(records);
+        return new PageResult<>(records, result.getTotal(), result.getCurrent(), result.getSize());
     }
 
     @Override
     public ProgressPaymentVO detail(Long id) {
-        return progressPaymentConverter.toVO(requireProgressPayment(id));
+        ProgressPaymentVO vo = progressPaymentConverter.toVO(requireProgressPayment(id));
+        fillProjectNames(List.of(vo));
+        return vo;
     }
 
     @Override
@@ -79,11 +82,9 @@ public class ProgressPaymentServiceImpl implements ProgressPaymentService {
         }
         wrapper.orderByDesc(ProgressPayment::getCreateTime);
         IPage<ProgressPayment> result = progressPaymentMapper.selectPage(p, wrapper);
-        return new PageResult<>(
-                progressPaymentConverter.toVOList(result.getRecords()),
-                result.getTotal(),
-                result.getCurrent(),
-                result.getSize());
+        List<ProgressPaymentVO> records = progressPaymentConverter.toVOList(result.getRecords());
+        fillProjectNames(records);
+        return new PageResult<>(records, result.getTotal(), result.getCurrent(), result.getSize());
     }
 
     @Override
@@ -137,6 +138,31 @@ public class ProgressPaymentServiceImpl implements ProgressPaymentService {
     public void delete(Long id) {
         requireProgressPayment(id);
         progressPaymentMapper.deleteById(id);
+    }
+
+    /** 批量回填项目名称，避免逐条查询造成 N+1。 */
+    private void fillProjectNames(List<ProgressPaymentVO> records) {
+        if (records == null || records.isEmpty()) {
+            return;
+        }
+        List<Long> projectIds =
+                records.stream()
+                        .map(ProgressPaymentVO::getProjectId)
+                        .filter(Objects::nonNull)
+                        .distinct()
+                        .toList();
+        if (projectIds.isEmpty()) {
+            return;
+        }
+        Map<Long, String> projectNames = new HashMap<>();
+        for (Project project : projectMapper.selectBatchIds(projectIds)) {
+            projectNames.put(project.getId(), project.getProjectName());
+        }
+        for (ProgressPaymentVO record : records) {
+            if (record.getProjectId() != null) {
+                record.setProjectName(projectNames.get(record.getProjectId()));
+            }
+        }
     }
 
     private ProgressPayment requireProgressPayment(Long id) {

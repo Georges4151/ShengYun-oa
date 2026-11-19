@@ -23,8 +23,14 @@ export const routes: RouteRecordRaw[] = [
   {
     path: '/',
     component: AppLayout,
-    redirect: '/masterdata',
+    redirect: '/dashboard',
     children: [
+      {
+        path: 'dashboard',
+        name: 'dashboard',
+        component: () => import('@/views/DashboardView.vue'),
+        meta: { title: '工作台' }
+      },
       {
         path: 'masterdata',
         name: 'masterdata',

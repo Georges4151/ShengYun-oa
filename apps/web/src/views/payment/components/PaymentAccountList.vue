@@ -139,40 +139,44 @@ onMounted(load)
 </script>
 
 <template>
-  <div>
-    <div class="toolbar">
+  <div class="list-page">
+    <div class="filter-bar">
       <el-input v-model="query.name" placeholder="账户名称" clearable style="width: 200px" />
       <el-input v-model="query.type" placeholder="账户类型" clearable style="width: 160px" />
-      <el-button type="primary" @click="onSearch">查询</el-button>
-      <el-button @click="openCreate">新增账户</el-button>
+      <div class="filter-actions">
+        <el-button type="primary" @click="onSearch">查询</el-button>
+        <el-button @click="openCreate">新增账户</el-button>
+      </div>
     </div>
 
-    <el-table v-loading="loading" :data="list" border>
-      <el-table-column prop="name" label="账户名称" min-width="160" />
-      <el-table-column prop="type" label="账户类型" width="120" />
-      <el-table-column prop="balance" label="余额" width="120" />
-      <el-table-column prop="accountNumber" label="账号" width="160" show-overflow-tooltip />
-      <el-table-column prop="description" label="描述" min-width="160" show-overflow-tooltip />
-      <el-table-column prop="createTime" label="创建时间" width="180" />
-      <el-table-column label="操作" width="200" fixed="right">
-        <template #default="{ row }">
-          <el-button link type="primary" size="small" @click="openDetail(row as PaymentAccountVO)">详情</el-button>
-          <el-button link type="primary" size="small" @click="openEdit(row as PaymentAccountVO)">编辑</el-button>
-          <el-button link type="danger" size="small" @click="onRemove(row as PaymentAccountVO)">删除</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
+    <div class="data-card">
+      <el-table v-loading="loading" :data="list" border>
+        <el-table-column prop="name" label="账户名称" min-width="160" />
+        <el-table-column prop="type" label="账户类型" width="120" />
+        <el-table-column prop="balance" label="余额" width="130" align="right" class-name="amount-col" />
+        <el-table-column prop="accountNumber" label="账号" width="160" show-overflow-tooltip />
+        <el-table-column prop="description" label="描述" min-width="160" show-overflow-tooltip />
+        <el-table-column prop="createTime" label="创建时间" width="180" />
+        <el-table-column label="操作" width="200" fixed="right">
+          <template #default="{ row }">
+            <el-button link type="primary" size="small" @click="openDetail(row as PaymentAccountVO)">详情</el-button>
+            <el-button link type="primary" size="small" @click="openEdit(row as PaymentAccountVO)">编辑</el-button>
+            <el-button link type="danger" size="small" @click="onRemove(row as PaymentAccountVO)">删除</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
 
-    <el-pagination
-      v-model:current-page="page"
-      v-model:page-size="size"
-      :total="total"
-      :page-sizes="[10, 20, 50, 100]"
-      layout="total, sizes, prev, pager, next, jumper"
-      class="pagination"
-      @size-change="onSearch"
-      @current-change="load"
-    />
+      <el-pagination
+        v-model:current-page="page"
+        v-model:page-size="size"
+        :total="total"
+        :page-sizes="[10, 20, 50, 100]"
+        layout="total, sizes, prev, pager, next, jumper"
+        class="pagination"
+        @size-change="onSearch"
+        @current-change="load"
+      />
+    </div>
 
     <el-dialog v-model="dialogVisible" :title="editingId ? '编辑付款账户' : '新增付款账户'" width="560px">
       <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
@@ -212,13 +216,34 @@ onMounted(load)
 </template>
 
 <style scoped>
-.toolbar {
+/* 筛选卡片：白色圆角、16px 20px 内边距，操作按钮靠右 */
+.filter-bar {
+  padding: 16px 20px;
+}
+.filter-actions {
   display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: var(--ceams-space-2, 8px);
+  margin-left: auto;
+}
+/* 表格卡片：20px 内边距 */
+.data-card {
+  padding: 20px;
+}
+/* 金额列使用等宽数字，避免数字跳动 */
+:deep(.amount-col .cell) {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
 }
 .pagination {
-  margin-top: 12px;
+  margin-top: 16px;
   justify-content: flex-end;
+}
+/* 空态居中灰色，上下 40px 留白 */
+:deep(.el-table__empty-block) {
+  padding: 40px 0;
+  min-height: 0;
+}
+:deep(.el-table__empty-text) {
+  color: var(--ceams-text-secondary);
 }
 </style>

@@ -189,7 +189,6 @@ onShow(() => {
       v-if="unbound"
       title="未绑定员工档案"
       description="请联系 HR 绑定员工档案后查看个人信息"
-      icon="!"
     />
 
     <template v-if="profile">
@@ -251,7 +250,7 @@ onShow(() => {
       </view>
 
       <view class="ceams-card">
-        <text class="section-title">我的合同</text>
+        <view class="ceams-section-title section-title">我的合同</view>
         <text v-if="contracts.length === 0" class="empty-text">暂无合同记录</text>
         <view v-for="item in contracts" :key="item.id" class="row">
           <view class="row__main">
@@ -269,7 +268,7 @@ onShow(() => {
       </view>
 
       <view class="ceams-card">
-        <text class="section-title">{{ currentYear }} 年假期额度</text>
+        <view class="ceams-section-title section-title">{{ currentYear }} 年假期额度</view>
         <text v-if="quotas.length === 0" class="empty-text">暂无假期额度</text>
         <view v-for="item in quotas" :key="item.id" class="ceams-list-item kv">
           <text class="kv__label">{{ hrLeaveTypeLabels[item.leaveType] }}</text>
@@ -280,7 +279,7 @@ onShow(() => {
       </view>
 
       <view class="ceams-card">
-        <text class="section-title">我的请假</text>
+        <view class="ceams-section-title section-title">我的请假</view>
         <text v-if="leaveRequests.length === 0" class="empty-text">暂无请假记录</text>
         <view v-for="item in leaveRequests" :key="item.id" class="row">
           <view class="row__main">
@@ -297,7 +296,7 @@ onShow(() => {
       </view>
 
       <view class="ceams-card">
-        <text class="section-title">我的补卡</text>
+        <view class="ceams-section-title section-title">我的补卡</view>
         <text v-if="supplements.length === 0" class="empty-text">暂无补卡记录</text>
         <view v-for="item in supplements" :key="item.id" class="row">
           <view class="row__main">
@@ -330,7 +329,6 @@ onShow(() => {
 .profile__head {
   display: flex;
   align-items: center;
-  gap: var(--ceams-space-md);
   justify-content: space-between;
   margin-bottom: var(--ceams-space-xs);
 }
@@ -341,14 +339,18 @@ onShow(() => {
   flex-direction: column;
   align-items: center;
   flex-shrink: 0;
+  margin-right: var(--ceams-space-md);
 }
 
+/* 头像区与首页保持一致：白色圆底 + 细描边 */
 .profile__avatar {
   width: 96rpx;
   height: 96rpx;
   border-radius: var(--ceams-radius-pill);
   overflow: hidden;
-  background-color: var(--ceams-color-primary-tint);
+  background-color: var(--ceams-bg-card);
+  border: 2rpx solid var(--ceams-border);
+  box-sizing: border-box;
 }
 
 /* 无头像时的圆形占位，居中显示姓名首字 */
@@ -356,6 +358,7 @@ onShow(() => {
   display: flex;
   align-items: center;
   justify-content: center;
+  background-color: var(--ceams-color-primary-tint);
   color: var(--ceams-color-primary);
   font-size: var(--ceams-font-size-heading);
   font-weight: var(--ceams-font-weight-bold);
@@ -364,7 +367,7 @@ onShow(() => {
 .profile__avatar-tip {
   margin-top: var(--ceams-space-2xs);
   color: var(--ceams-text-placeholder);
-  font-size: var(--ceams-font-size-caption);
+  font-size: 22rpx;
 }
 
 .profile__main {
@@ -408,12 +411,9 @@ onShow(() => {
   text-align: right;
 }
 
+/* 分组标题沿用全局 .ceams-section-title，仅补下间距 */
 .section-title {
-  display: block;
   margin-bottom: var(--ceams-space-xs);
-  color: var(--ceams-text-primary);
-  font-size: var(--ceams-font-size-body);
-  font-weight: var(--ceams-font-weight-semibold);
 }
 
 .empty-text {
@@ -445,14 +445,15 @@ onShow(() => {
 .row__title {
   display: block;
   color: var(--ceams-text-primary);
-  font-size: var(--ceams-font-size-caption);
+  font-size: 28rpx;
+  font-weight: var(--ceams-font-weight-semibold);
 }
 
 .row__sub {
   display: block;
   margin-top: var(--ceams-space-2xs);
   color: var(--ceams-text-secondary);
-  font-size: var(--ceams-font-size-mini);
+  font-size: 24rpx;
   line-height: var(--ceams-line-height-normal);
 }
 </style>

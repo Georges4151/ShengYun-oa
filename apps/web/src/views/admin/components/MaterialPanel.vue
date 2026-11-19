@@ -309,10 +309,15 @@ onMounted(() => {
 </script>
 
 <template>
-  <div>
-    <!-- 低库存预警 -->
-    <div class="section">
-      <div class="section-title">低库存预警</div>
+  <div class="material-panel">
+    <!-- 低库存预警卡片 -->
+    <div class="data-card panel-card">
+      <div class="card-header">
+        <div class="card-heading">
+          <span class="card-title">低库存预警</span>
+          <span class="card-count">共 {{ alerts.length }} 项</span>
+        </div>
+      </div>
       <el-alert
         v-if="alerts.length === 0"
         title="当前没有低于安全库存的易耗品"
@@ -339,30 +344,37 @@ onMounted(() => {
       </el-table>
     </div>
 
-    <!-- 易耗品列表 -->
-    <div class="section">
-      <div class="section-title">易耗品台账</div>
-      <div class="toolbar">
-        <el-input
-          v-model="query.keyword"
-          placeholder="编码 / 名称"
-          clearable
-          style="width: 220px"
-          @keyup.enter="onSearch"
+    <!-- 易耗品筛选区 -->
+    <div class="filter-bar">
+      <el-input
+        v-model="query.keyword"
+        placeholder="编码 / 名称"
+        clearable
+        style="width: 220px"
+        @keyup.enter="onSearch"
+      />
+      <el-select v-model="query.status" placeholder="状态" clearable style="width: 130px">
+        <el-option
+          v-for="opt in statusOptions"
+          :key="opt.value"
+          :label="opt.label"
+          :value="opt.value"
         />
-        <el-select v-model="query.status" placeholder="状态" clearable style="width: 130px">
-          <el-option
-            v-for="opt in statusOptions"
-            :key="opt.value"
-            :label="opt.label"
-            :value="opt.value"
-          />
-        </el-select>
+      </el-select>
+      <div class="filter-actions">
         <el-button type="primary" @click="onSearch">查询</el-button>
-        <template v-if="canManage">
-          <el-button @click="openCreate">新建易耗品</el-button>
-          <el-button @click="openApply">申领</el-button>
-        </template>
+        <el-button v-if="canManage" @click="openApply">申领</el-button>
+      </div>
+    </div>
+
+    <!-- 易耗品台账卡片 -->
+    <div class="data-card panel-card">
+      <div class="card-header">
+        <div class="card-heading">
+          <span class="card-title">易耗品台账</span>
+          <span class="card-count">共 {{ total }} 项</span>
+        </div>
+        <el-button v-if="canManage" type="primary" @click="openCreate">新建易耗品</el-button>
       </div>
 
       <el-table v-loading="loading" :data="list" :row-class-name="lowStockClass" border>
@@ -402,6 +414,7 @@ onMounted(() => {
         </el-table-column>
       </el-table>
 
+      <!-- 分页右对齐，距表 16px -->
       <el-pagination
         v-model:current-page="page"
         v-model:page-size="size"
@@ -414,9 +427,14 @@ onMounted(() => {
       />
     </div>
 
-    <!-- 我的申领 -->
-    <div class="section">
-      <div class="section-title">我的申领</div>
+    <!-- 我的申领卡片 -->
+    <div class="data-card panel-card">
+      <div class="card-header">
+        <div class="card-heading">
+          <span class="card-title">我的申领</span>
+          <span class="card-count">共 {{ myApplies.length }} 条</span>
+        </div>
+      </div>
       <el-table v-loading="myLoading" :data="myApplies" border>
         <el-table-column prop="materialCode" label="物料编码" width="140" />
         <el-table-column prop="materialName" label="物料名称" min-width="140" />
@@ -456,7 +474,12 @@ onMounted(() => {
     </div>
 
     <!-- 新建 / 编辑易耗品 -->
-    <el-dialog v-model="formVisible" :title="editingId ? '编辑易耗品' : '新建易耗品'" width="560px">
+    <el-dialog
+      v-model="formVisible"
+      class="admin-dialog"
+      :title="editingId ? '编辑易耗品' : '新建易耗品'"
+      width="560px"
+    >
       <el-form ref="formRef" :model="form" :rules="formRules" label-width="100px">
         <el-form-item label="物料编码" prop="code">
           <el-input v-model="form.code" placeholder="请输入物料编码" />
@@ -487,7 +510,7 @@ onMounted(() => {
     </el-dialog>
 
     <!-- 入库 -->
-    <el-dialog v-model="stockInVisible" title="易耗品入库" width="460px">
+    <el-dialog v-model="stockInVisible" class="admin-dialog" title="易耗品入库" width="460px">
       <el-form :model="stockInForm" label-width="90px">
         <el-form-item label="物料">
           <span>{{ stockInMaterial?.name }}</span>
@@ -506,7 +529,7 @@ onMounted(() => {
     </el-dialog>
 
     <!-- 申领 -->
-    <el-dialog v-model="applyVisible" title="易耗品申领" width="500px">
+    <el-dialog v-model="applyVisible" class="admin-dialog" title="易耗品申领" width="500px">
       <el-form ref="applyFormRef" :model="applyForm" :rules="applyRules" label-width="90px">
         <el-form-item label="物料" prop="materialId">
           <el-select v-model="applyForm.materialId" filterable placeholder="请选择物料" style="width: 100%">
@@ -534,28 +557,86 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.section {
-  margin-bottom: 24px;
-}
-.section-title {
-  margin-bottom: 10px;
-  font-size: 15px;
-  font-weight: 600;
-  color: #111827;
-}
-.toolbar {
+/* 模块容器：各卡片之间保持 16px 间距 */
+.material-panel {
   display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
+  flex-direction: column;
+  gap: var(--ceams-space-4);
 }
+
+/* 筛选卡片：16px 20px 内边距，控件 12px 间距 */
+.filter-bar {
+  padding: 16px 20px;
+  margin-bottom: 0;
+  gap: var(--ceams-space-3);
+}
+
+/* 筛选区操作按钮靠右 */
+.filter-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--ceams-space-3);
+  margin-left: auto;
+}
+
+/* 列表卡片：20px 内边距 */
+.panel-card {
+  padding: var(--ceams-space-5);
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ceams-space-3);
+  margin-bottom: var(--ceams-space-4);
+}
+
+.card-heading {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ceams-space-2);
+  min-width: 0;
+}
+
+.card-title {
+  font-size: var(--ceams-font-size-md);
+  font-weight: 600;
+  color: var(--ceams-text-primary);
+}
+
+.card-count {
+  font-size: var(--ceams-font-size-sm);
+  color: var(--ceams-text-secondary);
+}
+
+/* 分页右对齐，距表 16px */
 .pagination {
-  margin-top: 12px;
+  margin-top: var(--ceams-space-4);
   justify-content: flex-end;
 }
-:deep(.row-low-stock) {
-  color: #dc2626;
+
+/* 空态居中灰色、40px 留白 */
+.panel-card :deep(.el-table__empty-text) {
+  color: var(--ceams-text-placeholder);
 }
+
+.panel-card :deep(.el-table__empty-block) {
+  padding: var(--ceams-space-10) 0;
+  min-height: 0;
+}
+
+/* 低库存行高亮使用功能色令牌 */
+:deep(.row-low-stock) {
+  color: var(--ceams-color-danger);
+}
+
 :deep(.row-low-stock .el-table__cell) {
-  background: #fef2f2;
+  background: var(--ceams-color-danger-light);
+}
+
+/* 弹窗内容 20px 24px */
+:global(.admin-dialog .el-dialog__body) {
+  padding: 20px 24px;
 }
 </style>

@@ -22,8 +22,14 @@ public class BudgetVO {
     @JsonSerialize(using = ToStringSerializer.class)
     private Long projectId;
 
+    /** 项目名称（由服务层批量回填）。 */
+    private String projectName;
+
     @JsonSerialize(using = ToStringSerializer.class)
     private Long contractId;
+
+    /** 合同名称（由服务层批量回填）。 */
+    private String contractName;
 
     private LocalDate startDate;
 

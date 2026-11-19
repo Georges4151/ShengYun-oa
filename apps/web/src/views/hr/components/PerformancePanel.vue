@@ -442,94 +442,116 @@ onMounted(() => {
 </script>
 
 <template>
-  <div>
+  <div class="panel-page">
     <!-- 绩效模板 -->
     <div class="section">
-      <div class="section-title">绩效模板</div>
-      <div class="toolbar">
-        <el-button v-if="canManageTemplate" @click="openTemplateCreate">新建模板</el-button>
-      </div>
+      <div class="data-card">
+        <div class="card-head">
+          <div class="card-heading">
+            <span class="card-title">绩效模板</span>
+            <span class="card-sub">共 {{ templates.length }} 条</span>
+          </div>
+          <div v-if="canManageTemplate" class="card-actions">
+            <el-button type="primary" @click="openTemplateCreate">新建模板</el-button>
+          </div>
+        </div>
 
-      <el-table v-loading="templateLoading" :data="templates" border>
-        <el-table-column prop="code" label="模板编码" width="150" />
-        <el-table-column prop="name" label="模板名称" min-width="160" />
-        <el-table-column label="考核周期" width="120">
-          <template #default="{ row }">{{ hrPeriodTypeLabels[(row as PerformanceTemplateVO).periodType] }}</template>
-        </el-table-column>
-        <el-table-column label="适用岗位" width="140">
-          <template #default="{ row }">{{ positionName((row as PerformanceTemplateVO).positionId) }}</template>
-        </el-table-column>
-        <el-table-column label="考评项" width="90" align="center">
-          <template #default="{ row }">{{ (row as PerformanceTemplateVO).items?.length ?? 0 }}</template>
-        </el-table-column>
-        <el-table-column label="权重合计" width="100" align="center">
-          <template #default="{ row }">{{ (row as PerformanceTemplateVO).totalWeight ?? '-' }}</template>
-        </el-table-column>
-        <el-table-column label="状态" width="90">
-          <template #default="{ row }">
-            <el-tag size="small" :type="(row as PerformanceTemplateVO).status === 'ENABLED' ? 'success' : 'info'">
-              {{ hrTemplateStatusLabels[(row as PerformanceTemplateVO).status ?? ''] ?? '-' }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="更新时间" width="180">
-          <template #default="{ row }">{{ formatDateTime((row as PerformanceTemplateVO).updateTime) }}</template>
-        </el-table-column>
-        <el-table-column v-if="canManageTemplate" label="操作" width="90" fixed="right">
-          <template #default="{ row }">
-            <el-button link type="primary" size="small" @click="openTemplateEdit(row as PerformanceTemplateVO)">
-              编辑
-            </el-button>
-          </template>
-        </el-table-column>
-      </el-table>
+        <el-table v-loading="templateLoading" :data="templates" border>
+          <el-table-column prop="code" label="模板编码" width="150" />
+          <el-table-column prop="name" label="模板名称" min-width="160" />
+          <el-table-column label="考核周期" width="120">
+            <template #default="{ row }">{{ hrPeriodTypeLabels[(row as PerformanceTemplateVO).periodType] }}</template>
+          </el-table-column>
+          <el-table-column label="适用岗位" width="140">
+            <template #default="{ row }">{{ positionName((row as PerformanceTemplateVO).positionId) }}</template>
+          </el-table-column>
+          <el-table-column label="考评项" width="90" align="right" class-name="amount-col">
+            <template #default="{ row }">{{ (row as PerformanceTemplateVO).items?.length ?? 0 }}</template>
+          </el-table-column>
+          <el-table-column label="权重合计" width="100" align="right" class-name="amount-col">
+            <template #default="{ row }">{{ (row as PerformanceTemplateVO).totalWeight ?? '-' }}</template>
+          </el-table-column>
+          <el-table-column label="状态" width="90">
+            <template #default="{ row }">
+              <el-tag size="small" :type="(row as PerformanceTemplateVO).status === 'ENABLED' ? 'success' : 'info'">
+                {{ hrTemplateStatusLabels[(row as PerformanceTemplateVO).status ?? ''] ?? '-' }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="更新时间" width="180">
+            <template #default="{ row }">{{ formatDateTime((row as PerformanceTemplateVO).updateTime) }}</template>
+          </el-table-column>
+          <el-table-column v-if="canManageTemplate" label="操作" width="90" fixed="right">
+            <template #default="{ row }">
+              <el-button link type="primary" size="small" @click="openTemplateEdit(row as PerformanceTemplateVO)">
+                编辑
+              </el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
     </div>
 
     <!-- 批量生成考评单 -->
     <div class="section">
-      <div class="section-title">批量生成考评单</div>
-      <div v-if="canOperate" class="toolbar">
-        <el-select v-model="batchForm.templateId" placeholder="绩效模板" filterable style="width: 220px">
-          <el-option
-            v-for="item in templates"
-            :key="item.id"
-            :label="`${item.name}（${item.code}）`"
-            :value="item.id"
+      <div class="data-card">
+        <div class="card-head">
+          <div class="card-heading">
+            <span class="card-title">批量生成考评单</span>
+          </div>
+          <div v-if="canOperate" class="card-actions">
+            <el-button type="primary" :loading="batchLoading" @click="submitBatch">生成考评单</el-button>
+          </div>
+        </div>
+
+        <div v-if="canOperate" class="inline-form">
+          <el-select v-model="batchForm.templateId" placeholder="绩效模板" filterable style="width: 220px">
+            <el-option
+              v-for="item in templates"
+              :key="item.id"
+              :label="`${item.name}（${item.code}）`"
+              :value="item.id"
+            />
+          </el-select>
+          <el-date-picker
+            v-model="batchForm.period"
+            type="month"
+            value-format="YYYY-MM"
+            placeholder="考核周期（yyyy-MM）"
+            style="width: 180px"
           />
-        </el-select>
-        <el-date-picker
-          v-model="batchForm.period"
-          type="month"
-          value-format="YYYY-MM"
-          placeholder="考核周期（yyyy-MM）"
-          style="width: 180px"
+          <el-select v-model="batchForm.deptId" placeholder="部门（默认全员）" clearable style="width: 190px">
+            <el-option v-for="opt in depts" :key="opt.value" :label="opt.label" :value="opt.value" />
+          </el-select>
+        </div>
+
+        <div v-if="batchResult" class="stat-grid">
+          <div class="stat-card">
+            <div class="stat-label">生成总数</div>
+            <div class="stat-value">{{ batchResult.total }}</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">新建</div>
+            <div class="stat-value">{{ batchResult.created }}</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">跳过</div>
+            <div class="stat-value">{{ batchResult.skipped }}</div>
+          </div>
+        </div>
+        <el-alert
+          v-else-if="!canOperate"
+          type="info"
+          show-icon
+          :closable="false"
+          title="当前账号无批量生成考评单权限"
         />
-        <el-select v-model="batchForm.deptId" placeholder="部门（默认全员）" clearable style="width: 190px">
-          <el-option v-for="opt in depts" :key="opt.value" :label="opt.label" :value="opt.value" />
-        </el-select>
-        <el-button type="primary" :loading="batchLoading" @click="submitBatch">生成考评单</el-button>
       </div>
-      <el-alert
-        v-if="batchResult"
-        type="success"
-        show-icon
-        :closable="false"
-        class="result-alert"
-        :title="`生成完成：共 ${batchResult.total} 人，新建 ${batchResult.created}，跳过 ${batchResult.skipped}`"
-      />
-      <el-alert
-        v-else-if="!canOperate"
-        type="info"
-        show-icon
-        :closable="false"
-        title="当前账号无批量生成考评单权限"
-      />
     </div>
 
     <!-- 考评单 -->
     <div class="section">
-      <div class="section-title">绩效考评单</div>
-      <div class="toolbar">
+      <div class="filter-bar">
         <el-select v-model="reviewQuery.templateId" placeholder="模板" clearable style="width: 200px">
           <el-option
             v-for="item in templates"
@@ -561,58 +583,69 @@ onMounted(() => {
             :value="item.id"
           />
         </el-select>
-        <el-button type="primary" @click="onSearchReviews">查询</el-button>
+        <div class="filter-actions">
+          <el-button type="primary" @click="onSearchReviews">查询</el-button>
+        </div>
       </div>
 
-      <el-table v-loading="reviewLoading" :data="reviews" border>
-        <el-table-column prop="employeeName" label="员工" width="110" />
-        <el-table-column prop="templateName" label="模板" min-width="140" />
-        <el-table-column prop="period" label="周期" width="100" />
-        <el-table-column label="自评分" width="90" align="right">
-          <template #default="{ row }">{{ scoreText((row as PerformanceReviewVO).selfScore) }}</template>
-        </el-table-column>
-        <el-table-column label="上级分" width="90" align="right">
-          <template #default="{ row }">{{ scoreText((row as PerformanceReviewVO).leaderScore) }}</template>
-        </el-table-column>
-        <el-table-column label="最终分" width="90" align="right">
-          <template #default="{ row }">{{ scoreText((row as PerformanceReviewVO).finalScore) }}</template>
-        </el-table-column>
-        <el-table-column label="系数" width="90" align="right">
-          <template #default="{ row }">{{ scoreText((row as PerformanceReviewVO).coefficient) }}</template>
-        </el-table-column>
-        <el-table-column label="状态" width="120">
-          <template #default="{ row }">
-            <el-tag size="small" :type="reviewTagType((row as PerformanceReviewVO).status)">
-              {{ hrPerformanceReviewStatusLabels[(row as PerformanceReviewVO).status] }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="110" fixed="right">
-          <template #default="{ row }">
-            <el-button
-              v-if="canOperate && (row as PerformanceReviewVO).status === 'LEADER_DONE'"
-              link
-              type="primary"
-              size="small"
-              @click="openReview(row as PerformanceReviewVO)"
-            >
-              HR 复核
-            </el-button>
-            <span v-else>-</span>
-          </template>
-        </el-table-column>
-      </el-table>
+      <div class="data-card">
+        <div class="card-head">
+          <div class="card-heading">
+            <span class="card-title">绩效考评单</span>
+            <span class="card-sub">共 {{ total }} 条</span>
+          </div>
+        </div>
 
-      <el-pagination
-        v-model:current-page="page"
-        v-model:page-size="size"
-        :total="total"
-        :page-sizes="[10, 20, 50, 100]"
-        layout="total, sizes, prev, pager, next, jumper"
-        class="pagination"
-        @size-change="onSearchReviews"
-        @current-change="loadReviews"
-      />
+        <el-table v-loading="reviewLoading" :data="reviews" border>
+          <el-table-column prop="employeeName" label="员工" width="110" />
+          <el-table-column prop="templateName" label="模板" min-width="140" />
+          <el-table-column prop="period" label="周期" width="100" />
+          <el-table-column label="自评分" width="90" align="right" class-name="amount-col">
+            <template #default="{ row }">{{ scoreText((row as PerformanceReviewVO).selfScore) }}</template>
+          </el-table-column>
+          <el-table-column label="上级分" width="90" align="right" class-name="amount-col">
+            <template #default="{ row }">{{ scoreText((row as PerformanceReviewVO).leaderScore) }}</template>
+          </el-table-column>
+          <el-table-column label="最终分" width="90" align="right" class-name="amount-col">
+            <template #default="{ row }">{{ scoreText((row as PerformanceReviewVO).finalScore) }}</template>
+          </el-table-column>
+          <el-table-column label="系数" width="90" align="right" class-name="amount-col">
+            <template #default="{ row }">{{ scoreText((row as PerformanceReviewVO).coefficient) }}</template>
+          </el-table-column>
+          <el-table-column label="状态" width="120">
+            <template #default="{ row }">
+              <el-tag size="small" :type="reviewTagType((row as PerformanceReviewVO).status)">
+                {{ hrPerformanceReviewStatusLabels[(row as PerformanceReviewVO).status] }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="110" fixed="right">
+            <template #default="{ row }">
+              <el-button
+                v-if="canOperate && (row as PerformanceReviewVO).status === 'LEADER_DONE'"
+                link
+                type="primary"
+                size="small"
+                @click="openReview(row as PerformanceReviewVO)"
+              >
+                HR 复核
+              </el-button>
+              <span v-else>-</span>
+            </template>
+          </el-table-column>
+        </el-table>
+
+        <el-pagination
+          v-model:current-page="page"
+          v-model:page-size="size"
+          :total="total"
+          :page-sizes="[10, 20, 50, 100]"
+          layout="total, sizes, prev, pager, next, jumper"
+          class="pagination"
+          @size-change="onSearchReviews"
+          @current-change="loadReviews"
+        />
+      </div>
     </div>
 
     <!-- 模板新建 / 编辑 -->
@@ -745,75 +778,194 @@ onMounted(() => {
 </template>
 
 <style scoped>
+/* 多个区块之间保持 16px 间距 */
 .section {
-  margin-bottom: 24px;
+  margin-bottom: var(--ceams-space-4, 16px);
 }
-.section-title {
-  margin-bottom: 10px;
-  font-size: 15px;
-  font-weight: 600;
-  color: #111827;
+
+.section:last-child {
+  margin-bottom: 0;
 }
-.toolbar {
+
+/* 筛选卡片：白色圆角、16px 20px 内边距，操作按钮靠右 */
+.filter-bar {
+  padding: 16px 20px;
+}
+
+.filter-actions {
   display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: var(--ceams-space-2, 8px);
+  margin-left: auto;
 }
+
+/* 表格卡片：20px 内边距 */
+.data-card {
+  padding: 20px;
+}
+
+/* 卡片头部：左侧标题与条数，右侧主操作 */
+.card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ceams-space-3, 12px);
+  margin-bottom: var(--ceams-space-4, 16px);
+}
+
+.card-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--ceams-space-2, 8px);
+}
+
+.card-title {
+  font-size: var(--ceams-font-size-md, 16px);
+  font-weight: 600;
+  color: var(--ceams-text-primary);
+}
+
+.card-sub {
+  font-size: var(--ceams-font-size-xs, 12px);
+  color: var(--ceams-text-secondary);
+}
+
+.card-actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--ceams-space-2, 8px);
+}
+
+/* 批量生成表单行 */
+.inline-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ceams-space-3, 12px);
+  margin-bottom: var(--ceams-space-4, 16px);
+}
+
+/* 指标卡网格：等宽自适应排布 */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--ceams-space-3, 12px);
+  margin-bottom: var(--ceams-space-4, 16px);
+}
+
+.data-card > .stat-grid:last-child {
+  margin-bottom: 0;
+}
+
+.stat-label {
+  font-size: var(--ceams-font-size-xs, 12px);
+  color: var(--ceams-text-secondary);
+}
+
+.stat-value {
+  margin-top: var(--ceams-space-1, 4px);
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--ceams-text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 分数与系数列：等宽数字 */
+:deep(.amount-col .cell) {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+}
+
+/* 分页右对齐，距表格 16px */
 .pagination {
-  margin-top: 12px;
+  margin-top: var(--ceams-space-4, 16px);
   justify-content: flex-end;
 }
-.result-alert {
-  margin-bottom: 12px;
+
+/* 空态居中灰色，上下 40px 留白 */
+:deep(.el-table__empty-block) {
+  padding: 40px 0;
+  min-height: 0;
 }
+
+:deep(.el-table__empty-text) {
+  color: var(--ceams-text-secondary);
+}
+
 .sub-title {
-  margin: 16px 0 8px;
-  font-size: 14px;
+  margin: var(--ceams-space-4, 16px) 0 var(--ceams-space-2, 8px);
+  font-size: var(--ceams-font-size-base, 14px);
   font-weight: 600;
-  color: #111827;
+  color: var(--ceams-text-primary);
 }
+
 .sub-hint {
-  margin-left: 12px;
-  font-size: 12px;
+  margin-left: var(--ceams-space-3, 12px);
+  font-size: var(--ceams-font-size-xs, 12px);
   font-weight: 400;
-  color: #6b7280;
+  color: var(--ceams-text-secondary);
 }
+
 .ok {
-  color: #16a34a;
+  color: var(--ceams-color-success);
   font-weight: 600;
 }
+
 .error {
-  color: #dc2626;
+  color: var(--ceams-color-danger);
   font-weight: 600;
 }
+
 .inline-alert {
-  margin-bottom: 8px;
+  margin-bottom: var(--ceams-space-2, 8px);
 }
+
 .row-block {
   display: flex;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: var(--ceams-space-2, 8px);
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: var(--ceams-space-2, 8px);
 }
+
 .add-button {
-  margin-bottom: 8px;
+  margin-bottom: var(--ceams-space-2, 8px);
 }
+
 .rule-head {
   display: flex;
-  gap: 8px;
-  margin-bottom: 6px;
-  font-size: 12px;
-  color: #6b7280;
+  gap: var(--ceams-space-2, 8px);
+  margin-bottom: var(--ceams-space-1, 4px);
+  font-size: var(--ceams-font-size-xs, 12px);
+  color: var(--ceams-text-secondary);
 }
+
 .rule-head span {
   width: 90px;
 }
+
 .rule-head span:last-child {
   width: auto;
 }
+
 .target-tip {
-  margin-bottom: 12px;
-  color: #4b5563;
-  font-size: 13px;
+  margin-bottom: var(--ceams-space-3, 12px);
+  color: var(--ceams-text-secondary);
+  font-size: var(--ceams-font-size-sm, 13px);
+}
+
+/* 抽屉：标题加粗，内容 20px 24px，底部操作条靠右并带顶部细边框 */
+:deep(.el-drawer__title) {
+  font-weight: 600;
+}
+
+:deep(.el-drawer__body) {
+  padding: 20px 24px;
+}
+
+:deep(.el-drawer__footer) {
+  padding: 12px 24px 18px;
+  border-top: 1px solid var(--ceams-border-divider);
+  text-align: right;
 }
 </style>

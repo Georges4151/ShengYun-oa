@@ -12,6 +12,9 @@ import type {
   NotificationCreateRequest,
   NotificationUpdateRequest,
   NotificationPageQuery,
+  NotificationPublishRequest,
+  NotificationRecipientRoleVO,
+  NotificationRecipientUserVO,
   UserNotificationMineVO,
   UserNotificationPageQuery,
   UserNotificationPreferenceVO,
@@ -24,8 +27,14 @@ export interface NotificationApi {
   create(body: NotificationCreateRequest): Promise<Id>
   update(id: Id, body: NotificationUpdateRequest): Promise<void>
   remove(id: Id): Promise<void>
-  publish(id: Id): Promise<void>
+  /** 发布通知，可指定接收范围；返回实际送达人数 */
+  publish(id: Id, body?: NotificationPublishRequest): Promise<number>
   revoke(id: Id): Promise<void>
+
+  /** 可选接收角色列表（发布弹窗「按角色」） */
+  recipientRoles(): Promise<NotificationRecipientRoleVO[]>
+  /** 可选接收用户远程搜索（发布弹窗「按用户」），最多 50 条 */
+  recipientUsers(keyword?: string): Promise<NotificationRecipientUserVO[]>
 
   userNotificationMine(query?: UserNotificationPageQuery): Promise<UserNotificationMineVO>
   unreadCount(): Promise<number>
@@ -64,11 +73,21 @@ export function createNotificationApi(client: HttpClient): NotificationApi {
     async remove(id) {
       return client.delete<void>(`/api/v1/notifications/${id}`)
     },
-    async publish(id) {
-      return client.post<void>(`/api/v1/notifications/${id}/publish`)
+    async publish(id, body) {
+      // 请求体可选：传入 scope 按指定范围发布，不传则沿用旧的按偏好分发逻辑
+      return client.post<number>(`/api/v1/notifications/${id}/publish`, body)
     },
     async revoke(id) {
       return client.post<void>(`/api/v1/notifications/${id}/revoke`)
+    },
+    async recipientRoles() {
+      return client.get<NotificationRecipientRoleVO[]>('/api/v1/notifications/recipients/roles')
+    },
+    async recipientUsers(keyword) {
+      return client.get<NotificationRecipientUserVO[]>('/api/v1/notifications/recipients/users', {
+        // 关键字为空时由 buildQuery 自动跳过，保持不带 keyword 的请求
+        query: { keyword: keyword?.trim() || undefined }
+      })
     },
 
     async userNotificationMine(query = {}) {

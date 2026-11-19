@@ -113,3 +113,88 @@ button::after {
   align-items: center;
   justify-content: space-between;
 }
+
+/* ---------------- 徽标 ---------------- */
+.ceams-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rpx 12rpx;
+  border-radius: var(--ceams-radius-pill);
+  color: var(--ceams-icon-fg-blue);
+  background-color: var(--ceams-icon-bg-blue);
+  font-size: 22rpx;
+  font-weight: var(--ceams-font-weight-medium);
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+/* ---------------- 嵌套卡片 ----------------
+ * 去掉阴影只保留细边框，用于白卡片内部再分组的场景。
+ */
+.ceams-card--flat {
+  margin-bottom: var(--ceams-space-md);
+  padding: var(--ceams-space-md);
+  background-color: var(--ceams-bg-subtle);
+  border: var(--ceams-border-width) solid var(--ceams-border);
+  border-radius: var(--ceams-radius-card);
+  box-shadow: none;
+  box-sizing: border-box;
+}
+
+/* ---------------- 分区标题 ----------------
+ * 左侧 4rpx 主色竖条 + 16pt（32rpx）半粗标题。
+ */
+.ceams-section-title {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 32rpx;
+  padding-left: var(--ceams-space-md);
+  color: var(--ceams-text-primary);
+  font-size: var(--ceams-font-size-heading);
+  font-weight: var(--ceams-font-weight-semibold);
+  line-height: var(--ceams-line-height-tight);
+}
+
+.ceams-section-title::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 4rpx;
+  height: 28rpx;
+  margin-top: -14rpx;
+  border-radius: var(--ceams-radius-xs);
+  background-color: var(--ceams-color-primary);
+}
+
+/* ---------------- 网格 ----------------
+ * 不使用 gap（兼容旧基础库）：容器负 margin，子项用 padding 撑出间距，
+ * 子项需带 ceams-grid__item 类（或直接为 view）。
+ */
+.ceams-grid-2,
+.ceams-grid-3 {
+  display: flex;
+  flex-wrap: wrap;
+  margin: -8rpx;
+}
+
+.ceams-grid-2 > view,
+.ceams-grid-3 > view,
+.ceams-grid__item,
+.ceams-grid-2 > .ceams-grid__item,
+.ceams-grid-3 > .ceams-grid__item {
+  box-sizing: border-box;
+  padding: 8rpx;
+}
+
+.ceams-grid-2 > view,
+.ceams-grid-2 > .ceams-grid__item {
+  width: 50%;
+}
+
+.ceams-grid-3 > view,
+.ceams-grid-3 > .ceams-grid__item {
+  width: 33.3333%;
+}

@@ -6,8 +6,20 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ceams.common.exception.BusinessException;
 import com.ceams.common.exception.ErrorCode;
 import com.ceams.common.response.PageResult;
+import com.ceams.module.iam.entity.SysRole;
+import com.ceams.module.iam.entity.SysUser;
+import com.ceams.module.iam.entity.UserRole;
+import com.ceams.module.iam.enums.RoleStatus;
+import com.ceams.module.iam.enums.UserStatus;
+import com.ceams.module.iam.mapper.RoleMapper;
+import com.ceams.module.iam.mapper.UserMapper;
+import com.ceams.module.iam.mapper.UserRoleMapper;
 import com.ceams.module.notification.converter.NotificationConverter;
 import com.ceams.module.notification.dto.NotificationCreateRequest;
+import com.ceams.module.notification.dto.NotificationPublishRequest;
+import com.ceams.module.notification.dto.NotificationPublishScope;
+import com.ceams.module.notification.dto.NotificationRecipientRoleVO;
+import com.ceams.module.notification.dto.NotificationRecipientUserVO;
 import com.ceams.module.notification.dto.NotificationUpdateRequest;
 import com.ceams.module.notification.entity.Notification;
 import com.ceams.module.notification.entity.UserNotification;
@@ -25,13 +37,16 @@ import com.ceams.module.notification.util.PageUtil;
 import com.ceams.module.notification.vo.NotificationVO;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Objects;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 /** 通知服务实现。 */
 @Slf4j
@@ -39,10 +54,16 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class NotificationServiceImpl implements NotificationService {
 
+    /** 发布范围选人接口单次返回上限。 */
+    private static final int RECIPIENT_USER_LIMIT = 50;
+
     private final NotificationMapper notificationMapper;
     private final NotificationConverter notificationConverter;
     private final UserNotificationPreferenceMapper userNotificationPreferenceMapper;
     private final UserNotificationMapper userNotificationMapper;
+    private final UserMapper userMapper;
+    private final RoleMapper roleMapper;
+    private final UserRoleMapper userRoleMapper;
 
     @Override
     public PageResult<NotificationVO> page(
@@ -97,7 +118,7 @@ public class NotificationServiceImpl implements NotificationService {
         notification.setPublishTime(now);
         notificationMapper.insert(notification);
 
-        for (Long userId : distinctUserIds(targetUserIds)) {
+        for (Long userId : distinctIds(targetUserIds)) {
             if (existsSystemNotification(notification.getId(), userId)) {
                 log.info("通知 {} 已定向投递过用户 {}，跳过重复写入", notification.getId(), userId);
                 continue;
@@ -142,12 +163,18 @@ public class NotificationServiceImpl implements NotificationService {
         return notification;
     }
 
-    /** 目标用户去重并忽略空值。 */
-    private List<Long> distinctUserIds(Collection<Long> targetUserIds) {
-        if (targetUserIds == null || targetUserIds.isEmpty()) {
+    /** 目标 ID 去重并忽略空值（保持原有顺序）。 */
+    private List<Long> distinctIds(Collection<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
             return List.of();
         }
-        return targetUserIds.stream().filter(Objects::nonNull).distinct().toList();
+        Set<Long> distinct = new LinkedHashSet<>();
+        for (Long id : ids) {
+            if (id != null) {
+                distinct.add(id);
+            }
+        }
+        return new ArrayList<>(distinct);
     }
 
     /** 同一通知 + 用户 + SYSTEM 渠道是否已存在（幂等判断）。 */
@@ -213,14 +240,151 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void publish(Long id) {
+        publish(id, null);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int publish(Long id, NotificationPublishRequest request) {
         Notification notification = requireNotification(id);
         if (notification.getStatus() != NotificationStatus.DRAFT) {
             throw BusinessException.of(ErrorCode.BIZ_STATE_CONFLICT, "仅草稿状态可发布");
         }
+        LocalDateTime now = LocalDateTime.now();
         notification.setStatus(NotificationStatus.PUBLISHED);
-        notification.setPublishTime(LocalDateTime.now());
+        notification.setPublishTime(now);
         notificationMapper.updateById(notification);
-        distribute(notification);
+
+        if (request == null) {
+            // 兼容旧调用：未传接收范围时沿用按用户偏好分渠道分发
+            return distribute(notification);
+        }
+        return publishToScope(notification, request, now);
+    }
+
+    @Override
+    public List<NotificationRecipientRoleVO> listRecipientRoles() {
+        LambdaQueryWrapper<SysRole> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(SysRole::getStatus, RoleStatus.ACTIVE);
+        wrapper.orderByAsc(SysRole::getName);
+        return roleMapper.selectList(wrapper).stream()
+                .map(
+                        role -> {
+                            NotificationRecipientRoleVO vo = new NotificationRecipientRoleVO();
+                            vo.setId(role.getId());
+                            vo.setName(role.getName());
+                            vo.setCode(role.getCode());
+                            return vo;
+                        })
+                .toList();
+    }
+
+    @Override
+    public List<NotificationRecipientUserVO> searchRecipientUsers(String keyword) {
+        LambdaQueryWrapper<SysUser> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(SysUser::getStatus, UserStatus.ACTIVE);
+        if (StringUtils.hasText(keyword)) {
+            String trimmed = keyword.trim();
+            wrapper.and(
+                    w ->
+                            w.like(SysUser::getName, trimmed)
+                                    .or()
+                                    .like(SysUser::getUsername, trimmed));
+        }
+        wrapper.orderByAsc(SysUser::getName);
+        // 单次最多返回 50 条，避免选人下拉数据量过大
+        IPage<SysUser> result =
+                userMapper.selectPage(new Page<>(1, RECIPIENT_USER_LIMIT), wrapper);
+        return result.getRecords().stream()
+                .map(
+                        user -> {
+                            NotificationRecipientUserVO vo = new NotificationRecipientUserVO();
+                            vo.setId(user.getId());
+                            vo.setName(user.getName());
+                            vo.setUsername(user.getUsername());
+                            return vo;
+                        })
+                .toList();
+    }
+
+    /**
+     * 按管理员指定范围直接生成系统站内信。
+     *
+     * <p>管理员显式指定范围，不再受用户偏好（含免打扰）限制，统一写入 SYSTEM、push_status=SENT
+     * 的站内信；本阶段不生成邮件/短信记录。
+     *
+     * @return 实际写入的站内信条数（去重后的有效用户数）
+     */
+    private int publishToScope(
+            Notification notification, NotificationPublishRequest request, LocalDateTime now) {
+        List<Long> userIds = resolveRecipientUserIds(request);
+        for (Long userId : userIds) {
+            insertUserNotification(
+                    notification.getId(), userId, PushChannel.SYSTEM, PushStatus.SENT, now);
+        }
+        log.info(
+                "通知 {} 按范围 {} 发布，实际送达 {} 人",
+                notification.getId(),
+                request.getScope(),
+                userIds.size());
+        return userIds.size();
+    }
+
+    /**
+     * 解析发布接收范围，返回去重后的有效用户 ID。
+     *
+     * <p>用户查询统一过滤 status=ACTIVE；逻辑删除条件（deleted=0）由 MyBatis-Plus 自动追加。
+     */
+    private List<Long> resolveRecipientUserIds(NotificationPublishRequest request) {
+        NotificationPublishScope scope = request.getScope();
+        if (scope == null) {
+            throw BusinessException.of(ErrorCode.VALID_REQUIRED_FIELD, "请选择接收范围");
+        }
+        return switch (scope) {
+            case ALL -> selectActiveUserIds(null);
+            case ROLES -> {
+                List<Long> roleIds = distinctIds(request.getRoleIds());
+                if (roleIds.isEmpty()) {
+                    throw BusinessException.of(ErrorCode.VALID_REQUIRED_FIELD, "请选择接收角色");
+                }
+                List<Long> candidateUserIds =
+                        userRoleMapper
+                                .selectList(
+                                        new LambdaQueryWrapper<UserRole>()
+                                                .select(UserRole::getUserId)
+                                                .in(UserRole::getRoleId, roleIds))
+                                .stream()
+                                .map(UserRole::getUserId)
+                                .toList();
+                yield selectActiveUserIds(candidateUserIds);
+            }
+            case USERS -> {
+                List<Long> userIds = distinctIds(request.getUserIds());
+                if (userIds.isEmpty()) {
+                    throw BusinessException.of(ErrorCode.VALID_REQUIRED_FIELD, "请选择接收用户");
+                }
+                yield selectActiveUserIds(userIds);
+            }
+        };
+    }
+
+    /**
+     * 查询启用用户 ID（去重）。
+     *
+     * @param candidateUserIds 候选人集合，为 {@code null} 表示全部用户；为空集合时直接返回空列表， 避免生成
+     *     {@code IN ()} 非法 SQL
+     */
+    private List<Long> selectActiveUserIds(Collection<Long> candidateUserIds) {
+        if (candidateUserIds != null && candidateUserIds.isEmpty()) {
+            return List.of();
+        }
+        LambdaQueryWrapper<SysUser> wrapper = new LambdaQueryWrapper<>();
+        wrapper.select(SysUser::getId);
+        wrapper.eq(SysUser::getStatus, UserStatus.ACTIVE);
+        if (candidateUserIds != null) {
+            wrapper.in(SysUser::getId, new LinkedHashSet<>(candidateUserIds));
+        }
+        return userMapper.selectList(wrapper).stream().map(SysUser::getId).toList();
     }
 
     @Override
@@ -244,8 +408,10 @@ public class NotificationServiceImpl implements NotificationService {
      *   <li>receive_sms=1 -> 生成 SMS（push_status=PENDING，本阶段不接真实外部通道，仅落库）。
      *   <li>命中免打扰（quiet_mode=1 且当前时间在窗口内且 priority 不高于阈值）时，跳过 SYSTEM 站内信。
      * </ul>
+     *
+     * @return 实际写入的 SYSTEM 站内信条数（即实际送达人数，不含邮件/短信记录）
      */
-    private void distribute(Notification notification) {
+    private int distribute(Notification notification) {
         LocalDateTime now = LocalDateTime.now();
         LambdaQueryWrapper<UserNotificationPreference> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(
@@ -254,6 +420,7 @@ public class NotificationServiceImpl implements NotificationService {
         List<UserNotificationPreference> preferences =
                 userNotificationPreferenceMapper.selectList(wrapper);
 
+        int delivered = 0;
         for (UserNotificationPreference preference : preferences) {
             if (isEnabled(preference.getReceiveSystem())) {
                 if (isQuiet(preference, notification.getPriority())) {
@@ -268,6 +435,7 @@ public class NotificationServiceImpl implements NotificationService {
                             PushChannel.SYSTEM,
                             PushStatus.SENT,
                             now);
+                    delivered++;
                 }
             }
             if (isEnabled(preference.getReceiveEmail())) {
@@ -287,6 +455,7 @@ public class NotificationServiceImpl implements NotificationService {
                         null);
             }
         }
+        return delivered;
     }
 
     private void insertUserNotification(

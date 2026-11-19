@@ -100,7 +100,7 @@ onReachBottom(() => {
     </view>
 
     <view v-if="project" class="ceams-card detail__info">
-      <text class="detail__section-title">项目信息</text>
+      <view class="ceams-section-title detail__section-title">项目信息</view>
       <view class="ceams-list-item detail__kv">
         <text class="detail__kv-label">客户</text>
         <text class="detail__kv-value">{{ project.clientName || '-' }}</text>
@@ -139,12 +139,12 @@ onReachBottom(() => {
     </view>
 
     <view class="detail__section-head">
-      <text class="detail__section-title detail__section-title--plain">进度款</text>
+      <view class="ceams-section-title">进度款</view>
       <text class="detail__section-count">共 {{ total }} 笔</text>
     </view>
 
     <view v-if="payments.length === 0" class="ceams-card">
-      <empty-state title="暂无进度款" description="该项目尚未产生进度款记录" icon="◈" />
+      <empty-state title="暂无进度款" description="该项目尚未产生进度款记录" />
     </view>
 
     <view v-else class="ceams-card detail__payments">
@@ -219,7 +219,7 @@ onReachBottom(() => {
   min-width: 0;
   margin-right: var(--ceams-space-md);
   color: var(--ceams-text-primary);
-  font-size: var(--ceams-font-size-title);
+  font-size: 28rpx;
   font-weight: var(--ceams-font-weight-semibold);
   line-height: var(--ceams-line-height-tight);
 }
@@ -249,17 +249,9 @@ onReachBottom(() => {
   font-weight: var(--ceams-font-weight-semibold);
 }
 
+/* 分组标题沿用全局 .ceams-section-title，仅补下间距 */
 .detail__section-title {
-  display: block;
   margin-bottom: var(--ceams-space-sm);
-  color: var(--ceams-text-primary);
-  font-size: var(--ceams-font-size-heading);
-  font-weight: var(--ceams-font-weight-semibold);
-  line-height: var(--ceams-line-height-tight);
-}
-
-.detail__section-title--plain {
-  margin-bottom: 0;
 }
 
 .detail__section-head {
@@ -288,14 +280,14 @@ onReachBottom(() => {
   flex-shrink: 0;
   margin-right: var(--ceams-space-lg);
   color: var(--ceams-text-secondary);
-  font-size: var(--ceams-font-size-body);
+  font-size: 24rpx;
 }
 
 .detail__kv-value {
   flex: 1;
   min-width: 0;
   color: var(--ceams-text-primary);
-  font-size: var(--ceams-font-size-body);
+  font-size: 24rpx;
   line-height: var(--ceams-line-height-normal);
   text-align: right;
   word-break: break-all;
@@ -326,15 +318,15 @@ onReachBottom(() => {
 .detail__payment-period {
   margin-right: var(--ceams-space-sm);
   color: var(--ceams-text-primary);
-  font-size: var(--ceams-font-size-body);
+  font-size: 28rpx;
   font-weight: var(--ceams-font-weight-semibold);
 }
 
 .detail__payment-date {
   display: block;
   margin-top: var(--ceams-space-2xs);
-  color: var(--ceams-text-placeholder);
-  font-size: var(--ceams-font-size-mini);
+  color: var(--ceams-text-secondary);
+  font-size: 24rpx;
 }
 
 .detail__figs {

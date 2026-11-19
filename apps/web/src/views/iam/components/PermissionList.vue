@@ -248,14 +248,24 @@ onMounted(() => {
 
 <template>
   <div class="permission-page-wrap">
-    <div class="toolbar">
-      <el-button type="primary" @click="openCreate">新建权限</el-button>
-    </div>
-
     <div class="permission-page">
-      <div class="tree-pane">
-        <h3>权限树</h3>
-        <el-tree :data="tree" :props="treeProps" node-key="id" default-expand-all>
+      <div class="data-card tree-card">
+        <div class="card-head">
+          <div class="card-heading">
+            <span class="card-title">权限树</span>
+          </div>
+          <div class="card-actions">
+            <el-button type="primary" @click="openCreate">新建权限</el-button>
+          </div>
+        </div>
+
+        <el-tree
+          :data="tree"
+          :props="treeProps"
+          node-key="id"
+          default-expand-all
+          class="permission-tree"
+        >
           <template #default="{ data }">
             <span class="perm-node">
               <span class="perm-main">
@@ -274,8 +284,13 @@ onMounted(() => {
         <div v-else-if="tree.length === 0" class="empty">暂无权限数据</div>
       </div>
 
-      <div class="mine-pane">
-        <h3>我的权限码（{{ mine.length }}）</h3>
+      <div class="data-card mine-card">
+        <div class="card-head">
+          <div class="card-heading">
+            <span class="card-title">我的权限码</span>
+            <span class="card-sub">共 {{ mine.length }} 个</span>
+          </div>
+        </div>
         <div class="tags">
           <el-tag v-for="code in mine" :key="code" class="tag">{{ code }}</el-tag>
           <span v-if="mine.length === 0" class="empty">暂无权限码</span>
@@ -332,59 +347,128 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.toolbar {
-  margin-bottom: 12px;
-}
+/* 左右两栏卡片，间距 16px */
 .permission-page {
   display: flex;
-  gap: 24px;
+  align-items: flex-start;
+  gap: var(--ceams-space-4);
 }
-.tree-pane {
+
+.tree-card {
   flex: 1;
   min-width: 0;
+  padding: 20px;
 }
-.mine-pane {
+
+.mine-card {
   width: 360px;
   flex-shrink: 0;
+  padding: 20px;
 }
-h3 {
-  margin: 0 0 12px;
-  font-size: 14px;
+
+/* 卡片头部：标题与主操作 */
+.card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ceams-space-3);
+  margin-bottom: var(--ceams-space-4);
 }
+
+.card-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--ceams-space-2);
+}
+
+.card-title {
+  font-size: var(--ceams-font-size-md);
+  font-weight: 600;
+  color: var(--ceams-text-primary);
+}
+
+.card-sub {
+  font-size: var(--ceams-font-size-xs);
+  color: var(--ceams-text-secondary);
+}
+
+.card-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--ceams-space-2);
+}
+
+/* 权限树节点：行高 38px，内容垂直居中，选中/悬停浅蓝底 */
+.permission-tree :deep(.el-tree-node__content) {
+  height: 38px;
+  border-radius: var(--ceams-radius-sm);
+}
+
+.permission-tree :deep(.el-tree-node__content:hover) {
+  background-color: var(--ceams-color-primary-light);
+}
+
+.permission-tree :deep(.el-tree-node.is-current > .el-tree-node__content) {
+  background-color: var(--ceams-color-primary-light);
+}
+
+/* 展开图标与文字垂直对齐 */
+.permission-tree :deep(.el-tree-node__expand-icon) {
+  display: inline-flex;
+  align-items: center;
+  color: var(--ceams-text-secondary);
+}
+
 .perm-node {
   display: flex;
   flex: 1;
   min-width: 0;
   align-items: center;
-  gap: 8px;
+  gap: var(--ceams-space-2);
 }
+
 .perm-main {
   display: inline-flex;
   min-width: 0;
   align-items: center;
-  gap: 8px;
+  gap: var(--ceams-space-2);
 }
+
 .perm-name {
-  font-size: 14px;
+  font-size: var(--ceams-font-size-base);
+  color: var(--ceams-text-primary);
 }
+
 .perm-code {
-  font-size: 12px;
-  color: #9ca3af;
+  overflow: hidden;
+  font-size: var(--ceams-font-size-xs);
+  color: var(--ceams-text-placeholder);
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
+
 .perm-actions {
   margin-left: auto;
   flex-shrink: 0;
 }
+
 .tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--ceams-space-2);
 }
+
 .tag {
   font-family: monospace;
 }
+
+/* 空态：居中灰色 + 40px 留白 */
 .empty {
-  color: #9ca3af;
-  font-size: 13px;
+  padding: 40px 0;
+  text-align: center;
+  font-size: var(--ceams-font-size-sm);
+  color: var(--ceams-text-secondary);
 }
 </style>

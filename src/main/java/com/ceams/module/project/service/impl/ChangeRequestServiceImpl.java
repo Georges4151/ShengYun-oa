@@ -21,8 +21,11 @@ import com.ceams.module.project.mapper.ProjectMapper;
 import com.ceams.module.project.service.ChangeRequestService;
 import com.ceams.module.project.util.PageUtil;
 import com.ceams.module.project.vo.ChangeRequestVO;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -56,16 +59,16 @@ public class ChangeRequestServiceImpl implements ChangeRequestService {
         }
         wrapper.orderByDesc(ChangeRequest::getCreateTime);
         IPage<ChangeRequest> result = changeRequestMapper.selectPage(p, wrapper);
-        return new PageResult<>(
-                changeRequestConverter.toVOList(result.getRecords()),
-                result.getTotal(),
-                result.getCurrent(),
-                result.getSize());
+        List<ChangeRequestVO> records = changeRequestConverter.toVOList(result.getRecords());
+        fillProjectNames(records);
+        return new PageResult<>(records, result.getTotal(), result.getCurrent(), result.getSize());
     }
 
     @Override
     public ChangeRequestVO detail(Long id) {
-        return changeRequestConverter.toVO(requireChangeRequest(id));
+        ChangeRequestVO vo = changeRequestConverter.toVO(requireChangeRequest(id));
+        fillProjectNames(List.of(vo));
+        return vo;
     }
 
     @Override
@@ -147,6 +150,31 @@ public class ChangeRequestServiceImpl implements ChangeRequestService {
         changeRequest.setStatus(ApprovalStatus.PENDING);
         changeRequestMapper.updateById(changeRequest);
         log.info("变更请求 {} 已提交并发起 BPM 实例 {}", id, instanceId);
+    }
+
+    /** 批量回填项目名称，避免逐条查询造成 N+1。 */
+    private void fillProjectNames(List<ChangeRequestVO> records) {
+        if (records == null || records.isEmpty()) {
+            return;
+        }
+        List<Long> projectIds =
+                records.stream()
+                        .map(ChangeRequestVO::getProjectId)
+                        .filter(Objects::nonNull)
+                        .distinct()
+                        .toList();
+        if (projectIds.isEmpty()) {
+            return;
+        }
+        Map<Long, String> projectNames = new HashMap<>();
+        for (Project project : projectMapper.selectBatchIds(projectIds)) {
+            projectNames.put(project.getId(), project.getProjectName());
+        }
+        for (ChangeRequestVO record : records) {
+            if (record.getProjectId() != null) {
+                record.setProjectName(projectNames.get(record.getProjectId()));
+            }
+        }
     }
 
     private ChangeRequest requireChangeRequest(Long id) {

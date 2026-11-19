@@ -95,16 +95,17 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
+/* 缩略图统一圆角与间距 */
 .thumbs {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--ceams-space-2);
 }
 .thumb {
   overflow: hidden;
-  border: 1px solid #e5e7eb;
-  border-radius: 6px;
-  background: #f3f4f6;
+  border: 1px solid var(--ceams-border-base);
+  border-radius: var(--ceams-radius-md);
+  background: var(--ceams-bg-elevated);
 }
 .thumb__image {
   display: block;
@@ -119,11 +120,11 @@ onBeforeUnmount(() => {
   justify-content: center;
   width: 100%;
   height: 100%;
-  color: #9ca3af;
-  font-size: 11px;
+  color: var(--ceams-text-placeholder);
+  font-size: var(--ceams-font-size-xs);
 }
 .thumbs-empty {
-  color: #9ca3af;
-  font-size: 13px;
+  color: var(--ceams-text-placeholder);
+  font-size: var(--ceams-font-size-sm);
 }
 </style>

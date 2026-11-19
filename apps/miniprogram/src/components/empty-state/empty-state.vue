@@ -5,7 +5,7 @@ const props = withDefaults(
     title: string
     /** 补充说明，可选 */
     description?: string
-    /** 文本/字符图标，可选；不引入图标库 */
+    /** 已废弃：图标统一使用 app-icon 的 empty 图标，保留字段兼容旧调用 */
     icon?: string
   }>(),
   { description: '', icon: '' }
@@ -14,7 +14,7 @@ const props = withDefaults(
 
 <template>
   <view class="ceams-empty-state">
-    <view v-if="props.icon" class="ceams-empty-state__icon">{{ props.icon }}</view>
+    <app-icon class="ceams-empty-state__icon" name="empty" :size="64" color="#9ca3af" />
     <text class="ceams-empty-state__title">{{ props.title }}</text>
     <text v-if="props.description" class="ceams-empty-state__description">
       {{ props.description }}
@@ -30,20 +30,19 @@ const props = withDefaults(
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: var(--ceams-space-3xl) var(--ceams-space-lg);
+  justify-content: center;
+  /* 上下各 48rpx 留白，保证卡片内空态有呼吸感 */
+  padding: 48rpx var(--ceams-space-lg);
   text-align: center;
 }
 
 .ceams-empty-state__icon {
-  margin-bottom: var(--ceams-space-sm);
-  color: var(--ceams-text-placeholder);
-  font-size: var(--ceams-space-3xl);
-  line-height: var(--ceams-line-height-tight);
+  margin-bottom: 16rpx;
 }
 
 .ceams-empty-state__title {
   color: var(--ceams-text-secondary);
-  font-size: var(--ceams-font-size-body);
+  font-size: 26rpx;
   font-weight: var(--ceams-font-weight-medium);
   line-height: var(--ceams-line-height-normal);
 }
@@ -51,7 +50,7 @@ const props = withDefaults(
 .ceams-empty-state__description {
   margin-top: var(--ceams-space-xs);
   color: var(--ceams-text-placeholder);
-  font-size: var(--ceams-font-size-caption);
+  font-size: 22rpx;
   line-height: var(--ceams-line-height-normal);
 }
 

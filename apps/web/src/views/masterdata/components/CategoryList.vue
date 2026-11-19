@@ -5,6 +5,7 @@ import {
   ElDescriptions,
   ElDescriptionsItem,
   ElDialog,
+  ElEmpty,
   ElForm,
   ElFormItem,
   ElInput,
@@ -124,6 +125,21 @@ function parentCategoryName(row: CategoryVO): string {
   return categoryNameMap.value.get(row.parentId) ?? row.parentId
 }
 
+/** 分类类型标签配色：仅影响展示，不改变类型枚举与文案。 */
+function categoryTypeTagType(type: CategoryType): 'primary' | 'success' | 'warning' | 'info' {
+  switch (type) {
+    case 'MATERIAL':
+      return 'primary'
+    case 'PROJECT':
+      return 'success'
+    case 'EXPENSE':
+    case 'PAYMENT':
+      return 'warning'
+    default:
+      return 'info'
+  }
+}
+
 async function load(): Promise<void> {
   loading.value = true
   try {
@@ -233,8 +249,9 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="category-page">
-    <div class="toolbar">
+  <div>
+    <!-- 筛选卡片：控件 12px 间距，查询按钮靠右 -->
+    <div class="data-card filter-card">
       <el-select v-model="query.type" placeholder="分类类型" clearable style="width: 180px">
         <el-option v-for="opt in typeOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
       </el-select>
@@ -249,28 +266,44 @@ onMounted(() => {
         placeholder="父级分类"
         style="width: 200px"
       />
-      <el-button type="primary" @click="onSearch">查询</el-button>
-      <el-button @click="openCreate">新增分类</el-button>
+      <div class="filter-actions">
+        <el-button type="primary" @click="onSearch">查询</el-button>
+      </div>
     </div>
 
     <div class="body">
-      <div class="tree-pane">
-        <h3>分类树</h3>
+      <!-- 左侧分类树卡片 -->
+      <div class="data-card tree-pane">
+        <div class="tree-title">分类树</div>
         <el-tree :data="tree" :props="treeProps" node-key="id" default-expand-all />
       </div>
-      <div class="list-pane">
+
+      <!-- 表格卡片：头部标题、条数与主操作，表格四周 20px 内边距 -->
+      <div class="data-card table-card list-pane">
+        <div class="card-head">
+          <div class="card-heading">
+            <span class="card-title">分类列表</span>
+            <span class="card-sub">共 {{ total }} 条</span>
+          </div>
+          <div class="card-actions">
+            <el-button type="primary" @click="openCreate">新增分类</el-button>
+          </div>
+        </div>
+
         <el-table v-loading="loading" :data="list" border>
           <el-table-column prop="name" label="名称" min-width="160" />
           <el-table-column label="类型" width="120">
             <template #default="{ row }">
-              <el-tag size="small">{{ categoryTypeLabels[(row as CategoryVO).type] }}</el-tag>
+              <el-tag size="small" :type="categoryTypeTagType((row as CategoryVO).type)">
+                {{ categoryTypeLabels[(row as CategoryVO).type] }}
+              </el-tag>
             </template>
           </el-table-column>
           <el-table-column prop="code" label="编码" width="140" />
           <el-table-column label="父级分类" width="180">
             <template #default="{ row }">{{ parentCategoryName(row as CategoryVO) }}</template>
           </el-table-column>
-          <el-table-column prop="sort" label="排序" width="80" />
+          <el-table-column prop="sort" label="排序" width="80" align="right" />
           <el-table-column label="状态" width="90">
             <template #default="{ row }">
               <el-tag :type="row.enabled ? 'success' : 'info'" size="small">
@@ -285,6 +318,9 @@ onMounted(() => {
               <el-button link type="danger" size="small" @click="onRemove(row as CategoryVO)">删除</el-button>
             </template>
           </el-table-column>
+          <template #empty>
+            <el-empty description="暂无分类数据" />
+          </template>
         </el-table>
 
         <el-pagination
@@ -355,29 +391,118 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.toolbar {
+/* 筛选卡片：控件 12px 间距，查询按钮靠右 */
+.filter-card {
   display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ceams-space-3);
+  padding: 16px 20px;
+  margin-bottom: var(--ceams-space-4);
 }
+
+.filter-actions {
+  display: flex;
+  gap: var(--ceams-space-2);
+  align-items: center;
+  margin-left: auto;
+}
+
+/* 左右分栏：左侧分类树、右侧列表 */
 .body {
   display: flex;
-  gap: 16px;
+  gap: var(--ceams-space-4);
+  align-items: flex-start;
 }
+
 .tree-pane {
   width: 280px;
+  padding: 20px;
   flex-shrink: 0;
 }
-.tree-pane h3 {
-  margin: 0 0 8px;
-  font-size: 14px;
+
+.tree-title {
+  margin-bottom: var(--ceams-space-3);
+  font-size: var(--ceams-font-size-md);
+  font-weight: 600;
+  color: var(--ceams-text-primary);
 }
+
 .list-pane {
   flex: 1;
   min-width: 0;
 }
+
+/* 表格卡片：头部标题、条数与主操作，表格四周 20px 内边距 */
+.table-card {
+  padding: 20px;
+}
+
+.card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ceams-space-3);
+  margin-bottom: var(--ceams-space-4);
+}
+
+.card-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--ceams-space-2);
+}
+
+.card-title {
+  font-size: var(--ceams-font-size-md);
+  font-weight: 600;
+  color: var(--ceams-text-primary);
+}
+
+.card-sub {
+  font-size: var(--ceams-font-size-xs);
+  color: var(--ceams-text-secondary);
+}
+
+.card-actions {
+  display: flex;
+  gap: var(--ceams-space-2);
+  align-items: center;
+}
+
+/* 分页右对齐，距表格 16px */
 .pagination {
-  margin-top: 12px;
+  margin-top: var(--ceams-space-4);
   justify-content: flex-end;
+}
+
+/* 空态：居中灰色，上下 40px 留白 */
+:deep(.el-table__empty-block) {
+  padding: 40px 0;
+  min-height: 0;
+}
+
+:deep(.el-table__empty-text) {
+  color: var(--ceams-text-secondary);
+}
+
+:deep(.el-empty) {
+  padding: 0;
+}
+
+/* 弹窗：标题加粗，内容区 20px 24px，底部操作条靠右并带顶部细边框 */
+:deep(.el-dialog__title) {
+  font-weight: 600;
+}
+
+:deep(.el-dialog__body) {
+  padding: 20px 24px;
+}
+
+:deep(.el-dialog__footer) {
+  padding: 12px 24px 18px;
+  border-top: 1px solid var(--ceams-border-divider);
+  text-align: right;
 }
 </style>

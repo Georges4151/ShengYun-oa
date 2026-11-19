@@ -59,6 +59,13 @@ const rules: FormRules<typeof form> = {
   accountName: [{ required: true, message: '请输入账户名称', trigger: 'blur' }]
 }
 
+/** 金额着色：仅按交易类型上色，不改变数值本身；类型缺失时保持默认色。 */
+function amountClass(type?: TransactionType | null): string {
+  if (type === 'INCOME') return 'amount-in'
+  if (type === 'EXPENSE') return 'amount-out'
+  return ''
+}
+
 async function load(): Promise<void> {
   loading.value = true
   try {
@@ -181,51 +188,59 @@ onMounted(load)
 </script>
 
 <template>
-  <div>
-    <div class="toolbar">
+  <div class="list-page">
+    <div class="filter-bar">
       <el-input v-model="query.accountName" placeholder="账户名称" clearable style="width: 200px" />
       <el-select v-model="query.transactionType" placeholder="交易类型" clearable style="width: 140px">
         <el-option v-for="opt in typeOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
       </el-select>
       <el-input v-model="query.status" placeholder="状态" clearable style="width: 140px" />
-      <el-button type="primary" @click="onSearch">查询</el-button>
-      <el-button @click="openCreate">新增总账</el-button>
+      <div class="filter-actions">
+        <el-button type="primary" @click="onSearch">查询</el-button>
+        <el-button @click="openCreate">新增总账</el-button>
+      </div>
     </div>
 
-    <el-table v-loading="loading" :data="list" border>
-      <el-table-column prop="accountName" label="账户名称" min-width="150" />
-      <el-table-column prop="accountNumber" label="账号（需加密·阶段4）" width="170" show-overflow-tooltip />
-      <el-table-column prop="bankName" label="开户行" width="130" />
-      <el-table-column prop="balance" label="余额" width="110" />
-      <el-table-column prop="accountType" label="账户类型" width="110" />
-      <el-table-column prop="summary" label="摘要" min-width="140" show-overflow-tooltip />
-      <el-table-column prop="transactionTime" label="交易时间" width="180" />
-      <el-table-column label="交易类型" width="100">
-        <template #default="{ row }">
-          {{ (row as GeneralLedgerVO).transactionType ? transactionTypeLabels[(row as GeneralLedgerVO).transactionType!] : '-' }}
-        </template>
-      </el-table-column>
-      <el-table-column prop="amount" label="金额" width="110" />
-      <el-table-column prop="status" label="状态" width="100" />
-      <el-table-column label="操作" width="200" fixed="right">
-        <template #default="{ row }">
-          <el-button link type="primary" size="small" @click="openDetail(row as GeneralLedgerVO)">详情</el-button>
-          <el-button link type="primary" size="small" @click="openEdit(row as GeneralLedgerVO)">编辑</el-button>
-          <el-button link type="danger" size="small" @click="onRemove(row as GeneralLedgerVO)">删除</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
+    <div class="data-card">
+      <el-table v-loading="loading" :data="list" border>
+        <el-table-column prop="accountName" label="账户名称" min-width="150" />
+        <el-table-column prop="accountNumber" label="账号（需加密·阶段4）" width="170" show-overflow-tooltip />
+        <el-table-column prop="bankName" label="开户行" width="130" />
+        <el-table-column prop="balance" label="余额" width="130" align="right" class-name="amount-col" />
+        <el-table-column prop="accountType" label="账户类型" width="110" />
+        <el-table-column prop="summary" label="摘要" min-width="140" show-overflow-tooltip />
+        <el-table-column prop="transactionTime" label="交易时间" width="180" />
+        <el-table-column label="交易类型" width="100">
+          <template #default="{ row }">
+            {{ (row as GeneralLedgerVO).transactionType ? transactionTypeLabels[(row as GeneralLedgerVO).transactionType!] : '-' }}
+          </template>
+        </el-table-column>
+        <el-table-column label="金额" width="130" align="right" class-name="amount-col">
+          <template #default="{ row }">
+            <span :class="amountClass((row as GeneralLedgerVO).transactionType)">{{ (row as GeneralLedgerVO).amount }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="status" label="状态" width="100" />
+        <el-table-column label="操作" width="200" fixed="right">
+          <template #default="{ row }">
+            <el-button link type="primary" size="small" @click="openDetail(row as GeneralLedgerVO)">详情</el-button>
+            <el-button link type="primary" size="small" @click="openEdit(row as GeneralLedgerVO)">编辑</el-button>
+            <el-button link type="danger" size="small" @click="onRemove(row as GeneralLedgerVO)">删除</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
 
-    <el-pagination
-      v-model:current-page="page"
-      v-model:page-size="size"
-      :total="total"
-      :page-sizes="[10, 20, 50, 100]"
-      layout="total, sizes, prev, pager, next, jumper"
-      class="pagination"
-      @size-change="onSearch"
-      @current-change="load"
-    />
+      <el-pagination
+        v-model:current-page="page"
+        v-model:page-size="size"
+        :total="total"
+        :page-sizes="[10, 20, 50, 100]"
+        layout="total, sizes, prev, pager, next, jumper"
+        class="pagination"
+        @size-change="onSearch"
+        @current-change="load"
+      />
+    </div>
 
     <el-dialog v-model="dialogVisible" :title="editingId ? '编辑总账' : '新增总账'" width="600px">
       <el-form ref="formRef" :model="form" :rules="rules" label-width="130px">
@@ -286,13 +301,40 @@ onMounted(load)
 </template>
 
 <style scoped>
-.toolbar {
+/* 筛选卡片：白色圆角、16px 20px 内边距，操作按钮靠右 */
+.filter-bar {
+  padding: 16px 20px;
+}
+.filter-actions {
   display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: var(--ceams-space-2, 8px);
+  margin-left: auto;
+}
+/* 表格卡片：20px 内边距 */
+.data-card {
+  padding: 20px;
+}
+/* 金额列：右对齐 + 等宽数字，收入绿色、支出红色 */
+:deep(.amount-col .cell) {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+}
+.amount-in {
+  color: var(--ceams-color-success);
+}
+.amount-out {
+  color: var(--ceams-color-danger);
 }
 .pagination {
-  margin-top: 12px;
+  margin-top: 16px;
   justify-content: flex-end;
+}
+/* 空态居中灰色，上下 40px 留白 */
+:deep(.el-table__empty-block) {
+  padding: 40px 0;
+  min-height: 0;
+}
+:deep(.el-table__empty-text) {
+  color: var(--ceams-text-secondary);
 }
 </style>

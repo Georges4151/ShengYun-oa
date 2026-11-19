@@ -222,7 +222,7 @@ onReachBottom(() => {
     </view>
 
     <view v-if="records.length === 0" class="ceams-card">
-      <empty-state title="暂无通知" description="新的通知会出现在这里" icon="◈" />
+      <empty-state title="暂无通知" description="新的通知会出现在这里" />
     </view>
 
     <view v-else class="ceams-card notification-list__panel">
@@ -247,7 +247,9 @@ onReachBottom(() => {
             <text class="notification-list__title">
               {{ displayTitle(item) }}
             </text>
-            <text v-if="typeLabel(item)" class="notification-list__type">{{ typeLabel(item) }}</text>
+            <text v-if="typeLabel(item)" class="ceams-badge notification-list__type">
+              {{ typeLabel(item) }}
+            </text>
             <text class="notification-list__time">
               {{ displayTime(item) }}
             </text>
@@ -272,7 +274,6 @@ onReachBottom(() => {
 .notification-list__filters {
   display: flex;
   align-items: center;
-  gap: var(--ceams-space-xs);
   margin-bottom: var(--ceams-space-md);
   overflow-x: auto;
   white-space: nowrap;
@@ -280,6 +281,7 @@ onReachBottom(() => {
 
 .notification-list__chip {
   flex-shrink: 0;
+  margin-right: var(--ceams-space-xs);
   padding: var(--ceams-space-2xs) var(--ceams-space-md);
   color: var(--ceams-text-secondary);
   font-size: var(--ceams-font-size-caption);
@@ -345,6 +347,7 @@ onReachBottom(() => {
 .notification-list__panel {
   padding-top: 0;
   padding-bottom: 0;
+  overflow: hidden;
 }
 
 .notification-list__item {
@@ -358,12 +361,22 @@ onReachBottom(() => {
   background-color: var(--ceams-bg-subtle);
 }
 
+/* 未读：浅蓝底 + 左侧 6rpx 主色竖条 */
+.notification-list__item--unread {
+  background-color: var(--ceams-color-primary-tint);
+}
+
+/* 已读：整体降低不透明度，弱化视觉层级 */
+.notification-list__item--read {
+  opacity: 0.62;
+}
+
 .notification-list__bar {
   position: absolute;
   top: var(--ceams-space-md);
   bottom: var(--ceams-space-md);
   left: 0;
-  width: var(--ceams-space-2xs);
+  width: 6rpx;
   background-color: var(--ceams-color-primary);
   border-radius: var(--ceams-radius-pill);
 }
@@ -424,20 +437,10 @@ onReachBottom(() => {
   line-height: var(--ceams-line-height-tight);
 }
 
+/* 类型徽标沿用全局 .ceams-badge，仅补右间距 */
 .notification-list__type {
   flex-shrink: 0;
   margin-right: var(--ceams-space-sm);
-  padding: 0 var(--ceams-space-xs);
-  color: var(--ceams-color-primary);
-  font-size: var(--ceams-font-size-mini);
-  line-height: var(--ceams-line-height-tight);
-  background-color: var(--ceams-color-primary-tint);
-  border-radius: var(--ceams-radius-xs);
-}
-
-.notification-list__item--read .notification-list__type {
-  color: var(--ceams-color-neutral);
-  background-color: var(--ceams-color-neutral-tint);
 }
 
 .notification-list__summary {

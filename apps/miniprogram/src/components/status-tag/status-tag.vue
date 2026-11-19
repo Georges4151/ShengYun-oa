@@ -24,11 +24,13 @@ const props = withDefaults(
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: var(--ceams-space-2xs) var(--ceams-space-sm);
-  border-radius: var(--ceams-radius-tag);
-  font-size: var(--ceams-font-size-mini);
+  /* 浅底 + 同色系文字：底色与文字色均由 --ceams-status-*-bg / *-text 成对提供 */
+  padding: 4rpx 16rpx;
+  border-radius: 8rpx;
+  font-size: 22rpx;
   font-weight: var(--ceams-font-weight-medium);
-  line-height: var(--ceams-line-height-tight);
+  line-height: 1.4;
+  white-space: nowrap;
 }
 
 .ceams-status-tag--pending {

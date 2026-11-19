@@ -3,6 +3,9 @@ package com.ceams.module.notification.controller;
 import com.ceams.common.response.ApiResponse;
 import com.ceams.common.response.PageResult;
 import com.ceams.module.notification.dto.NotificationCreateRequest;
+import com.ceams.module.notification.dto.NotificationPublishRequest;
+import com.ceams.module.notification.dto.NotificationRecipientRoleVO;
+import com.ceams.module.notification.dto.NotificationRecipientUserVO;
 import com.ceams.module.notification.dto.NotificationUpdateRequest;
 import com.ceams.module.notification.enums.NotificationPriority;
 import com.ceams.module.notification.enums.NotificationStatus;
@@ -11,6 +14,7 @@ import com.ceams.module.notification.service.NotificationService;
 import com.ceams.module.notification.vo.NotificationVO;
 import jakarta.validation.Valid;
 import java.time.LocalDateTime;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -75,11 +79,34 @@ public class NotificationController {
         return ApiResponse.success();
     }
 
+    /**
+     * 发布通知。
+     *
+     * <p>请求体可选：传 scope 时按指定接收范围直接生成站内信；不传时沿用旧的按用户偏好分发行为。
+     *
+     * @return 实际送达人数
+     */
     @PostMapping("/{id}/publish")
     @PreAuthorize("hasAnyRole('SYS_ADMIN','FINANCE')")
-    public ApiResponse<Void> publish(@PathVariable Long id) {
-        notificationService.publish(id);
-        return ApiResponse.success();
+    public ApiResponse<Integer> publish(
+            @PathVariable Long id,
+            @Valid @RequestBody(required = false) NotificationPublishRequest request) {
+        return ApiResponse.success(notificationService.publish(id, request));
+    }
+
+    /** 发布范围-启用角色列表。 */
+    @GetMapping("/recipients/roles")
+    @PreAuthorize("hasAnyRole('SYS_ADMIN','FINANCE')")
+    public ApiResponse<List<NotificationRecipientRoleVO>> recipientRoles() {
+        return ApiResponse.success(notificationService.listRecipientRoles());
+    }
+
+    /** 发布范围-启用用户模糊搜索（最多 50 条）。 */
+    @GetMapping("/recipients/users")
+    @PreAuthorize("hasAnyRole('SYS_ADMIN','FINANCE')")
+    public ApiResponse<List<NotificationRecipientUserVO>> recipientUsers(
+            @RequestParam(required = false) String keyword) {
+        return ApiResponse.success(notificationService.searchRecipientUsers(keyword));
     }
 
     @PostMapping("/{id}/revoke")

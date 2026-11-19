@@ -142,7 +142,7 @@ onReachBottom(() => {
 <template>
   <view class="ceams-page">
     <view class="ceams-card">
-      <text class="section-title">公开知识库</text>
+      <view class="ceams-section-title section-title">公开知识库</view>
       <text class="section-hint">仅支持浏览与查看，上传、编辑请前往 Web 端</text>
 
       <view v-if="loadingTree && tree.length === 0" class="state">加载中...</view>
@@ -168,7 +168,7 @@ onReachBottom(() => {
     </view>
 
     <view v-if="activeDir" class="ceams-card">
-      <text class="section-title">{{ activeDir.name }}</text>
+      <view class="ceams-section-title section-title">{{ activeDir.name }}</view>
 
       <view v-if="loadingFiles && files.length === 0" class="state">加载中...</view>
       <empty-state v-else-if="filesEmpty" title="暂无文件" description="该目录下还没有文件" />
@@ -187,7 +187,7 @@ onReachBottom(() => {
             {{ formatDateTime(item.updateTime ?? item.createTime) }}
           </text>
         </view>
-        <text class="file__badge">{{ item.ext || '文件' }}</text>
+        <text class="ceams-badge file__badge">{{ item.ext || '文件' }}</text>
       </view>
 
       <view v-if="noMore" class="loadmore">没有更多了</view>
@@ -198,7 +198,7 @@ onReachBottom(() => {
 
     <view v-if="selectedFile" class="ceams-card">
       <view class="preview__head">
-        <text class="section-title section-title--flush">文件信息</text>
+        <view class="ceams-section-title section-title section-title--flush">文件信息</view>
         <text class="link" @click="selectedFile = null">关闭</text>
       </view>
       <view class="row">
@@ -225,12 +225,9 @@ onReachBottom(() => {
 </template>
 
 <style scoped>
+/* 分组标题沿用全局 .ceams-section-title */
 .section-title {
-  display: block;
-  color: var(--ceams-text-primary);
-  font-size: var(--ceams-font-size-body);
-  font-weight: var(--ceams-font-weight-semibold);
-  line-height: var(--ceams-line-height-tight);
+  margin-bottom: var(--ceams-space-xs);
 }
 
 .section-title--flush {
@@ -275,14 +272,15 @@ onReachBottom(() => {
   font-size: var(--ceams-font-size-caption);
 }
 
+/* 文件行：与 list-card 保持一致的圆角与内边距 */
 .file {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: var(--ceams-space-xs);
-  padding: var(--ceams-space-sm);
+  margin-top: var(--ceams-space-sm);
+  padding: 24rpx;
   background-color: var(--ceams-bg-subtle);
-  border-radius: var(--ceams-radius-md);
+  border-radius: 16rpx;
   border: var(--ceams-border-width) solid transparent;
 }
 
@@ -299,23 +297,21 @@ onReachBottom(() => {
 .file__name {
   display: block;
   color: var(--ceams-text-primary);
-  font-size: var(--ceams-font-size-caption);
+  font-size: 28rpx;
+  font-weight: var(--ceams-font-weight-semibold);
 }
 
 .file__meta {
   display: block;
   margin-top: var(--ceams-space-2xs);
   color: var(--ceams-text-secondary);
-  font-size: var(--ceams-font-size-mini);
+  font-size: 24rpx;
 }
 
+/* 文件类型徽标沿用全局 .ceams-badge，仅控制收缩与间距 */
 .file__badge {
   flex-shrink: 0;
-  padding: var(--ceams-space-2xs) var(--ceams-space-xs);
-  background-color: var(--ceams-color-primary-tint);
-  border-radius: var(--ceams-radius-xs);
-  color: var(--ceams-color-primary);
-  font-size: var(--ceams-font-size-mini);
+  margin-left: var(--ceams-space-sm);
 }
 
 .preview__head {

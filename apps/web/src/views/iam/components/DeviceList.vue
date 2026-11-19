@@ -5,6 +5,7 @@ import {
   ElDescriptions,
   ElDescriptionsItem,
   ElDialog,
+  ElEmpty,
   ElForm,
   ElFormItem,
   ElInput,
@@ -117,44 +118,58 @@ onMounted(load)
 
 <template>
   <div>
-    <div class="toolbar">
-      <el-button type="primary" @click="openCreate">绑定设备</el-button>
+    <!-- 表格卡片：标题、条数与主操作（无筛选条件，操作置于卡片头部） -->
+    <div class="data-card table-card">
+      <div class="card-head">
+        <div class="card-heading">
+          <span class="card-title">设备列表</span>
+          <span class="card-sub">共 {{ total }} 条</span>
+        </div>
+        <div class="card-actions">
+          <el-button type="primary" @click="openCreate">绑定设备</el-button>
+        </div>
+      </div>
+
+      <el-table v-loading="loading" :data="list" border>
+        <el-table-column prop="deviceName" label="设备名称" min-width="160" />
+        <el-table-column prop="deviceId" label="设备指纹" min-width="200" show-overflow-tooltip />
+        <el-table-column prop="userId" label="用户 ID" width="180" show-overflow-tooltip />
+        <el-table-column label="平台" width="110">
+          <template #default="{ row }">
+            {{ row.platform ? platformLabels[(row as UserDeviceVO).platform!] : '-' }}
+          </template>
+        </el-table-column>
+        <el-table-column label="状态" width="100">
+          <template #default="{ row }">
+            <el-tag size="small" :type="(row as UserDeviceVO).status === 'ACTIVE' ? 'success' : 'info'">
+              {{ deviceStatusLabels[(row as UserDeviceVO).status] }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="lastLoginIp" label="最近登录 IP" width="140" />
+        <el-table-column prop="lastLoginTime" label="最近登录时间" width="180" />
+        <el-table-column label="操作" width="160" fixed="right">
+          <template #default="{ row }">
+            <el-button link type="primary" size="small" @click="openDetail(row as UserDeviceVO)">详情</el-button>
+            <el-button link type="danger" size="small" @click="onRemove(row as UserDeviceVO)">解绑</el-button>
+          </template>
+        </el-table-column>
+        <template #empty>
+          <el-empty description="暂无设备数据" />
+        </template>
+      </el-table>
+
+      <el-pagination
+        v-model:current-page="page"
+        v-model:page-size="size"
+        :total="total"
+        :page-sizes="[10, 20, 50, 100]"
+        layout="total, sizes, prev, pager, next, jumper"
+        class="pagination"
+        @size-change="onSearch"
+        @current-change="load"
+      />
     </div>
-
-    <el-table v-loading="loading" :data="list" border>
-      <el-table-column prop="deviceName" label="设备名称" min-width="160" />
-      <el-table-column prop="deviceId" label="设备指纹" min-width="200" show-overflow-tooltip />
-      <el-table-column prop="userId" label="用户 ID" width="180" />
-      <el-table-column label="平台" width="110">
-        <template #default="{ row }">
-          {{ row.platform ? platformLabels[(row as UserDeviceVO).platform!] : '-' }}
-        </template>
-      </el-table-column>
-      <el-table-column label="状态" width="100">
-        <template #default="{ row }">
-          <el-tag size="small">{{ deviceStatusLabels[(row as UserDeviceVO).status] }}</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column prop="lastLoginIp" label="最近登录 IP" width="140" />
-      <el-table-column prop="lastLoginTime" label="最近登录时间" width="180" />
-      <el-table-column label="操作" width="160" fixed="right">
-        <template #default="{ row }">
-          <el-button link type="primary" size="small" @click="openDetail(row as UserDeviceVO)">详情</el-button>
-          <el-button link type="danger" size="small" @click="onRemove(row as UserDeviceVO)">解绑</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
-
-    <el-pagination
-      v-model:current-page="page"
-      v-model:page-size="size"
-      :total="total"
-      :page-sizes="[10, 20, 50, 100]"
-      layout="total, sizes, prev, pager, next, jumper"
-      class="pagination"
-      @size-change="onSearch"
-      @current-change="load"
-    />
 
     <el-dialog v-model="dialogVisible" title="绑定设备" width="480px">
       <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
@@ -192,13 +207,57 @@ onMounted(load)
 </template>
 
 <style scoped>
-.toolbar {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
+/* 表格卡片：20px 内边距 */
+.table-card {
+  padding: 20px;
 }
+
+.card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ceams-space-3);
+  margin-bottom: var(--ceams-space-4);
+}
+
+.card-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--ceams-space-2);
+}
+
+.card-title {
+  font-size: var(--ceams-font-size-md);
+  font-weight: 600;
+  color: var(--ceams-text-primary);
+}
+
+.card-sub {
+  font-size: var(--ceams-font-size-xs);
+  color: var(--ceams-text-secondary);
+}
+
+.card-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--ceams-space-2);
+}
+
+/* 分页右对齐，距表格 16px */
 .pagination {
-  margin-top: 12px;
+  margin-top: var(--ceams-space-4);
   justify-content: flex-end;
+}
+
+/* 空态：居中灰色 + 40px 留白 */
+:deep(.el-table__empty-block) {
+  padding: 40px 0;
+  min-height: 0;
+}
+
+:deep(.el-table__empty-text) {
+  color: var(--ceams-text-secondary);
 }
 </style>

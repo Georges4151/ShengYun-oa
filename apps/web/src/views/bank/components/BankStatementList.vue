@@ -79,6 +79,17 @@ const rules: FormRules<typeof form> = {
   type: [{ required: true, message: '请选择收支类型', trigger: 'change' }]
 }
 
+/** 对账状态标签视觉映射：仅决定颜色，状态值与文案保持原样。 */
+function statusTagType(status: BankStatementStatus): 'success' | 'warning' | 'info' {
+  if (status === 'UNRECONCILED') return 'warning'
+  return 'success'
+}
+
+/** 金额着色：收入绿色、支出红色，不改变原值与正负号。 */
+function amountClass(type: TransactionType): string {
+  return type === 'INCOME' ? 'amount-in' : 'amount-out'
+}
+
 // ---------- 匹配候选建议 ----------
 const matchVisible = ref(false)
 const matchLoading = ref(false)
@@ -262,8 +273,8 @@ onMounted(load)
 </script>
 
 <template>
-  <div>
-    <div class="toolbar">
+  <div class="list-page">
+    <div class="filter-bar">
       <el-input v-model="query.accountId" placeholder="银行账户 ID" clearable style="width: 200px" />
       <el-select v-model="query.status" placeholder="对账状态" clearable style="width: 140px">
         <el-option v-for="opt in statusOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
@@ -271,48 +282,60 @@ onMounted(load)
       <el-select v-model="query.type" placeholder="收支类型" clearable style="width: 140px">
         <el-option v-for="opt in typeOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
       </el-select>
-      <el-button type="primary" @click="onSearch">查询</el-button>
-      <el-button @click="openCreate">新增流水</el-button>
-      <el-button @click="openImport">导入 CSV</el-button>
+      <div class="filter-actions">
+        <el-button type="primary" @click="onSearch">查询</el-button>
+        <el-button @click="openCreate">新增流水</el-button>
+        <el-button @click="openImport">导入 CSV</el-button>
+      </div>
     </div>
 
-    <el-table v-loading="loading" :data="list" border>
-      <el-table-column prop="accountId" label="银行账户 ID" width="180" show-overflow-tooltip />
-      <el-table-column prop="transactionDate" label="交易日期" width="120" />
-      <el-table-column prop="amount" label="金额" width="110" />
-      <el-table-column label="收支类型" width="100">
-        <template #default="{ row }">
-          <el-tag size="small">{{ transactionTypeLabels[(row as BankStatementVO).type] }}</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="对账状态" width="110">
-        <template #default="{ row }">
-          <el-tag size="small">{{ bankStatementStatusLabels[(row as BankStatementVO).status] }}</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column prop="counterparty" label="对方" width="140" show-overflow-tooltip />
-      <el-table-column prop="bankReference" label="银行流水号" width="160" show-overflow-tooltip />
-      <el-table-column prop="balance" label="余额" width="110" />
-      <el-table-column label="操作" width="260" fixed="right">
-        <template #default="{ row }">
-          <el-button link type="primary" size="small" @click="openDetail(row as BankStatementVO)">详情</el-button>
-          <el-button link type="primary" size="small" @click="openMatchCandidates(row as BankStatementVO)">匹配建议</el-button>
-          <el-button link type="primary" size="small" @click="openEdit(row as BankStatementVO)">编辑</el-button>
-          <el-button link type="danger" size="small" @click="onRemove(row as BankStatementVO)">删除</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
+    <div class="data-card">
+      <el-table v-loading="loading" :data="list" border>
+        <el-table-column prop="accountId" label="银行账户 ID" width="180" show-overflow-tooltip />
+        <el-table-column prop="transactionDate" label="交易日期" width="120" />
+        <el-table-column label="金额" width="130" align="right" class-name="amount-col">
+          <template #default="{ row }">
+            <span :class="amountClass((row as BankStatementVO).type)">{{ (row as BankStatementVO).amount }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="收支类型" width="100">
+          <template #default="{ row }">
+            <el-tag size="small" :type="(row as BankStatementVO).type === 'INCOME' ? 'success' : 'danger'">
+              {{ transactionTypeLabels[(row as BankStatementVO).type] }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="对账状态" width="110">
+          <template #default="{ row }">
+            <el-tag size="small" :type="statusTagType((row as BankStatementVO).status)">
+              {{ bankStatementStatusLabels[(row as BankStatementVO).status] }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="counterparty" label="对方" width="140" show-overflow-tooltip />
+        <el-table-column prop="bankReference" label="银行流水号" width="160" show-overflow-tooltip />
+        <el-table-column prop="balance" label="余额" width="130" align="right" class-name="amount-col" />
+        <el-table-column label="操作" width="260" fixed="right">
+          <template #default="{ row }">
+            <el-button link type="primary" size="small" @click="openDetail(row as BankStatementVO)">详情</el-button>
+            <el-button link type="primary" size="small" @click="openMatchCandidates(row as BankStatementVO)">匹配建议</el-button>
+            <el-button link type="primary" size="small" @click="openEdit(row as BankStatementVO)">编辑</el-button>
+            <el-button link type="danger" size="small" @click="onRemove(row as BankStatementVO)">删除</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
 
-    <el-pagination
-      v-model:current-page="page"
-      v-model:page-size="size"
-      :total="total"
-      :page-sizes="[10, 20, 50, 100]"
-      layout="total, sizes, prev, pager, next, jumper"
-      class="pagination"
-      @size-change="onSearch"
-      @current-change="load"
-    />
+      <el-pagination
+        v-model:current-page="page"
+        v-model:page-size="size"
+        :total="total"
+        :page-sizes="[10, 20, 50, 100]"
+        layout="total, sizes, prev, pager, next, jumper"
+        class="pagination"
+        @size-change="onSearch"
+        @current-change="load"
+      />
+    </div>
 
     <el-dialog v-model="dialogVisible" :title="editingId ? '编辑银行流水' : '新增银行流水'" width="600px">
       <el-form ref="formRef" :model="form" :rules="rules" label-width="110px">
@@ -390,10 +413,10 @@ onMounted(load)
             <el-table-column label="日期" width="110">
               <template #default="{ row }">{{ formatDate((row as MatchCandidateVO).transactionDate) }}</template>
             </el-table-column>
-            <el-table-column prop="amount" label="金额" width="110" />
-            <el-table-column prop="amountDiff" label="金额差异" width="110" />
-            <el-table-column prop="dateDiffDays" label="日期差（天）" width="110" />
-            <el-table-column prop="score" label="匹配分" width="90" />
+            <el-table-column prop="amount" label="金额" width="110" align="right" />
+            <el-table-column prop="amountDiff" label="金额差异" width="110" align="right" />
+            <el-table-column prop="dateDiffDays" label="日期差（天）" width="110" align="right" />
+            <el-table-column prop="score" label="匹配分" width="90" align="right" />
             <el-table-column label="理由" min-width="260">
               <template #default="{ row }">
                 <el-tag
@@ -448,14 +471,41 @@ onMounted(load)
 </template>
 
 <style scoped>
-.toolbar {
+/* 筛选卡片：白色圆角、16px 20px 内边距，操作按钮靠右 */
+.filter-bar {
+  padding: 16px 20px;
+}
+.filter-actions {
   display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: var(--ceams-space-2, 8px);
+  margin-left: auto;
+}
+/* 表格卡片：20px 内边距 */
+.data-card {
+  padding: 20px;
+}
+/* 金额列：右对齐 + 等宽数字，收入绿色、支出红色 */
+:deep(.amount-col .cell) {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+}
+.amount-in {
+  color: var(--ceams-color-success);
+}
+.amount-out {
+  color: var(--ceams-color-danger);
 }
 .pagination {
-  margin-top: 12px;
+  margin-top: 16px;
   justify-content: flex-end;
+}
+/* 空态居中灰色，上下 40px 留白 */
+:deep(.el-table__empty-block) {
+  padding: 40px 0;
+  min-height: 0;
+}
+:deep(.el-table__empty-text) {
+  color: var(--ceams-text-secondary);
 }
 .file-row {
   display: flex;
@@ -464,8 +514,8 @@ onMounted(load)
   width: 100%;
 }
 .file-name {
-  color: #909399;
-  font-size: 13px;
+  color: var(--ceams-text-secondary);
+  font-size: var(--ceams-font-size-sm, 13px);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -476,8 +526,8 @@ onMounted(load)
 .error-list {
   margin: 8px 0 0;
   padding-left: 20px;
-  color: #f56c6c;
-  font-size: 12px;
+  color: var(--ceams-color-danger);
+  font-size: var(--ceams-font-size-xs, 12px);
 }
 .match-body {
   min-height: 120px;
@@ -487,8 +537,8 @@ onMounted(load)
 }
 .match-truncated {
   margin-top: 8px;
-  color: #909399;
-  font-size: 12px;
+  color: var(--ceams-text-secondary);
+  font-size: var(--ceams-font-size-xs, 12px);
 }
 .match-reason {
   margin: 2px 4px 2px 0;

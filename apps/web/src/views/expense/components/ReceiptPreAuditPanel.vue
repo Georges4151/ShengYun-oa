@@ -54,26 +54,30 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="pre-audit">
-    <div class="pre-audit__header">
-      <div class="pre-audit__heading">
-        <span class="pre-audit__title">AI 预审提示</span>
-        <span class="pre-audit__note">AI 提示仅供参考，不改变审批结果</span>
+  <div class="data-card pre-audit">
+    <div class="card-head">
+      <div class="card-heading">
+        <span class="card-title">AI 预审提示</span>
+        <span class="card-sub">AI 提示仅供参考，不改变审批结果</span>
       </div>
       <el-button size="small" :loading="loading" @click="load">刷新</el-button>
     </div>
 
     <el-alert v-if="error" type="warning" :closable="false" show-icon :title="error" />
 
-    <el-empty v-else-if="!loading && list.length === 0" description="暂无风险提示" :image-size="60" />
+    <div v-else-if="!loading && list.length === 0" class="pre-audit__empty">
+      <el-empty description="暂无风险提示" :image-size="60" />
+    </div>
 
     <el-table v-else v-loading="loading" :data="list" border size="small">
       <el-table-column prop="receiptNumber" label="票据编号" min-width="160" show-overflow-tooltip />
       <el-table-column prop="reporterName" label="报销人" width="110">
         <template #default="{ row }">{{ (row as ReceiptPreAuditVO).reporterName ?? '-' }}</template>
       </el-table-column>
-      <el-table-column label="金额" width="110">
-        <template #default="{ row }">{{ formatAmount((row as ReceiptPreAuditVO).amount) }}</template>
+      <el-table-column label="金额" width="120" align="right">
+        <template #default="{ row }">
+          <span class="amount">{{ formatAmount((row as ReceiptPreAuditVO).amount) }}</span>
+        </template>
       </el-table-column>
       <el-table-column label="票据日期" width="110">
         <template #default="{ row }">
@@ -98,53 +102,75 @@ onMounted(() => {
           </div>
         </template>
       </el-table-column>
+      <template #empty>
+        <el-empty description="暂无风险提示" :image-size="60" />
+      </template>
     </el-table>
   </div>
 </template>
 
 <style scoped>
+/* 预审卡片：与数据卡片保持一致的内边距与底部间距 */
 .pre-audit {
-  margin-bottom: 16px;
-  padding: 12px 16px;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  background: #fff;
+  padding: 20px;
+  margin-bottom: var(--ceams-space-4);
 }
-.pre-audit__header {
+
+.card-head {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 12px;
+  gap: var(--ceams-space-3);
+  margin-bottom: var(--ceams-space-4);
 }
-.pre-audit__heading {
+
+.card-heading {
   display: flex;
-  align-items: baseline;
   flex-wrap: wrap;
-  gap: 8px;
+  align-items: baseline;
+  gap: var(--ceams-space-2);
 }
-.pre-audit__title {
-  color: #303133;
-  font-size: 14px;
+
+.card-title {
+  font-size: var(--ceams-font-size-md);
   font-weight: 600;
+  color: var(--ceams-text-primary);
 }
-.pre-audit__note {
-  color: #909399;
-  font-size: 12px;
+
+.card-sub {
+  font-size: var(--ceams-font-size-xs);
+  color: var(--ceams-text-secondary);
 }
+
+/* 空态：居中并保留上下 40px 留白 */
+.pre-audit__empty {
+  padding: 40px 0;
+}
+
 .pre-audit__warning {
   display: flex;
   align-items: flex-start;
   gap: 6px;
   padding: 2px 0;
 }
+
 .pre-audit__warning-text {
-  color: #606266;
-  font-size: 12px;
+  font-size: var(--ceams-font-size-xs);
   line-height: 1.6;
+  color: var(--ceams-text-secondary);
 }
+
 .pre-audit__no-warning {
-  color: #909399;
-  font-size: 12px;
+  font-size: var(--ceams-font-size-xs);
+  color: var(--ceams-text-placeholder);
+}
+
+/* 金额：等宽数字 */
+.amount {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+  font-weight: 600;
+  color: var(--ceams-text-primary);
 }
 </style>

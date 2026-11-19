@@ -69,7 +69,9 @@ export interface BudgetVO {
   budgetName: string
   amount: Money
   projectId?: Id | null
+  projectName?: string | null
   contractId?: Id | null
+  contractName?: string | null
   startDate?: string | null
   endDate?: string | null
   status: BudgetStatus
@@ -102,6 +104,7 @@ export interface BudgetUpdateRequest {
 export interface ChangeRequestVO {
   id: Id
   projectId: Id
+  projectName?: string | null
   requestType: string
   description?: string | null
   estimatedCost?: Money
@@ -135,6 +138,7 @@ export interface ApprovalActionRequest {
 export interface ProgressPaymentVO {
   id: Id
   projectId: Id
+  projectName?: string | null
   paymentPeriod: string
   applicationAmount?: Money
   approvedAmount?: Money | null

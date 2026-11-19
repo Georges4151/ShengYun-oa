@@ -46,9 +46,10 @@ function visitorTagType(status: VisitorStatus): 'success' | 'warning' | 'info' |
     case 'PENDING':
       return 'warning'
     case 'CHECKED_OUT':
+    case 'CANCELLED':
       return 'info'
     default:
-      return 'danger'
+      return 'info'
   }
 }
 
@@ -239,8 +240,9 @@ onMounted(() => {
 </script>
 
 <template>
-  <div>
-    <div class="toolbar">
+  <div class="visitor-panel">
+    <!-- 筛选区：白色圆角卡片，操作按钮靠右 -->
+    <div class="filter-bar">
       <el-date-picker
         v-model="query.date"
         type="date"
@@ -257,12 +259,21 @@ onMounted(() => {
           :value="opt.value"
         />
       </el-select>
-      <el-button type="primary" @click="onSearch">查询</el-button>
-      <template v-if="canManage">
-        <el-button @click="openCreate">访客登记</el-button>
-        <el-button @click="openCheckin">扫码核销</el-button>
-      </template>
+      <div class="filter-actions">
+        <el-button type="primary" @click="onSearch">查询</el-button>
+        <el-button v-if="canManage" @click="openCheckin">扫码核销</el-button>
+      </div>
     </div>
+
+    <!-- 访客记录卡片 -->
+    <div class="data-card panel-card">
+      <div class="card-header">
+        <div class="card-heading">
+          <span class="card-title">访客记录</span>
+          <span class="card-count">共 {{ total }} 条</span>
+        </div>
+        <el-button v-if="canManage" type="primary" @click="openCreate">访客登记</el-button>
+      </div>
 
     <el-table v-loading="loading" :data="list" border>
       <el-table-column prop="visitorName" label="访客姓名" width="120" />
@@ -322,19 +333,21 @@ onMounted(() => {
       </el-table-column>
     </el-table>
 
-    <el-pagination
-      v-model:current-page="page"
-      v-model:page-size="size"
-      :total="total"
-      :page-sizes="[10, 20, 50, 100]"
-      layout="total, sizes, prev, pager, next, jumper"
-      class="pagination"
-      @size-change="onSearch"
-      @current-change="load"
-    />
+      <!-- 分页右对齐，距表 16px -->
+      <el-pagination
+        v-model:current-page="page"
+        v-model:page-size="size"
+        :total="total"
+        :page-sizes="[10, 20, 50, 100]"
+        layout="total, sizes, prev, pager, next, jumper"
+        class="pagination"
+        @size-change="onSearch"
+        @current-change="load"
+      />
+    </div>
 
     <!-- 访客登记 -->
-    <el-dialog v-model="createVisible" title="访客登记" width="520px">
+    <el-dialog v-model="createVisible" class="admin-dialog" title="访客登记" width="520px">
       <el-form ref="createFormRef" :model="createForm" :rules="createRules" label-width="90px">
         <el-form-item label="访客姓名" prop="visitorName">
           <el-input v-model="createForm.visitorName" placeholder="请输入访客姓名" />
@@ -384,7 +397,7 @@ onMounted(() => {
     </el-dialog>
 
     <!-- 访客二维码 -->
-    <el-dialog v-model="qrVisible" title="访客通行二维码" width="400px" @closed="onQrClosed">
+    <el-dialog v-model="qrVisible" class="admin-dialog" title="访客通行二维码" width="400px" @closed="onQrClosed">
       <div class="qr-wrap">
         <div v-if="qrInfo" class="qr-title">{{ qrInfo.visitorName }}</div>
         <img v-if="qrImage" :src="qrImage" alt="访客通行二维码" class="qr-image" />
@@ -396,7 +409,7 @@ onMounted(() => {
     </el-dialog>
 
     <!-- 扫码核销（手动输入令牌） -->
-    <el-dialog v-model="checkinVisible" title="扫码核销" width="460px">
+    <el-dialog v-model="checkinVisible" class="admin-dialog" title="扫码核销" width="460px">
       <el-form label-width="90px">
         <el-form-item label="核销令牌">
           <el-input
@@ -416,42 +429,110 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.toolbar {
+/* 模块容器：筛选区与列表卡片保持 16px 间距 */
+.visitor-panel {
   display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
+  flex-direction: column;
+  gap: var(--ceams-space-4);
 }
+
+/* 筛选卡片：16px 20px 内边距，控件 12px 间距 */
+.filter-bar {
+  padding: 16px 20px;
+  margin-bottom: 0;
+  gap: var(--ceams-space-3);
+}
+
+.filter-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--ceams-space-3);
+  margin-left: auto;
+}
+
+/* 列表卡片：20px 内边距 */
+.panel-card {
+  padding: var(--ceams-space-5);
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ceams-space-3);
+  margin-bottom: var(--ceams-space-4);
+}
+
+.card-heading {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ceams-space-2);
+  min-width: 0;
+}
+
+.card-title {
+  font-size: var(--ceams-font-size-md);
+  font-weight: 600;
+  color: var(--ceams-text-primary);
+}
+
+.card-count {
+  font-size: var(--ceams-font-size-sm);
+  color: var(--ceams-text-secondary);
+}
+
+/* 分页右对齐，距表 16px */
 .pagination {
-  margin-top: 12px;
+  margin-top: var(--ceams-space-4);
   justify-content: flex-end;
 }
+
+/* 空态居中灰色、40px 留白 */
+.panel-card :deep(.el-table__empty-text) {
+  color: var(--ceams-text-placeholder);
+}
+
+.panel-card :deep(.el-table__empty-block) {
+  padding: var(--ceams-space-10) 0;
+  min-height: 0;
+}
+
 .qr-wrap {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: var(--ceams-space-3);
 }
+
 .qr-title {
-  font-size: 16px;
+  font-size: var(--ceams-font-size-lg);
   font-weight: 600;
-  color: #111827;
+  color: var(--ceams-text-primary);
 }
+
 .qr-image {
   width: 260px;
   height: 260px;
 }
+
 .qr-tip {
-  font-size: 12px;
-  color: #6b7280;
+  font-size: var(--ceams-font-size-xs);
+  color: var(--ceams-text-secondary);
   text-align: center;
 }
+
 .qr-token {
   width: 100%;
   padding: 6px 8px;
-  font-size: 12px;
-  color: #374151;
+  font-size: var(--ceams-font-size-xs);
+  color: var(--ceams-text-primary);
   word-break: break-all;
-  background: #f3f4f6;
-  border-radius: 4px;
+  background: var(--ceams-bg-elevated);
+  border-radius: var(--ceams-radius-sm);
+}
+
+/* 弹窗内容 20px 24px */
+:global(.admin-dialog .el-dialog__body) {
+  padding: 20px 24px;
 }
 </style>
