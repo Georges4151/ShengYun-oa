@@ -131,11 +131,9 @@ public class ReconciliationServiceImpl implements ReconciliationService {
                         ? DEFAULT_DAYS_TOLERANCE
                         : request.getDaysTolerance();
 
+        // 加锁读取未对账流水：并发对账时第二个事务会阻塞到第一个提交，随后不再读到已对账流水
         List<BankStatement> statements =
-                bankStatementMapper.selectList(
-                        new LambdaQueryWrapper<BankStatement>()
-                                .eq(BankStatement::getAccountId, accountId)
-                                .eq(BankStatement::getStatus, BankStatementStatus.UNRECONCILED));
+                bankStatementMapper.selectUnreconciledForUpdate(accountId);
 
         List<PaymentTransaction> transactions =
                 paymentTransactionMapper.selectList(

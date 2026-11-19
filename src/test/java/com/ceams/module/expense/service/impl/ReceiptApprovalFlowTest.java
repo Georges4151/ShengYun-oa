@@ -87,7 +87,7 @@ class ReceiptApprovalFlowTest {
     @Test
     void submitShouldMoveDraftToPendingAndStartExpenseInstance() {
         Receipt receipt = receipt(ReceiptApprovalStatus.DRAFT);
-        when(receiptMapper.selectById(RECEIPT_ID)).thenReturn(receipt);
+        when(receiptMapper.selectByIdForUpdate(RECEIPT_ID)).thenReturn(receipt);
         when(bpmInstanceService.start(any(InstanceStartRequest.class)))
                 .thenReturn(String.valueOf(BPM_INSTANCE_ID));
 
@@ -196,7 +196,7 @@ class ReceiptApprovalFlowTest {
     /** 非法流转：已通过的报销单不允许再次提交，抛 BIZ_STATE_CONFLICT 且不发起流程。 */
     @Test
     void submitShouldRejectWhenReceiptAlreadyApproved() {
-        when(receiptMapper.selectById(RECEIPT_ID))
+        when(receiptMapper.selectByIdForUpdate(RECEIPT_ID))
                 .thenReturn(receipt(ReceiptApprovalStatus.APPROVED));
 
         assertThatThrownBy(() -> receiptService.submit(RECEIPT_ID))
@@ -211,7 +211,7 @@ class ReceiptApprovalFlowTest {
     /** 非法流转：已终止（CANCELLED）的报销单不可再次提交。 */
     @Test
     void submitShouldRejectWhenReceiptCancelled() {
-        when(receiptMapper.selectById(RECEIPT_ID))
+        when(receiptMapper.selectByIdForUpdate(RECEIPT_ID))
                 .thenReturn(receipt(ReceiptApprovalStatus.CANCELLED));
 
         assertThatThrownBy(() -> receiptService.submit(RECEIPT_ID))
@@ -225,13 +225,27 @@ class ReceiptApprovalFlowTest {
     /** 重复提交同一审批请求：第二次被拒绝，不产生第二个流程实例或重复状态回写。 */
     @Test
     void duplicateSubmitShouldBeRejectedWithoutSideEffects() {
-        when(receiptMapper.selectById(RECEIPT_ID))
+        when(receiptMapper.selectByIdForUpdate(RECEIPT_ID))
                 .thenReturn(receipt(ReceiptApprovalStatus.PENDING));
 
         assertThatThrownBy(() -> receiptService.submit(RECEIPT_ID))
                 .isInstanceOf(BusinessException.class)
                 .extracting(ex -> ((BusinessException) ex).getErrorCode())
                 .isEqualTo(ErrorCode.BIZ_STATE_CONFLICT);
+        verify(bpmInstanceService, never()).start(any(InstanceStartRequest.class));
+        verify(receiptMapper, never()).updateById(any(Receipt.class));
+    }
+
+    /** 票据不存在（含已逻辑删除）：抛 BIZ_NOT_FOUND，且不发起流程、不产生写库。 */
+    @Test
+    void submitShouldThrowNotFoundWhenReceiptMissing() {
+        when(receiptMapper.selectByIdForUpdate(RECEIPT_ID)).thenReturn(null);
+
+        assertThatThrownBy(() -> receiptService.submit(RECEIPT_ID))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("票据不存在")
+                .extracting(ex -> ((BusinessException) ex).getErrorCode())
+                .isEqualTo(ErrorCode.BIZ_NOT_FOUND);
         verify(bpmInstanceService, never()).start(any(InstanceStartRequest.class));
         verify(receiptMapper, never()).updateById(any(Receipt.class));
     }

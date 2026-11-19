@@ -5,6 +5,7 @@ import com.ceams.common.exception.ErrorCode;
 import com.ceams.common.pdf.PdfStampService;
 import com.ceams.common.pdf.StampRequest;
 import com.ceams.common.security.SecurityUtils;
+import com.ceams.common.web.ClientIpResolver;
 import com.ceams.module.seal.dto.SealStampRequest;
 import com.ceams.module.seal.entity.ElectronicSeal;
 import com.ceams.module.seal.entity.ElectronicSealApplication;
@@ -59,6 +60,9 @@ public class SealStampServiceImpl implements SealStampService {
                 pdfStampService.stamp(
                         sourcePdf, buildStampRequest(sealImage, request.getStampPosition()));
 
+        // 审计 IP 仅解析一次；非 Web 线程（如定时任务）解析为 null，允许为空
+        String ipAddress = ClientIpResolver.resolveCurrentRequest();
+
         ElectronicSealStamp stamp = new ElectronicSealStamp();
         stamp.setSealId(seal.getId());
         stamp.setSealName(seal.getSealName());
@@ -73,6 +77,7 @@ public class SealStampServiceImpl implements SealStampService {
         stamp.setStampImage(seal.getSealImage());
         stamp.setStampTime(LocalDateTime.now());
         stamp.setUserId(SecurityUtils.getCurrentUserId());
+        stamp.setIpAddress(ipAddress);
         electronicSealStampMapper.insert(stamp);
 
         String downloadPath = persistPdf(stampedPdf, stamp.getId());
@@ -85,6 +90,7 @@ public class SealStampServiceImpl implements SealStampService {
         usage.setDocumentType("PDF");
         usage.setDocumentPath(application.getContractPath());
         usage.setUsageTime(LocalDateTime.now());
+        usage.setIpAddress(ipAddress);
         electronicSealUsageMapper.insert(usage);
 
         seal.setUsageCount((seal.getUsageCount() == null ? 0 : seal.getUsageCount()) + 1);

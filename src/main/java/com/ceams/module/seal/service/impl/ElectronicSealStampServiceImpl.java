@@ -8,6 +8,7 @@ import com.ceams.common.exception.ErrorCode;
 import com.ceams.common.response.PageResult;
 import com.ceams.common.security.SecurityUtils;
 import com.ceams.common.sign.HmacSignUtil;
+import com.ceams.common.web.ClientIpResolver;
 import com.ceams.module.iam.entity.OperationLog;
 import com.ceams.module.iam.entity.SysUser;
 import com.ceams.module.iam.enums.OperationType;
@@ -160,13 +161,6 @@ public class ElectronicSealStampServiceImpl implements ElectronicSealStampServic
     }
 
     private String resolveIp(HttpServletRequest request) {
-        if (request == null) {
-            return null;
-        }
-        String forwarded = request.getHeader("X-Forwarded-For");
-        if (StringUtils.isNotBlank(forwarded)) {
-            return forwarded.split(",")[0].trim();
-        }
-        return request.getRemoteAddr();
+        return ClientIpResolver.resolve(request);
     }
 }

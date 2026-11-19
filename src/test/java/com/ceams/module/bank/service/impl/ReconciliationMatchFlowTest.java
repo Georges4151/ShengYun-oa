@@ -121,7 +121,7 @@ class ReconciliationMatchFlowTest {
     }
 
     /**
-     * 重复对账的幂等行为：生产实现以 status=UNRECONCILED 作为查询条件，已匹配流水不会被再次扫描；
+     * 重复对账的幂等行为：生产实现以加锁读取 status=UNRECONCILED 的流水，已匹配流水不会被再次扫描；
      * 同时「系统有银行无」的补录以 transactionId 的既有对账记录数做去重。
      *
      * <p>说明：该方法不会抛出业务异常，而是返回 0 计数的幂等结果，故此处不涉及错误码断言。
@@ -132,7 +132,7 @@ class ReconciliationMatchFlowTest {
                 transaction(TRANSACTION_ID, new BigDecimal("100.00"), BANK_DATE, "工程款");
         when(paymentAccountQueryService.exists(ACCOUNT_ID)).thenReturn(true);
         // 模拟数据库按 status=UNRECONCILED 过滤后的结果：已匹配流水不再返回
-        when(bankStatementMapper.selectList(any())).thenReturn(List.of());
+        when(bankStatementMapper.selectUnreconciledForUpdate(ACCOUNT_ID)).thenReturn(List.of());
         when(paymentTransactionMapper.selectList(any())).thenReturn(List.of(transaction));
         when(paymentAccountQueryService.getById(ACCOUNT_ID)).thenReturn(account("基本户"));
         when(generalLedgerMapper.selectList(any())).thenReturn(List.of());
@@ -344,7 +344,8 @@ class ReconciliationMatchFlowTest {
             BankStatement statement,
             List<PaymentTransaction> transactions,
             List<GeneralLedger> ledgers) {
-        when(bankStatementMapper.selectList(any())).thenReturn(List.of(statement));
+        when(bankStatementMapper.selectUnreconciledForUpdate(ACCOUNT_ID))
+                .thenReturn(List.of(statement));
         when(paymentTransactionMapper.selectList(any())).thenReturn(transactions);
         when(paymentAccountQueryService.getById(ACCOUNT_ID)).thenReturn(account("基本户"));
         when(generalLedgerMapper.selectList(any())).thenReturn(ledgers);

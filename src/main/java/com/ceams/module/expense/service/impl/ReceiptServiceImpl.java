@@ -226,7 +226,11 @@ public class ReceiptServiceImpl implements ReceiptService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void submit(Long id) {
-        Receipt receipt = requireReceipt(id);
+        // 加行锁读取，避免并发提交时两个请求都通过 DRAFT 校验并各自发起 BPM 实例
+        Receipt receipt = receiptMapper.selectByIdForUpdate(id);
+        if (receipt == null) {
+            throw BusinessException.of(ErrorCode.BIZ_NOT_FOUND, "票据不存在");
+        }
         ReceiptApprovalStatus status = receipt.getApprovalStatus();
         if (status != ReceiptApprovalStatus.DRAFT && status != ReceiptApprovalStatus.REJECTED) {
             throw BusinessException.of(ErrorCode.BIZ_STATE_CONFLICT, "仅草稿态或驳回态的票据可上报");
