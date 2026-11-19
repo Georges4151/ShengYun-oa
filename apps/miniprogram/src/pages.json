@@ -1,0 +1,169 @@
+{
+  "pages": [
+    {
+      "path": "pages/index/index",
+      "style": {
+        "navigationBarTitleText": "CEAMS 首页"
+      }
+    },
+    {
+      "path": "pages/ai/assistant",
+      "style": {
+        "navigationBarTitleText": "智能助手"
+      }
+    },
+    {
+      "path": "pages/login/login",
+      "style": {
+        "navigationBarTitleText": "登录"
+      }
+    },
+    {
+      "path": "pages/project/list",
+      "style": {
+        "navigationBarTitleText": "项目"
+      }
+    },
+    {
+      "path": "pages/project/detail",
+      "style": {
+        "navigationBarTitleText": "项目详情"
+      }
+    },
+    {
+      "path": "pages/expense/pending",
+      "style": {
+        "navigationBarTitleText": "我的待办"
+      }
+    },
+    {
+      "path": "pages/bpm/detail",
+      "style": {
+        "navigationBarTitleText": "审批流程"
+      }
+    },
+    {
+      "path": "pages/bpm/todo",
+      "style": {
+        "navigationBarTitleText": "待办中心",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/doc/list",
+      "style": {
+        "navigationBarTitleText": "知识库"
+      }
+    },
+    {
+      "path": "pages/expense/create",
+      "style": {
+        "navigationBarTitleText": "发起报销"
+      }
+    },
+    {
+      "path": "pages/expense/detail",
+      "style": {
+        "navigationBarTitleText": "报销详情"
+      }
+    },
+    {
+      "path": "pages/project/change-create",
+      "style": {
+        "navigationBarTitleText": "发起项目变更"
+      }
+    },
+    {
+      "path": "pages/payment/list",
+      "style": {
+        "navigationBarTitleText": "只读账目"
+      }
+    },
+    {
+      "path": "pages/notification/list",
+      "style": {
+        "navigationBarTitleText": "通知"
+      }
+    },
+    {
+      "path": "pages/hr/checkin",
+      "style": {
+        "navigationBarTitleText": "打卡"
+      }
+    },
+    {
+      "path": "pages/hr/leave-create",
+      "style": {
+        "navigationBarTitleText": "请假申请"
+      }
+    },
+    {
+      "path": "pages/hr/profile",
+      "style": {
+        "navigationBarTitleText": "我的档案"
+      }
+    },
+    {
+      "path": "pages/hr/salary-slip",
+      "style": {
+        "navigationBarTitleText": "我的工资条"
+      }
+    },
+    {
+      "path": "pages/hr/performance-self",
+      "style": {
+        "navigationBarTitleText": "绩效自评"
+      }
+    },
+    {
+      "path": "pages/admin/asset-apply",
+      "style": {
+        "navigationBarTitleText": "资产领用"
+      }
+    },
+    {
+      "path": "pages/admin/vehicle-apply",
+      "style": {
+        "navigationBarTitleText": "用车申请"
+      }
+    },
+    {
+      "path": "pages/admin/meeting-apply",
+      "style": {
+        "navigationBarTitleText": "会议室预定"
+      }
+    },
+    {
+      "path": "pages/admin/repair-create",
+      "style": {
+        "navigationBarTitleText": "报修申请"
+      }
+    },
+    {
+      "path": "pages/admin/repair-list",
+      "style": {
+        "navigationBarTitleText": "我的报修",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/admin/repair-detail",
+      "style": {
+        "navigationBarTitleText": "报修详情",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/admin/visitor-checkin",
+      "style": {
+        "navigationBarTitleText": "访客核销"
+      }
+    }
+  ],
+  "globalStyle": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "CEAMS",
+    "navigationBarBackgroundColor": "#ffffff",
+    "backgroundColor": "#f4f6fa"
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "bizType": "CHANGE_REQUEST",
+  "sections": [
+    {
+      "title": "变更信息",
+      "fields": [
+        {
+          "key": "projectId",
+          "label": "项目 ID",
+          "type": "integer",
+          "required": true,
+          "placeholder": "请输入所属项目 ID"
+        },
+        {
+          "key": "requestType",
+          "label": "变更类型",
+          "type": "string",
+          "required": true,
+          "maxLength": 50,
+          "placeholder": "如：范围变更 / 工期变更"
+        },
+        {
+          "key": "estimatedCost",
+          "label": "预估成本",
+          "type": "number",
+          "minimum": 0,
+          "placeholder": "请输入预估成本（可选）"
+        },
+        {
+          "key": "description",
+          "label": "变更说明",
+          "type": "string",
+          "format": "textarea",
+          "maxLength": 500,
+          "placeholder": "请说明变更内容与影响"
+        }
+      ]
+    }
+  ]
+}

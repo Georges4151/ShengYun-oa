@@ -1,0 +1,1020 @@
+openapi: 3.0.3
+info:
+  title: CEAMS Project API
+  version: 1.0.0
+  description: |
+    CEAMS 项目合同域（project）契约。项目台账 / 预算 / 变更 / 进度款 / 分包商 / 分包合同 / 结算凭证。
+    全局规范与 iam 一致：ID=字符串、金额=字符串、时间=ISO8601、鉴权 Bearer。
+servers:
+  - url: https://api.ceams.local/api/v1
+    description: 生产
+  - url: http://localhost:8080/api/v1
+    description: 本地
+tags:
+  - name: projects
+  - name: budgets
+  - name: change-requests
+  - name: progress-payments
+  - name: subcontractors
+  - name: subcontractor-contracts
+  - name: settlement-proofs
+paths:
+  /projects:
+    get:
+      tags: [projects]
+      summary: 项目台账分页查询
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+        - name: keyword
+          in: query
+          description: 项目名/客户名模糊匹配
+          schema: { type: string }
+        - name: status
+          in: query
+          schema: { $ref: '#/components/schemas/ProjectStatus' }
+      responses:
+        '200':
+          description: 项目分页
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ProjectPageResponse' }
+    post:
+      tags: [projects]
+      summary: 新建项目
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ProjectCreateRequest' }
+      responses:
+        '200':
+          description: 返回项目 ID
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/IdResponse' }
+  /projects/{id}:
+    get:
+      tags: [projects]
+      summary: 项目详情
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      responses:
+        '200':
+          description: 详情
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ProjectResponse' }
+    put:
+      tags: [projects]
+      summary: 更新项目
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ProjectUpdateRequest' }
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+    delete:
+      tags: [projects]
+      summary: 删除项目
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+
+  /budgets:
+    get:
+      tags: [budgets]
+      summary: 预算分页查询
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+        - name: projectId
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: 预算分页
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/BudgetPageResponse' }
+    post:
+      tags: [budgets]
+      summary: 新建预算
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BudgetCreateRequest' }
+      responses:
+        '200':
+          description: 返回预算 ID
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/IdResponse' }
+  /budgets/{id}:
+    get:
+      tags: [budgets]
+      summary: 预算详情
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      responses:
+        '200':
+          description: 详情
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/BudgetResponse' }
+    put:
+      tags: [budgets]
+      summary: 更新预算
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BudgetUpdateRequest' }
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+    delete:
+      tags: [budgets]
+      summary: 删除预算
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+
+  /change-requests:
+    get:
+      tags: [change-requests]
+      summary: 变更请求分页查询
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+        - name: projectId
+          in: query
+          schema: { type: string }
+        - name: status
+          in: query
+          schema: { $ref: '#/components/schemas/ApprovalStatus' }
+      responses:
+        '200':
+          description: 变更分页
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ChangeRequestPageResponse' }
+    post:
+      tags: [change-requests]
+      summary: 新建变更请求（进入审批流转）
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ChangeRequestCreateRequest' }
+      responses:
+        '200':
+          description: 返回变更 ID
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/IdResponse' }
+  /change-requests/{id}:
+    get:
+      tags: [change-requests]
+      summary: 变更详情
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      responses:
+        '200':
+          description: 详情
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ChangeRequestResponse' }
+    put:
+      tags: [change-requests]
+      summary: 更新变更（仅草稿/驳回态可编辑）
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ChangeRequestUpdateRequest' }
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+    delete:
+      tags: [change-requests]
+      summary: 删除变更（仅草稿态可删除）
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+  /change-requests/{id}/approve:
+    post:
+      tags: [change-requests]
+      summary: 审批通过
+      description: 推进变更审批流转；最后一环通过则状态置 APPROVED。
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ApprovalActionRequest' }
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+  /change-requests/{id}/reject:
+    post:
+      tags: [change-requests]
+      summary: 审批驳回
+      description: 驳回后变更状态置 REJECTED，并记录审批意见。
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ApprovalActionRequest' }
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+
+  /progress-payments:
+    get:
+      tags: [progress-payments]
+      summary: 进度款分页查询
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+        - name: projectId
+          in: query
+          schema: { type: string }
+        - name: status
+          in: query
+          schema: { $ref: '#/components/schemas/ApprovalStatus' }
+      responses:
+        '200':
+          description: 进度款分页
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ProgressPaymentPageResponse' }
+    post:
+      tags: [progress-payments]
+      summary: 新建进度款申请
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ProgressPaymentCreateRequest' }
+      responses:
+        '200':
+          description: 返回进度款 ID
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/IdResponse' }
+  /progress-payments/{id}:
+    get:
+      tags: [progress-payments]
+      summary: 进度款详情
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      responses:
+        '200':
+          description: 详情
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ProgressPaymentResponse' }
+    put:
+      tags: [progress-payments]
+      summary: 更新进度款
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ProgressPaymentUpdateRequest' }
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+    delete:
+      tags: [progress-payments]
+      summary: 删除进度款
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+
+  /subcontractors:
+    get:
+      tags: [subcontractors]
+      summary: 分包商分页查询
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+        - name: keyword
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: 分包商分页
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SubcontractorPageResponse' }
+    post:
+      tags: [subcontractors]
+      summary: 新建分包商
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SubcontractorCreateRequest' }
+      responses:
+        '200':
+          description: 返回分包商 ID
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/IdResponse' }
+  /subcontractors/{id}:
+    get:
+      tags: [subcontractors]
+      summary: 分包商详情
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      responses:
+        '200':
+          description: 详情
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SubcontractorResponse' }
+    put:
+      tags: [subcontractors]
+      summary: 更新分包商
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SubcontractorUpdateRequest' }
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+    delete:
+      tags: [subcontractors]
+      summary: 删除分包商
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+
+  /subcontractor-contracts:
+    get:
+      tags: [subcontractor-contracts]
+      summary: 分包合同分页查询
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+        - name: subcontractorId
+          in: query
+          schema: { type: string }
+        - name: projectId
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: 合同分页
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SubcontractorContractPageResponse' }
+    post:
+      tags: [subcontractor-contracts]
+      summary: 新建分包合同
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SubcontractorContractCreateRequest' }
+      responses:
+        '200':
+          description: 返回合同 ID
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/IdResponse' }
+  /subcontractor-contracts/export:
+    get:
+      tags: [subcontractor-contracts]
+      summary: 分包合同 Excel 导出
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: subcontractorId
+          in: query
+          schema: { type: string }
+        - name: projectId
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: xlsx 文件
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema: { type: string, format: binary }
+  /subcontractor-contracts/{id}:
+    get:
+      tags: [subcontractor-contracts]
+      summary: 分包合同详情
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      responses:
+        '200':
+          description: 详情
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SubcontractorContractResponse' }
+    put:
+      tags: [subcontractor-contracts]
+      summary: 更新分包合同
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SubcontractorContractUpdateRequest' }
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+    delete:
+      tags: [subcontractor-contracts]
+      summary: 删除分包合同
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+
+  /settlement-proofs:
+    get:
+      tags: [settlement-proofs]
+      summary: 结算凭证分页查询
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+        - name: contractId
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: 结算凭证分页
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SettlementProofPageResponse' }
+    post:
+      tags: [settlement-proofs]
+      summary: 新建结算凭证
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SettlementProofCreateRequest' }
+      responses:
+        '200':
+          description: 返回凭证 ID
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/IdResponse' }
+  /settlement-proofs/export:
+    get:
+      tags: [settlement-proofs]
+      summary: 结算凭证 Excel 导出
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: contractId
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: xlsx 文件
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema: { type: string, format: binary }
+  /settlement-proofs/{id}:
+    get:
+      tags: [settlement-proofs]
+      summary: 结算凭证详情
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      responses:
+        '200':
+          description: 详情
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SettlementProofResponse' }
+    put:
+      tags: [settlement-proofs]
+      summary: 更新结算凭证
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SettlementProofUpdateRequest' }
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+    delete:
+      tags: [settlement-proofs]
+      summary: 删除结算凭证
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    PageParam:
+      name: page
+      in: query
+      schema: { type: integer, format: int32, default: 1, minimum: 1 }
+    SizeParam:
+      name: size
+      in: query
+      schema: { type: integer, format: int32, default: 20, minimum: 1, maximum: 100 }
+    IdParam:
+      name: id
+      in: path
+      required: true
+      schema: { type: string }
+  responses:
+    Ok:
+      description: 成功
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiResponse' }
+  schemas:
+    ApiResponse:
+      type: object
+      required: [code, message, traceId, timestamp]
+      properties:
+        code: { type: integer, format: int32, example: 0 }
+        message: { type: string, example: success }
+        data: { nullable: true }
+        traceId: { type: string }
+        timestamp: { type: string, format: date-time }
+    PageResult:
+      type: object
+      required: [records, total, page, size]
+      properties:
+        records: { type: array, items: {} }
+        total: { type: integer, format: int64 }
+        page: { type: integer, format: int32 }
+        size: { type: integer, format: int32 }
+    IdResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data: { type: string, example: '1752560000000000001' }
+
+    ProjectStatus:
+      type: string
+      enum: [PLANNING, IN_PROGRESS, PAUSED, COMPLETED, CLOSED]
+    ProjectVO:
+      type: object
+      required: [id, projectName, projectType, status]
+      properties:
+        id: { type: string }
+        projectName: { type: string, example: 河北高速公路一期工程 }
+        clientName: { type: string, example: 河北交通投资集团 }
+        projectAddress: { type: string, nullable: true }
+        projectType: { type: string, example: HIGHWAY }
+        startDate: { type: string, format: date }
+        endDate: { type: string, format: date, nullable: true }
+        contractAmount: { type: string, example: '50000000.00' }
+        budgetAmount: { type: string, example: '48000000.00' }
+        actualAmount: { type: string, example: '12000000.00' }
+        status: { $ref: '#/components/schemas/ProjectStatus' }
+        description: { type: string, nullable: true }
+        managerId: { type: string, nullable: true }
+        managerName: { type: string, nullable: true }
+        createTime: { type: string, format: date-time }
+    ProjectCreateRequest:
+      type: object
+      required: [projectName, clientName, projectType, startDate, contractAmount, budgetAmount, status]
+      properties:
+        projectName: { type: string, maxLength: 200 }
+        clientName: { type: string, maxLength: 200 }
+        projectAddress: { type: string, maxLength: 500, nullable: true }
+        projectType: { type: string, maxLength: 100 }
+        startDate: { type: string, format: date }
+        endDate: { type: string, format: date, nullable: true }
+        contractAmount: { type: string }
+        budgetAmount: { type: string }
+        status: { $ref: '#/components/schemas/ProjectStatus' }
+        description: { type: string, nullable: true }
+        managerId: { type: string, nullable: true }
+    ProjectUpdateRequest:
+      type: object
+      properties:
+        projectName: { type: string }
+        clientName: { type: string }
+        projectAddress: { type: string }
+        projectType: { type: string }
+        startDate: { type: string, format: date }
+        endDate: { type: string, format: date }
+        contractAmount: { type: string }
+        budgetAmount: { type: string }
+        status: { $ref: '#/components/schemas/ProjectStatus' }
+        description: { type: string }
+        managerId: { type: string }
+    ProjectResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data: { $ref: '#/components/schemas/ProjectVO' }
+    ProjectPageResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              allOf:
+                - $ref: '#/components/schemas/PageResult'
+                - type: object
+                  properties:
+                    records:
+                      type: array
+                      items: { $ref: '#/components/schemas/ProjectVO' }
+
+    BudgetVO:
+      type: object
+      required: [id, budgetName, amount, status]
+      properties:
+        id: { type: string }
+        budgetName: { type: string, example: 2026 年度主体工程预算 }
+        amount: { type: string, example: '48000000.00' }
+        projectId: { type: string, nullable: true }
+        contractId: { type: string, nullable: true }
+        startDate: { type: string, format: date, nullable: true }
+        endDate: { type: string, format: date, nullable: true }
+        status: { type: string, enum: [DRAFT, ACTIVE, CLOSED] }
+        usedAmount: { type: string, nullable: true, example: '12000000.00' }
+        remainingAmount: { type: string, nullable: true }
+        createTime: { type: string, format: date-time }
+    BudgetCreateRequest:
+      type: object
+      required: [budgetName, amount, status]
+      properties:
+        budgetName: { type: string, maxLength: 255 }
+        amount: { type: string }
+        projectId: { type: string, nullable: true }
+        contractId: { type: string, nullable: true }
+        startDate: { type: string, format: date, nullable: true }
+        endDate: { type: string, format: date, nullable: true }
+        status: { type: string, enum: [DRAFT, ACTIVE, CLOSED] }
+    BudgetUpdateRequest:
+      type: object
+      properties:
+        budgetName: { type: string }
+        amount: { type: string }
+        projectId: { type: string }
+        contractId: { type: string }
+        startDate: { type: string, format: date }
+        endDate: { type: string, format: date }
+        status: { type: string, enum: [DRAFT, ACTIVE, CLOSED] }
+    BudgetResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data: { $ref: '#/components/schemas/BudgetVO' }
+    BudgetPageResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              allOf:
+                - $ref: '#/components/schemas/PageResult'
+                - type: object
+                  properties:
+                    records:
+                      type: array
+                      items: { $ref: '#/components/schemas/BudgetVO' }
+
+    ApprovalStatus:
+      type: string
+      enum: [DRAFT, PENDING, APPROVED, REJECTED]
+    ChangeRequestVO:
+      type: object
+      required: [id, projectId, requestType, status]
+      properties:
+        id: { type: string }
+        projectId: { type: string }
+        requestType: { type: string, example: DESIGN_CHANGE }
+        description: { type: string, nullable: true }
+        estimatedCost: { type: string, example: '500000.00' }
+        status: { $ref: '#/components/schemas/ApprovalStatus' }
+        requestedBy: { type: string, nullable: true }
+        approvedBy: { type: string, nullable: true }
+        approvedAt: { type: string, format: date-time, nullable: true }
+        createTime: { type: string, format: date-time }
+    ChangeRequestCreateRequest:
+      type: object
+      required: [projectId, requestType]
+      properties:
+        projectId: { type: string }
+        requestType: { type: string, maxLength: 50 }
+        description: { type: string, nullable: true }
+        estimatedCost: { type: string }
+    ChangeRequestUpdateRequest:
+      type: object
+      properties:
+        requestType: { type: string }
+        description: { type: string }
+        estimatedCost: { type: string }
+    ApprovalActionRequest:
+      type: object
+      properties:
+        comment: { type: string, maxLength: 500, nullable: true }
+    ChangeRequestResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data: { $ref: '#/components/schemas/ChangeRequestVO' }
+    ChangeRequestPageResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              allOf:
+                - $ref: '#/components/schemas/PageResult'
+                - type: object
+                  properties:
+                    records:
+                      type: array
+                      items: { $ref: '#/components/schemas/ChangeRequestVO' }
+
+    ProgressPaymentVO:
+      type: object
+      required: [id, projectId, paymentPeriod, status]
+      properties:
+        id: { type: string }
+        projectId: { type: string }
+        paymentPeriod: { type: string, example: 第1期 }
+        applicationAmount: { type: string, example: '3000000.00' }
+        approvedAmount: { type: string, nullable: true }
+        paymentAmount: { type: string, nullable: true }
+        applicationDate: { type: string, format: date }
+        approvalDate: { type: string, format: date, nullable: true }
+        paymentDate: { type: string, format: date, nullable: true }
+        status: { $ref: '#/components/schemas/ApprovalStatus' }
+        applicationBy: { type: string, nullable: true }
+        approvedBy: { type: string, nullable: true }
+        createTime: { type: string, format: date-time }
+    ProgressPaymentCreateRequest:
+      type: object
+      required: [projectId, paymentPeriod, applicationAmount]
+      properties:
+        projectId: { type: string }
+        paymentPeriod: { type: string, maxLength: 50 }
+        applicationAmount: { type: string }
+        applicationDate: { type: string, format: date }
+    ProgressPaymentUpdateRequest:
+      type: object
+      properties:
+        paymentPeriod: { type: string }
+        applicationAmount: { type: string }
+        approvedAmount: { type: string }
+        paymentAmount: { type: string }
+        applicationDate: { type: string, format: date }
+        approvalDate: { type: string, format: date }
+        paymentDate: { type: string, format: date }
+        status: { $ref: '#/components/schemas/ApprovalStatus' }
+    ProgressPaymentResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data: { $ref: '#/components/schemas/ProgressPaymentVO' }
+    ProgressPaymentPageResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              allOf:
+                - $ref: '#/components/schemas/PageResult'
+                - type: object
+                  properties:
+                    records:
+                      type: array
+                      items: { $ref: '#/components/schemas/ProgressPaymentVO' }
+
+    SubcontractorVO:
+      type: object
+      required: [id, name]
+      properties:
+        id: { type: string }
+        name: { type: string, example: 石家庄路桥工程有限公司 }
+        contactPerson: { type: string, nullable: true }
+        phone: { type: string, nullable: true, description: 手机号（加密） }
+        address: { type: string, nullable: true }
+        qualificationLevel: { type: string, nullable: true }
+        creditRating: { type: string, nullable: true }
+        businessScope: { type: string, nullable: true }
+        taxIdentificationNumber: { type: string, nullable: true, description: 税号（加密） }
+        bankAccount: { type: string, nullable: true, description: 银行账号（加密） }
+        description: { type: string, nullable: true }
+        createTime: { type: string, format: date-time }
+    SubcontractorCreateRequest:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, maxLength: 200 }
+        contactPerson: { type: string, maxLength: 50, nullable: true }
+        phone: { type: string, nullable: true }
+        address: { type: string, nullable: true }
+        qualificationLevel: { type: string, nullable: true }
+        creditRating: { type: string, nullable: true }
+        businessScope: { type: string, nullable: true }
+        taxIdentificationNumber: { type: string, nullable: true }
+        bankAccount: { type: string, nullable: true }
+        description: { type: string, nullable: true }
+    SubcontractorUpdateRequest:
+      type: object
+      properties:
+        name: { type: string }
+        contactPerson: { type: string }
+        phone: { type: string }
+        address: { type: string }
+        qualificationLevel: { type: string }
+        creditRating: { type: string }
+        businessScope: { type: string }
+        taxIdentificationNumber: { type: string }
+        bankAccount: { type: string }
+        description: { type: string }
+    SubcontractorResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data: { $ref: '#/components/schemas/SubcontractorVO' }
+    SubcontractorPageResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              allOf:
+                - $ref: '#/components/schemas/PageResult'
+                - type: object
+                  properties:
+                    records:
+                      type: array
+                      items: { $ref: '#/components/schemas/SubcontractorVO' }
+
+    SubcontractorContractVO:
+      type: object
+      required: [id, subcontractorId, contractName, contractNumber, contractAmount]
+      properties:
+        id: { type: string }
+        subcontractorId: { type: string }
+        subcontractorName: { type: string, nullable: true }
+        projectId: { type: string, nullable: true }
+        projectName: { type: string, nullable: true }
+        contractName: { type: string, example: 路基土石方工程分包合同 }
+        contractNumber: { type: string, example: HT-2026-001 }
+        contractAmount: { type: string, example: '8000000.00' }
+        startDate: { type: string, format: date, nullable: true }
+        endDate: { type: string, format: date, nullable: true }
+        status: { type: string, enum: [DRAFT, ACTIVE, COMPLETED, TERMINATED] }
+        description: { type: string, nullable: true }
+        filePath: { type: string, nullable: true }
+        fileName: { type: string, nullable: true }
+        paidAmount: { type: string, nullable: true, example: '3000000.00' }
+        createTime: { type: string, format: date-time }
+    SubcontractorContractCreateRequest:
+      type: object
+      required: [subcontractorId, contractName, contractNumber, contractAmount]
+      properties:
+        subcontractorId: { type: string }
+        projectId: { type: string, nullable: true }
+        contractName: { type: string, maxLength: 255 }
+        contractNumber: { type: string, maxLength: 255 }
+        contractAmount: { type: string }
+        startDate: { type: string, format: date, nullable: true }
+        endDate: { type: string, format: date, nullable: true }
+        status: { type: string, enum: [DRAFT, ACTIVE, COMPLETED, TERMINATED] }
+        description: { type: string, nullable: true }
+        filePath: { type: string, maxLength: 500, nullable: true }
+        fileName: { type: string, maxLength: 255, nullable: true }
+    SubcontractorContractUpdateRequest:
+      type: object
+      properties:
+        projectId: { type: string }
+        contractName: { type: string }
+        contractAmount: { type: string }
+        startDate: { type: string, format: date }
+        endDate: { type: string, format: date }
+        status: { type: string, enum: [DRAFT, ACTIVE, COMPLETED, TERMINATED] }
+        description: { type: string }
+        filePath: { type: string, maxLength: 500, nullable: true }
+        fileName: { type: string, maxLength: 255, nullable: true }
+    SubcontractorContractResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data: { $ref: '#/components/schemas/SubcontractorContractVO' }
+    SubcontractorContractPageResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              allOf:
+                - $ref: '#/components/schemas/PageResult'
+                - type: object
+                  properties:
+                    records:
+                      type: array
+                      items: { $ref: '#/components/schemas/SubcontractorContractVO' }
+
+    SettlementProofVO:
+      type: object
+      required: [id, contractId, proofName, proofNumber, settlementAmount]
+      properties:
+        id: { type: string }
+        contractId: { type: string }
+        contractName: { type: string, nullable: true }
+        subcontractorId: { type: string, nullable: true }
+        subcontractorName: { type: string, nullable: true }
+        proofName: { type: string, example: 第一期工程结算凭证 }
+        proofNumber: { type: string, example: JS-2026-001 }
+        proofDate: { type: string, format: date }
+        settlementAmount: { type: string, example: '3000000.00' }
+        filePath: { type: string, nullable: true }
+        fileName: { type: string, nullable: true }
+        description: { type: string, nullable: true }
+        createTime: { type: string, format: date-time }
+    SettlementProofCreateRequest:
+      type: object
+      required: [contractId, proofName, proofNumber, settlementAmount]
+      properties:
+        contractId: { type: string }
+        subcontractorId: { type: string, nullable: true }
+        proofName: { type: string, maxLength: 255 }
+        proofNumber: { type: string, maxLength: 255 }
+        proofDate: { type: string, format: date }
+        settlementAmount: { type: string }
+        description: { type: string, nullable: true }
+        filePath: { type: string, maxLength: 500, nullable: true }
+        fileName: { type: string, maxLength: 255, nullable: true }
+    SettlementProofUpdateRequest:
+      type: object
+      properties:
+        proofName: { type: string }
+        proofNumber: { type: string }
+        proofDate: { type: string, format: date }
+        settlementAmount: { type: string }
+        description: { type: string }
+        filePath: { type: string, maxLength: 500, nullable: true }
+        fileName: { type: string, maxLength: 255, nullable: true }
+    SettlementProofResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data: { $ref: '#/components/schemas/SettlementProofVO' }
+    SettlementProofPageResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              allOf:
+                - $ref: '#/components/schemas/PageResult'
+                - type: object
+                  properties:
+                    records:
+                      type: array
+                      items: { $ref: '#/components/schemas/SettlementProofVO' }

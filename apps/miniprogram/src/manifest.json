@@ -1,0 +1,27 @@
+{
+  "name": "CEAMS 建筑企业账目管理系统",
+  "appid": "",
+  "description": "CEAMS 微信小程序端（移动办公）",
+  "versionName": "0.1.0",
+  "versionCode": "100",
+  "transformPx": false,
+  "vueVersion": "3",
+  "mp-weixin": {
+    "appid": "wx3ba625ae02189da2",
+    "setting": {
+      "urlCheck": false,
+      "es6": true,
+      "minified": true
+    },
+    "permission": {
+      "scope.userLocation": {
+        "desc": "用于考勤打卡时记录定位信息"
+      }
+    },
+    "requiredPrivateInfos": ["getLocation"],
+    "usingComponents": true
+  },
+  "h5": {
+    "title": "CEAMS"
+  }
+}

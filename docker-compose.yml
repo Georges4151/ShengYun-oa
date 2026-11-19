@@ -1,49 +1,107 @@
 services:
-  # Redis 缓存服务（使用官方镜像）
-  redis:
-    image: redis:7-alpine
-    container_name: ceams-redis
-    ports:
-      - "6379:6379"
-    volumes:
-      - ceams-redis-data:/data
-    healthcheck:
-      test: [ "CMD", "redis-cli", "ping" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    restart: unless-stopped
-
-  # 应用服务
   app:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: ceams-app
     ports:
       - "9095:9095"
     environment:
-      # 使用本地 MySQL（host.docker.internal）
-      DB_HOST: host.docker.internal
-      DB_PORT: 3306
-      DB_NAME: ceams
-      DB_USER: root
-      DB_PASSWORD: "123456"
+      # 统一数据源：复用已在运行的 ceams-mysql / ceams-redis 容器，
+      # 三者同处外部网络 ceams-net，app 内按容器名 + 容器内部端口访问。
+      MYSQL_HOST: ceams-mysql
+      MYSQL_PORT: "3306"
+      MYSQL_DATABASE: ceams
+      MYSQL_USER: root
+      MYSQL_PASSWORD: "root"
+      REDIS_HOST: ceams-redis
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD: ""
+      SERVER_PORT: "9095"
+      AI_ENABLED: "${AI_ENABLED:-true}"
+      # Ollama 本地 AI：票据识别需启用 AI_ENABLED，并提前拉取视觉模型
+      #   docker exec ceams-ollama ollama pull qwen2.5vl:7b
+      OLLAMA_BASE_URL: "${OLLAMA_BASE_URL:-http://ollama:11434}"
+      OLLAMA_MODEL: "${OLLAMA_MODEL:-qwen2.5:7b}"
+      OLLAMA_VISION_MODEL: "${OLLAMA_VISION_MODEL:-qwen2.5vl:7b}"
+      AI_TIMEOUT_SECONDS: "${AI_TIMEOUT_SECONDS:-300}"
+      # OnlyOffice 在线编辑（P4）：public 地址必须是 Document Server 容器可达的 app:9095，不能填 localhost；
+      # JWT 密钥需与 onlyoffice 服务一致（建议 >= 32 字节，短密钥走等价的原始 HMAC 兼容路径）
+      ONLYOFFICE_ENABLED: "true"
+      ONLYOFFICE_URL: "http://onlyoffice"
+      # Document Server 的浏览器可达地址（onlyoffice 服务映射到宿主机 8081），供前端加载 api.js
+      ONLYOFFICE_BROWSER_URL: "http://localhost:8081"
+      CEAMS_PUBLIC_URL: "http://app:9095"
+      ONLYOFFICE_JWT_SECRET: "${ONLYOFFICE_JWT_SECRET:-ceams-dev-secret}"
+      # 企业微信应用集成（M5）：默认关闭；启用需配置 corp-id/agent-id/secret 与可信回调域名
+      WECOM_APP_ENABLED: "${WECOM_APP_ENABLED:-false}"
+      WECOM_APP_CORP_ID: "${WECOM_APP_CORP_ID:-}"
+      WECOM_APP_AGENT_ID: "${WECOM_APP_AGENT_ID:-}"
+      WECOM_APP_SECRET: "${WECOM_APP_SECRET:-}"
+      WECOM_APP_REDIRECT_URI: "${WECOM_APP_REDIRECT_URI:-http://localhost:5173/login/wecom}"
       TZ: Asia/Shanghai
-      SPRING_PROFILES_ACTIVE: docker
-    depends_on:
-      redis:
-        condition: service_healthy
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     volumes:
+      - ceams-files:/app/data/files
       - ceams-logs:/app/logs
-      - ceams-backup:/app/backup
-      - ceams-receipts:/app/rephoto
     restart: unless-stopped
+    networks:
+      - ceams-net
+
+  # Ollama：本地文本/视觉模型服务，供 AI 摘要与票据识别使用。
+  # 模型体积较大（视觉模型数 GB），首次需手动拉取：
+  #   docker exec ceams-ollama ollama pull qwen2.5:7b
+  #   docker exec ceams-ollama ollama pull qwen2.5vl:7b
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ceams-ollama
+    # 仅绑定回环地址，避免把无鉴权的 Ollama 暴露到局域网
+    ports:
+      - "127.0.0.1:11434:11434"
+    environment:
+      OLLAMA_HOST: "0.0.0.0:11434"
+      OLLAMA_KEEP_ALIVE: "30m"
+      TZ: Asia/Shanghai
+    volumes:
+      - ollama-data:/root/.ollama
+    # 使用宿主机 NVIDIA GPU 推理；需已安装 NVIDIA 驱动与 nvidia-container-toolkit
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    restart: unless-stopped
+    networks:
+      - ceams-net
+
+  # OnlyOffice Document Server：提供在线编辑能力；JWT 密钥与 app 的 ONLYOFFICE_JWT_SECRET 必须一致。
+  onlyoffice:
+    image: onlyoffice/documentserver:8.1
+    ports:
+      - "8081:80"
+    environment:
+      JWT_ENABLED: "true"
+      # 与 app 的 ONLYOFFICE_JWT_SECRET 保持一致
+      JWT_SECRET: ${ONLYOFFICE_JWT_SECRET:-ceams-dev-secret}
+      TZ: Asia/Shanghai
+    volumes:
+      - onlyoffice-data:/var/www/onlyoffice/Data
+    restart: unless-stopped
+    networks:
+      - ceams-net
+
+# 前置条件（只需执行一次）：
+#   docker network create ceams-net
+#   docker network connect ceams-net ceams-mysql
+#   docker network connect ceams-net ceams-redis
+# 复用现有容器可保留其数据卷，避免与宿主机 3306 上的 MySQL 混用两套数据源。
+networks:
+  ceams-net:
+    external: true
+    name: ceams-net
 
 volumes:
-  ceams-redis-data:
+  ceams-files:
   ceams-logs:
-  ceams-backup:
-  ceams-receipts:
+  onlyoffice-data:
+  ollama-data:

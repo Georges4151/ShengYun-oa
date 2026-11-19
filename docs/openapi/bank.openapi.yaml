@@ -1,0 +1,535 @@
+openapi: 3.0.3
+info:
+  title: CEAMS Bank API
+  version: 1.0.0
+  description: |
+    CEAMS 对账域（bank）契约。银行流水 / 总账 / 对账结果 / 流水导入 / 自动匹配。
+    全局规范与 payment 一致：ID=字符串、金额=字符串、时间=ISO8601、鉴权 Bearer。
+    general_ledger.accountNumber 为【需加密】字段（阶段4）。
+    bank 导入与自动匹配为本阶段普通写接口，不做 HMAC 签名（HMAC 仅用于 expense/approve、payment/execute、seal/stamp）。
+servers:
+  - url: https://api.ceams.local/api/v1
+    description: 生产
+  - url: http://localhost:8080/api/v1
+    description: 本地
+tags:
+  - name: bank
+paths:
+  /bank/statements:
+    get:
+      tags: [bank]
+      summary: 银行流水分页查询
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+        - name: accountId
+          in: query
+          description: 付款账户 ID
+          schema: { type: string }
+        - name: status
+          in: query
+          schema: { $ref: '#/components/schemas/BankStatementStatus' }
+        - name: type
+          in: query
+          schema: { $ref: '#/components/schemas/TransactionType' }
+        - name: startDate
+          in: query
+          description: 交易日期起（ISO8601）
+          schema: { type: string, format: date-time }
+        - name: endDate
+          in: query
+          description: 交易日期止（ISO8601）
+          schema: { type: string, format: date-time }
+      responses:
+        '200':
+          description: 银行流水分页
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/BankStatementPageResponse' }
+    post:
+      tags: [bank]
+      summary: 新建银行流水（对账状态固定为 UNRECONCILED）
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BankStatementCreateRequest' }
+      responses:
+        '200':
+          description: 返回流水 ID
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/IdResponse' }
+  /bank/statements/import:
+    post:
+      tags: [bank]
+      summary: 导入银行流水（CSV multipart）
+      description: 按 account_id + bank_reference 去重，返回成功/跳过/失败数。
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [accountId, file]
+              properties:
+                accountId:
+                  type: string
+                  description: 付款账户 ID
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: 导入结果统计
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/StatementImportResultResponse' }
+  /bank/statements/{id}:
+    get:
+      tags: [bank]
+      summary: 银行流水详情
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      responses:
+        '200':
+          description: 详情
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/BankStatementResponse' }
+    put:
+      tags: [bank]
+      summary: 更新银行流水（对账状态由对账流程管理，不在此修改）
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BankStatementUpdateRequest' }
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+    delete:
+      tags: [bank]
+      summary: 删除银行流水
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+  /bank/ledgers:
+    get:
+      tags: [bank]
+      summary: 总账分页查询
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+        - name: accountName
+          in: query
+          description: 账户名（模糊匹配）
+          schema: { type: string }
+        - name: transactionType
+          in: query
+          schema: { $ref: '#/components/schemas/TransactionType' }
+        - name: status
+          in: query
+          description: 状态（代码值）
+          schema: { type: string }
+      responses:
+        '200':
+          description: 总账分页
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/GeneralLedgerPageResponse' }
+    post:
+      tags: [bank]
+      summary: 新建总账
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/GeneralLedgerCreateRequest' }
+      responses:
+        '200':
+          description: 返回总账 ID
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/IdResponse' }
+  /bank/ledgers/{id}:
+    get:
+      tags: [bank]
+      summary: 总账详情
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      responses:
+        '200':
+          description: 详情
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/GeneralLedgerResponse' }
+    put:
+      tags: [bank]
+      summary: 更新总账
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/GeneralLedgerUpdateRequest' }
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+    delete:
+      tags: [bank]
+      summary: 删除总账
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+  /bank/reconciliations:
+    get:
+      tags: [bank]
+      summary: 对账结果分页查询
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+        - name: accountId
+          in: query
+          description: 付款账户 ID
+          schema: { type: string }
+        - name: status
+          in: query
+          schema: { $ref: '#/components/schemas/ReconciliationStatus' }
+        - name: resolutionStatus
+          in: query
+          schema: { $ref: '#/components/schemas/ResolutionStatus' }
+      responses:
+        '200':
+          description: 对账结果分页
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReconciliationResultPageResponse' }
+  /bank/reconciliations/match:
+    post:
+      tags: [bank]
+      summary: 触发自动对账
+      description: 金额相等 + 日期±N 天为主匹配键（N 默认 3），生成 MATCHED/UNMATCHED/PARTIAL_MATCHED 结果。
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ReconciliationMatchRequest' }
+      responses:
+        '200':
+          description: 匹配统计
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReconciliationMatchResultResponse' }
+  /bank/reconciliations/{id}:
+    get:
+      tags: [bank]
+      summary: 对账结果详情
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      responses:
+        '200':
+          description: 详情
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReconciliationResultResponse' }
+  /bank/reconciliations/{id}/resolve:
+    post:
+      tags: [bank]
+      summary: 标记对账结果为已处理（UNRESOLVED -> RESOLVED）
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ReconciliationResolveRequest' }
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    PageParam:
+      name: page
+      in: query
+      schema: { type: integer, format: int32, default: 1, minimum: 1 }
+    SizeParam:
+      name: size
+      in: query
+      schema: { type: integer, format: int32, default: 20, minimum: 1, maximum: 100 }
+    IdParam:
+      name: id
+      in: path
+      required: true
+      schema: { type: string }
+  responses:
+    Ok:
+      description: 成功
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiResponse' }
+  schemas:
+    ApiResponse:
+      type: object
+      required: [code, message, traceId, timestamp]
+      properties:
+        code: { type: integer, format: int32, example: 0 }
+        message: { type: string, example: success }
+        data: { nullable: true }
+        traceId: { type: string }
+        timestamp: { type: string, format: date-time }
+    PageResult:
+      type: object
+      required: [records, total, page, size]
+      properties:
+        records: { type: array, items: {} }
+        total: { type: integer, format: int64 }
+        page: { type: integer, format: int32 }
+        size: { type: integer, format: int32 }
+    IdResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data: { type: string, example: '1752560000000000001' }
+
+    TransactionType:
+      type: string
+      enum: [INCOME, EXPENSE]
+    BankStatementStatus:
+      type: string
+      enum: [UNRECONCILED, RECONCILED, MATCHED]
+    ReconciliationStatus:
+      type: string
+      enum: [MATCHED, UNMATCHED, PARTIAL_MATCHED]
+    DiscrepancyType:
+      type: string
+      enum: [MISSING_IN_SYSTEM, MISSING_IN_BANK, AMOUNT_MISMATCH, DATE_MISMATCH, DESCRIPTION_MISMATCH]
+    ResolutionStatus:
+      type: string
+      enum: [UNRESOLVED, RESOLVED]
+
+    BankStatementVO:
+      type: object
+      required: [id, accountId, transactionDate, amount, type, status]
+      properties:
+        id: { type: string }
+        accountId: { type: string }
+        transactionDate: { type: string, format: date-time }
+        amount: { type: string, example: '1280.50' }
+        type: { $ref: '#/components/schemas/TransactionType' }
+        description: { type: string, nullable: true }
+        counterparty: { type: string, nullable: true }
+        bankReference: { type: string, nullable: true }
+        balance: { type: string, nullable: true }
+        status: { $ref: '#/components/schemas/BankStatementStatus' }
+        createTime: { type: string, format: date-time }
+    BankStatementCreateRequest:
+      type: object
+      required: [accountId, transactionDate, amount, type]
+      properties:
+        accountId: { type: string }
+        transactionDate: { type: string, format: date-time }
+        amount: { type: string }
+        type: { $ref: '#/components/schemas/TransactionType' }
+        description: { type: string, nullable: true }
+        counterparty: { type: string, nullable: true }
+        bankReference: { type: string, nullable: true }
+        balance: { type: string, nullable: true }
+    BankStatementUpdateRequest:
+      type: object
+      properties:
+        accountId: { type: string, nullable: true }
+        transactionDate: { type: string, format: date-time, nullable: true }
+        amount: { type: string }
+        type: { $ref: '#/components/schemas/TransactionType' }
+        description: { type: string, nullable: true }
+        counterparty: { type: string, nullable: true }
+        bankReference: { type: string, nullable: true }
+        balance: { type: string, nullable: true }
+
+    GeneralLedgerVO:
+      type: object
+      required: [id, accountName]
+      properties:
+        id: { type: string }
+        accountName: { type: string }
+        accountNumber: { type: string, nullable: true, description: 账号【需加密】（阶段4） }
+        bankName: { type: string, nullable: true }
+        balance: { type: string, nullable: true }
+        accountType: { type: string, nullable: true, description: 账户类型（代码值） }
+        summary: { type: string, nullable: true }
+        transactionTime: { type: string, format: date-time, nullable: true }
+        transactionType: { $ref: '#/components/schemas/TransactionType' }
+        amount: { type: string, nullable: true }
+        status: { type: string, nullable: true, description: 状态（代码值） }
+        createTime: { type: string, format: date-time }
+    GeneralLedgerCreateRequest:
+      type: object
+      required: [accountName]
+      properties:
+        accountName: { type: string, maxLength: 200 }
+        accountNumber: { type: string, maxLength: 100, nullable: true, description: 账号【需加密】（阶段4） }
+        bankName: { type: string, nullable: true }
+        balance: { type: string, nullable: true }
+        accountType: { type: string, nullable: true }
+        summary: { type: string, nullable: true }
+        transactionTime: { type: string, format: date-time, nullable: true }
+        transactionType: { $ref: '#/components/schemas/TransactionType' }
+        amount: { type: string, nullable: true }
+        status: { type: string, nullable: true }
+    GeneralLedgerUpdateRequest:
+      type: object
+      properties:
+        accountName: { type: string, nullable: true }
+        accountNumber: { type: string, nullable: true }
+        bankName: { type: string, nullable: true }
+        balance: { type: string, nullable: true }
+        accountType: { type: string, nullable: true }
+        summary: { type: string, nullable: true }
+        transactionTime: { type: string, format: date-time, nullable: true }
+        transactionType: { $ref: '#/components/schemas/TransactionType' }
+        amount: { type: string, nullable: true }
+        status: { type: string, nullable: true }
+
+    ReconciliationResultVO:
+      type: object
+      required: [id, accountId, status, resolutionStatus]
+      properties:
+        id: { type: string }
+        accountId: { type: string }
+        statementId: { type: string, nullable: true }
+        transactionId: { type: string, nullable: true }
+        status: { $ref: '#/components/schemas/ReconciliationStatus' }
+        discrepancyType: { $ref: '#/components/schemas/DiscrepancyType' }
+        bankAmount: { type: string, nullable: true }
+        systemAmount: { type: string, nullable: true }
+        bankDate: { type: string, format: date-time, nullable: true }
+        systemDate: { type: string, format: date-time, nullable: true }
+        bankDescription: { type: string, nullable: true }
+        systemDescription: { type: string, nullable: true }
+        statementReference: { type: string, nullable: true }
+        transactionReference: { type: string, nullable: true }
+        resolutionStatus: { $ref: '#/components/schemas/ResolutionStatus' }
+        resolutionNotes: { type: string, nullable: true }
+        reconciliationDate: { type: string, format: date-time, nullable: true }
+        createTime: { type: string, format: date-time }
+
+    ReconciliationMatchRequest:
+      type: object
+      required: [accountId]
+      properties:
+        accountId: { type: string }
+        daysTolerance: { type: integer, format: int32, default: 3, minimum: 0, description: 日期容忍天数 }
+    ReconciliationResolveRequest:
+      type: object
+      properties:
+        resolutionNotes: { type: string, nullable: true }
+
+    StatementImportResultVO:
+      type: object
+      required: [total, success, skipped, failed]
+      properties:
+        total: { type: integer, format: int32 }
+        success: { type: integer, format: int32 }
+        skipped: { type: integer, format: int32, description: 因重复跳过的行数 }
+        failed: { type: integer, format: int32 }
+        errors:
+          type: array
+          items:
+            type: object
+            required: [row, reason]
+            properties:
+              row: { type: integer, format: int32 }
+              reason: { type: string }
+    ReconciliationMatchResultVO:
+      type: object
+      required: [matched, unmatched, partialMatched]
+      properties:
+        matched: { type: integer, format: int32 }
+        unmatched: { type: integer, format: int32 }
+        partialMatched: { type: integer, format: int32 }
+
+    BankStatementResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data: { $ref: '#/components/schemas/BankStatementVO' }
+    BankStatementPageResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              allOf:
+                - $ref: '#/components/schemas/PageResult'
+                - type: object
+                  properties:
+                    records:
+                      type: array
+                      items: { $ref: '#/components/schemas/BankStatementVO' }
+    StatementImportResultResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data: { $ref: '#/components/schemas/StatementImportResultVO' }
+    GeneralLedgerResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data: { $ref: '#/components/schemas/GeneralLedgerVO' }
+    GeneralLedgerPageResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              allOf:
+                - $ref: '#/components/schemas/PageResult'
+                - type: object
+                  properties:
+                    records:
+                      type: array
+                      items: { $ref: '#/components/schemas/GeneralLedgerVO' }
+    ReconciliationResultResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data: { $ref: '#/components/schemas/ReconciliationResultVO' }
+    ReconciliationResultPageResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              allOf:
+                - $ref: '#/components/schemas/PageResult'
+                - type: object
+                  properties:
+                    records:
+                      type: array
+                      items: { $ref: '#/components/schemas/ReconciliationResultVO' }
+    ReconciliationMatchResultResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data: { $ref: '#/components/schemas/ReconciliationMatchResultVO' }

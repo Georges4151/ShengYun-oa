@@ -1,0 +1,37 @@
+package com.ceams.module.seal.dto;
+
+import com.ceams.module.seal.enums.SealStatus;
+import com.ceams.module.seal.enums.StorageType;
+import jakarta.validation.constraints.Size;
+import lombok.Data;
+
+/** 更新电子印章。 */
+@Data
+public class ElectronicSealUpdateRequest {
+
+    @Size(max = 200, message = "印章名长度不能超过 200")
+    private String sealName;
+
+    @Size(max = 50, message = "印章类型长度不能超过 50")
+    private String sealType;
+
+    @Size(max = 100, message = "印章编码长度不能超过 100")
+    private String sealCode;
+
+    private String description;
+
+    private SealStatus status;
+
+    @Size(max = 1000, message = "印章图片路径长度不能超过 1000")
+    private String sealImage;
+
+    private StorageType storageType;
+
+    @Size(max = 255, message = "印章文件ID长度不能超过 255")
+    private String sealFileId;
+
+    @Size(max = 255, message = "USB设备ID长度不能超过 255")
+    private String usbDriveId;
+
+    private Boolean passwordProtected;
+}

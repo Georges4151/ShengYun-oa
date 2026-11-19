@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ceams.module.doc.mapper.DocChunkMapper">
+
+    <!-- ======================================================================
+         文档分块候选召回（只召回，不授权）：
+           searchFulltext —— doc_chunk.content 上的 ngram 全文索引，按相关度倒序；
+           searchLike     —— LIKE 兜底（短词或全文索引不可用时），score 固定 0。
+
+         安全约定：
+           1. fileIds 由 DocAccessResolver#accessibleFileIds 预先收窄，SQL 绝不跨文件召回，
+              避免「先召回后过滤」的越权风险；
+           2. 全部参数化（#{q}/#{fileIds}/#{limit}），禁止 ${} 拼接；limit 由服务层夹取上限；
+           3. 调用方仍会对入选文件做一次 PREVIEW 权限复核（纵深防御）。
+    ====================================================================== -->
+    <select id="searchFulltext" resultType="com.ceams.module.doc.dto.ChunkSearchHit">
+        SELECT c.id            AS id,
+               c.file_id       AS fileId,
+               c.chunk_no      AS chunkNo,
+               c.content       AS content,
+               MATCH(c.content) AGAINST (#{q}) AS score
+        FROM doc_chunk c
+        JOIN doc_file f ON f.id = c.file_id AND f.deleted = 0
+        WHERE c.deleted = 0
+          AND MATCH(c.content) AGAINST (#{q})
+          AND c.file_id IN
+          <foreach collection="fileIds" item="id" open="(" separator="," close=")">
+              #{id}
+          </foreach>
+        ORDER BY score DESC, c.id ASC
+        LIMIT #{limit}
+    </select>
+
+    <select id="searchLike" resultType="com.ceams.module.doc.dto.ChunkSearchHit">
+        SELECT c.id            AS id,
+               c.file_id       AS fileId,
+               c.chunk_no      AS chunkNo,
+               c.content       AS content,
+               0               AS score
+        FROM doc_chunk c
+        JOIN doc_file f ON f.id = c.file_id AND f.deleted = 0
+        WHERE c.deleted = 0
+          AND c.content LIKE CONCAT('%', #{q}, '%')
+          AND c.file_id IN
+          <foreach collection="fileIds" item="id" open="(" separator="," close=")">
+              #{id}
+          </foreach>
+        ORDER BY c.id ASC
+        LIMIT #{limit}
+    </select>
+
+</mapper>

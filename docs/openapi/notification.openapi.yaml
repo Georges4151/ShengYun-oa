@@ -1,0 +1,394 @@
+openapi: 3.0.3
+info:
+  title: CEAMS Notification API
+  version: 1.0.0
+  description: |
+    CEAMS 通知域（notification）契约。通知 / 用户通知 / 用户通知偏好。
+    全局规范与 bank/seal 一致：ID=字符串、时间=ISO8601、鉴权 Bearer。
+    notification 域无高危接口，不挂 HMAC 签名（普通 Bearer 鉴权）。
+    通知发布后按用户偏好分渠道分发：SYSTEM 站内信即时 SENT，EMAIL/SMS 仅落库 PENDING（本阶段不接真实外部通道）。
+    免打扰：quiet_mode=1 且当前时间落在 quiet_start_time~quiet_end_time 时，若 priority 不高于 priority_threshold，跳过 SYSTEM 站内信。
+servers:
+  - url: https://api.ceams.local/api/v1
+    description: 生产
+  - url: http://localhost:8080/api/v1
+    description: 本地
+tags:
+  - name: notification
+paths:
+  /notifications:
+    get:
+      tags: [notification]
+      summary: 通知分页查询
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+        - name: type
+          in: query
+          description: 通知类型
+          schema: { $ref: '#/components/schemas/NotificationType' }
+        - name: status
+          in: query
+          schema: { $ref: '#/components/schemas/NotificationStatus' }
+        - name: priority
+          in: query
+          schema: { $ref: '#/components/schemas/NotificationPriority' }
+        - name: startTime
+          in: query
+          description: 生效开始时间起（ISO8601）
+          schema: { type: string, format: date-time }
+        - name: endTime
+          in: query
+          description: 生效结束时间止（ISO8601）
+          schema: { type: string, format: date-time }
+      responses:
+        '200':
+          description: 通知分页
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/NotificationPageResponse' }
+    post:
+      tags: [notification]
+      summary: 新建通知（状态固定 DRAFT）
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/NotificationCreateRequest' }
+      responses:
+        '200':
+          description: 返回通知 ID
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/IdResponse' }
+  /notifications/{id}:
+    get:
+      tags: [notification]
+      summary: 通知详情
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      responses:
+        '200':
+          description: 详情
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/NotificationResponse' }
+    put:
+      tags: [notification]
+      summary: 更新通知（仅 DRAFT 可编辑）
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/NotificationUpdateRequest' }
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+    delete:
+      tags: [notification]
+      summary: 删除通知（仅 DRAFT 可删除）
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+  /notifications/{id}/publish:
+    post:
+      tags: [notification]
+      summary: 发布通知（DRAFT -> PUBLISHED，记录发布时间并触发分渠道分发）
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+  /notifications/{id}/revoke:
+    post:
+      tags: [notification]
+      summary: 撤销通知（PUBLISHED -> REVOKED，停止新增分发）
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+  /notifications/user-notifications/mine:
+    get:
+      tags: [notification]
+      summary: 我的通知分页（含未读数）
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+      responses:
+        '200':
+          description: 我的通知分页（含未读数）
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UserNotificationMineResponse' }
+  /notifications/user-notifications/unread-count:
+    get:
+      tags: [notification]
+      summary: 我的未读数
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: 未读数
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UnreadCountResponse' }
+  /notifications/user-notifications/{id}/read:
+    post:
+      tags: [notification]
+      summary: 标记单条已读（记 read_time）
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+  /notifications/user-notifications/read-all:
+    post:
+      tags: [notification]
+      summary: 全部标记已读
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+  /notifications/preferences/mine:
+    get:
+      tags: [notification]
+      summary: 我的通知偏好列表
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: 偏好列表
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UserNotificationPreferenceListResponse' }
+  /notifications/preferences:
+    put:
+      tags: [notification]
+      summary: 新建/更新通知偏好（按 (user_id, notification_type) 唯一键 upsert）
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UserNotificationPreferenceUpsertRequest' }
+      responses:
+        '200':
+          description: 返回偏好 ID
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/IdResponse' }
+  /notifications/preferences/{id}:
+    delete:
+      tags: [notification]
+      summary: 删除通知偏好
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    PageParam:
+      name: page
+      in: query
+      schema: { type: integer, format: int32, default: 1, minimum: 1 }
+    SizeParam:
+      name: size
+      in: query
+      schema: { type: integer, format: int32, default: 20, minimum: 1, maximum: 100 }
+    IdParam:
+      name: id
+      in: path
+      required: true
+      schema: { type: string }
+  responses:
+    Ok:
+      description: 成功
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiResponse' }
+  schemas:
+    ApiResponse:
+      type: object
+      required: [code, message, traceId, timestamp]
+      properties:
+        code: { type: integer, format: int32, example: 0 }
+        message: { type: string, example: success }
+        data: { nullable: true }
+        traceId: { type: string }
+        timestamp: { type: string, format: date-time }
+    PageResult:
+      type: object
+      required: [records, total, page, size]
+      properties:
+        records: { type: array, items: {} }
+        total: { type: integer, format: int64 }
+        page: { type: integer, format: int32 }
+        size: { type: integer, format: int32 }
+    IdResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data: { type: string, example: '1752560000000000001' }
+
+    NotificationStatus:
+      type: string
+      enum: [DRAFT, PUBLISHED, REVOKED]
+    NotificationPriority:
+      type: string
+      enum: [LOW, NORMAL, HIGH, URGENT]
+    NotificationType:
+      type: string
+      enum: [SYSTEM, APPROVAL, ANNOUNCEMENT]
+    ContentType:
+      type: string
+      enum: [TEXT, LINK]
+    PushChannel:
+      type: string
+      enum: [SYSTEM, EMAIL, SMS]
+    PushStatus:
+      type: string
+      enum: [PENDING, SENT, FAILED]
+
+    NotificationVO:
+      type: object
+      required: [id, title, priority, notificationType, status]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        contentType: { $ref: '#/components/schemas/ContentType' }
+        content: { type: string, nullable: true }
+        linkUrl: { type: string, nullable: true }
+        priority: { $ref: '#/components/schemas/NotificationPriority' }
+        notificationType: { $ref: '#/components/schemas/NotificationType' }
+        senderId: { type: string, nullable: true }
+        senderName: { type: string, nullable: true }
+        validStartTime: { type: string, format: date-time, nullable: true }
+        validEndTime: { type: string, format: date-time, nullable: true }
+        status: { $ref: '#/components/schemas/NotificationStatus' }
+        publishTime: { type: string, format: date-time, nullable: true }
+        createTime: { type: string, format: date-time }
+    NotificationCreateRequest:
+      type: object
+      required: [title, notificationType]
+      properties:
+        title: { type: string, maxLength: 255 }
+        contentType: { $ref: '#/components/schemas/ContentType' }
+        content: { type: string, nullable: true }
+        linkUrl: { type: string, maxLength: 1000, nullable: true }
+        priority: { $ref: '#/components/schemas/NotificationPriority', description: 缺省 NORMAL }
+        notificationType: { $ref: '#/components/schemas/NotificationType' }
+        senderId: { type: string, nullable: true }
+        senderName: { type: string, maxLength: 100, nullable: true }
+        validStartTime: { type: string, format: date-time, nullable: true }
+        validEndTime: { type: string, format: date-time, nullable: true }
+    NotificationUpdateRequest:
+      type: object
+      properties:
+        title: { type: string, maxLength: 255, nullable: true }
+        contentType: { $ref: '#/components/schemas/ContentType' }
+        content: { type: string, nullable: true }
+        linkUrl: { type: string, maxLength: 1000, nullable: true }
+        priority: { $ref: '#/components/schemas/NotificationPriority' }
+        notificationType: { $ref: '#/components/schemas/NotificationType' }
+        senderId: { type: string, nullable: true }
+        senderName: { type: string, maxLength: 100, nullable: true }
+        validStartTime: { type: string, format: date-time, nullable: true }
+        validEndTime: { type: string, format: date-time, nullable: true }
+
+    UserNotificationVO:
+      type: object
+      required: [id, notificationId, userId, isRead, pushStatus]
+      properties:
+        id: { type: string }
+        notificationId: { type: string }
+        userId: { type: string }
+        isRead: { type: integer, format: int32, description: 0未读 1已读 }
+        readTime: { type: string, format: date-time, nullable: true }
+        channel: { $ref: '#/components/schemas/PushChannel' }
+        pushStatus: { $ref: '#/components/schemas/PushStatus' }
+        pushTime: { type: string, format: date-time, nullable: true }
+        createTime: { type: string, format: date-time }
+    UserNotificationMineVO:
+      type: object
+      required: [records, total, page, size, unreadCount]
+      properties:
+        records:
+          type: array
+          items: { $ref: '#/components/schemas/UserNotificationVO' }
+        total: { type: integer, format: int64 }
+        page: { type: integer, format: int32 }
+        size: { type: integer, format: int32 }
+        unreadCount: { type: integer, format: int64 }
+
+    UserNotificationPreferenceVO:
+      type: object
+      required: [id, userId, notificationType, receiveSystem, receiveEmail, receiveSms, quietMode]
+      properties:
+        id: { type: string }
+        userId: { type: string }
+        notificationType: { $ref: '#/components/schemas/NotificationType' }
+        receiveSystem: { type: integer, format: int32, description: 0否 1是 }
+        receiveEmail: { type: integer, format: int32, description: 0否 1是 }
+        receiveSms: { type: integer, format: int32, description: 0否 1是 }
+        quietMode: { type: integer, format: int32, description: 0关闭 1开启 }
+        quietStartTime: { type: string, nullable: true, description: HH:mm:ss }
+        quietEndTime: { type: string, nullable: true, description: HH:mm:ss }
+        priorityThreshold: { $ref: '#/components/schemas/NotificationPriority' }
+    UserNotificationPreferenceUpsertRequest:
+      type: object
+      required: [notificationType]
+      properties:
+        notificationType: { $ref: '#/components/schemas/NotificationType' }
+        receiveSystem: { type: integer, format: int32, description: 0否 1是，缺省 1 }
+        receiveEmail: { type: integer, format: int32, description: 0否 1是，缺省 0 }
+        receiveSms: { type: integer, format: int32, description: 0否 1是，缺省 0 }
+        quietMode: { type: integer, format: int32, description: 0关闭 1开启，缺省 0 }
+        quietStartTime: { type: string, nullable: true, description: HH:mm:ss }
+        quietEndTime: { type: string, nullable: true, description: HH:mm:ss }
+        priorityThreshold: { $ref: '#/components/schemas/NotificationPriority' }
+
+    NotificationResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data: { $ref: '#/components/schemas/NotificationVO' }
+    NotificationPageResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              allOf:
+                - $ref: '#/components/schemas/PageResult'
+                - type: object
+                  properties:
+                    records:
+                      type: array
+                      items: { $ref: '#/components/schemas/NotificationVO' }
+    UserNotificationMineResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data: { $ref: '#/components/schemas/UserNotificationMineVO' }
+    UnreadCountResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data: { type: integer, format: int64 }
+    UserNotificationPreferenceListResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              type: array
+              items: { $ref: '#/components/schemas/UserNotificationPreferenceVO' }

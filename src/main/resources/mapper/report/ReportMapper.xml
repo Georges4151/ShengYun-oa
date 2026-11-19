@@ -1,0 +1,381 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ceams.module.report.mapper.ReportMapper">
+
+    <!-- ======================================================================
+         财务报表：合并 收支流水(biz_account) / 付款交易(biz_payment_transaction)
+         银行流水(biz_bank_statement) / 总账(biz_general_ledger)。
+         字段映射依据（V1 实体）：
+           biz_account.type / biz_payment_transaction.type / biz_bank_statement.type
+           均为 INCOME/EXPENSE；biz_general_ledger.transaction_type 同为 INCOME/EXPENSE。
+           account_name 仅总账持有，其余账户名经 biz_payment_account.name 冗余。
+    ====================================================================== -->
+    <select id="selectFinancialItems"
+            resultType="com.ceams.module.report.vo.FinancialReportItemVO">
+        SELECT
+            t.id,
+            t.source_type,
+            t.project_id,
+            p.project_name,
+            t.account_id,
+            COALESCE(pa.name, t.account_name) AS account_name,
+            t.transaction_date,
+            t.type,
+            t.amount,
+            t.description
+        FROM (
+            SELECT id,
+                   'ACCOUNT' AS source_type,
+                   project_id,
+                   payment_account_id AS account_id,
+                   NULL AS account_name,
+                   transaction_date,
+                   type,
+                   amount,
+                   description,
+                   deleted
+            FROM biz_account
+            UNION ALL
+            SELECT id,
+                   'PAYMENT_TRANSACTION' AS source_type,
+                   project_id,
+                   account_id,
+                   NULL AS account_name,
+                   transaction_date,
+                   type,
+                   amount,
+                   description,
+                   deleted
+            FROM biz_payment_transaction
+            UNION ALL
+            SELECT id,
+                   'BANK_STATEMENT' AS source_type,
+                   NULL AS project_id,
+                   account_id,
+                   NULL AS account_name,
+                   transaction_date,
+                   type,
+                   amount,
+                   description,
+                   deleted
+            FROM biz_bank_statement
+            UNION ALL
+            SELECT id,
+                   'GENERAL_LEDGER' AS source_type,
+                   NULL AS project_id,
+                   NULL AS account_id,
+                   account_name,
+                   transaction_time AS transaction_date,
+                   transaction_type AS type,
+                   amount,
+                   summary AS description,
+                   deleted
+            FROM biz_general_ledger
+        ) t
+        LEFT JOIN biz_project p ON p.id = t.project_id AND p.deleted = 0
+        LEFT JOIN biz_payment_account pa ON pa.id = t.account_id AND pa.deleted = 0
+        WHERE t.deleted = 0
+        <if test="month != null and month != ''">
+            AND DATE_FORMAT(t.transaction_date, '%Y-%m') = #{month}
+        </if>
+        <if test="projectId != null">
+            AND t.project_id = #{projectId}
+        </if>
+        <if test="accountId != null">
+            AND t.account_id = #{accountId}
+        </if>
+        ORDER BY t.transaction_date DESC
+    </select>
+
+    <!-- ======================================================================
+         项目成本报表：项目(biz_project) 左连 预算(biz_budget)、变更(biz_change_request)、
+         进度款(biz_progress_payment)、成本分摊(biz_cost_allocation) 的聚合子查询。
+         变更金额仅统计已通过(APPROVED)的预估成本；成本分摊仅取 PROJECT 维度。
+    ====================================================================== -->
+    <select id="selectProjectCostItems"
+            resultType="com.ceams.module.report.vo.ProjectCostItemVO">
+        SELECT
+            p.id AS project_id,
+            p.project_name,
+            p.contract_amount,
+            p.actual_amount,
+            IFNULL(b.budget_amount, 0) AS budget_amount,
+            IFNULL(c.changed_amount, 0) AS changed_amount,
+            IFNULL(pp.paid_amount, 0) AS paid_amount,
+            IFNULL(ca.allocated_amount, 0) AS allocated_amount
+        FROM biz_project p
+        LEFT JOIN (
+            SELECT project_id, SUM(amount) AS budget_amount
+            FROM biz_budget
+            WHERE deleted = 0
+            GROUP BY project_id
+        ) b ON b.project_id = p.id
+        LEFT JOIN (
+            SELECT project_id, SUM(estimated_cost) AS changed_amount
+            FROM biz_change_request
+            WHERE deleted = 0 AND status = 'APPROVED'
+            GROUP BY project_id
+        ) c ON c.project_id = p.id
+        LEFT JOIN (
+            SELECT project_id, SUM(payment_amount) AS paid_amount
+            FROM biz_progress_payment
+            WHERE deleted = 0
+            GROUP BY project_id
+        ) pp ON pp.project_id = p.id
+        LEFT JOIN (
+            SELECT target_id, SUM(allocation_amount) AS allocated_amount
+            FROM biz_cost_allocation
+            WHERE deleted = 0 AND target_type = 'PROJECT'
+            GROUP BY target_id
+        ) ca ON ca.target_id = p.id
+        WHERE p.deleted = 0
+        <if test="projectId != null">
+            AND p.id = #{projectId}
+        </if>
+        ORDER BY p.create_time DESC
+    </select>
+
+    <!-- ======================================================================
+         材料报表：材料库(biz_material) 左连 收支流水(biz_account.material_id)。
+         字段映射依据：现有表无专门「材料领用」表，最贴近的关联是
+         biz_account.material_id（收支流水按材料维度归集），以关联笔数作为数量维度，
+         以 biz_account.amount 作为金额维度。
+    ====================================================================== -->
+    <select id="selectMaterialItems"
+            resultType="com.ceams.module.report.vo.MaterialReportItemVO">
+        SELECT
+            m.id AS material_id,
+            m.material_code,
+            m.material_name,
+            m.specification,
+            m.unit,
+            m.current_price,
+            COUNT(a.id) AS transaction_count,
+            IFNULL(SUM(a.amount), 0) AS total_amount
+        FROM biz_material m
+        LEFT JOIN biz_account a ON a.material_id = m.id AND a.deleted = 0
+        WHERE m.deleted = 0
+        <if test="materialId != null">
+            AND m.id = #{materialId}
+        </if>
+        <if test="categoryId != null">
+            AND m.category_id = #{categoryId}
+        </if>
+        GROUP BY m.id, m.material_code, m.material_name, m.specification, m.unit, m.current_price
+        ORDER BY total_amount DESC
+    </select>
+
+    <!-- ======================================================================
+         Dashboard 概览：待办数 / 未读通知 / 项目进度 / 近期收支汇总。
+         收支以 biz_account 为主（排除已取消 CANCELLED 流水）。
+    ====================================================================== -->
+    <select id="selectDashboard"
+            resultType="com.ceams.module.report.vo.DashboardVO">
+        SELECT
+            (SELECT COUNT(*) FROM biz_receipt
+             WHERE deleted = 0 AND approval_status = 'PENDING') AS pending_receipt_count,
+            (SELECT COUNT(*) FROM biz_electronic_seal_application
+             WHERE deleted = 0 AND status = 'PENDING') AS pending_seal_application_count,
+            (SELECT COUNT(*) FROM biz_user_notification
+             WHERE deleted = 0 AND user_id = #{userId} AND is_read = 0) AS unread_notification_count,
+            (SELECT COUNT(*) FROM biz_project
+             WHERE deleted = 0) AS project_count,
+            (SELECT COUNT(*) FROM biz_project
+             WHERE deleted = 0 AND status = 'IN_PROGRESS') AS in_progress_project_count,
+            (SELECT IFNULL(SUM(amount), 0) FROM biz_account
+             WHERE deleted = 0 AND status != 'CANCELLED' AND type = 'INCOME'
+               AND DATE_FORMAT(transaction_date, '%Y-%m') = #{month}) AS month_income,
+            (SELECT IFNULL(SUM(amount), 0) FROM biz_account
+             WHERE deleted = 0 AND status != 'CANCELLED' AND type = 'EXPENSE'
+               AND DATE_FORMAT(transaction_date, '%Y-%m') = #{month}) AS month_expense,
+            (SELECT IFNULL(SUM(amount), 0) FROM biz_account
+             WHERE deleted = 0 AND status != 'CANCELLED' AND type = 'INCOME') AS total_income,
+            (SELECT IFNULL(SUM(amount), 0) FROM biz_account
+             WHERE deleted = 0 AND status != 'CANCELLED' AND type = 'EXPENSE') AS total_expense
+    </select>
+
+    <!-- ======================================================================
+         绩效考核报表：hr_performance_review 左连 hr_employee（取 dept_id）与 sys_dept（取名称）。
+         口径：period 字符串等值匹配（'yyyy-MM' 或 'yyyy-Qn'）；定稿状态为 APPROVED；
+         平均分与分数分布仅统计 APPROVED 且 final_score 非空的记录。
+    ====================================================================== -->
+    <select id="selectHrPerformanceByDept"
+            resultType="com.ceams.module.report.vo.HrPerformanceDeptRowVO">
+        SELECT
+            he.dept_id AS dept_id,
+            d.name AS dept_name,
+            COUNT(*) AS review_count,
+            IFNULL(SUM(CASE WHEN r.status = 'APPROVED' THEN 1 ELSE 0 END), 0) AS finalized_count,
+            IFNULL(SUM(CASE WHEN r.status = 'APPROVED' AND r.final_score IS NOT NULL
+                            THEN r.final_score ELSE 0 END), 0) AS sum_final_score,
+            IFNULL(SUM(CASE WHEN r.status = 'APPROVED' AND r.final_score &gt;= 90
+                            THEN 1 ELSE 0 END), 0) AS bucket_a,
+            IFNULL(SUM(CASE WHEN r.status = 'APPROVED' AND r.final_score &gt;= 80 AND r.final_score &lt; 90
+                            THEN 1 ELSE 0 END), 0) AS bucket_b,
+            IFNULL(SUM(CASE WHEN r.status = 'APPROVED' AND r.final_score &gt;= 70 AND r.final_score &lt; 80
+                            THEN 1 ELSE 0 END), 0) AS bucket_c,
+            IFNULL(SUM(CASE WHEN r.status = 'APPROVED' AND r.final_score IS NOT NULL AND r.final_score &lt; 70
+                            THEN 1 ELSE 0 END), 0) AS bucket_d
+        FROM hr_performance_review r
+        LEFT JOIN hr_employee he ON he.id = r.employee_id AND he.deleted = 0
+        LEFT JOIN sys_dept d ON d.id = he.dept_id AND d.deleted = 0
+        WHERE r.deleted = 0
+          AND r.period = #{period}
+        <if test="deptId != null">
+            AND he.dept_id = #{deptId}
+        </if>
+        GROUP BY he.dept_id, d.name
+        ORDER BY he.dept_id
+    </select>
+
+    <!-- ======================================================================
+         行政资产报表：总量 / 购置金额 / 状态分布（admin_asset 单表聚合）。
+         purchase_price 为明文金额，可直接 SUM。
+    ====================================================================== -->
+    <select id="selectAdminAssetStats"
+            resultType="com.ceams.module.report.vo.AdminAssetStatsRowVO">
+        SELECT
+            COUNT(*) AS total_count,
+            IFNULL(SUM(a.purchase_price), 0) AS total_value,
+            IFNULL(SUM(CASE WHEN a.status = 'IN_STOCK' THEN 1 ELSE 0 END), 0) AS in_stock_count,
+            IFNULL(SUM(CASE WHEN a.status = 'BORROWED' THEN 1 ELSE 0 END), 0) AS borrowed_count,
+            IFNULL(SUM(CASE WHEN a.status = 'REPAIRING' THEN 1 ELSE 0 END), 0) AS repairing_count,
+            IFNULL(SUM(CASE WHEN a.status = 'SCRAPPED' THEN 1 ELSE 0 END), 0) AS scrapped_count
+        FROM admin_asset a
+        WHERE a.deleted = 0
+        <if test="category != null and category != ''">
+            AND a.category = #{category}
+        </if>
+    </select>
+
+    <!-- 行政资产报表：按分类分组统计数量与购置金额。 -->
+    <select id="selectAdminAssetByCategory"
+            resultType="com.ceams.module.report.vo.AdminAssetCategoryRowVO">
+        SELECT
+            a.category AS category,
+            COUNT(*) AS `count`,
+            IFNULL(SUM(a.purchase_price), 0) AS total_value
+        FROM admin_asset a
+        WHERE a.deleted = 0
+        <if test="category != null and category != ''">
+            AND a.category = #{category}
+        </if>
+        GROUP BY a.category
+        ORDER BY a.category
+    </select>
+
+    <!-- ======================================================================
+         行政资产报表：借用中 / 逾期未还记录数。
+         逾期定义：status = BORROWING 且 expected_return_date 非空且早于今天。
+         按分类过滤时 JOIN admin_asset 限定分类。
+    ====================================================================== -->
+    <select id="selectAdminBorrowStats"
+            resultType="com.ceams.module.report.vo.AdminBorrowStatsRowVO">
+        SELECT
+            IFNULL(SUM(CASE WHEN b.status = 'BORROWING' THEN 1 ELSE 0 END), 0) AS borrowing_count,
+            IFNULL(SUM(CASE WHEN b.status = 'BORROWING'
+                              AND b.expected_return_date IS NOT NULL
+                              AND b.expected_return_date &lt; CURDATE()
+                            THEN 1 ELSE 0 END), 0) AS overdue_count
+        FROM admin_asset_borrow b
+        <if test="category != null and category != ''">
+            JOIN admin_asset a ON a.id = b.asset_id AND a.deleted = 0 AND a.category = #{category}
+        </if>
+        WHERE b.deleted = 0
+    </select>
+
+    <!-- ======================================================================
+         审批效率报表：实例集合过滤条件（bpm_instance 别名固定为 i）。
+         时间范围按 DATE(COALESCE(started_at, create_time)) 闭区间过滤。
+    ====================================================================== -->
+    <sql id="bpmInstanceFilter">
+        <if test="bizType != null and bizType != ''">
+            AND i.biz_type = #{bizType}
+        </if>
+        <if test="start != null and start != ''">
+            AND DATE(COALESCE(i.started_at, i.create_time)) &gt;= #{start}
+        </if>
+        <if test="end != null and end != ''">
+            AND DATE(COALESCE(i.started_at, i.create_time)) &lt;= #{end}
+        </if>
+    </sql>
+
+    <!-- 审批效率汇总：实例量 / 通过量 / 已通过实例平均时长（秒）/ 任务量 / 超时任务量。 -->
+    <select id="selectBpmEfficiencySummary"
+            resultType="com.ceams.module.report.vo.BpmEfficiencySummaryRowVO">
+        SELECT
+            COUNT(*) AS instance_count,
+            IFNULL(SUM(CASE WHEN i.status = 'APPROVED' THEN 1 ELSE 0 END), 0) AS approved_count,
+            IFNULL(AVG(CASE WHEN i.status = 'APPROVED'
+                             AND i.started_at IS NOT NULL
+                             AND i.ended_at IS NOT NULL
+                            THEN TIMESTAMPDIFF(SECOND, i.started_at, i.ended_at) END), 0)
+                AS avg_duration_seconds,
+            (
+                SELECT COUNT(*)
+                FROM bpm_task t
+                WHERE t.deleted = 0
+                  AND t.instance_id IN (
+                      SELECT i.id FROM bpm_instance i
+                      WHERE i.deleted = 0
+                      <include refid="bpmInstanceFilter"/>
+                  )
+            ) AS task_count,
+            (
+                SELECT COUNT(*)
+                FROM bpm_task t
+                WHERE t.deleted = 0
+                  AND t.status = 'PENDING'
+                  AND t.due_at IS NOT NULL
+                  AND t.due_at &lt; NOW()
+                  AND t.instance_id IN (
+                      SELECT i.id FROM bpm_instance i
+                      WHERE i.deleted = 0
+                      <include refid="bpmInstanceFilter"/>
+                  )
+            ) AS overdue_task_count
+        FROM bpm_instance i
+        WHERE i.deleted = 0
+        <include refid="bpmInstanceFilter"/>
+    </select>
+
+    <!-- 审批效率报表：按业务类型分组统计实例量 / 通过量与平均时长（秒）。 -->
+    <select id="selectBpmEfficiencyByBizType"
+            resultType="com.ceams.module.report.vo.BpmBizTypeRowVO">
+        SELECT
+            i.biz_type AS biz_type,
+            COUNT(*) AS instance_count,
+            IFNULL(SUM(CASE WHEN i.status = 'APPROVED' THEN 1 ELSE 0 END), 0) AS approved_count,
+            IFNULL(AVG(CASE WHEN i.status = 'APPROVED'
+                             AND i.started_at IS NOT NULL
+                             AND i.ended_at IS NOT NULL
+                            THEN TIMESTAMPDIFF(SECOND, i.started_at, i.ended_at) END), 0)
+                AS avg_duration_seconds
+        FROM bpm_instance i
+        WHERE i.deleted = 0
+        <include refid="bpmInstanceFilter"/>
+        GROUP BY i.biz_type
+        ORDER BY i.biz_type
+    </select>
+
+    <!-- ======================================================================
+         审批效率报表：待办任务按节点编码分组。
+         bpm_task 无节点名称列，JOIN bpm_node 取 node_key 作为节点标识。
+    ====================================================================== -->
+    <select id="selectBpmBacklogByNode"
+            resultType="com.ceams.module.report.vo.BpmNodeBacklogVO">
+        SELECT
+            bn.node_key AS node_key,
+            COUNT(*) AS pending_count
+        FROM bpm_task t
+        JOIN bpm_node bn ON bn.id = t.node_id AND bn.deleted = 0
+        JOIN bpm_instance i ON i.id = t.instance_id AND i.deleted = 0
+        WHERE t.deleted = 0
+          AND t.status = 'PENDING'
+        <include refid="bpmInstanceFilter"/>
+        GROUP BY bn.node_key
+        ORDER BY pending_count DESC, bn.node_key ASC
+    </select>
+
+</mapper>

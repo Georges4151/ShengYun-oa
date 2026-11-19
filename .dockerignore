@@ -33,3 +33,13 @@ tmp/
 # 本地配置
 application-local.properties
 application-dev.properties
+
+# 前端与文档等非构建必需内容
+.git/
+.gitignore
+node_modules/
+apps/
+packages/
+docs/
+data/
+*.md

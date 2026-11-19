@@ -1,0 +1,41 @@
+/**
+ * 统一结果码 / 业务错误码常量。
+ *
+ * 规则（与后端锁定的契约一致）：
+ * - 成功码 `code` 为数字 0。
+ * - 业务错误时，后端响应体 `code` 为数字错误码（如 401001），
+ *   `message` 字段输出 `ErrorCode` 枚举名（如 "AUTH_TOKEN_EXPIRED"）。
+ *   前端错误分支判断应基于 `message`（即本文件的业务错误码常量）。
+ */
+
+/** 成功业务码（数字）。 */
+export const SUCCESS_CODE = 0
+
+/**
+ * 业务错误码常量（值 = 后端 `ErrorCode` 枚举名）。
+ * 与后端 `exception/ErrorCode.java` 的枚举名逐一对应，禁止臆造。
+ */
+export const ERROR_CODES = {
+  AUTH_INVALID_CREDENTIALS: 'AUTH_INVALID_CREDENTIALS',
+  AUTH_TOKEN_EXPIRED: 'AUTH_TOKEN_EXPIRED',
+  AUTH_TOKEN_INVALID: 'AUTH_TOKEN_INVALID',
+  AUTH_REFRESH_REVOKED: 'AUTH_REFRESH_REVOKED',
+  AUTH_ACCESS_DENIED: 'AUTH_ACCESS_DENIED',
+  VALID_REQUIRED_FIELD: 'VALID_REQUIRED_FIELD',
+  VALID_ILLEGAL_ARGUMENT: 'VALID_ILLEGAL_ARGUMENT',
+  VALID_MALFORMED_JSON: 'VALID_MALFORMED_JSON',
+  VALID_PAGE_BOUNDS: 'VALID_PAGE_BOUNDS',
+  BIZ_NOT_FOUND: 'BIZ_NOT_FOUND',
+  BIZ_DUPLICATE_CODE: 'BIZ_DUPLICATE_CODE',
+  BIZ_STATE_CONFLICT: 'BIZ_STATE_CONFLICT',
+  BIZ_REFERENCED: 'BIZ_REFERENCED',
+  BIZ_UNPROCESSABLE: 'BIZ_UNPROCESSABLE',
+  SIGN_TIMESTAMP_EXPIRED: 'SIGN_TIMESTAMP_EXPIRED',
+  SIGN_NONCE_REPLAY: 'SIGN_NONCE_REPLAY',
+  SIGN_INVALID: 'SIGN_INVALID',
+  SYSTEM_INTERNAL_ERROR: 'SYSTEM_INTERNAL_ERROR',
+  SYSTEM_RATE_LIMITED: 'SYSTEM_RATE_LIMITED'
+} as const
+
+/** 业务错误码枚举名联合类型（后端 message 字段可能的值）。 */
+export type ErrorCodeName = (typeof ERROR_CODES)[keyof typeof ERROR_CODES]

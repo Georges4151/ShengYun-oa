@@ -1,0 +1,42 @@
+{
+  "bizType": "HR_CHECKIN_SUPPLEMENT",
+  "sections": [
+    {
+      "title": "补卡信息",
+      "fields": [
+        {
+          "key": "checkinDate",
+          "label": "补卡日期",
+          "type": "string",
+          "format": "date",
+          "required": true
+        },
+        {
+          "key": "checkinTime",
+          "label": "补卡时间",
+          "type": "string",
+          "format": "time",
+          "required": true
+        },
+        {
+          "key": "checkinType",
+          "label": "补卡类型",
+          "type": "string",
+          "required": true,
+          "enum": ["IN", "OUT"],
+          "enumNames": ["上班", "下班"],
+          "default": "IN"
+        },
+        {
+          "key": "reason",
+          "label": "补卡原因",
+          "type": "string",
+          "format": "textarea",
+          "required": true,
+          "maxLength": 500,
+          "placeholder": "请说明补卡原因"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,1011 @@
+openapi: 3.0.3
+info:
+  title: CEAMS IAM API
+  version: 1.0.0
+  description: |
+    CEAMS 身份与访问域（iam）契约。统一响应体 `{ code, message, data, traceId, timestamp }`。
+    - ID 一律 int64（雪花），JSON 序列化为字符串。
+    - 金额 decimal(18,2)、时间 ISO8601。
+    - 鉴权：`Authorization: Bearer <access>`（access 15min）。
+  license:
+    name: Internal
+servers:
+  - url: https://api.ceams.local/api/v1
+    description: 生产
+  - url: http://localhost:8080/api/v1
+    description: 本地
+tags:
+  - name: auth
+    description: 登录 / 双轮换 / 登出 / 会话吊销
+  - name: users
+    description: 用户管理
+  - name: roles
+    description: 角色管理
+  - name: permissions
+    description: 权限（菜单/按钮）查询与赋权
+  - name: devices
+    description: 设备绑定管理
+  - name: operation-logs
+    description: 操作日志
+paths:
+  # ---------- auth ----------
+  /auth/login:
+    post:
+      tags: [auth]
+      summary: 账号密码登录
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: 登录成功，返回 access + refresh 令牌对与用户信息
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '423':
+          $ref: '#/components/responses/BusinessError'
+  /auth/refresh:
+    post:
+      tags: [auth]
+      summary: 刷新令牌（refresh 轮换）
+      description: 使用 refresh token 换取新的 access + refresh 令牌对，旧 refresh 立即吊销并写入吊销表。
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+      responses:
+        '200':
+          description: 轮换成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /auth/logout:
+    post:
+      tags: [auth]
+      summary: 登出
+      description: 吊销当前 access 关联会话与 refresh token（服务端失效 + 设备端清理）。
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          $ref: '#/components/responses/Ok'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /auth/sessions:
+    get:
+      tags: [auth]
+      summary: 查询当前用户活跃会话
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+      responses:
+        '200':
+          description: 会话分页
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserSessionPageResponse'
+  /auth/sessions/{sessionId}/revoke:
+    delete:
+      tags: [auth]
+      summary: 吊销指定会话
+      description: 强制下线某个会话（含 refresh token 吊销），管理员可吊销他人会话。
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/Ok'
+        '404':
+          $ref: '#/components/responses/BusinessError'
+  # ---------- users ----------
+  /users:
+    get:
+      tags: [users]
+      summary: 用户分页查询
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+        - name: keyword
+          in: query
+          description: 用户名/姓名/邮箱模糊匹配
+          schema: { type: string }
+        - name: status
+          in: query
+          description: 状态
+          schema: { $ref: '#/components/schemas/UserStatus' }
+      responses:
+        '200':
+          description: 用户分页
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPageResponse'
+    post:
+      tags: [users]
+      summary: 新建用户
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreateRequest'
+      responses:
+        '200':
+          description: 创建成功返回用户 ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdResponse'
+        '409':
+          $ref: '#/components/responses/BusinessError'
+  /users/{id}:
+    get:
+      tags: [users]
+      summary: 用户详情
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: 用户详情
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '404':
+          $ref: '#/components/responses/BusinessError'
+    put:
+      tags: [users]
+      summary: 更新用户
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdateRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/Ok'
+        '404':
+          $ref: '#/components/responses/BusinessError'
+    delete:
+      tags: [users]
+      summary: 删除用户（逻辑删除）
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          $ref: '#/components/responses/Ok'
+  /users/{id}/roles:
+    put:
+      tags: [users]
+      summary: 为用户分配角色
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignRolesRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/Ok'
+  /users/{id}/password:
+    put:
+      tags: [users]
+      summary: 重置用户密码
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetPasswordRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/Ok'
+  # ---------- roles ----------
+  /roles:
+    get:
+      tags: [roles]
+      summary: 角色分页查询
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+        - name: keyword
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: 角色分页
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RolePageResponse'
+    post:
+      tags: [roles]
+      summary: 新建角色
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoleCreateRequest'
+      responses:
+        '200':
+          description: 创建成功返回角色 ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdResponse'
+  /roles/{id}:
+    get:
+      tags: [roles]
+      summary: 角色详情
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: 角色详情
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleResponse'
+    put:
+      tags: [roles]
+      summary: 更新角色
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoleUpdateRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/Ok'
+    delete:
+      tags: [roles]
+      summary: 删除角色
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          $ref: '#/components/responses/Ok'
+  /roles/{id}/permissions:
+    put:
+      tags: [roles]
+      summary: 为角色赋权（菜单/按钮）
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignPermissionsRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/Ok'
+  # ---------- permissions ----------
+  /permissions:
+    get:
+      tags: [permissions]
+      summary: 权限树查询（菜单/按钮）
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 权限树
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PermissionTreeResponse'
+  /permissions/me:
+    get:
+      tags: [permissions]
+      summary: 当前登录用户的权限标识集合
+      description: 返回当前用户拥有的按钮/菜单权限码列表，供前端做按钮级控制。
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 权限码集合
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PermissionCodesResponse'
+  # ---------- devices ----------
+  /devices:
+    get:
+      tags: [devices]
+      summary: 设备绑定分页查询
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+      responses:
+        '200':
+          description: 设备分页
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDevicePageResponse'
+    post:
+      tags: [devices]
+      summary: 绑定设备
+      description: 首次登录或新设备登录时绑定设备指纹；设备绑定策略见安全基线。
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeviceBindRequest'
+      responses:
+        '200':
+          description: 绑定成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdResponse'
+  /devices/{id}:
+    delete:
+      tags: [devices]
+      summary: 解绑设备
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          $ref: '#/components/responses/Ok'
+  # ---------- operation-logs ----------
+  /operation-logs:
+    get:
+      tags: [operation-logs]
+      summary: 操作日志分页查询
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+        - name: userId
+          in: query
+          description: 操作人 ID
+          schema: { type: string }
+        - name: operationType
+          in: query
+          schema: { $ref: '#/components/schemas/OperationType' }
+        - name: startTime
+          in: query
+          description: 开始时间（ISO8601）
+          schema: { type: string, format: date-time }
+        - name: endTime
+          in: query
+          description: 结束时间（ISO8601）
+          schema: { type: string, format: date-time }
+      responses:
+        '200':
+          description: 日志分页
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationLogPageResponse'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    PageParam:
+      name: page
+      in: query
+      description: 页码，从 1 开始
+      schema: { type: integer, format: int32, default: 1, minimum: 1 }
+    SizeParam:
+      name: size
+      in: query
+      description: 每页条数（默认 20，上限 100）
+      schema: { type: integer, format: int32, default: 20, minimum: 1, maximum: 100 }
+    IdParam:
+      name: id
+      in: path
+      required: true
+      description: 资源 ID（雪花，字符串形式）
+      schema: { type: string }
+  responses:
+    Ok:
+      description: 成功（data 为 null）
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiResponse'
+    ValidationError:
+      description: 参数校验失败（VALID_*）
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    Unauthorized:
+      description: 认证失败（AUTH_*）
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    BusinessError:
+      description: 业务错误（BIZ_* / AUTH_*）
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+  schemas:
+    ApiResponse:
+      type: object
+      description: 统一响应体（成功时 code=0）
+      required: [code, message, traceId, timestamp]
+      properties:
+        code:
+          type: integer
+          format: int32
+          description: 业务码，0 表示成功
+          example: 0
+        message:
+          type: string
+          example: success
+        data:
+          nullable: true
+          description: 业务数据负载
+        traceId:
+          type: string
+          example: 4d7f2c9e8b1a4a6d9f0c3e5a7b8d1e2f
+        timestamp:
+          type: string
+          format: date-time
+          example: '2026-10-28T10:00:00'
+    ApiError:
+      type: object
+      required: [code, message, traceId, timestamp]
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 401001
+        message:
+          type: string
+          example: AUTH_INVALID_CREDENTIALS
+        data:
+          nullable: true
+        traceId:
+          type: string
+          example: 4d7f2c9e8b1a4a6d9f0c3e5a7b8d1e2f
+        timestamp:
+          type: string
+          format: date-time
+          example: '2026-10-28T10:00:00'
+    PageResult:
+      type: object
+      description: 分页结果（泛型以具体响应 allOf 展开 records 类型）
+      required: [records, total, page, size]
+      properties:
+        records:
+          type: array
+          items: {}
+        total:
+          type: integer
+          format: int64
+          description: 总条数
+        page:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+
+    LoginRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+          minLength: 1
+          maxLength: 50
+          example: admin
+        password:
+          type: string
+          minLength: 1
+          maxLength: 128
+          example: admin123
+        deviceId:
+          type: string
+          description: 设备指纹（可选；开启设备绑定时必填）
+        deviceName:
+          type: string
+          example: iPhone 15 Pro
+        platform:
+          type: string
+          enum: [WEB, DESKTOP, MINIPROGRAM]
+          example: WEB
+    TokenPair:
+      type: object
+      required: [accessToken, refreshToken, expiresIn]
+      properties:
+        accessToken:
+          type: string
+          description: 访问令牌
+        refreshToken:
+          type: string
+          description: 刷新令牌（轮换）
+        expiresIn:
+          type: integer
+          format: int64
+          description: access 有效秒数（900）
+          example: 900
+    RefreshRequest:
+      type: object
+      required: [refreshToken]
+      properties:
+        refreshToken:
+          type: string
+    UserVO:
+      type: object
+      required: [id, username, name, status]
+      properties:
+        id:
+          type: string
+          example: '1752560000000000001'
+        username:
+          type: string
+          example: admin
+        name:
+          type: string
+          example: 系统管理员
+        email:
+          type: string
+          nullable: true
+          example: admin@ceams.local
+        phone:
+          type: string
+          nullable: true
+          description: 手机号（库内加密，接口脱敏）
+          example: '138****0000'
+        status:
+          $ref: '#/components/schemas/UserStatus'
+        roles:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoleVO'
+        createTime:
+          type: string
+          format: date-time
+          example: '2026-10-28T09:00:00'
+    LoginResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          required: [data]
+          properties:
+            data:
+              type: object
+              required: [tokenPair, user]
+              properties:
+                tokenPair:
+                  $ref: '#/components/schemas/TokenPair'
+                user:
+                  $ref: '#/components/schemas/UserVO'
+    IdResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              type: string
+              example: '1752560000000000001'
+    UserCreateRequest:
+      type: object
+      required: [username, name]
+      properties:
+        username:
+          type: string
+          pattern: '^[a-zA-Z0-9_]{3,50}$'
+          example: zhangsan
+        name:
+          type: string
+          maxLength: 100
+          example: 张三
+        password:
+          type: string
+          minLength: 6
+          maxLength: 128
+          example: 'Abc123456'
+        email:
+          type: string
+          format: email
+          nullable: true
+        phone:
+          type: string
+          nullable: true
+        status:
+          $ref: '#/components/schemas/UserStatus'
+        roleIds:
+          type: array
+          items: { type: string }
+          description: 初始角色 ID 集合
+    UserUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 100
+        email:
+          type: string
+          format: email
+          nullable: true
+        phone:
+          type: string
+          nullable: true
+        status:
+          $ref: '#/components/schemas/UserStatus'
+    AssignRolesRequest:
+      type: object
+      required: [roleIds]
+      properties:
+        roleIds:
+          type: array
+          items: { type: string }
+    ResetPasswordRequest:
+      type: object
+      required: [password]
+      properties:
+        password:
+          type: string
+          minLength: 6
+          maxLength: 128
+          example: 'Abc123456'
+    UserResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/UserVO'
+    UserPageResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              allOf:
+                - $ref: '#/components/schemas/PageResult'
+                - type: object
+                  properties:
+                    records:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/UserVO'
+    UserStatus:
+      type: string
+      enum: [ACTIVE, DISABLED, LOCKED]
+
+    RoleVO:
+      type: object
+      required: [id, code, name, status]
+      properties:
+        id:
+          type: string
+          example: '1752560000000000002'
+        code:
+          type: string
+          example: SYS_ADMIN
+        name:
+          type: string
+          example: 系统管理员
+        description:
+          type: string
+          nullable: true
+        status:
+          $ref: '#/components/schemas/RoleStatus'
+        createTime:
+          type: string
+          format: date-time
+    RoleStatus:
+      type: string
+      enum: [ACTIVE, DISABLED]
+    RoleCreateRequest:
+      type: object
+      required: [code, name]
+      properties:
+        code:
+          type: string
+          pattern: '^[A-Z][A-Z0-9_]{1,50}$'
+          example: PROJECT_MANAGER
+        name:
+          type: string
+          maxLength: 100
+          example: 项目经理
+        description:
+          type: string
+          nullable: true
+    RoleUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        status:
+          $ref: '#/components/schemas/RoleStatus'
+    RoleResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/RoleVO'
+    RolePageResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              allOf:
+                - $ref: '#/components/schemas/PageResult'
+                - type: object
+                  properties:
+                    records:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/RoleVO'
+
+    PermissionVO:
+      type: object
+      required: [id, code, name, type]
+      properties:
+        id:
+          type: string
+          example: '1752560000000000003'
+        code:
+          type: string
+          description: 权限标识（按钮级控制用）
+          example: project:create
+        name:
+          type: string
+          example: 新建项目
+        type:
+          $ref: '#/components/schemas/PermissionType'
+        parentId:
+          type: string
+          nullable: true
+        path:
+          type: string
+          nullable: true
+          description: 前端路由（MENU 类型）
+        icon:
+          type: string
+          nullable: true
+        sort:
+          type: integer
+          format: int32
+        children:
+          type: array
+          items:
+            $ref: '#/components/schemas/PermissionVO'
+    PermissionType:
+      type: string
+      enum: [MENU, BUTTON, API]
+    AssignPermissionsRequest:
+      type: object
+      required: [permissionIds]
+      properties:
+        permissionIds:
+          type: array
+          items: { type: string }
+    PermissionTreeResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/PermissionVO'
+    PermissionCodesResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              type: array
+              items: { type: string }
+              example: [project:create, project:view]
+
+    UserSessionVO:
+      type: object
+      required: [sessionId, userId, platform, loginTime]
+      properties:
+        sessionId:
+          type: string
+          example: 4d7f2c9e8b1a4a6d9f0c3e5a7b8d1e2f
+        userId:
+          type: string
+        platform:
+          type: string
+          enum: [WEB, DESKTOP, MINIPROGRAM]
+        ipAddress:
+          type: string
+          nullable: true
+        loginTime:
+          type: string
+          format: date-time
+        lastActiveTime:
+          type: string
+          format: date-time
+    UserSessionPageResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              allOf:
+                - $ref: '#/components/schemas/PageResult'
+                - type: object
+                  properties:
+                    records:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/UserSessionVO'
+
+    UserDeviceVO:
+      type: object
+      required: [id, userId, deviceName, status]
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        deviceId:
+          type: string
+        deviceName:
+          type: string
+        platform:
+          type: string
+          enum: [WEB, DESKTOP, MINIPROGRAM]
+        lastLoginIp:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [ACTIVE, UNBOUND]
+        bindTime:
+          type: string
+          format: date-time
+        lastLoginTime:
+          type: string
+          format: date-time
+    DeviceBindRequest:
+      type: object
+      required: [deviceId]
+      properties:
+        deviceId:
+          type: string
+          description: 设备指纹
+        deviceName:
+          type: string
+        platform:
+          type: string
+          enum: [WEB, DESKTOP, MINIPROGRAM]
+    UserDevicePageResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              allOf:
+                - $ref: '#/components/schemas/PageResult'
+                - type: object
+                  properties:
+                    records:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/UserDeviceVO'
+
+    OperationType:
+      type: string
+      enum: [LOGIN, LOGOUT, CREATE, UPDATE, DELETE, APPROVE, EXPORT, IMPORT, OTHER]
+    OperationLogVO:
+      type: object
+      required: [id, userId, operationType, operationDescription, createTime]
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        username:
+          type: string
+          nullable: true
+        operationType:
+          $ref: '#/components/schemas/OperationType'
+        operationDescription:
+          type: string
+        targetType:
+          type: string
+          nullable: true
+        targetId:
+          type: string
+          nullable: true
+        ipAddress:
+          type: string
+          nullable: true
+        createTime:
+          type: string
+          format: date-time
+    OperationLogPageResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              allOf:
+                - $ref: '#/components/schemas/PageResult'
+                - type: object
+                  properties:
+                    records:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/OperationLogVO'

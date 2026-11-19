@@ -1,0 +1,25 @@
+# CEAMS 三端 pnpm monorepo 工作区声明
+# 三端：apps/web | apps/desktop | apps/miniprogram
+# 共享包：packages/api-client | types | ui-web | utils
+packages:
+  - "apps/*"
+  - "packages/*"
+
+# 允许执行安装脚本的依赖（esbuild 需要 postinstall 落二进制，electron 下载运行时）
+# app-builder-bin / 7zip-bin / electron-winstaller 为 electron-builder 打包链路的二进制下载脚本
+allowBuilds:
+  drivelist: true
+  esbuild: true
+  electron-winstaller: true
+  app-builder-bin: true
+  7zip-bin: true
+
+onlyBuiltDependencies:
+  - esbuild
+  - core-js
+  - core-js-pure
+  - electron
+  - drivelist
+  - electron-winstaller
+  - app-builder-bin
+  - 7zip-bin

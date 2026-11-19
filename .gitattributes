@@ -1,0 +1,28 @@
+# ===== 换行统一（避免 Windows 检出把 LF 转成 CRLF 破坏容器/脚本）=====
+# Dockerfile 会被容器内 /bin/sh 解析，CRLF 会导致 sh -c 命令带上 \r 而报错
+Dockerfile text eol=lf
+deploy/Dockerfile text eol=lf
+
+# Shell 脚本（备份、部署）必须在 Linux 下可直接执行
+*.sh text eol=lf
+
+# 容器编排与环境变量模板
+*.yml text eol=lf
+*.yaml text eol=lf
+.env* text eol=lf
+
+# Windows 批处理保持 CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# 二进制资源不做换行转换
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.pdf binary
+*.jar binary
+*.zip binary
+*.exe binary

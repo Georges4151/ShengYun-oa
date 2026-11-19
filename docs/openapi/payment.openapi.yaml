@@ -1,0 +1,621 @@
+openapi: 3.0.3
+info:
+  title: CEAMS Payment API
+  version: 1.0.0
+  description: |
+    CEAMS 资金域（payment）契约。付款账户 / 收支流水 / 付款交易 / 付款执行 / 成本分摊。
+    全局规范与 project 一致：ID=字符串、金额=字符串、时间=ISO8601、鉴权 Bearer。
+    payments/execute 为高危接口，需 HMAC 签名（X-Sign / X-Timestamp / X-Nonce）。
+    payment_account.accountNumber 为【需加密】字段（阶段4）。
+servers:
+  - url: https://api.ceams.local/api/v1
+    description: 生产
+  - url: http://localhost:8080/api/v1
+    description: 本地
+tags:
+  - name: payment
+paths:
+  /payment-accounts:
+    get:
+      tags: [payment]
+      summary: 付款账户分页查询
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+        - name: name
+          in: query
+          description: 账户名（模糊匹配）
+          schema: { type: string }
+        - name: type
+          in: query
+          description: 账户类型（代码值）
+          schema: { type: string }
+      responses:
+        '200':
+          description: 付款账户分页
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PaymentAccountPageResponse' }
+    post:
+      tags: [payment]
+      summary: 新建付款账户（可设初始余额）
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PaymentAccountCreateRequest' }
+      responses:
+        '200':
+          description: 返回账户 ID
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/IdResponse' }
+  /payment-accounts/{id}:
+    get:
+      tags: [payment]
+      summary: 付款账户详情
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      responses:
+        '200':
+          description: 详情
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PaymentAccountResponse' }
+    put:
+      tags: [payment]
+      summary: 更新付款账户（不接受 balance）
+      description: balance 仅由付款执行驱动，本接口不接收、不修改余额。
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PaymentAccountUpdateRequest' }
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+    delete:
+      tags: [payment]
+      summary: 删除付款账户
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+  /accounts:
+    get:
+      tags: [payment]
+      summary: 收支流水分页查询
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+        - name: projectId
+          in: query
+          description: 项目 ID
+          schema: { type: string }
+        - name: type
+          in: query
+          schema: { $ref: '#/components/schemas/AccountType' }
+        - name: status
+          in: query
+          schema: { $ref: '#/components/schemas/AccountStatus' }
+      responses:
+        '200':
+          description: 收支流水分页
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AccountPageResponse' }
+    post:
+      tags: [payment]
+      summary: 新建收支流水（草稿）
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AccountCreateRequest' }
+      responses:
+        '200':
+          description: 返回流水 ID
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/IdResponse' }
+  /accounts/{id}:
+    get:
+      tags: [payment]
+      summary: 收支流水详情
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      responses:
+        '200':
+          description: 详情
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AccountResponse' }
+    put:
+      tags: [payment]
+      summary: 更新收支流水（仅草稿态可编辑）
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AccountUpdateRequest' }
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+    delete:
+      tags: [payment]
+      summary: 删除收支流水（仅草稿态可删除）
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+  /accounts/{id}/confirm:
+    post:
+      tags: [payment]
+      summary: 确认流水（DRAFT -> CONFIRMED）
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+  /accounts/{id}/cancel:
+    post:
+      tags: [payment]
+      summary: 取消流水（DRAFT -> CANCELLED）
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+  /transactions:
+    get:
+      tags: [payment]
+      summary: 付款交易分页查询
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+        - name: accountId
+          in: query
+          description: 付款账户 ID
+          schema: { type: string }
+        - name: type
+          in: query
+          schema: { $ref: '#/components/schemas/AccountType' }
+      responses:
+        '200':
+          description: 付款交易分页
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PaymentTransactionPageResponse' }
+    post:
+      tags: [payment]
+      summary: 新建付款交易
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PaymentTransactionCreateRequest' }
+      responses:
+        '200':
+          description: 返回交易 ID
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/IdResponse' }
+  /transactions/{id}:
+    get:
+      tags: [payment]
+      summary: 付款交易详情
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      responses:
+        '200':
+          description: 详情
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PaymentTransactionResponse' }
+    put:
+      tags: [payment]
+      summary: 更新付款交易
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PaymentTransactionUpdateRequest' }
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+    delete:
+      tags: [payment]
+      summary: 删除付款交易
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+  /payments/execute:
+    post:
+      tags: [payment]
+      summary: 付款执行
+      description: |
+        高危接口，HMAC 签名（X-Sign / X-Timestamp / X-Nonce）。
+        校验账户 -> 幂等（同票据只执行一次）-> 余额校验 -> 更新余额 ->
+        写付款交易 -> 写收支流水（CONFIRMED/UNALLOCATED）。返回新付款交易 ID。
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PaymentExecuteRequest' }
+      responses:
+        '200':
+          description: 返回新付款交易 ID
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/IdResponse' }
+  /cost-allocations:
+    get:
+      tags: [payment]
+      summary: 成本分摊分页查询
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+        - name: accountRecordId
+          in: query
+          description: 账户记录 ID
+          schema: { type: string }
+      responses:
+        '200':
+          description: 成本分摊分页
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CostAllocationPageResponse' }
+    post:
+      tags: [payment]
+      summary: 新建成本分摊
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CostAllocationCreateRequest' }
+      responses:
+        '200':
+          description: 返回分摊 ID
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/IdResponse' }
+  /cost-allocations/{id}:
+    get:
+      tags: [payment]
+      summary: 成本分摊详情
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      responses:
+        '200':
+          description: 详情
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CostAllocationResponse' }
+    put:
+      tags: [payment]
+      summary: 更新成本分摊
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CostAllocationUpdateRequest' }
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+    delete:
+      tags: [payment]
+      summary: 删除成本分摊
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    PageParam:
+      name: page
+      in: query
+      schema: { type: integer, format: int32, default: 1, minimum: 1 }
+    SizeParam:
+      name: size
+      in: query
+      schema: { type: integer, format: int32, default: 20, minimum: 1, maximum: 100 }
+    IdParam:
+      name: id
+      in: path
+      required: true
+      schema: { type: string }
+  responses:
+    Ok:
+      description: 成功
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiResponse' }
+  schemas:
+    ApiResponse:
+      type: object
+      required: [code, message, traceId, timestamp]
+      properties:
+        code: { type: integer, format: int32, example: 0 }
+        message: { type: string, example: success }
+        data: { nullable: true }
+        traceId: { type: string }
+        timestamp: { type: string, format: date-time }
+    PageResult:
+      type: object
+      required: [records, total, page, size]
+      properties:
+        records: { type: array, items: {} }
+        total: { type: integer, format: int64 }
+        page: { type: integer, format: int32 }
+        size: { type: integer, format: int32 }
+    IdResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data: { type: string, example: '1752560000000000001' }
+
+    AccountType:
+      type: string
+      enum: [INCOME, EXPENSE]
+    AccountStatus:
+      type: string
+      enum: [DRAFT, CONFIRMED, CANCELLED]
+    AllocationStatus:
+      type: string
+      enum: [UNALLOCATED, PARTIAL, ALLOCATED]
+    TargetType:
+      type: string
+      enum: [PROJECT, DEPT, SERVICE, CONTRACT]
+
+    PaymentAccountVO:
+      type: object
+      required: [id, name, type, balance]
+      properties:
+        id: { type: string }
+        name: { type: string, example: 基本户 }
+        type: { type: string, description: 账户类型（代码值，无固定枚举） }
+        balance: { type: string, example: '10000.00' }
+        accountNumber: { type: string, nullable: true, description: 账号【需加密】（阶段4） }
+        description: { type: string, nullable: true }
+        createTime: { type: string, format: date-time }
+    PaymentAccountCreateRequest:
+      type: object
+      required: [name, type]
+      properties:
+        name: { type: string, maxLength: 100 }
+        type: { type: string, maxLength: 50, description: 账户类型（代码值） }
+        balance: { type: string, nullable: true, description: 初始余额（缺省 0） }
+        accountNumber: { type: string, maxLength: 100, nullable: true, description: 账号【需加密】（阶段4） }
+        description: { type: string, nullable: true }
+    PaymentAccountUpdateRequest:
+      type: object
+      properties:
+        name: { type: string, maxLength: 100, nullable: true }
+        type: { type: string, maxLength: 50, nullable: true }
+        accountNumber: { type: string, maxLength: 100, nullable: true }
+        description: { type: string, nullable: true }
+
+    AccountVO:
+      type: object
+      required: [id, transactionDate, amount, type, status, allocationStatus]
+      properties:
+        id: { type: string }
+        projectId: { type: string, nullable: true }
+        transactionDate: { type: string, format: date-time }
+        amount: { type: string, example: '1280.50' }
+        type: { $ref: '#/components/schemas/AccountType' }
+        receiptId: { type: string, nullable: true }
+        description: { type: string, nullable: true }
+        status: { $ref: '#/components/schemas/AccountStatus' }
+        paymentAccountId: { type: string, nullable: true }
+        contractId: { type: string, nullable: true }
+        paymentType: { type: string, nullable: true }
+        allocationStatus: { $ref: '#/components/schemas/AllocationStatus' }
+        categoryId: { type: string, nullable: true }
+        contactId: { type: string, nullable: true }
+        materialId: { type: string, nullable: true }
+        subcontractorId: { type: string, nullable: true }
+        createTime: { type: string, format: date-time }
+    AccountCreateRequest:
+      type: object
+      required: [transactionDate, amount, type]
+      properties:
+        projectId: { type: string, nullable: true }
+        transactionDate: { type: string, format: date-time }
+        amount: { type: string }
+        type: { $ref: '#/components/schemas/AccountType' }
+        receiptId: { type: string, nullable: true, description: 逻辑引用，不强制校验存在性 }
+        description: { type: string, nullable: true }
+        paymentAccountId: { type: string, nullable: true }
+        contractId: { type: string, nullable: true }
+        paymentType: { type: string, nullable: true }
+        categoryId: { type: string, nullable: true }
+        contactId: { type: string, nullable: true }
+        materialId: { type: string, nullable: true }
+        subcontractorId: { type: string, nullable: true }
+    AccountUpdateRequest:
+      type: object
+      properties:
+        projectId: { type: string, nullable: true }
+        transactionDate: { type: string, format: date-time, nullable: true }
+        amount: { type: string }
+        type: { $ref: '#/components/schemas/AccountType' }
+        receiptId: { type: string, nullable: true }
+        description: { type: string, nullable: true }
+        paymentAccountId: { type: string, nullable: true }
+        contractId: { type: string, nullable: true }
+        paymentType: { type: string, nullable: true }
+        categoryId: { type: string, nullable: true }
+        contactId: { type: string, nullable: true }
+        materialId: { type: string, nullable: true }
+        subcontractorId: { type: string, nullable: true }
+
+    PaymentTransactionVO:
+      type: object
+      required: [id, accountId, amount, type, transactionDate]
+      properties:
+        id: { type: string }
+        accountId: { type: string }
+        receiptId: { type: string, nullable: true }
+        projectId: { type: string, nullable: true }
+        amount: { type: string, example: '1280.50' }
+        type: { $ref: '#/components/schemas/AccountType' }
+        transactionDate: { type: string, format: date-time }
+        description: { type: string, nullable: true }
+        createTime: { type: string, format: date-time }
+    PaymentTransactionCreateRequest:
+      type: object
+      required: [accountId, amount, type, transactionDate]
+      properties:
+        accountId: { type: string }
+        receiptId: { type: string, nullable: true }
+        projectId: { type: string, nullable: true }
+        amount: { type: string }
+        type: { $ref: '#/components/schemas/AccountType' }
+        transactionDate: { type: string, format: date-time }
+        description: { type: string, nullable: true }
+    PaymentTransactionUpdateRequest:
+      type: object
+      properties:
+        accountId: { type: string, nullable: true }
+        receiptId: { type: string, nullable: true }
+        projectId: { type: string, nullable: true }
+        amount: { type: string }
+        type: { $ref: '#/components/schemas/AccountType' }
+        transactionDate: { type: string, format: date-time, nullable: true }
+        description: { type: string, nullable: true }
+
+    PaymentExecuteRequest:
+      type: object
+      required: [accountId, amount, type, transactionDate]
+      properties:
+        accountId: { type: string }
+        receiptId: { type: string, nullable: true }
+        projectId: { type: string, nullable: true }
+        amount: { type: string, example: '1280.50' }
+        type: { $ref: '#/components/schemas/AccountType' }
+        transactionDate: { type: string, format: date-time }
+        description: { type: string, nullable: true }
+
+    CostAllocationVO:
+      type: object
+      required: [id, accountRecordId, targetType, targetId, allocationAmount]
+      properties:
+        id: { type: string }
+        accountRecordId: { type: string }
+        targetType: { $ref: '#/components/schemas/TargetType' }
+        targetId: { type: string }
+        allocationAmount: { type: string, example: '500.00' }
+        allocationRatio: { type: string, nullable: true, example: '0.2500' }
+        createTime: { type: string, format: date-time }
+    CostAllocationCreateRequest:
+      type: object
+      required: [accountRecordId, targetType, targetId, allocationAmount]
+      properties:
+        accountRecordId: { type: string }
+        targetType: { $ref: '#/components/schemas/TargetType' }
+        targetId: { type: string }
+        allocationAmount: { type: string }
+        allocationRatio: { type: string, nullable: true }
+    CostAllocationUpdateRequest:
+      type: object
+      properties:
+        targetType: { $ref: '#/components/schemas/TargetType' }
+        targetId: { type: string, nullable: true }
+        allocationAmount: { type: string }
+        allocationRatio: { type: string, nullable: true }
+
+    PaymentAccountResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data: { $ref: '#/components/schemas/PaymentAccountVO' }
+    PaymentAccountPageResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              allOf:
+                - $ref: '#/components/schemas/PageResult'
+                - type: object
+                  properties:
+                    records:
+                      type: array
+                      items: { $ref: '#/components/schemas/PaymentAccountVO' }
+    AccountResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data: { $ref: '#/components/schemas/AccountVO' }
+    AccountPageResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              allOf:
+                - $ref: '#/components/schemas/PageResult'
+                - type: object
+                  properties:
+                    records:
+                      type: array
+                      items: { $ref: '#/components/schemas/AccountVO' }
+    PaymentTransactionResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data: { $ref: '#/components/schemas/PaymentTransactionVO' }
+    PaymentTransactionPageResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              allOf:
+                - $ref: '#/components/schemas/PageResult'
+                - type: object
+                  properties:
+                    records:
+                      type: array
+                      items: { $ref: '#/components/schemas/PaymentTransactionVO' }
+    CostAllocationResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data: { $ref: '#/components/schemas/CostAllocationVO' }
+    CostAllocationPageResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              allOf:
+                - $ref: '#/components/schemas/PageResult'
+                - type: object
+                  properties:
+                    records:
+                      type: array
+                      items: { $ref: '#/components/schemas/CostAllocationVO' }

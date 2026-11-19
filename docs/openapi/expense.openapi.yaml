@@ -1,0 +1,451 @@
+openapi: 3.0.3
+info:
+  title: CEAMS Expense API
+  version: 1.0.0
+  description: |
+    CEAMS 报销域（expense）契约。票据（报销单）/ 审批记录 / 财务核验。
+    全局规范与 project 一致：ID=字符串、金额=字符串、时间=ISO8601、鉴权 Bearer。
+    approve / reject / verify 为高危接口，需 HMAC 签名（X-Sign / X-Timestamp / X-Nonce）。
+servers:
+  - url: https://api.ceams.local/api/v1
+    description: 生产
+  - url: http://localhost:8080/api/v1
+    description: 本地
+tags:
+  - name: expenses
+  - name: ai
+    description: 本地 Ollama 智能化能力（只读提示 / 识别，默认关闭）
+paths:
+  /expenses:
+    get:
+      tags: [expenses]
+      summary: 票据分页查询
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+        - name: receiptNumber
+          in: query
+          description: 票据编号（模糊匹配）
+          schema: { type: string }
+        - name: userId
+          in: query
+          description: 上报人 ID
+          schema: { type: string }
+        - name: projectId
+          in: query
+          description: 归属项目 ID
+          schema: { type: string }
+        - name: verificationStatus
+          in: query
+          schema: { $ref: '#/components/schemas/VerificationStatus' }
+        - name: paymentStatus
+          in: query
+          schema: { $ref: '#/components/schemas/PaymentStatus' }
+        - name: approvalStatus
+          in: query
+          schema: { $ref: '#/components/schemas/ReceiptApprovalStatus' }
+      responses:
+        '200':
+          description: 票据分页
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReceiptPageResponse' }
+    post:
+      tags: [expenses]
+      summary: 新建票据（草稿）
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ReceiptCreateRequest' }
+      responses:
+        '200':
+          description: 返回票据 ID
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/IdResponse' }
+  /expenses/{id}:
+    get:
+      tags: [expenses]
+      summary: 票据详情
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      responses:
+        '200':
+          description: 详情
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReceiptResponse' }
+    put:
+      tags: [expenses]
+      summary: 更新票据（仅草稿/驳回态可编辑）
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ReceiptUpdateRequest' }
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+    delete:
+      tags: [expenses]
+      summary: 删除票据（仅草稿/驳回态可删除）
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+  /expenses/{id}/submit:
+    post:
+      tags: [expenses]
+      summary: 上报（进入三级审批）
+      description: 将草稿/驳回态票据上报，审批状态置 PENDING 并进入第 1 级审批。
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+  /expenses/{id}/approve:
+    post:
+      tags: [expenses]
+      summary: 审批通过
+      description: |
+        三级审批通过推进，HMAC 签名（X-Sign/X-Timestamp/X-Nonce）。
+        当前级记录置 APPROVED；非末级则推进到下一级，末级则审批状态置 APPROVED。
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ApprovalActionRequest' }
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+  /expenses/{id}/reject:
+    post:
+      tags: [expenses]
+      summary: 审批驳回
+      description: |
+        驳回当前级审批，审批状态置 REJECTED，HMAC 签名（X-Sign/X-Timestamp/X-Nonce）。
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ApprovalActionRequest' }
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+  /expenses/{id}/verify:
+    post:
+      tags: [expenses]
+      summary: 财务核验
+      description: |
+        仅审批通过后核验，HMAC 签名（X-Sign/X-Timestamp/X-Nonce）。
+        核验金额不得超过票据金额；核验成功写核验记录并置 VERIFIED。
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ReceiptVerifyRequest' }
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+  /expenses/{id}/approvals:
+    get:
+      tags: [expenses]
+      summary: 该票据的审批记录列表
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      responses:
+        '200':
+          description: 审批记录列表
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApprovalRecordListResponse' }
+  /expenses/{id}/verifications:
+    get:
+      tags: [expenses]
+      summary: 该票据的核验记录列表
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      responses:
+        '200':
+          description: 核验记录列表
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReceiptVerificationListResponse' }
+  /ai/receipt-ocr:
+    post:
+      tags: [ai]
+      summary: 票据图片识别（OCR）
+      description: |
+        读取已上传的票据图片，调用本地 Ollama 视觉模型识别编号 / 金额 / 日期 / 类型 / 支付方式。
+        只读接口：不写库、不修改票据；AI 未启用或模型不可达时返回 422 可读错误，不影响报销主流程。
+        filePath 支持纯文件名或上传接口返回的 `/api/v1/files/...` URL；仅支持 jpg/jpeg/png/webp，PDF 不支持识别。
+        所有字段均为尽力识别结果，未识别或未通过服务端校验的字段为 null，由前端提示用户手动补录。
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ReceiptOcrRequest' }
+      responses:
+        '200':
+          description: 识别结果（未识别字段为 null）
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReceiptOcrResponse' }
+        '422':
+          description: AI 未启用或识别失败（AI 识别失败，请手动填写或稍后重试）
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    PageParam:
+      name: page
+      in: query
+      schema: { type: integer, format: int32, default: 1, minimum: 1 }
+    SizeParam:
+      name: size
+      in: query
+      schema: { type: integer, format: int32, default: 20, minimum: 1, maximum: 100 }
+    IdParam:
+      name: id
+      in: path
+      required: true
+      schema: { type: string }
+  responses:
+    Ok:
+      description: 成功
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiResponse' }
+  schemas:
+    ApiResponse:
+      type: object
+      required: [code, message, traceId, timestamp]
+      properties:
+        code: { type: integer, format: int32, example: 0 }
+        message: { type: string, example: success }
+        data: { nullable: true }
+        traceId: { type: string }
+        timestamp: { type: string, format: date-time }
+    PageResult:
+      type: object
+      required: [records, total, page, size]
+      properties:
+        records: { type: array, items: {} }
+        total: { type: integer, format: int64 }
+        page: { type: integer, format: int32 }
+        size: { type: integer, format: int32 }
+    IdResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data: { type: string, example: '1752560000000000001' }
+
+    ReceiptType:
+      type: string
+      enum: [TRANSPORTATION, ACCOMMODATION, MEAL, OFFICE, OTHER]
+    VerificationStatus:
+      type: string
+      enum: [PENDING, VERIFIED, REJECTED]
+    PaymentStatus:
+      type: string
+      enum: [UNPAID, PARTIAL, PAID]
+    PaymentMethod:
+      type: string
+      enum: [CASH, BANK_TRANSFER, WECHAT, ALIPAY, OTHER]
+    ReceiptApprovalStatus:
+      type: string
+      enum: [DRAFT, PENDING, APPROVED, REJECTED]
+    ApprovalRecordStatus:
+      type: string
+      enum: [PENDING, APPROVED, REJECTED]
+
+    ReceiptVO:
+      type: object
+      required: [id, receiptNumber, userId, amount, type, verificationStatus, paymentStatus, paidAmount, approvalStatus]
+      properties:
+        id: { type: string }
+        receiptNumber: { type: string, example: RC-2026-001 }
+        userId: { type: string }
+        reporterId: { type: string, nullable: true }
+        projectId: { type: string, nullable: true }
+        reporterName: { type: string, nullable: true }
+        receiptDate: { type: string, format: date-time, nullable: true }
+        amount: { type: string, example: '1280.50' }
+        type: { $ref: '#/components/schemas/ReceiptType' }
+        description: { type: string, nullable: true }
+        filePath: { type: string, nullable: true }
+        fileHash: { type: string, nullable: true }
+        ocrData: { type: string, nullable: true }
+        verificationStatus: { $ref: '#/components/schemas/VerificationStatus' }
+        verifiedBy: { type: string, nullable: true }
+        verifiedAt: { type: string, format: date-time, nullable: true }
+        paymentStatus: { $ref: '#/components/schemas/PaymentStatus' }
+        paidAmount: { type: string, example: '0.00' }
+        paidAt: { type: string, format: date-time, nullable: true }
+        paidBy: { type: string, nullable: true }
+        paymentMethod: { $ref: '#/components/schemas/PaymentMethod', nullable: true }
+        currentApprovalLevel: { type: integer, format: int32, nullable: true }
+        approvalStatus: { $ref: '#/components/schemas/ReceiptApprovalStatus' }
+        createTime: { type: string, format: date-time }
+    ReceiptCreateRequest:
+      type: object
+      required: [receiptNumber, amount, type]
+      properties:
+        receiptNumber: { type: string, maxLength: 100 }
+        userId: { type: string, nullable: true }
+        reporterId: { type: string, nullable: true }
+        projectId: { type: string, nullable: true }
+        reporterName: { type: string, maxLength: 100, nullable: true }
+        receiptDate: { type: string, format: date-time, nullable: true }
+        amount: { type: string }
+        type: { $ref: '#/components/schemas/ReceiptType' }
+        description: { type: string, nullable: true }
+        filePath: { type: string, maxLength: 500, nullable: true }
+        fileHash: { type: string, maxLength: 255, nullable: true }
+        ocrData: { type: string, nullable: true }
+        paymentMethod: { $ref: '#/components/schemas/PaymentMethod', nullable: true }
+    ReceiptUpdateRequest:
+      type: object
+      properties:
+        reporterId: { type: string, nullable: true }
+        projectId: { type: string, nullable: true }
+        reporterName: { type: string, nullable: true }
+        receiptDate: { type: string, format: date-time, nullable: true }
+        amount: { type: string }
+        type: { $ref: '#/components/schemas/ReceiptType' }
+        description: { type: string, nullable: true }
+        filePath: { type: string, nullable: true }
+        fileHash: { type: string, nullable: true }
+        ocrData: { type: string, nullable: true }
+        paymentMethod: { $ref: '#/components/schemas/PaymentMethod', nullable: true }
+    ReceiptVerifyRequest:
+      type: object
+      required: [paymentAccountId, amount]
+      properties:
+        paymentAccountId: { type: string }
+        amount: { type: string }
+        paymentMethod: { $ref: '#/components/schemas/PaymentMethod', nullable: true }
+        remark: { type: string, maxLength: 255, nullable: true }
+    ApprovalActionRequest:
+      type: object
+      properties:
+        comment: { type: string, maxLength: 500, nullable: true }
+    ApprovalRecordVO:
+      type: object
+      required: [id, receiptId, approvalLevel, status]
+      properties:
+        id: { type: string }
+        receiptId: { type: string }
+        approvalLevel: { type: integer, format: int32, example: 1 }
+        approverRole: { type: string, nullable: true }
+        approverId: { type: string, nullable: true }
+        approverName: { type: string, nullable: true }
+        status: { $ref: '#/components/schemas/ApprovalRecordStatus' }
+        approvalComment: { type: string, nullable: true }
+        approvalTime: { type: string, format: date-time, nullable: true }
+        createTime: { type: string, format: date-time }
+    ReceiptVerificationVO:
+      type: object
+      required: [id, receiptId, paymentAccountId, amount]
+      properties:
+        id: { type: string }
+        receiptId: { type: string }
+        paymentAccountId: { type: string }
+        amount: { type: string }
+        paymentMethod: { $ref: '#/components/schemas/PaymentMethod', nullable: true }
+        verificationTime: { type: string, format: date-time, nullable: true }
+        verifiedBy: { type: string, nullable: true }
+        remark: { type: string, nullable: true }
+        createTime: { type: string, format: date-time }
+
+    ReceiptResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data: { $ref: '#/components/schemas/ReceiptVO' }
+    ReceiptPageResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              allOf:
+                - $ref: '#/components/schemas/PageResult'
+                - type: object
+                  properties:
+                    records:
+                      type: array
+                      items: { $ref: '#/components/schemas/ReceiptVO' }
+    ApprovalRecordListResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              type: array
+              items: { $ref: '#/components/schemas/ApprovalRecordVO' }
+    ReceiptVerificationListResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              type: array
+              items: { $ref: '#/components/schemas/ReceiptVerificationVO' }
+
+    ReceiptOcrRequest:
+      type: object
+      required: [filePath]
+      properties:
+        filePath:
+          type: string
+          description: 纯文件名或上传接口返回的 /api/v1/files/xxx 形式 URL
+          example: /api/v1/files/1752560000000000001.png
+    ReceiptOcrResult:
+      type: object
+      properties:
+        receiptNumber:
+          type: string
+          nullable: true
+          description: 票据编号 / 发票号码；未识别为 null
+          example: '12345678'
+        amount:
+          type: string
+          nullable: true
+          description: 金额数字字符串（不含货币符号）；未识别或校验不通过为 null
+          example: '128.50'
+        receiptDate:
+          type: string
+          nullable: true
+          description: 票据日期，yyyy-MM-dd；未识别为 null
+          example: '2026-11-01'
+        type:
+          allOf:
+            - $ref: '#/components/schemas/ReceiptType'
+          nullable: true
+        paymentMethod:
+          allOf:
+            - $ref: '#/components/schemas/PaymentMethod'
+          nullable: true
+        raw:
+          type: string
+          nullable: true
+          description: 模型原始输出（截断到 4000 字符），便于排查识别问题
+    ReceiptOcrResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data: { $ref: '#/components/schemas/ReceiptOcrResult' }

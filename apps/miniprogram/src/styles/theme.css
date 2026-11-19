@@ -1,0 +1,123 @@
+/**
+ * CEAMS 设计令牌（Design Tokens）
+ * 小程序根节点是 page，变量统一挂在 page 上，页面与组件通过 var(--ceams-*) 引用。
+ * 仅使用 CSS 自定义属性实现，不依赖 sass；尺寸单位统一为 rpx。
+ */
+
+page {
+  /* ---------------- 主色系 ---------------- */
+  --ceams-color-primary: #2563eb;
+  --ceams-color-primary-deep: #1d4ed8;
+  --ceams-color-primary-dark: #1e40af;
+  --ceams-color-primary-tint: #eff6ff;
+  --ceams-color-primary-tint-strong: #dbeafe;
+
+  /* ---------------- 功能色 ---------------- */
+  --ceams-color-success: #16a34a;
+  --ceams-color-success-deep: #15803d;
+  --ceams-color-success-tint: #dcfce7;
+
+  --ceams-color-warning: #d97706;
+  --ceams-color-warning-deep: #b45309;
+  --ceams-color-warning-tint: #fef3c7;
+
+  --ceams-color-danger: #dc2626;
+  --ceams-color-danger-deep: #b91c1c;
+  --ceams-color-danger-tint: #fee2e2;
+
+  --ceams-color-neutral: #6b7280;
+  --ceams-color-neutral-deep: #4b5563;
+  --ceams-color-neutral-tint: #f3f4f6;
+
+  /* ---------------- 文本层级 ---------------- */
+  --ceams-text-primary: #1f2937;
+  --ceams-text-secondary: #6b7280;
+  --ceams-text-placeholder: #9ca3af;
+  --ceams-text-inverse: #ffffff;
+  --ceams-text-amount: #0f172a;
+  --ceams-text-link: var(--ceams-color-primary);
+
+  /* ---------------- 背景与描边 ---------------- */
+  --ceams-bg-page: #f4f6fa;
+  --ceams-bg-card: #ffffff;
+  --ceams-bg-subtle: #f8fafc;
+  --ceams-border: #e5e7eb;
+  --ceams-border-strong: #d1d5db;
+  --ceams-divider: #eef2f7;
+  --ceams-border-width: 1rpx;
+
+  /* ---------------- 业务语义状态（StatusTag 使用） ---------------- */
+  /* 审批中 / 待处理 */
+  --ceams-status-pending-text: #b45309;
+  --ceams-status-pending-bg: #fef3c7;
+  /* 已通过 */
+  --ceams-status-approved-text: #15803d;
+  --ceams-status-approved-bg: #dcfce7;
+  /* 已驳回 */
+  --ceams-status-rejected-text: #b91c1c;
+  --ceams-status-rejected-bg: #fee2e2;
+  /* 待核验 / 已核验 */
+  --ceams-status-verified-text: #1d4ed8;
+  --ceams-status-verified-bg: #dbeafe;
+  /* 已付款 / 已支付 */
+  --ceams-status-paid-text: #0f766e;
+  --ceams-status-paid-bg: #ccfbf1;
+  /* 中性 / 草稿 / 已关闭 */
+  --ceams-status-neutral-text: #4b5563;
+  --ceams-status-neutral-bg: #f3f4f6;
+
+  /* ---------------- 间距刻度 ---------------- */
+  --ceams-space-2xs: 4rpx;
+  --ceams-space-xs: 8rpx;
+  --ceams-space-sm: 12rpx;
+  --ceams-space-md: 16rpx;
+  --ceams-space-lg: 24rpx;
+  --ceams-space-xl: 32rpx;
+  --ceams-space-2xl: 48rpx;
+  --ceams-space-3xl: 64rpx;
+
+  /* ---------------- 圆角刻度 ---------------- */
+  --ceams-radius-xs: 4rpx;
+  --ceams-radius-sm: 8rpx;
+  --ceams-radius-md: 12rpx;
+  --ceams-radius-lg: 16rpx;
+  --ceams-radius-xl: 24rpx;
+  --ceams-radius-card: 16rpx;
+  --ceams-radius-tag: 8rpx;
+  --ceams-radius-pill: 999rpx;
+
+  /* ---------------- 阴影层级 ---------------- */
+  --ceams-shadow-card: 0 2rpx 6rpx rgba(15, 23, 42, 0.04), 0 10rpx 24rpx rgba(15, 23, 42, 0.06);
+  --ceams-shadow-raised: 0 6rpx 20rpx rgba(15, 23, 42, 0.1);
+  --ceams-shadow-overlay: 0 16rpx 48rpx rgba(15, 23, 42, 0.16);
+
+  /* ---------------- 字号层级 ---------------- */
+  --ceams-font-size-display: 44rpx;
+  --ceams-font-size-title: 36rpx;
+  --ceams-font-size-heading: 32rpx;
+  --ceams-font-size-body: 28rpx;
+  --ceams-font-size-caption: 24rpx;
+  --ceams-font-size-mini: 22rpx;
+
+  /* 金额专用字号 */
+  --ceams-font-size-amount-lg: 40rpx;
+  --ceams-font-size-amount-md: 32rpx;
+  --ceams-font-size-amount-sm: 24rpx;
+
+  /* ---------------- 行高层级 ---------------- */
+  --ceams-line-height-tight: 1.25;
+  --ceams-line-height-normal: 1.5;
+  --ceams-line-height-loose: 1.7;
+
+  /* ---------------- 字重 / 字距 ---------------- */
+  --ceams-font-weight-regular: 400;
+  --ceams-font-weight-medium: 500;
+  --ceams-font-weight-semibold: 600;
+  --ceams-font-weight-bold: 700;
+  --ceams-letter-spacing-number: 0.5rpx;
+  --ceams-letter-spacing-tight: -0.5rpx;
+
+  /* ---------------- 控件尺寸 ---------------- */
+  --ceams-control-height: 88rpx;
+  --ceams-control-height-sm: 64rpx;
+}

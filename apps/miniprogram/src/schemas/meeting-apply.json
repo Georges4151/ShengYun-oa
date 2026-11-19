@@ -1,0 +1,39 @@
+{
+  "bizType": "ADMIN_MEETING_APPLY",
+  "sections": [
+    {
+      "title": "预定信息",
+      "fields": [
+        {
+          "key": "useDate",
+          "label": "使用日期",
+          "type": "string",
+          "format": "date",
+          "required": true
+        },
+        {
+          "key": "startClock",
+          "label": "开始时间",
+          "type": "string",
+          "format": "time",
+          "required": true
+        },
+        {
+          "key": "endClock",
+          "label": "结束时间",
+          "type": "string",
+          "format": "time",
+          "required": true
+        },
+        {
+          "key": "subject",
+          "label": "会议主题",
+          "type": "string",
+          "required": true,
+          "maxLength": 100,
+          "placeholder": "请输入会议主题"
+        }
+      ]
+    }
+  ]
+}

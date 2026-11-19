@@ -1,0 +1,530 @@
+openapi: 3.0.3
+info:
+  title: CEAMS Report API
+  version: 1.0.0
+  description: |
+    CEAMS 跨域只读报表（report 模块）。报表/Dashboard 不单独成域、不建实体/表、不开写事务，
+    作为 com.ceams.module.report 下的只读聚合应用层。
+    全局规范与 seal/bank 一致：ID=字符串、金额=字符串、时间=ISO8601、鉴权 Bearer。
+    均为只读 GET，不挂 HMAC 签名，普通 isAuthenticated 鉴权即可。
+servers:
+  - url: https://api.ceams.local/api/v1
+    description: 生产
+  - url: http://localhost:8080/api/v1
+    description: 本地
+tags:
+  - name: report
+paths:
+  /reports/financial:
+    get:
+      tags: [report]
+      summary: 财务报表（收支流水/付款交易/银行流水/总账聚合）
+      description: 按月份/项目/账户维度可选过滤，返回合计收入/支出/净额及明细列表。
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: month
+          in: query
+          description: 月份（YYYY-MM）
+          schema: { type: string, example: '2026-10' }
+        - name: projectId
+          in: query
+          description: 项目 ID
+          schema: { type: string }
+        - name: accountId
+          in: query
+          description: 账户 ID
+          schema: { type: string }
+      responses:
+        '200':
+          description: 财务报表
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FinancialReportResponse' }
+  /reports/project-cost:
+    get:
+      tags: [report]
+      summary: 项目成本报表（项目+预算+变更+进度款+成本分摊）
+      description: 按项目维度输出预算/已变更/已付/成本分摊金额对比。
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: projectId
+          in: query
+          description: 项目 ID（为空输出全部项目）
+          schema: { type: string }
+      responses:
+        '200':
+          description: 项目成本报表
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ProjectCostReportResponse' }
+  /reports/material:
+    get:
+      tags: [report]
+      summary: 材料报表（材料库+关联收支流水）
+      description: 按材料维度输出数量/金额（现有表无专门领用表，以 biz_account.material_id 关联归集）。
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: materialId
+          in: query
+          description: 材料 ID
+          schema: { type: string }
+        - name: categoryId
+          in: query
+          description: 分类 ID
+          schema: { type: string }
+      responses:
+        '200':
+          description: 材料报表
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MaterialReportResponse' }
+  /reports/dashboard:
+    get:
+      tags: [report]
+      summary: Dashboard 概览
+      description: 待办数、未读通知数、项目进度、近期收支汇总。
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Dashboard 概览
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DashboardResponse' }
+  /reports/hr-cost:
+    get:
+      tags: [report]
+      summary: 人力成本报表（P2）
+      description: |
+        工资口径金额（hr_salary_calc 非草稿记录，加密列在服务端解密后累加）与员工口径在职人数
+        （totalCount - terminatedCount，含试用/休假）按部门合并输出。需要 SYS_ADMIN。
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: month
+          in: query
+          required: true
+          description: 核算月（YYYY-MM）
+          schema: { type: string, pattern: '^\d{4}-(0[1-9]|1[0-2])$', example: '2026-11' }
+        - name: deptId
+          in: query
+          description: 部门 ID（为空表示全部部门）
+          schema: { type: string }
+      responses:
+        '200':
+          description: 人力成本报表
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/HrCostReportResponse' }
+        '401': { description: 未认证 }
+        '403': { description: 无权限（需要 SYS_ADMIN） }
+  /reports/hr-performance:
+    get:
+      tags: [report]
+      summary: 绩效考核报表（P2）
+      description: |
+        按 period 字符串等值统计评审单数、定稿数（status=APPROVED）、定稿平均分与 A/B/C/D 分布。
+        需要 SYS_ADMIN。
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: period
+          in: query
+          required: true
+          description: 考核周期（YYYY-MM 或 YYYY-Qn）
+          schema:
+            type: string
+            pattern: '^(\d{4}-(0[1-9]|1[0-2])|\d{4}-Q[1-4])$'
+            example: '2026-Q4'
+        - name: deptId
+          in: query
+          description: 部门 ID（为空表示全部部门）
+          schema: { type: string }
+      responses:
+        '200':
+          description: 绩效考核报表
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/HrPerformanceReportResponse' }
+        '401': { description: 未认证 }
+        '403': { description: 无权限（需要 SYS_ADMIN） }
+  /reports/admin-assets:
+    get:
+      tags: [report]
+      summary: 行政资产报表（P2）
+      description: |
+        资产总量/购置金额/状态分布（IN_STOCK/BORROWED/REPAIRING/SCRAPPED）、按分类统计、
+        借用中与逾期未还记录数及借用率。需要 SYS_ADMIN。
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: category
+          in: query
+          description: 资产分类（为空表示全部分类）
+          schema:
+            type: string
+            enum: [ELECTRONIC, FURNITURE, VEHICLE_TOOL, OTHER]
+      responses:
+        '200':
+          description: 行政资产报表
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminAssetReportResponse' }
+        '401': { description: 未认证 }
+        '403': { description: 无权限（需要 SYS_ADMIN） }
+  /reports/bpm-efficiency:
+    get:
+      tags: [report]
+      summary: 审批效率报表（P2）
+      description: |
+        流程实例量/通过量/平均审批时长（小时）/超时任务数与超时率、按业务类型统计、
+        待办任务按节点编码积压统计。需要 SYS_ADMIN 或 FINANCE。
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: start
+          in: query
+          description: 起始日期（YYYY-MM-DD，含）
+          schema: { type: string, pattern: '^\d{4}-\d{2}-\d{2}$', example: '2026-11-01' }
+        - name: end
+          in: query
+          description: 结束日期（YYYY-MM-DD，含）
+          schema: { type: string, pattern: '^\d{4}-\d{2}-\d{2}$', example: '2026-11-30' }
+        - name: bizType
+          in: query
+          description: 业务类型（bpm_instance.biz_type，为空表示全部）
+          schema: { type: string }
+      responses:
+        '200':
+          description: 审批效率报表
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/BpmEfficiencyReportResponse' }
+        '401': { description: 未认证 }
+        '403': { description: 无权限（需要 SYS_ADMIN 或 FINANCE） }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    ApiResponse:
+      type: object
+      required: [code, message, traceId, timestamp]
+      properties:
+        code: { type: integer, format: int32, example: 0 }
+        message: { type: string, example: success }
+        data: { nullable: true }
+        traceId: { type: string }
+        timestamp: { type: string, format: date-time }
+
+    FinancialReportVO:
+      type: object
+      required: [totalIncome, totalExpense, netAmount, items]
+      properties:
+        totalIncome: { type: string, description: 合计收入 }
+        totalExpense: { type: string, description: 合计支出 }
+        netAmount: { type: string, description: 净额（收入-支出） }
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/FinancialReportItemVO' }
+
+    FinancialReportItemVO:
+      type: object
+      required: [id, sourceType, type, amount]
+      properties:
+        id: { type: string }
+        sourceType:
+          type: string
+          enum: [ACCOUNT, PAYMENT_TRANSACTION, BANK_STATEMENT, GENERAL_LEDGER]
+        projectId: { type: string, nullable: true }
+        projectName: { type: string, nullable: true }
+        accountId: { type: string, nullable: true }
+        accountName: { type: string, nullable: true }
+        transactionDate: { type: string, format: date-time, nullable: true }
+        type: { type: string, enum: [INCOME, EXPENSE] }
+        amount: { type: string }
+        description: { type: string, nullable: true }
+
+    ProjectCostReportVO:
+      type: object
+      required: [items, totalBudget, totalChanged, totalPaid, totalAllocated]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/ProjectCostItemVO' }
+        totalBudget: { type: string }
+        totalChanged: { type: string }
+        totalPaid: { type: string }
+        totalAllocated: { type: string }
+
+    ProjectCostItemVO:
+      type: object
+      required: [projectId, projectName]
+      properties:
+        projectId: { type: string }
+        projectName: { type: string }
+        contractAmount: { type: string, nullable: true }
+        budgetAmount: { type: string, nullable: true }
+        changedAmount: { type: string, nullable: true }
+        paidAmount: { type: string, nullable: true }
+        allocatedAmount: { type: string, nullable: true }
+        actualAmount: { type: string, nullable: true }
+
+    MaterialReportVO:
+      type: object
+      required: [items, totalCount, totalAmount]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/MaterialReportItemVO' }
+        totalCount: { type: integer, format: int64 }
+        totalAmount: { type: string }
+
+    MaterialReportItemVO:
+      type: object
+      required: [materialId, materialCode, materialName, transactionCount, totalAmount]
+      properties:
+        materialId: { type: string }
+        materialCode: { type: string }
+        materialName: { type: string }
+        specification: { type: string, nullable: true }
+        unit: { type: string, nullable: true }
+        currentPrice: { type: string, nullable: true }
+        transactionCount: { type: integer, format: int64 }
+        totalAmount: { type: string }
+
+    DashboardVO:
+      type: object
+      required:
+        - pendingReceiptCount
+        - pendingSealApplicationCount
+        - unreadNotificationCount
+        - projectCount
+        - inProgressProjectCount
+        - monthIncome
+        - monthExpense
+        - totalIncome
+        - totalExpense
+      properties:
+        pendingReceiptCount: { type: integer, format: int64, description: 待审批报销数 }
+        pendingSealApplicationCount: { type: integer, format: int64, description: 待审批用印申请数 }
+        unreadNotificationCount: { type: integer, format: int64, description: 未读通知数 }
+        projectCount: { type: integer, format: int64, description: 项目总数 }
+        inProgressProjectCount: { type: integer, format: int64, description: 进行中项目数 }
+        monthIncome: { type: string, description: 本月收入 }
+        monthExpense: { type: string, description: 本月支出 }
+        totalIncome: { type: string, description: 累计收入 }
+        totalExpense: { type: string, description: 累计支出 }
+
+    FinancialReportResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data: { $ref: '#/components/schemas/FinancialReportVO' }
+    ProjectCostReportResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data: { $ref: '#/components/schemas/ProjectCostReportVO' }
+    MaterialReportResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data: { $ref: '#/components/schemas/MaterialReportVO' }
+    DashboardResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data: { $ref: '#/components/schemas/DashboardVO' }
+
+    # ---------- P2 报表指标 ----------
+    HrCostDeptVO:
+      type: object
+      required:
+        [
+          deptName,
+          headcount,
+          payrollHeadcount,
+          grossPay,
+          netPay,
+          socialInsurance,
+          housingFund,
+          tax,
+          avgNetPay
+        ]
+      properties:
+        deptId: { type: string, nullable: true, description: 部门 ID；未分配部门为 null }
+        deptName: { type: string, description: 部门名称（优先取员工口径） }
+        headcount: { type: integer, format: int64, description: 在职人数（含试用/休假） }
+        payrollHeadcount: { type: integer, format: int64, description: 工资口径人数 }
+        grossPay: { type: string, description: 应发合计 }
+        netPay: { type: string, description: 实发合计 }
+        socialInsurance: { type: string, description: 社保合计 }
+        housingFund: { type: string, description: 公积金合计 }
+        tax: { type: string, description: 个人所得税合计 }
+        avgNetPay: { type: string, description: 人均实发 }
+
+    HrCostReportVO:
+      type: object
+      required:
+        [
+          month,
+          headcount,
+          payrollHeadcount,
+          grossPay,
+          netPay,
+          socialInsurance,
+          housingFund,
+          tax,
+          avgNetPay,
+          byDept
+        ]
+      properties:
+        month: { type: string, description: 核算月（YYYY-MM） }
+        headcount: { type: integer, format: int64 }
+        payrollHeadcount: { type: integer, format: int64 }
+        grossPay: { type: string }
+        netPay: { type: string }
+        socialInsurance: { type: string }
+        housingFund: { type: string }
+        tax: { type: string }
+        avgNetPay: { type: string }
+        byDept:
+          type: array
+          items: { $ref: '#/components/schemas/HrCostDeptVO' }
+
+    ScoreDistributionVO:
+      type: object
+      required: [a, b, c, d]
+      properties:
+        a: { type: integer, format: int64, description: A 档（≥ 90） }
+        b: { type: integer, format: int64, description: B 档（80 ~ 89.99） }
+        c: { type: integer, format: int64, description: C 档（70 ~ 79.99） }
+        d: { type: integer, format: int64, description: D 档（< 70） }
+
+    HrPerformanceDeptVO:
+      type: object
+      required: [deptName, reviewCount, finalizedCount, avgFinalScore]
+      properties:
+        deptId: { type: string, nullable: true, description: 部门 ID；未分配部门为 null }
+        deptName: { type: string }
+        reviewCount: { type: integer, format: int64 }
+        finalizedCount: { type: integer, format: int64, description: 定稿数（APPROVED） }
+        avgFinalScore: { type: string }
+
+    HrPerformanceReportVO:
+      type: object
+      required:
+        [period, reviewCount, finalizedCount, avgFinalScore, distribution, byDept]
+      properties:
+        period: { type: string, description: 考核周期（YYYY-MM 或 YYYY-Qn） }
+        reviewCount: { type: integer, format: int64 }
+        finalizedCount: { type: integer, format: int64 }
+        avgFinalScore: { type: string }
+        distribution: { $ref: '#/components/schemas/ScoreDistributionVO' }
+        byDept:
+          type: array
+          items: { $ref: '#/components/schemas/HrPerformanceDeptVO' }
+
+    AdminAssetCategoryStatVO:
+      type: object
+      required: [category, count, totalValue]
+      properties:
+        category:
+          type: string
+          enum: [ELECTRONIC, FURNITURE, VEHICLE_TOOL, OTHER]
+        count: { type: integer, format: int64 }
+        totalValue: { type: string }
+
+    AdminAssetReportVO:
+      type: object
+      required:
+        [
+          totalCount,
+          totalValue,
+          byStatus,
+          byCategory,
+          borrowingCount,
+          overdueCount,
+          borrowRate
+        ]
+      properties:
+        totalCount: { type: integer, format: int64 }
+        totalValue: { type: string }
+        byStatus:
+          type: object
+          description: 状态分布，固定包含 IN_STOCK/BORROWED/REPAIRING/SCRAPPED 四键
+          additionalProperties: { type: integer, format: int64 }
+        byCategory:
+          type: array
+          items: { $ref: '#/components/schemas/AdminAssetCategoryStatVO' }
+        borrowingCount: { type: integer, format: int64, description: 借用中记录数 }
+        overdueCount: { type: integer, format: int64, description: 逾期未还记录数 }
+        borrowRate: { type: string, description: 借用率（4 位小数） }
+
+    BpmBizTypeStatVO:
+      type: object
+      required: [bizType, instanceCount, approvedCount, avgDurationHours]
+      properties:
+        bizType: { type: string }
+        instanceCount: { type: integer, format: int64 }
+        approvedCount: { type: integer, format: int64 }
+        avgDurationHours: { type: string }
+
+    BpmNodeBacklogVO:
+      type: object
+      required: [nodeKey, pendingCount]
+      properties:
+        nodeKey: { type: string, description: 节点编码（bpm_node.node_key） }
+        pendingCount: { type: integer, format: int64 }
+
+    BpmEfficiencyReportVO:
+      type: object
+      required:
+        [
+          instanceCount,
+          approvedCount,
+          avgDurationHours,
+          overdueTaskCount,
+          overdueRate,
+          byBizType,
+          backlogByNode
+        ]
+      properties:
+        instanceCount: { type: integer, format: int64 }
+        approvedCount: { type: integer, format: int64 }
+        avgDurationHours: { type: string }
+        overdueTaskCount: { type: integer, format: int64 }
+        overdueRate: { type: string, description: 超时率（4 位小数） }
+        byBizType:
+          type: array
+          items: { $ref: '#/components/schemas/BpmBizTypeStatVO' }
+        backlogByNode:
+          type: array
+          items: { $ref: '#/components/schemas/BpmNodeBacklogVO' }
+
+    HrCostReportResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data: { $ref: '#/components/schemas/HrCostReportVO' }
+    HrPerformanceReportResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data: { $ref: '#/components/schemas/HrPerformanceReportVO' }
+    AdminAssetReportResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data: { $ref: '#/components/schemas/AdminAssetReportVO' }
+    BpmEfficiencyReportResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data: { $ref: '#/components/schemas/BpmEfficiencyReportVO' }

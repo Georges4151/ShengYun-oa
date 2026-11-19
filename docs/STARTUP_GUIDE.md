@@ -1,340 +1,156 @@
-# 应用程序启动指南
+# CEAMS 启动步骤说明
 
-## 🚀 启动方式
-
-### 方式1：使用Maven启动（推荐）
-
-```bash
-# 进入项目目录
-cd e:\sxassist
-
-# 使用Maven启动
-mvn spring-boot:run
-```
-
-### 方式2：使用IDE启动
-
-1. 在IDE中打开项目
-2. 找到 `CeamsApplication.java` 文件
-3. 右键点击 `main` 方法
-4. 选择"运行"或"调试"
-
-### 方式3：打包后启动
-
-```bash
-# 编译项目
-mvn clean package
-
-# 运行打包后的JAR文件
-java -jar target/ceams-*.jar
-```
-
-## 🎨 新界面特性
-
-### 1. 现代化登录界面
-
-**特点**：
-- 双栏布局（左侧品牌信息，右侧登录表单）
-- 统计数据展示（服务客户、管理项目、客户满意度）
-- 现代化的表单设计
-- 响应式布局
-- 流畅的交互动画
-
-**访问**：启动应用程序后自动显示
-
-### 2. 现代化主界面
-
-**特点**：
-- 侧边栏导航（260px宽度）
-- 顶部栏（搜索框、用户信息、操作按钮）
-- 统计卡片网格
-- 最近项目列表
-- 待处理事项列表
-- 响应式布局
-- 流畅的交互动画
-
-**访问**：登录成功后自动跳转
-
-### 3. 现代化账目列表
-
-**特点**：
-- 页面头部（标题、描述、操作按钮）
-- 过滤栏（项目、日期、类型、状态）
-- 数据表格（响应式设计）
-- 分页栏（首页、上一页、页码、下一页、末页）
-- 操作栏（编辑、删除、导出）
-- 流畅的交互动画
-
-**访问**：主界面 → 侧边栏 → 账目管理 → 账目列表
-
-## 🔧 配置说明
-
-### 数据库配置
-
-应用程序会自动启动MySQL服务。如果需要手动配置，请修改以下内容：
-
-**MySQL连接信息**：
-- 主机：localhost
-- 端口：3306
-- 数据库：ceams
-- 用户名：root
-- 密码：123456
-
-### 端口配置
-
-应用程序默认使用端口9095。如果需要修改，请编辑 `src/main/resources/application.properties` 文件：
-
-```properties
-server.port=9095
-```
-
-### 字体配置
-
-应用程序支持三种字体大小：小(12px)、中(14px)、大(16px)、超大(18px)。可以在系统设置中修改。
-
-## 📱 响应式设计
-
-### 支持的屏幕尺寸
-
-- **超大屏幕**（≥1400px）：侧边栏280px，内容内边距32px
-- **大屏幕**（1024-1399px）：侧边栏260px，内容内边距24px
-- **中等屏幕**（768-1023px）：侧边栏240px，内容内边距20px
-- **小屏幕**（<768px）：侧边栏200px，内容内边距16px
-
-### 触摸优化
-
-- 最小触摸目标：44px x 44px
-- 按钮内边距：增加
-- 列表项高度：最小56px
-
-## 🎨 主题定制
-
-### 修改主题颜色
-
-编辑 `src/main/resources/css/design-system.css` 文件：
-
-```css
-:root {
-    /* 修改主色调 */
-    --primary-600: #your-color;
-    
-    /* 修改其他颜色 */
-    --success-600: #your-color;
-    --warning-600: #your-color;
-    --error-600: #your-color;
-}
-```
-
-### 深色模式
-
-在FXML文件中添加 `dark-mode` 类：
-
-```xml
-<BorderPane styleClass="root, dark-mode">
-    <!-- 深色模式内容 -->
-</BorderPane>
-```
-
-### 高对比度模式
-
-在FXML文件中添加 `high-contrast` 类：
-
-```xml
-<BorderPane styleClass="root, high-contrast">
-    <!-- 高对比度内容 -->
-</BorderPane>
-```
-
-## 🐛 常见问题
-
-### Q1: 启动时显示空白页面
-
-**原因**：FXML文件路径错误或文件不存在
-
-**解决方法**：
-1. 检查FXML文件是否存在于 `src/main/resources/fxml/` 目录
-2. 检查FXML文件名是否正确
-3. 检查控制器类名是否正确
-
-### Q2: 样式没有生效
-
-**原因**：CSS文件路径错误或文件不存在
-
-**解决方法**：
-1. 检查CSS文件是否存在于 `src/main/resources/css/` 目录
-2. 检查CSS文件名是否正确
-3. 清理并重新编译项目
-
-### Q3: 控制器方法没有执行
-
-**原因**：FXML中的 `fx:id` 与控制器中的字段名不匹配
-
-**解决方法**：
-1. 检查FXML中的 `fx:id` 属性
-2. 检查控制器中的 `@FXML` 注解字段
-3. 确保名称完全匹配（区分大小写）
-
-### Q4: 点击按钮没有反应
-
-**原因**：FXML中的 `onAction` 与控制器中的方法名不匹配
-
-**解决方法**：
-1. 检查FXML中的 `onAction` 属性
-2. 检查控制器中的 `@FXML` 注解方法
-3. 确保方法名完全匹配（区分大小写）
-
-### Q5: 数据没有显示
-
-**原因**：Service注入失败或数据加载失败
-
-**解决方法**：
-1. 检查Service是否正确注入
-2. 检查数据库连接是否正常
-3. 检查Service方法是否正确实现
-4. 查看控制台日志获取错误信息
-
-### Q6: 编译失败
-
-**原因**：代码语法错误或依赖缺失
-
-**解决方法**：
-1. 查看编译错误信息
-2. 修复语法错误
-3. 检查依赖是否完整
-4. 清理并重新编译：`mvn clean compile`
-
-### Q7: 端口被占用
-
-**原因**：端口9095已被其他程序占用
-
-**解决方法**：
-1. 查找占用端口的程序并关闭
-2. 修改配置文件中的端口号
-3. 使用命令行参数指定端口：`--server.port=8080`
-
-## 📊 性能优化建议
-
-### 1. 启用硬件加速
-
-在FXML中添加样式类：
-```xml
-<VBox styleClass="gpu-accelerated">
-    <!-- 内容 -->
-</VBox>
-```
-
-### 2. 使用懒加载
-
-在FXML中添加样式类：
-```xml
-<VBox styleClass="lazy-load">
-    <!-- 内容 -->
-</VBox>
-```
-
-### 3. 优化图片
-
-- 使用适当的图片格式（WebP）
-- 压缩图片质量
-- 延迟加载非关键图片
-
-### 4. 优化CSS
-
-- 压缩CSS文件
-- 移除未使用的样式
-- 使用CSS变量
-
-## 📱 响应式测试
-
-### 测试不同屏幕尺寸
-
-1. **桌面端**（≥1400px）：
-   - 侧边栏宽度：280px
-   - 内容内边距：32px
-   - 字体大小：16px
-
-2. **小型桌面**（1024-1399px）：
-   - 侧边栏宽度：260px
-   - 内容内边距：24px
-   - 字体大小：14px
-
-3. **平板**（768-1023px）：
-   - 侧边栏宽度：240px
-   - 内容内边距：20px
-   - 字体大小：14px
-
-4. **手机**（<768px）：
-   - 侧边栏宽度：200px
-   - 内容内边距：16px
-   - 字体大小：12px
-
-## ♿ 可访问性测试
-
-### 键盘导航测试
-
-1. 使用Tab键导航
-2. 使用Enter键确认
-3. 使用Esc键取消
-4. 检查焦点指示器是否清晰
-
-### 屏幕阅读器测试
-
-1. 使用屏幕阅读器软件
-2. 检查文本描述是否完整
-3. 检查ARIA属性是否正确
-
-### 高对比度测试
-
-1. 启用高对比度模式
-2. 检查色彩对比度是否足够
-3. 检查文本是否清晰可读
-
-## 📞 技术支持
-
-### 获取帮助
-
-1. **查看文档**：
-   - [UI_UX_DESIGN_GUIDE.md](./UI_UX_DESIGN_GUIDE.md) - 完整设计文档
-   - [QUICK_START.md](./QUICK_START.md) - 快速开始指南
-   - [COMPLETION_REPORT.md](./COMPLETION_REPORT.md) - 完成报告
-   - [IMPLEMENTATION_GUIDE.md](./IMPLEMENTATION_GUIDE.md) - 界面引入指南
-
-2. **查看代码注释**：
-   - 所有新增的代码都有详细的注释
-   - 关键方法都有JavaDoc文档
-
-3. **查看控制台日志**：
-   - 启动时查看初始化日志
-   - 操作时查看错误信息
-
-### 日志级别配置
-
-编辑 `src/main/resources/application.properties` 文件：
-
-```properties
-# 设置日志级别
-logging.level.root=INFO
-logging.level.com.ceams=DEBUG
-logging.level.org.springframework=DEBUG
-logging.level.org.mybatis=DEBUG
-```
-
-## 🎉 总结
-
-新的现代化UI/UX设计系统已经成功引入到盛韵建筑账目管理系统中。现在您可以：
-
-1. ✅ 使用现代化的登录界面
-2. ✅ 使用现代化的主界面
-3. ✅ 使用现代化的账目列表
-4. ✅ 享受流畅的交互动画
-5. ✅ 体验响应式设计
-6. ✅ 受益于性能优化
-7. ✅ 使用完整的组件库
-
-**立即启动应用程序，体验全新的现代化界面吧！** 🚀
+本文档对应当前仓库结构（Spring Boot 后端 + web / desktop / miniprogram 三端 monorepo），
+本地开发推荐使用「后端 Docker 容器 + Web 前端 Vite 开发服务器」的组合方式。
 
 ---
 
-**文档版本**: v1.0
-**更新日期**: 2024年
-**设计团队**: AI设计助手
+## 一、环境准备（首次执行）
+
+| 依赖 | 版本要求 | 说明 |
+|------|----------|------|
+| JDK | 17+ | 本地直接跑后端时需要；纯 Docker 方式可不装 |
+| Node.js | ≥ 20.19.0 | 前端构建 |
+| pnpm | ≥ 9.0.0 | `npm i -g pnpm` |
+| Docker Desktop | 已安装并启动 | 运行 MySQL / Redis / 后端 / OnlyOffice / Ollama |
+| 微信开发者工具 | 最新稳定版 | 仅小程序端需要 |
+
+安装前端依赖（仓库根目录执行一次即可）：
+
+```powershell
+cd e:\sxassist
+pnpm install
+```
+
+---
+
+## 二、启动后端（Docker 方式，推荐）
+
+根目录 [docker-compose.yml](../docker-compose.yml) 用于本地开发编排，包含
+`app`（Spring Boot，宿主端口 **9095**）、`ollama`、`onlyoffice` 三个服务，
+并复用已在运行的 `ceams-mysql`、`ceams-redis` 容器（同一外部网络 `ceams-net`）。
+
+### 1. 首次执行的网络准备
+
+```powershell
+docker network create ceams-net
+docker network connect ceams-net ceams-mysql
+docker network connect ceams-net ceams-redis
+```
+
+> 只有第一步需要执行；网络已存在时会提示 already exists，可忽略。
+> `ceams-mysql` / `ceams-redis` 若尚未创建，请先用 [deploy/docker-compose.yml](../deploy/docker-compose.yml) 启动。
+
+### 2. 构建并启动
+
+```powershell
+cd e:\sxassist
+docker compose up -d --build
+```
+
+首次构建会下载 Maven 依赖，较慢；后续修改代码后需重新执行 `--build` 使改动生效
+（容器运行的是镜像，不是源码目录）。
+
+### 3. 验证
+
+```powershell
+docker compose ps
+curl http://localhost:9095/actuator/health   # 期望 {"status":"UP"}
+```
+
+### 4. 关闭
+
+```powershell
+docker compose down
+```
+
+> ⚠️ 生产部署请使用 [deploy/docker-compose.yml](../deploy/docker-compose.yml)（端口 8080、密钥由 `.env` 注入），
+> 根目录这份仅供本地开发，两者不可混用。
+
+---
+
+## 三、启动 Web 前端
+
+```powershell
+cd e:\sxassist
+pnpm dev            # 等价于 pnpm --filter @ceams/web dev
+```
+
+浏览器访问 http://localhost:5173
+
+- 开发环境通过 Vite 代理把 `/api` 转发到后端：
+  [.env.development.local](../apps/web/.env.development.local) 中 `VITE_PROXY_TARGET=http://localhost:9095`。
+- 若后端改到其他端口，修改该文件中的 `VITE_PROXY_TARGET` 后重启 dev server。
+- 前端构建产物：`pnpm build`（输出到 `apps/web/dist`）。
+
+---
+
+## 四、启动微信小程序
+
+```powershell
+cd e:\sxassist
+pnpm --filter @ceams/miniprogram dev:mp-weixin
+```
+
+1. 用微信开发者工具打开目录 `apps/miniprogram/dist/dev/mp-weixin`。
+2. 详情 → 本地设置 → 勾选「不校验合法域名、web-view（业务域名）、TLS 版本以及 HTTPS 证书」。
+3. 接口地址由 [.env.development.local](../apps/miniprogram/.env.development.local) 控制，当前为 `http://localhost:9095`。
+4. 真机调试需把地址改成电脑局域网 IP（手机与电脑同一网络）。
+5. 若接口地址变更后仍请求旧域名，执行「清除全部缓存」再重新编译。
+
+> 注意：`uni build -p mp-weixin` 只读取 `.env.production` 与 `.env`，
+> 生产构建务必显式配置 `VITE_API_BASE_URL`，否则会回退到占位域名 `https://api.example.com`。
+
+---
+
+## 五、启动桌面端（Electron）
+
+```powershell
+cd e:\sxassist
+pnpm --filter @ceams/desktop start   # 编译主进程并启动 electron（开发调试）
+```
+
+打包安装包：
+
+```powershell
+pnpm --filter @ceams/desktop dist    # 产物在 apps/desktop/release
+```
+
+---
+
+## 六、服务端口一览
+
+| 服务 | 端口 | 地址 |
+|------|------|------|
+| 后端 API | 9095 | http://localhost:9095 |
+| 健康检查 | 9095 | http://localhost:9095/actuator/health |
+| Web 前端 | 5173 | http://localhost:5173 |
+| MySQL | 13306（宿主）→ 3306（容器） | jdbc:mysql://localhost:13306/ceams |
+| Redis | 6379 | localhost:6379 |
+| OnlyOffice | 8081 | http://localhost:8081 |
+| Ollama | 11434（仅回环） | http://127.0.0.1:11434 |
+
+---
+
+## 七、默认账号
+
+| 账号 | 密码 | 角色 |
+|------|------|------|
+| admin | admin123 | 系统管理员 |
+| staff01 / hr01 / pm01 | admin123 | 普通业务角色 |
+| zhangsan | 123456 | 普通用户 |
+
+> 新建用户未指定密码时默认密码为 `123456`；密码不对时在 Web 端「用户管理」中重置。
+
+---
+
+## 八、常见问题
+
+| 现象 | 原因与处理 |
+|------|------------|
+| 前端接口 404 / 连接失败 | 后端未启动或端口不一致，检查 `VITE_PROXY_TARGET` 与 `docker compose ps` |
+| 后端启动即退出 | 查看 `docker compose logs -f app`，多为 MySQL/Redis 未就绪或不在 `ceams-net` 网络 |
+| 修改后端代码不生效 | 容器运行旧镜像，执行 `docker compose up -d --build app` 重建 |
+| OnlyOffice 打开文档报错 | JWT 密钥需与 `onlyoffice` 服务一致；清理缓存时需同步清理数据库 `onlyoffice.task_result` 残留记录 |
+| AI 功能不可用 | `AI_ENABLED` 默认关闭；Ollama 首次需拉取模型：`docker exec ceams-ollama ollama pull qwen2.5:7b` |
+| 小程序请求 `ERR_NAME_NOT_RESOLVED` | 构建未注入 `VITE_API_BASE_URL`，回退到了占位域名 `api.example.com` |

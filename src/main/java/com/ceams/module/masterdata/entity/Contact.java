@@ -1,0 +1,47 @@
+package com.ceams.module.masterdata.entity;
+
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableName;
+import com.ceams.common.base.BaseEntity;
+import com.ceams.common.crypto.SensitiveTypeHandler;
+import com.ceams.module.masterdata.enums.ContactType;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+
+/**
+ * 往来单位（biz_contact）。
+ *
+ * <p>税号 / 银行账号 / 手机号为敏感字段，库内需加密、VO 输出脱敏。
+ */
+@Data
+@EqualsAndHashCode(callSuper = true)
+@TableName(value = "biz_contact", autoResultMap = true)
+public class Contact extends BaseEntity {
+
+    /** 单位名称。 */
+    private String name;
+
+    /** 类型。 */
+    private ContactType type;
+
+    /** 联系人。 */
+    private String contactPerson;
+
+    /** 手机号（敏感，需加密）。 */
+    @TableField(typeHandler = SensitiveTypeHandler.class)
+    private String phone;
+
+    /** 邮箱。 */
+    private String email;
+
+    /** 地址。 */
+    private String address;
+
+    /** 税号（敏感，需加密）。 */
+    @TableField(typeHandler = SensitiveTypeHandler.class)
+    private String taxIdentificationNumber;
+
+    /** 银行账号（敏感，需加密）。 */
+    @TableField(typeHandler = SensitiveTypeHandler.class)
+    private String bankAccount;
+}

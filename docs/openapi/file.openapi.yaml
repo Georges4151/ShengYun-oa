@@ -1,0 +1,136 @@
+openapi: 3.0.3
+info:
+  title: CEAMS File API
+  version: 1.0.0
+  description: |
+    CEAMS 文件域（file）契约：轻量文件上传/下载与上传目录只读存储信息。
+    全局规范与 iam/bank/seal 一致：鉴权 Bearer、统一响应体 ApiResponse、字节数为 int64。
+    本文件为追加式契约（不改变既有 `/api/v1/files/*` 上传/下载行为），仅补录存储信息接口。
+servers:
+  - url: https://api.ceams.local/api/v1
+    description: 生产
+  - url: http://localhost:8080/api/v1
+    description: 本地
+tags:
+  - name: file
+    description: 文件上传/下载与存储目录信息
+paths:
+  /files/storage-info:
+    get:
+      tags: [file]
+      summary: 文件存储目录只读信息
+      description: |
+        返回上传根目录（ceams.file.upload-dir / 环境变量 FILE_UPLOAD_DIR）的位置、递归占用统计
+        以及目录所在分区的可用/总空间，供系统管理员在 Web 端展示。
+        - 「业务附件」= 根目录下的直接文件；其余条目为根目录下的一级子目录（avatars / doc / tmp 等），
+          每个子目录内部递归统计，但不重复计入「业务附件」。
+        - directories 已按 sizeBytes 倒序排列。
+        - 目录不存在时返回 exists=false，其余统计为 0 / 空数组，不返回错误。
+        - 路径改动需调整 FILE_UPLOAD_DIR 或容器卷挂载后重启服务生效。
+      operationId: getFileStorageInfo
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: 存储信息
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FileStorageInfoResponse' }
+        '401':
+          description: 未认证或令牌失效（AUTH_TOKEN_INVALID）
+        '403':
+          description: 非系统管理员（AUTH_ACCESS_DENIED）
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    ApiResponse:
+      type: object
+      required: [code, message, traceId, timestamp]
+      properties:
+        code: { type: integer, format: int32, example: 0 }
+        message: { type: string, example: success }
+        data: { nullable: true }
+        traceId: { type: string }
+        timestamp: { type: string, format: date-time }
+    FileStorageInfoResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data: { $ref: '#/components/schemas/FileStorageInfoVO' }
+    FileStorageInfoVO:
+      type: object
+      required:
+        [
+          configuredPath,
+          absolutePath,
+          exists,
+          writable,
+          fileCount,
+          totalSizeBytes,
+          diskUsableBytes,
+          diskTotalBytes,
+          directories
+        ]
+      properties:
+        configuredPath:
+          type: string
+          description: 配置中的原始路径（ceams.file.upload-dir 的值）
+          example: ./data/files
+        absolutePath:
+          type: string
+          description: 解析后的绝对路径（Path.toAbsolutePath().normalize().toString()）
+          example: /app/data/files
+        exists:
+          type: boolean
+          description: 目录是否存在（存在且为目录）
+        writable:
+          type: boolean
+          description: 目录是否存在且可写（Files.isWritable）
+        fileCount:
+          type: integer
+          format: int64
+          description: 递归统计的常规文件数量（不含目录，忽略符号链接与不可读文件）
+          example: 128
+        totalSizeBytes:
+          type: integer
+          format: int64
+          description: 递归统计的文件总字节数
+          example: 10485760
+        diskUsableBytes:
+          type: integer
+          format: int64
+          nullable: true
+          description: 目录所在分区可用字节数；文件系统探测失败时为 null
+          example: 53687091200
+        diskTotalBytes:
+          type: integer
+          format: int64
+          nullable: true
+          description: 目录所在分区总容量字节数；文件系统探测失败时为 null
+          example: 107374182400
+        directories:
+          type: array
+          description: 分类占用统计（「业务附件」+ 各一级子目录），按 sizeBytes 倒序
+          items: { $ref: '#/components/schemas/DirectoryStatVO' }
+    DirectoryStatVO:
+      type: object
+      required: [name, fileCount, sizeBytes]
+      properties:
+        name:
+          type: string
+          description: 分类名称：根目录直接文件固定为「业务附件」，子目录取目录名
+          example: 业务附件
+        fileCount:
+          type: integer
+          format: int64
+          description: 该分类下的常规文件数量（不含目录）
+          example: 32
+        sizeBytes:
+          type: integer
+          format: int64
+          description: 该分类占用的字节数
+          example: 2097152

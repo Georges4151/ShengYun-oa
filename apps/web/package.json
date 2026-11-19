@@ -1,0 +1,33 @@
+{
+  "name": "@ceams/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "build:electron": "vite build --mode electron --outDir dist-electron",
+    "typecheck": "vue-tsc --noEmit -p tsconfig.json",
+    "preview": "vite preview",
+    "lint": "eslint . --max-warnings 0"
+  },
+  "dependencies": {
+    "@ceams/api-client": "workspace:*",
+    "@ceams/types": "workspace:*",
+    "@ceams/ui-web": "workspace:*",
+    "@ceams/utils": "workspace:*",
+    "element-plus": "^2.14.7",
+    "pinia": "^3.0.4",
+    "qrcode": "^1.5.4",
+    "vue": "^3.5.44",
+    "vue-router": "4.4.4"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/qrcode": "^1.5.5",
+    "@vitejs/plugin-vue": "^6.0.10",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.7",
+    "vue-tsc": "^2.2.12"
+  }
+}
