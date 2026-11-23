@@ -6,9 +6,9 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ceams.common.exception.BusinessException;
 import com.ceams.common.exception.ErrorCode;
 import com.ceams.common.security.SecurityUtils;
+import com.ceams.module.ai.client.AiChatClient;
 import com.ceams.module.ai.client.ChatMessage;
 import com.ceams.module.ai.client.OllamaChatResult;
-import com.ceams.module.ai.client.OllamaClient;
 import com.ceams.module.ai.client.OllamaToolCall;
 import com.ceams.module.ai.config.AiChatExecutorConfiguration;
 import com.ceams.module.ai.config.AiProperties;
@@ -118,7 +118,7 @@ public class AiChatServiceImpl implements AiChatService {
     static final ZoneId BUSINESS_ZONE = ZoneId.of("Asia/Shanghai");
 
     private final AiProperties aiProperties;
-    private final OllamaClient ollamaClient;
+    private final AiChatClient aiChatClient;
     private final ToolRegistry toolRegistry;
     private final AiAuditService aiAuditService;
     private final AiConversationMapper conversationMapper;
@@ -131,7 +131,7 @@ public class AiChatServiceImpl implements AiChatService {
     @Autowired
     public AiChatServiceImpl(
             AiProperties aiProperties,
-            OllamaClient ollamaClient,
+            AiChatClient aiChatClient,
             ToolRegistry toolRegistry,
             AiAuditService aiAuditService,
             AiConversationMapper conversationMapper,
@@ -141,7 +141,7 @@ public class AiChatServiceImpl implements AiChatService {
                     TaskExecutor aiChatTaskExecutor) {
         this(
                 aiProperties,
-                ollamaClient,
+                aiChatClient,
                 toolRegistry,
                 aiAuditService,
                 conversationMapper,
@@ -154,7 +154,7 @@ public class AiChatServiceImpl implements AiChatService {
     /** 可注入 Clock 的构造器，便于单测固定「今天」。 */
     AiChatServiceImpl(
             AiProperties aiProperties,
-            OllamaClient ollamaClient,
+            AiChatClient aiChatClient,
             ToolRegistry toolRegistry,
             AiAuditService aiAuditService,
             AiConversationMapper conversationMapper,
@@ -163,7 +163,7 @@ public class AiChatServiceImpl implements AiChatService {
             TaskExecutor aiChatTaskExecutor,
             Clock clock) {
         this.aiProperties = aiProperties;
-        this.ollamaClient = ollamaClient;
+        this.aiChatClient = aiChatClient;
         this.toolRegistry = toolRegistry;
         this.aiAuditService = aiAuditService;
         this.conversationMapper = conversationMapper;
@@ -176,7 +176,7 @@ public class AiChatServiceImpl implements AiChatService {
     @Override
     public void chat(AiChatRequest request, SseEmitter emitter) {
         // 开关关闭属于前置条件，必须在提交异步任务前抛出，由全局异常处理返回 JSON（而不是 SSE）。
-        if (!aiProperties.isEnabled()) {
+        if (!aiChatClient.isEnabled()) {
             throw BusinessException.of(ErrorCode.BIZ_STATE_CONFLICT, "AI 功能未启用");
         }
         AiChatEventSink sink = new SseEmitterEventSink(emitter, objectMapper);
@@ -196,7 +196,7 @@ public class AiChatServiceImpl implements AiChatService {
      */
     @Override
     public AiChatSyncVO chatSync(AiChatRequest request) {
-        if (!aiProperties.isEnabled()) {
+        if (!aiChatClient.isEnabled()) {
             throw BusinessException.of(ErrorCode.BIZ_STATE_CONFLICT, "AI 功能未启用");
         }
         CollectingEventSink sink = new CollectingEventSink();
@@ -232,7 +232,7 @@ public class AiChatServiceImpl implements AiChatService {
             String question = request.getMessage().trim();
             Long conversationId =
                     resolveConversation(request.getConversationId(), userId, question);
-            sink.meta(String.valueOf(conversationId), aiProperties.getModel());
+            sink.meta(String.valueOf(conversationId), aiChatClient.textModel());
 
             List<ChatMessage> history = loadHistory(conversationId);
             safeAppend(conversationId, ROLE_USER, question, null, null, null, null, null);
@@ -248,7 +248,7 @@ public class AiChatServiceImpl implements AiChatService {
                                 ROLE_ASSISTANT,
                                 refusal,
                                 null,
-                                aiProperties.getModel(),
+                                aiChatClient.textModel(),
                                 null,
                                 null,
                                 (int) Math.min(Integer.MAX_VALUE, latencyMs));
@@ -276,7 +276,7 @@ public class AiChatServiceImpl implements AiChatService {
                             ROLE_ASSISTANT,
                             answer,
                             toToolSummaryJson(exchange.toolSummaries()),
-                            aiProperties.getModel(),
+                            aiChatClient.textModel(),
                             exchange.promptTokens(),
                             exchange.completionTokens(),
                             (int) Math.min(Integer.MAX_VALUE, latencyMs));
@@ -426,7 +426,7 @@ public class AiChatServiceImpl implements AiChatService {
 
     private OllamaChatResult callOllama(
             List<ChatMessage> messages, List<Map<String, Object>> tools, AiChatEventSink sink) {
-        OllamaChatResult result = ollamaClient.chatStream(messages, tools, sink::delta);
+        OllamaChatResult result = aiChatClient.chatStream(messages, tools, sink::delta);
         return result == null ? new OllamaChatResult() : result;
     }
 

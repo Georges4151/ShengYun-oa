@@ -75,6 +75,8 @@ export interface ProjectApi {
   contractCreate(body: SubcontractorContractCreateRequest): Promise<Id>
   contractUpdate(id: Id, body: SubcontractorContractUpdateRequest): Promise<void>
   contractRemove(id: Id): Promise<void>
+  /** 提交分包合同审批，返回 BPM 流程实例 ID。 */
+  subcontractorContractSubmitApproval(id: Id): Promise<Id>
 
   proofPage(query?: SettlementProofPageQuery): Promise<PageResult<SettlementProofVO>>
   proofDetail(id: Id): Promise<SettlementProofVO>
@@ -214,6 +216,9 @@ export function createProjectApi(client: HttpClient): ProjectApi {
     },
     async contractRemove(id) {
       return client.delete<void>(`/api/v1/subcontractor-contracts/${id}`)
+    },
+    async subcontractorContractSubmitApproval(id) {
+      return client.post<Id>(`/api/v1/project/subcontractor-contracts/${id}/submit-approval`)
     },
 
     async proofPage(query = {}) {

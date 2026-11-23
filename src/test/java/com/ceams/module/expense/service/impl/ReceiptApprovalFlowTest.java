@@ -25,6 +25,7 @@ import com.ceams.module.expense.enums.VerificationStatus;
 import com.ceams.module.expense.mapper.ApprovalRecordMapper;
 import com.ceams.module.expense.mapper.ReceiptMapper;
 import com.ceams.module.expense.mapper.ReceiptVerificationMapper;
+import com.ceams.module.expense.service.ExpenseAmountRuleService;
 import com.ceams.module.expense.support.ExpenseBpmCallback;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -65,6 +66,7 @@ class ReceiptApprovalFlowTest {
     @Mock private ApprovalRecordConverter approvalRecordConverter;
     @Mock private ReceiptVerificationConverter receiptVerificationConverter;
     @Mock private BpmInstanceService bpmInstanceService;
+    @Mock private ExpenseAmountRuleService amountRuleService;
 
     private ReceiptServiceImpl receiptService;
     private ExpenseBpmCallback expenseBpmCallback;
@@ -79,8 +81,11 @@ class ReceiptApprovalFlowTest {
                         receiptConverter,
                         approvalRecordConverter,
                         receiptVerificationConverter,
-                        bpmInstanceService);
+                        bpmInstanceService,
+                        amountRuleService);
         expenseBpmCallback = new ExpenseBpmCallback(receiptMapper);
+        // 默认命中兜底规则：额度规则匹配逻辑由 ExpenseAmountRuleMatcherTest 覆盖
+        when(amountRuleService.resolveTemplateCode(any(), any(), any())).thenReturn("EXPENSE");
     }
 
     /** 草稿提交：发起 EXPENSE 流程，状态 DRAFT -> PENDING，并回写流程实例 ID。 */
@@ -204,6 +209,26 @@ class ReceiptApprovalFlowTest {
                 .hasMessageContaining("仅草稿态或驳回态的票据可上报")
                 .extracting(ex -> ((BusinessException) ex).getErrorCode())
                 .isEqualTo(ErrorCode.BIZ_STATE_CONFLICT);
+        verify(bpmInstanceService, never()).start(any(InstanceStartRequest.class));
+        verify(receiptMapper, never()).updateById(any(Receipt.class));
+    }
+
+    /** 无额度规则命中：拒绝提交，不发起流程、不写库。 */
+    @Test
+    void submitShouldRejectWhenNoAmountRuleMatched() {
+        when(receiptMapper.selectByIdForUpdate(RECEIPT_ID))
+                .thenReturn(receipt(ReceiptApprovalStatus.DRAFT));
+        when(amountRuleService.resolveTemplateCode(any(), any(), any()))
+                .thenThrow(
+                        BusinessException.of(
+                                ErrorCode.BIZ_UNPROCESSABLE,
+                                "当前报销金额未匹配到审批流程规则，请联系管理员配置额度分级规则"));
+
+        assertThatThrownBy(() -> receiptService.submit(RECEIPT_ID))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("未匹配到审批流程规则")
+                .extracting(ex -> ((BusinessException) ex).getErrorCode())
+                .isEqualTo(ErrorCode.BIZ_UNPROCESSABLE);
         verify(bpmInstanceService, never()).start(any(InstanceStartRequest.class));
         verify(receiptMapper, never()).updateById(any(Receipt.class));
     }

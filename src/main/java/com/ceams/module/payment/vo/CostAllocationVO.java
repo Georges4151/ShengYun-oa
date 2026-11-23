@@ -26,5 +26,11 @@ public class CostAllocationVO {
 
     private BigDecimal allocationRatio;
 
+    /** 流水记录展示名称（优先流水所属项目名称，其次流水描述）。 */
+    private String accountRecordName;
+
+    /** 分摊目标名称（按 targetType 从项目/合同/部门回填，SERVICE 为空）。 */
+    private String targetName;
+
     private LocalDateTime createTime;
 }

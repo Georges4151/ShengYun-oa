@@ -46,7 +46,12 @@ public class SysUser extends BaseEntity {
     /** 所属部门 ID（逻辑引用 sys_dept.id，可空）。 */
     private Long deptId;
 
-    /** 直属上级用户 ID（逻辑引用 sys_user.id，可空）。 */
+    /**
+     * 已废弃：V50 起直属上级由 hr_employee.leader_id 承载，本列停止读写，仅保留历史数据。
+     *
+     * @deprecated 请改用 {@code hr_employee.leader_id}（逻辑引用 hr_employee.id）。
+     */
+    @Deprecated
     private Long leaderId;
 
     /** 企业微信成员账号（唯一；手工本地账号为空，由组织同步回填）。 */

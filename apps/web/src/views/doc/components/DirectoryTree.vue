@@ -234,6 +234,9 @@ async function onDelete(node: DirectoryNodeVO): Promise<void> {
       <el-button v-if="canCreateRoot" link type="primary" size="small" @click="openCreate(null)">
         新建根目录
       </el-button>
+      <span v-else-if="libraryType === 'PROJECT' && !projectId" class="tree-hint">
+        请先选择项目
+      </span>
     </div>
 
     <el-scrollbar class="tree-body">
@@ -340,6 +343,12 @@ async function onDelete(node: DirectoryNodeVO): Promise<void> {
   font-size: var(--ceams-font-size-base);
   font-weight: 600;
   color: var(--ceams-text-primary);
+}
+
+/* 项目库未选项目时的提示 */
+.tree-hint {
+  font-size: var(--ceams-font-size-sm);
+  color: var(--ceams-text-placeholder);
 }
 
 .tree-body {

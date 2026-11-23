@@ -2,6 +2,8 @@ package com.ceams.module.admin.vo;
 
 import com.ceams.module.admin.enums.AssetCategory;
 import com.ceams.module.admin.enums.AssetStatus;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -12,6 +14,7 @@ import lombok.Data;
 public class AssetVO {
 
     /** 资产 ID。 */
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long id;
 
     /** 资产编号。 */
@@ -33,9 +36,11 @@ public class AssetVO {
     private BigDecimal purchasePrice;
 
     /** 归属部门 ID。 */
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long deptId;
 
     /** 保管人 ID。 */
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long keeperId;
 
     /** 存放位置。 */

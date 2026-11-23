@@ -39,8 +39,6 @@ import com.ceams.module.hr.util.HrPageUtil;
 import com.ceams.module.hr.vo.PerformanceBatchResultVO;
 import com.ceams.module.hr.vo.PerformanceReviewVO;
 import com.ceams.module.hr.vo.PerformanceTemplateVO;
-import com.ceams.module.iam.entity.SysUser;
-import com.ceams.module.iam.mapper.UserMapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
@@ -101,7 +99,6 @@ public class HrPerformanceServiceImpl implements HrPerformanceService {
     private final HrPerformanceTemplateMapper templateMapper;
     private final HrPerformanceReviewMapper reviewMapper;
     private final HrEmployeeMapper employeeMapper;
-    private final UserMapper userMapper;
     private final HrEmployeeService employeeService;
     private final BpmInstanceService bpmInstanceService;
     private final BpmTaskService bpmTaskService;
@@ -240,7 +237,7 @@ public class HrPerformanceServiceImpl implements HrPerformanceService {
                         .filter(Objects::nonNull)
                         .collect(Collectors.toSet());
 
-        Map<Long, SysUser> users = loadUsers(employees);
+        Map<Long, HrEmployee> employeeMap = loadEmployeesWithLeaders(employees);
         int created = 0;
         for (HrEmployee employee : employees) {
             if (existed.contains(employee.getId())) {
@@ -250,7 +247,7 @@ public class HrPerformanceServiceImpl implements HrPerformanceService {
             review.setEmployeeId(employee.getId());
             review.setTemplateId(template.getId());
             review.setPeriod(period);
-            review.setLeaderId(resolveLeaderId(employee, users));
+            review.setLeaderId(resolveLeaderId(employee, employeeMap));
             review.setStatus(PerformanceReviewStatus.DRAFT);
             reviewMapper.insert(review);
             created++;
@@ -723,27 +720,34 @@ public class HrPerformanceServiceImpl implements HrPerformanceService {
                 .collect(Collectors.toMap(HrPerformanceTemplate::getId, Function.identity(), (a, b) -> a));
     }
 
-    private Map<Long, SysUser> loadUsers(List<HrEmployee> employees) {
-        List<Long> userIds =
+    /** 批量场景：以已查员工列表构造映射，并一次性补齐不在列表中的上级员工。 */
+    private Map<Long, HrEmployee> loadEmployeesWithLeaders(List<HrEmployee> employees) {
+        Map<Long, HrEmployee> map = new LinkedHashMap<>();
+        for (HrEmployee employee : employees) {
+            map.put(employee.getId(), employee);
+        }
+        List<Long> missingLeaderIds =
                 employees.stream()
-                        .map(HrEmployee::getUserId)
+                        .map(HrEmployee::getLeaderId)
                         .filter(Objects::nonNull)
+                        .filter(id -> !map.containsKey(id))
                         .distinct()
                         .toList();
-        if (userIds.isEmpty()) {
-            return Map.of();
+        if (!missingLeaderIds.isEmpty()) {
+            employeeMapper
+                    .selectBatchIds(missingLeaderIds)
+                    .forEach(employee -> map.putIfAbsent(employee.getId(), employee));
         }
-        return userMapper.selectBatchIds(userIds).stream()
-                .collect(Collectors.toMap(SysUser::getId, Function.identity(), (a, b) -> a));
+        return map;
     }
 
-    /** 员工直属上级（sys_user.leader_id），批量场景复用已加载的用户映射。 */
-    private Long resolveLeaderId(HrEmployee employee, Map<Long, SysUser> users) {
-        if (employee == null || employee.getUserId() == null) {
+    /** 员工直属上级用户 ID（hr_employee.leader_id），批量场景复用已加载的员工映射。 */
+    private Long resolveLeaderId(HrEmployee employee, Map<Long, HrEmployee> employees) {
+        if (employee == null || employee.getLeaderId() == null) {
             return null;
         }
-        SysUser user = users.get(employee.getUserId());
-        return user == null ? null : user.getLeaderId();
+        HrEmployee leader = employees.get(employee.getLeaderId());
+        return leader == null ? null : leader.getUserId();
     }
 
     /** 单个员工的直属上级；考评单已快照则直接复用快照。 */
@@ -756,11 +760,11 @@ public class HrPerformanceServiceImpl implements HrPerformanceService {
 
     private Long resolveLeaderId(Long employeeId) {
         HrEmployee employee = employeeId == null ? null : employeeMapper.selectById(employeeId);
-        if (employee == null || employee.getUserId() == null) {
+        if (employee == null || employee.getLeaderId() == null) {
             return null;
         }
-        SysUser user = userMapper.selectById(employee.getUserId());
-        return user == null ? null : user.getLeaderId();
+        HrEmployee leader = employeeMapper.selectById(employee.getLeaderId());
+        return leader == null ? null : leader.getUserId();
     }
 
     // ------------------------------------------------------------------

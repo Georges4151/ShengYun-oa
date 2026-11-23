@@ -45,8 +45,6 @@ import com.ceams.module.hr.mapper.HrPerformanceTemplateMapper;
 import com.ceams.module.hr.service.HrEmployeeService;
 import com.ceams.module.hr.vo.PerformanceBatchResultVO;
 import com.ceams.module.hr.vo.PerformanceReviewVO;
-import com.ceams.module.iam.entity.SysUser;
-import com.ceams.module.iam.mapper.UserMapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.util.List;
@@ -68,6 +66,7 @@ class HrPerformanceServiceImplTest {
     private static final Long REVIEW_ID = 8001L;
     private static final Long TEMPLATE_ID = 9000L;
     private static final Long EMPLOYEE_ID = 900L;
+    private static final Long LEADER_EMPLOYEE_ID = 901L;
     private static final Long LEADER_USER_ID = 12L;
 
     /** 两考评项（60 / 40）模板 JSON。 */
@@ -83,7 +82,6 @@ class HrPerformanceServiceImplTest {
     @Mock private HrPerformanceTemplateMapper templateMapper;
     @Mock private HrPerformanceReviewMapper reviewMapper;
     @Mock private HrEmployeeMapper employeeMapper;
-    @Mock private UserMapper userMapper;
     @Mock private HrEmployeeService employeeService;
     @Mock private BpmInstanceService bpmInstanceService;
     @Mock private BpmTaskService bpmTaskService;
@@ -97,7 +95,6 @@ class HrPerformanceServiceImplTest {
                         templateMapper,
                         reviewMapper,
                         employeeMapper,
-                        userMapper,
                         employeeService,
                         bpmInstanceService,
                         bpmTaskService,
@@ -172,13 +169,14 @@ class HrPerformanceServiceImplTest {
     @Test
     void batchGenerateShouldSkipExistingReview() {
         when(templateMapper.selectById(TEMPLATE_ID)).thenReturn(template());
+        HrEmployee leader = employee(101L, 11L);
+        HrEmployee subordinate = employee(102L, 12L);
+        subordinate.setLeaderId(101L);
         when(employeeMapper.selectList(any(Wrapper.class)))
-                .thenReturn(List.of(employee(101L, 11L), employee(102L, 12L)));
+                .thenReturn(List.of(leader, subordinate));
         HrPerformanceReview existed = new HrPerformanceReview();
         existed.setEmployeeId(101L);
         when(reviewMapper.selectList(any(Wrapper.class))).thenReturn(List.of(existed));
-        when(userMapper.selectBatchIds(any()))
-                .thenReturn(List.of(user(11L, LEADER_USER_ID), user(12L, null)));
         when(reviewMapper.insert(any(HrPerformanceReview.class)))
                 .thenAnswer(
                         invocation -> {
@@ -198,7 +196,8 @@ class HrPerformanceServiceImplTest {
         HrPerformanceReview created = captor.getValue();
         assertThat(created.getEmployeeId()).isEqualTo(102L);
         assertThat(created.getStatus()).isEqualTo(PerformanceReviewStatus.DRAFT);
-        assertThat(created.getLeaderId()).isNull();
+        // 考评单只存上级的系统用户 ID（上级员工 101 绑定用户 11）
+        assertThat(created.getLeaderId()).isEqualTo(11L);
     }
 
     @Test
@@ -208,8 +207,11 @@ class HrPerformanceServiceImplTest {
         review.setLeaderId(null);
         when(reviewMapper.selectById(REVIEW_ID)).thenReturn(review);
         when(templateMapper.selectById(TEMPLATE_ID)).thenReturn(template());
-        when(employeeMapper.selectById(EMPLOYEE_ID)).thenReturn(employee(EMPLOYEE_ID, 11L));
-        when(userMapper.selectById(11L)).thenReturn(user(11L, LEADER_USER_ID));
+        HrEmployee employee = employee(EMPLOYEE_ID, 11L);
+        employee.setLeaderId(LEADER_EMPLOYEE_ID);
+        when(employeeMapper.selectById(EMPLOYEE_ID)).thenReturn(employee);
+        when(employeeMapper.selectById(LEADER_EMPLOYEE_ID))
+                .thenReturn(employee(LEADER_EMPLOYEE_ID, LEADER_USER_ID));
         when(bpmInstanceService.start(any(InstanceStartRequest.class))).thenReturn("8110");
 
         performanceService.submitSelf(REVIEW_ID, selfRequest("90", "80"));
@@ -510,11 +512,4 @@ class HrPerformanceServiceImplTest {
         return employee;
     }
 
-    private SysUser user(Long id, Long leaderId) {
-        SysUser user = new SysUser();
-        user.setId(id);
-        user.setName("用户" + id);
-        user.setLeaderId(leaderId);
-        return user;
-    }
 }

@@ -121,11 +121,14 @@ public class BpmSecurityGuard {
                     HR_SALARY_CHANGE,
                     HR_SALARY_CORRECTION,
                     HR_PERFORMANCE,
+                    HR_PROMOTION,
                     ADMIN_ASSET_BORROW,
                     ADMIN_MATERIAL_APPLY,
                     ADMIN_VEHICLE_APPLY,
                     ADMIN_MEETING_APPLY,
-                    ADMIN_REPAIR -> true;
+                    ADMIN_REPAIR,
+                    HR_CONTRACT,
+                    SUBCONTRACT_CONTRACT -> true;
         };
         if (!allowed) {
             throw BusinessException.of(ErrorCode.AUTH_ACCESS_DENIED, "无权发起该业务类型流程：" + type);

@@ -67,7 +67,8 @@ const MENU_GROUPS: MenuGroup[] = [
     title: '系统',
     items: [
       { path: '/notification', title: '通知', icon: 'notification', permission: 'notification' },
-      { path: '/account', title: '账号', icon: 'account', permission: 'iam' }
+      { path: '/account', title: '账号', icon: 'account', permission: 'iam' },
+      { path: '/settings/ai', title: 'AI 设置', icon: 'account', permission: 'system:ai:config' }
     ]
   }
 ]

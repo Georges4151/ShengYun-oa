@@ -42,6 +42,24 @@ public class EmployeeVO {
     @JsonSerialize(using = ToStringSerializer.class)
     private Long positionId;
 
+    @JsonSerialize(using = ToStringSerializer.class)
+    private Long leaderId;
+
+    /** 直属上级姓名。 */
+    private String leaderName;
+
+    /** 直属上级工号。 */
+    private String leaderCode;
+
+    @JsonSerialize(using = ToStringSerializer.class)
+    private Long levelId;
+
+    /** 职级名称。 */
+    private String levelName;
+
+    /** 职级编码。 */
+    private String levelCode;
+
     private EmploymentType employmentType;
 
     private LocalDate hireDate;

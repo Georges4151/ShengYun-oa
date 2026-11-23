@@ -1,6 +1,8 @@
 package com.ceams.module.admin.vo;
 
 import com.ceams.module.admin.enums.MaterialApplyStatus;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import lombok.Data;
@@ -10,9 +12,11 @@ import lombok.Data;
 public class MaterialApplyVO {
 
     /** 申领单 ID。 */
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long id;
 
     /** 物料 ID。 */
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long materialId;
 
     /** 物料编码。 */
@@ -25,6 +29,7 @@ public class MaterialApplyVO {
     private String unit;
 
     /** 申请人 ID。 */
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long applicantId;
 
     /** 申请人姓名。 */
@@ -37,6 +42,7 @@ public class MaterialApplyVO {
     private String reason;
 
     /** BPM 实例 ID。 */
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long bpmInstanceId;
 
     /** 状态。 */
@@ -46,6 +52,7 @@ public class MaterialApplyVO {
     private LocalDateTime issuedAt;
 
     /** 发放人 ID。 */
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long issuedBy;
 
     /** 创建时间。 */

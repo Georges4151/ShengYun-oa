@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.ceams.common.exception.BusinessException;
 import com.ceams.common.exception.ErrorCode;
+import com.ceams.module.bpm.service.BpmInstanceService;
 import com.ceams.module.hr.converter.HrContractConverter;
 import com.ceams.module.hr.entity.HrContract;
 import com.ceams.module.hr.entity.HrEmployee;
@@ -34,6 +35,7 @@ class HrContractServiceImplTest {
 
     @Mock private HrContractMapper contractMapper;
     @Mock private HrEmployeeMapper employeeMapper;
+    @Mock private BpmInstanceService bpmInstanceService;
 
     private HrContractServiceImpl contractService;
 
@@ -41,7 +43,10 @@ class HrContractServiceImplTest {
     void setUp() {
         contractService =
                 new HrContractServiceImpl(
-                        contractMapper, employeeMapper, Mappers.getMapper(HrContractConverter.class));
+                        contractMapper,
+                        employeeMapper,
+                        Mappers.getMapper(HrContractConverter.class),
+                        bpmInstanceService);
     }
 
     @Test

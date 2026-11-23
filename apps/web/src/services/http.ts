@@ -113,3 +113,13 @@ async function readErrorMessage(response: Response): Promise<string> {
   }
   return `请求失败（HTTP ${response.status}）`
 }
+
+/**
+ * 审批业务详情附件（受控下载）：按流程实例 + 存储名拉取 Blob。
+ *
+ * 该接口要求 Authorization 头，且返回二进制流，故复用 fetchBlob 的带令牌拉取逻辑；
+ * 路径拼接统一由 api-client 的 bpm.instanceFileUrl 负责，避免前端散落接口地址。
+ */
+export async function fetchInstanceFile(instanceId: string, name: string): Promise<Blob> {
+  return fetchBlob(apiClient.bpm.instanceFileUrl(instanceId, name))
+}

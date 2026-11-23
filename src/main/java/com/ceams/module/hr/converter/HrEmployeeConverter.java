@@ -26,6 +26,8 @@ public interface HrEmployeeConverter {
         vo.setEmail(SensitiveMaskUtil.maskEmail(employee.getEmail()));
         vo.setDeptId(employee.getDeptId());
         vo.setPositionId(employee.getPositionId());
+        vo.setLeaderId(employee.getLeaderId());
+        vo.setLevelId(employee.getLevelId());
         vo.setEmploymentType(employee.getEmploymentType());
         vo.setHireDate(employee.getHireDate());
         vo.setProbationEndDate(employee.getProbationEndDate());

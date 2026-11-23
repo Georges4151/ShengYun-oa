@@ -178,7 +178,7 @@ const assignRules: FormRules<typeof assignForm> = {
 
 async function loadUsers(): Promise<void> {
   try {
-    const res = await ceamsApi.iam.userPage({ page: 1, size: 200 })
+    const res = await ceamsApi.iam.userPage({ page: 1, size: 100 })
     users.value = res.records
   } catch {
     // 维修人下拉加载失败不阻断工单列表

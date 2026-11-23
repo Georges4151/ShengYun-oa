@@ -21,7 +21,4 @@ public class UserUpdateRequest {
 
     /** 所属部门 ID（不传则保持不变）。 */
     private Long deptId;
-
-    /** 直属上级用户 ID（不传则保持不变）。 */
-    private Long leaderId;
 }

@@ -22,6 +22,7 @@ import {
 } from 'element-plus'
 import type { FormInstance, FormRules, UploadFile } from 'element-plus'
 import { ceamsApi, fetchBlob } from '@/services/http'
+import BpmFlowPreviewDialog from '@/views/bpm/components/BpmFlowPreviewDialog.vue'
 import type {
   PaymentMethod,
   PaymentStatus,
@@ -372,6 +373,15 @@ async function submit(): Promise<void> {
   }
 }
 
+/** 发起前流程预览：按当前票据解析部门审批/财务核验的预计审批人。 */
+const previewVisible = ref(false)
+const previewReceiptId = ref<string | null>(null)
+
+function openPreview(row: ReceiptVO): void {
+  previewReceiptId.value = row.id
+  previewVisible.value = true
+}
+
 async function onRemove(row: ReceiptVO): Promise<void> {
   try {
     await ElMessageBox.confirm(`确定删除票据「${row.receiptNumber}」吗？`, '提示', { type: 'warning' })
@@ -505,6 +515,15 @@ onMounted(load)
               提交审批
             </el-button>
             <el-button
+              v-if="(row as ReceiptVO).approvalStatus === 'DRAFT' || (row as ReceiptVO).approvalStatus === 'REJECTED'"
+              link
+              type="primary"
+              size="small"
+              @click="openPreview(row as ReceiptVO)"
+            >
+              流程预览
+            </el-button>
+            <el-button
               v-if="(row as ReceiptVO).bpmInstanceId"
               link
               type="primary"
@@ -532,6 +551,13 @@ onMounted(load)
         @current-change="load"
       />
     </div>
+
+    <BpmFlowPreviewDialog
+      v-model="previewVisible"
+      template-code="EXPENSE"
+      biz-type="EXPENSE"
+      :biz-id="previewReceiptId"
+    />
 
     <el-dialog v-model="dialogVisible" :title="editingId ? '编辑票据' : '新增票据'" width="640px">
       <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">

@@ -2,6 +2,8 @@ package com.ceams.module.admin.vo;
 
 import com.ceams.module.admin.enums.RepairCategory;
 import com.ceams.module.admin.enums.RepairStatus;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.Data;
@@ -11,15 +13,18 @@ import lombok.Data;
 public class RepairVO {
 
     /** 工单 ID。 */
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long id;
 
     /** 工单号。 */
     private String repairNo;
 
     /** 报修人 ID。 */
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long reporterId;
 
     /** 报修人部门快照。 */
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long deptId;
 
     /** 报修位置。 */
@@ -38,6 +43,7 @@ public class RepairVO {
     private List<String> finishImages;
 
     /** 维修人 ID。 */
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long assigneeId;
 
     /** 状态。 */

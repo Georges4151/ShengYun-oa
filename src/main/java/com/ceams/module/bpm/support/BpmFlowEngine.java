@@ -10,6 +10,7 @@ import com.ceams.module.bpm.entity.BpmInstance;
 import com.ceams.module.bpm.entity.BpmNode;
 import com.ceams.module.bpm.entity.BpmTask;
 import com.ceams.module.bpm.enums.BpmAssigneeSource;
+import com.ceams.module.bpm.enums.BpmBizType;
 import com.ceams.module.bpm.enums.CcReadStatus;
 import com.ceams.module.bpm.enums.BpmInstanceStatus;
 import com.ceams.module.bpm.enums.BpmNodeStatus;
@@ -151,7 +152,12 @@ public class BpmFlowEngine {
                             .toList();
             if (resolved.isEmpty()) {
                 BpmSchemaNode def = schema.findByKey(targetNode.getNodeKey());
-                resolved = assigneeResolver.resolve(def, instance.getInitiatorId());
+                resolved =
+                        assigneeResolver.resolve(
+                                def,
+                                instance.getInitiatorId(),
+                                BpmBizType.from(instance.getBizType()),
+                                instance.getBizId());
             }
             activateWithAssignees(
                     instance, targetNode, resolved, resolveDueHours(schema, targetNode));
@@ -245,7 +251,11 @@ public class BpmFlowEngine {
                 return;
             }
             List<BpmResolvedAssignee> resolved =
-                    assigneeResolver.resolve(def, instance.getInitiatorId());
+                    assigneeResolver.resolve(
+                            def,
+                            instance.getInitiatorId(),
+                            BpmBizType.from(instance.getBizType()),
+                            instance.getBizId());
             if (shouldAutoApprove(instance, def, resolved)) {
                 autoApprove(instance, next, resolved);
                 cursor = next;
@@ -504,7 +514,11 @@ public class BpmFlowEngine {
 
     private void writeCcRecords(BpmInstance instance, BpmNode node, BpmSchemaNode def) {
         List<BpmResolvedAssignee> resolved =
-                assigneeResolver.resolve(def, instance.getInitiatorId());
+                assigneeResolver.resolve(
+                        def,
+                        instance.getInitiatorId(),
+                        BpmBizType.from(instance.getBizType()),
+                        instance.getBizId());
         if (resolved.isEmpty()) {
             log.warn("抄送人解析为空：instanceId={}，node={}", instance.getId(), node.getNodeKey());
             return;

@@ -5,9 +5,18 @@
  */
 import { computed, ref } from 'vue'
 import { onLoad, onPullDownRefresh, onReachBottom, onShow } from '@dcloudio/uni-app'
-import type { CcRecordVO, InstanceVO, TaskVO } from '@ceams/types'
+import type {
+  BizAttachmentGroupVO,
+  BizAttachmentVO,
+  BizDetailVO,
+  CcRecordVO,
+  InstanceVO,
+  TaskVO
+} from '@ceams/types'
 import { formatDateTime } from '@ceams/utils'
 import { apiClient } from '../../platform/http'
+import { downloadInstanceFile, openDocument } from '../../platform/download'
+import { previewLocalImages } from '../../platform/image'
 import { apiErrorMessage } from '../../utils/error'
 import { bpmBizTypeLabels, bpmInstanceStatusLabels, bpmTaskStatusLabels } from '../../utils/labels'
 
@@ -232,6 +241,206 @@ function openDetail(row: TodoRow): void {
   uni.navigateTo({ url: `/pages/bpm/detail?${query}` })
 }
 
+// ---------------- 业务单据详情 ----------------
+const bizDetailVisible = ref(false)
+const bizDetailLoading = ref(false)
+const bizDetail = ref<BizDetailVO | null>(null)
+const bizDetailTitle = computed(() => bizDetail.value?.title || '业务单据')
+/** 当前单据所属流程实例：附件下载按实例校验归属 */
+const bizDetailInstanceId = ref('')
+
+// ---------------- 单据附件 ----------------
+/** 附件图片本地加载状态：loading 下载中 / ready 已就绪 / error 下载失败 */
+type AttachmentImageStatus = 'loading' | 'ready' | 'error'
+
+/** 图片状态与本地临时路径均以 `组下标-项下标` 为键，弹层关闭时整体清空 */
+const imageStates = ref<Record<string, AttachmentImageStatus>>({})
+const imagePaths = ref<Record<string, string>>({})
+/** 非图片附件的下载中状态（避免重复点击） */
+const fileLoading = ref<Record<string, boolean>>({})
+/** 附件加载批次号：弹层关闭或切换单据后，旧批次迟到的下载结果直接丢弃 */
+let attachmentGeneration = 0
+
+const attachmentGroups = computed<BizAttachmentGroupVO[]>(() => bizDetail.value?.attachmentGroups ?? [])
+
+/** 渲染用的附件项：index 为原分组内下标，图片下载状态按该下标索引 */
+interface AttachmentItemView {
+  item: BizAttachmentVO
+  index: number
+}
+
+/** 渲染用的附件分组：预先按 kind 拆成图片 / 文件两类，避免模板内 v-for 与 v-if 混用 */
+interface AttachmentGroupView {
+  groupName: string
+  groupIndex: number
+  images: AttachmentItemView[]
+  files: AttachmentItemView[]
+}
+
+const attachmentViewGroups = computed<AttachmentGroupView[]>(() =>
+  attachmentGroups.value.map((group, groupIndex) => {
+    const images: AttachmentItemView[] = []
+    const files: AttachmentItemView[] = []
+    group.items.forEach((item, index) => {
+      const entry: AttachmentItemView = { item, index }
+      if (item.kind === 'IMAGE') {
+        images.push(entry)
+      } else {
+        files.push(entry)
+      }
+    })
+    return { groupName: group.groupName, groupIndex, images, files }
+  })
+)
+
+/** openDocument 支持的文件类型；其余扩展名提示暂不支持 */
+const PREVIEW_FILE_TYPES: Record<string, string> = {
+  pdf: 'pdf',
+  doc: 'doc',
+  docx: 'docx',
+  xls: 'xls',
+  xlsx: 'xlsx',
+  ppt: 'ppt',
+  pptx: 'pptx'
+}
+
+function attachmentKey(groupIndex: number, itemIndex: number): string {
+  return `${groupIndex}-${itemIndex}`
+}
+
+function imageStatus(groupIndex: number, itemIndex: number): AttachmentImageStatus {
+  return imageStates.value[attachmentKey(groupIndex, itemIndex)] ?? 'loading'
+}
+
+function imageSrc(groupIndex: number, itemIndex: number): string {
+  return imagePaths.value[attachmentKey(groupIndex, itemIndex)] ?? ''
+}
+
+function isFileLoading(groupIndex: number, itemIndex: number): boolean {
+  return fileLoading.value[attachmentKey(groupIndex, itemIndex)] === true
+}
+
+/** 清空附件下载状态（无需删除临时文件），避免下次打开弹层串图 */
+function resetAttachments(): void {
+  attachmentGeneration += 1
+  imageStates.value = {}
+  imagePaths.value = {}
+  fileLoading.value = {}
+}
+
+/** 逐张下载分组内图片；单张失败只标记该图，不影响同组其它附件 */
+function loadGroupImages(instanceId: string, groups: BizAttachmentGroupVO[]): void {
+  const generation = attachmentGeneration
+  groups.forEach((group, groupIndex) => {
+    group.items.forEach((item, itemIndex) => {
+      if (item.kind !== 'IMAGE') return
+      const key = attachmentKey(groupIndex, itemIndex)
+      imageStates.value[key] = 'loading'
+      void downloadInstanceFile(instanceId, item.name)
+        .then((path) => {
+          if (generation !== attachmentGeneration) return
+          imagePaths.value[key] = path
+          imageStates.value[key] = 'ready'
+        })
+        .catch(() => {
+          if (generation !== attachmentGeneration) return
+          imageStates.value[key] = 'error'
+        })
+    })
+  })
+}
+
+/** 点击缩略图：把同组已下载成功的本地路径交给 previewImage，支持左右滑动切换 */
+function previewGroupImage(groupIndex: number, itemIndex: number): void {
+  const group = attachmentGroups.value[groupIndex]
+  if (!group) return
+  const urls: string[] = []
+  let currentPath = ''
+  group.items.forEach((item, index) => {
+    if (item.kind !== 'IMAGE' || imageStatus(groupIndex, index) !== 'ready') return
+    const path = imageSrc(groupIndex, index)
+    if (!path) return
+    if (index === itemIndex) currentPath = path
+    urls.push(path)
+  })
+  if (!currentPath || urls.length === 0) return
+  previewLocalImages(urls, currentPath).catch(() => {
+    uni.showToast({ title: '预览图片失败', icon: 'none' })
+  })
+}
+
+/** 从展示名中提取小写扩展名（忽略查询串与哈希） */
+function fileExtension(name: string): string {
+  const path = name.split(/[?#]/)[0]
+  const index = path.lastIndexOf('.')
+  return index === -1 ? '' : path.slice(index + 1).toLowerCase()
+}
+
+/** 解析可预览的文件类型：优先按扩展名，PDF 兜底按 kind 判定 */
+function resolveFileType(item: BizAttachmentVO): string {
+  const ext = PREVIEW_FILE_TYPES[fileExtension(item.fileName || item.name)]
+  if (ext) return ext
+  return item.kind === 'PDF' ? 'pdf' : ''
+}
+
+/** 打开非图片附件：先鉴权下载到本地临时文件，再交给 openDocument 预览 */
+async function openAttachmentFile(
+  groupIndex: number,
+  itemIndex: number,
+  item: BizAttachmentVO
+): Promise<void> {
+  const key = attachmentKey(groupIndex, itemIndex)
+  if (fileLoading.value[key]) return
+  const fileType = resolveFileType(item)
+  if (!fileType) {
+    uni.showToast({ title: '该文件暂不支持预览', icon: 'none' })
+    return
+  }
+  // 记录批次号：下载期间弹层被关闭时，不再打开文档也不再提示
+  const generation = attachmentGeneration
+  fileLoading.value[key] = true
+  try {
+    const filePath = await downloadInstanceFile(bizDetailInstanceId.value, item.name)
+    if (generation !== attachmentGeneration) return
+    await openDocument(filePath, fileType, true)
+  } catch {
+    if (generation !== attachmentGeneration) return
+    uni.showToast({ title: '无法预览该文件', icon: 'none' })
+  } finally {
+    if (generation === attachmentGeneration) {
+      fileLoading.value[key] = false
+    }
+  }
+}
+
+/** 打开业务单据详情：按流程实例反查被审批的业务单据字段 */
+async function openBizDetail(row: TodoRow): Promise<void> {
+  // 先清空上一次的附件状态，防止旧单据图片串入新单据
+  resetAttachments()
+  bizDetail.value = null
+  bizDetailInstanceId.value = row.instanceId
+  bizDetailVisible.value = true
+  bizDetailLoading.value = true
+  try {
+    const detail = await apiClient.bpm.instanceBizDetail(row.instanceId)
+    bizDetail.value = detail
+    // 字段就绪后异步加载图片缩略图，失败只影响单张
+    loadGroupImages(row.instanceId, detail.attachmentGroups ?? [])
+  } catch (err) {
+    bizDetailVisible.value = false
+    resetAttachments()
+    uni.showToast({ title: apiErrorMessage(err, '加载单据详情失败'), icon: 'none' })
+  } finally {
+    bizDetailLoading.value = false
+  }
+}
+
+function closeBizDetail(): void {
+  bizDetailVisible.value = false
+  bizDetailInstanceId.value = ''
+  resetAttachments()
+}
+
 onLoad((query) => {
   const tab = typeof query?.tab === 'string' ? query.tab : ''
   if (TAB_KEYS.includes(tab as TodoTab)) {
@@ -310,6 +519,7 @@ onReachBottom(() => {
           <view class="item__extra">
             <status-tag :label="item.statusLabel" :type="item.statusType" />
             <view v-if="item.taskId" class="item__actions">
+              <text class="item__action item__action--detail" @click.stop="openBizDetail(item)">查看详情</text>
               <text class="item__action item__action--reject" @click.stop="openDetail(item)">驳回</text>
               <text class="item__action item__action--approve" @click.stop="openDetail(item)">通过</text>
             </view>
@@ -320,6 +530,76 @@ onReachBottom(() => {
 
     <view v-if="noMore" class="loadmore">没有更多了</view>
     <view v-else-if="rows.length > 0" class="loadmore">上拉加载更多</view>
+
+    <!-- 业务单据详情弹层：按流程实例展示被审批单据的业务字段 -->
+    <view v-if="bizDetailVisible" class="detail-mask" @click="closeBizDetail">
+      <view class="detail-card" @click.stop>
+        <view class="detail-card__head">
+          <text class="detail-card__title">{{ bizDetailTitle }}</text>
+          <text class="detail-card__close" @click="closeBizDetail">关闭</text>
+        </view>
+        <view v-if="bizDetailLoading" class="detail-card__state">加载中...</view>
+        <template v-else-if="bizDetail">
+          <view class="detail-card__status">
+            <text class="detail-row__label">业务状态</text>
+            <text class="detail-row__value">{{ bizDetail.statusText || '-' }}</text>
+          </view>
+          <view v-for="(item, index) in bizDetail.items" :key="index" class="detail-row">
+            <text class="detail-row__label">{{ item.label }}</text>
+            <text class="detail-row__value">{{ item.value }}</text>
+          </view>
+
+          <!-- 附件按分组展示；无附件时不渲染区域 -->
+          <view v-if="attachmentViewGroups.length" class="attachment-area">
+            <view
+              v-for="view in attachmentViewGroups"
+              :key="view.groupIndex"
+              class="attachment-group"
+            >
+              <text class="attachment-group__title">{{ view.groupName }}</text>
+
+              <!-- 图片：横向缩略图，点击查看大图并支持左右滑动 -->
+              <view v-if="view.images.length" class="attachment-images">
+                <view
+                  v-for="entry in view.images"
+                  :key="entry.index"
+                  class="attachment-thumb"
+                >
+                  <image
+                    v-if="imageStatus(view.groupIndex, entry.index) === 'ready'"
+                    class="attachment-thumb__image"
+                    :src="imageSrc(view.groupIndex, entry.index)"
+                    mode="aspectFill"
+                    @click="previewGroupImage(view.groupIndex, entry.index)"
+                  />
+                  <view v-else class="attachment-thumb__placeholder">
+                    {{ imageStatus(view.groupIndex, entry.index) === 'error' ? '加载失败' : '加载中…' }}
+                  </view>
+                </view>
+              </view>
+
+              <!-- PDF / OFFICE / OTHER：文件名 + 查看 -->
+              <view v-if="view.files.length" class="attachment-files">
+                <view
+                  v-for="entry in view.files"
+                  :key="entry.index"
+                  class="attachment-file"
+                >
+                  <text class="attachment-file__name">{{ entry.item.fileName || entry.item.name }}</text>
+                  <text
+                    class="attachment-file__action"
+                    @click="openAttachmentFile(view.groupIndex, entry.index, entry.item)"
+                  >
+                    {{ isFileLoading(view.groupIndex, entry.index) ? '加载中…' : '查看' }}
+                  </text>
+                </view>
+              </view>
+            </view>
+          </view>
+        </template>
+        <view v-else class="detail-card__state">暂无单据详情</view>
+      </view>
+    </view>
   </view>
 </template>
 
@@ -427,6 +707,193 @@ onReachBottom(() => {
 .item__action--approve {
   color: var(--ceams-color-primary);
   border: var(--ceams-border-width) solid var(--ceams-color-primary);
+}
+
+.item__action--detail {
+  color: var(--ceams-text-secondary);
+  border: var(--ceams-border-width) solid var(--ceams-border);
+}
+
+/* 单据详情弹层：遮罩 + 居中卡片，内容超高时内部滚动 */
+.detail-mask {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--ceams-space-xl);
+  background-color: rgba(15, 23, 42, 0.45);
+  box-sizing: border-box;
+}
+
+.detail-card {
+  width: 100%;
+  max-height: 80vh;
+  padding: var(--ceams-space-lg);
+  overflow-y: auto;
+  background-color: var(--ceams-bg-card);
+  border-radius: var(--ceams-radius-card);
+  box-shadow: var(--ceams-shadow-raised);
+  box-sizing: border-box;
+}
+
+.detail-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: var(--ceams-space-sm);
+  border-bottom: var(--ceams-border-width) solid var(--ceams-divider);
+}
+
+.detail-card__title {
+  flex: 1;
+  min-width: 0;
+  color: var(--ceams-text-primary);
+  font-size: var(--ceams-font-size-body);
+  font-weight: var(--ceams-font-weight-semibold);
+}
+
+.detail-card__close {
+  padding-left: var(--ceams-space-sm);
+  color: var(--ceams-color-primary);
+  font-size: var(--ceams-font-size-caption);
+}
+
+.detail-card__state {
+  padding: var(--ceams-space-2xl) 0;
+  color: var(--ceams-text-placeholder);
+  font-size: var(--ceams-font-size-caption);
+  text-align: center;
+}
+
+.detail-card__status,
+.detail-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: var(--ceams-space-xs) 0;
+  border-bottom: var(--ceams-border-width) solid var(--ceams-divider);
+}
+
+.detail-card__status {
+  margin-top: var(--ceams-space-sm);
+}
+
+.detail-row:last-child {
+  border-bottom: none;
+}
+
+.detail-row__label {
+  flex-shrink: 0;
+  width: 220rpx;
+  color: var(--ceams-text-secondary);
+  font-size: var(--ceams-font-size-caption);
+  line-height: var(--ceams-line-height-normal);
+}
+
+.detail-row__value {
+  flex: 1;
+  min-width: 0;
+  margin-left: var(--ceams-space-sm);
+  color: var(--ceams-text-primary);
+  font-size: var(--ceams-font-size-caption);
+  line-height: var(--ceams-line-height-normal);
+  text-align: right;
+  word-break: break-all;
+}
+
+/* ---------------- 单据附件 ---------------- */
+.attachment-area {
+  margin-top: var(--ceams-space-md);
+}
+
+.attachment-group {
+  margin-bottom: var(--ceams-space-md);
+}
+
+.attachment-group:last-child {
+  margin-bottom: 0;
+}
+
+.attachment-group__title {
+  display: block;
+  margin-bottom: var(--ceams-space-xs);
+  color: var(--ceams-text-primary);
+  font-size: var(--ceams-font-size-caption);
+  font-weight: var(--ceams-font-weight-semibold);
+  line-height: var(--ceams-line-height-tight);
+}
+
+/* 缩略图：120rpx（约 60px）方形、圆角，超出自动换行 */
+.attachment-images {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ceams-space-xs);
+}
+
+.attachment-thumb {
+  width: 120rpx;
+  height: 120rpx;
+  overflow: hidden;
+  background-color: var(--ceams-bg-subtle);
+  border-radius: var(--ceams-radius-sm);
+}
+
+.attachment-thumb__image {
+  width: 120rpx;
+  height: 120rpx;
+}
+
+.attachment-thumb__placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding: 0 var(--ceams-space-2xs);
+  color: var(--ceams-text-placeholder);
+  font-size: var(--ceams-font-size-mini);
+  text-align: center;
+  box-sizing: border-box;
+}
+
+/* 文件行：文件名单行省略，查看按钮靠右 */
+.attachment-files {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ceams-space-xs);
+}
+
+.attachment-file {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--ceams-space-2xs) 0;
+}
+
+.attachment-file__name {
+  flex: 1;
+  min-width: 0;
+  margin-right: var(--ceams-space-sm);
+  overflow: hidden;
+  color: var(--ceams-text-primary);
+  font-size: var(--ceams-font-size-caption);
+  line-height: var(--ceams-line-height-normal);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.attachment-file__action {
+  flex-shrink: 0;
+  padding: var(--ceams-space-2xs) var(--ceams-space-sm);
+  border: var(--ceams-border-width) solid var(--ceams-color-primary);
+  border-radius: var(--ceams-radius-pill);
+  color: var(--ceams-color-primary);
+  font-size: var(--ceams-font-size-mini);
 }
 
 .state {

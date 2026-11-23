@@ -1,7 +1,7 @@
 package com.ceams.module.ai.controller;
 
 import com.ceams.common.response.ApiResponse;
-import com.ceams.module.ai.config.AiProperties;
+import com.ceams.module.ai.client.AiChatClient;
 import com.ceams.module.ai.dto.AiChatRequest;
 import com.ceams.module.ai.service.AiChatService;
 import com.ceams.module.ai.vo.AiChatSyncVO;
@@ -26,12 +26,12 @@ public class AiChatController {
     private static final long SSE_TIMEOUT_MARGIN_MILLIS = 5_000L;
 
     private final AiChatService aiChatService;
-    private final AiProperties aiProperties;
+    private final AiChatClient aiChatClient;
 
     @PostMapping(value = "/chat", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter chat(@Valid @RequestBody AiChatRequest request) {
         long timeoutMillis =
-                Math.max(1, aiProperties.getTimeoutSeconds()) * 1000L + SSE_TIMEOUT_MARGIN_MILLIS;
+                Math.max(1, aiChatClient.timeoutSeconds()) * 1000L + SSE_TIMEOUT_MARGIN_MILLIS;
         SseEmitter emitter = new SseEmitter(timeoutMillis);
         aiChatService.chat(request, emitter);
         return emitter;

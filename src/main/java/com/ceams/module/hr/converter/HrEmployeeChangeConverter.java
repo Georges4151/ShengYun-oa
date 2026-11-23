@@ -19,6 +19,8 @@ public interface HrEmployeeChangeConverter {
         vo.setChangeType(change.getChangeType());
         vo.setTargetDeptId(change.getTargetDeptId());
         vo.setTargetPositionId(change.getTargetPositionId());
+        vo.setTargetLevelId(change.getTargetLevelId());
+        vo.setResignLeaderId(change.getResignLeaderId());
         vo.setEffectiveDate(change.getEffectiveDate());
         vo.setReason(change.getReason());
         vo.setApprovalStatus(change.getApprovalStatus());

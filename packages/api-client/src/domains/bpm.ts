@@ -12,6 +12,8 @@ import type {
   CcRecordVO,
   InstanceVO,
   InstanceDetailVO,
+  BizDetailVO,
+  FlowPreviewVO,
   TemplateVO,
   TemplateVersionVO,
   InstanceStartRequest,
@@ -42,6 +44,23 @@ export interface BpmApi {
   delegateTask(id: Id, body: TaskDelegateRequest): Promise<void>
 
   instanceDetail(id: Id): Promise<InstanceDetailVO>
+  /** 审批单据业务详情：展示被审批业务单据的字段（label/value）与附件分组 */
+  instanceBizDetail(id: Id): Promise<BizDetailVO>
+  /**
+   * 受控附件下载路径。
+   *
+   * 该接口返回文件流且要求 Authorization 头，无法用 `<img src>` / `<iframe src>` 直接访问，
+   * HttpClient 仅支持文本响应解包，故此处只拼接路径，Blob 拉取由调用方用带令牌的 fetch 完成
+   * （Web 端见 apps/web/src/services/http.ts 的 fetchInstanceFile）。
+   */
+  instanceFileUrl(id: Id, name: string): string
+  /** 发起前流程预览：按模板与业务数据解析预计审批人 */
+  instancePreview(body: {
+    templateCode: string
+    bizType?: string
+    bizId?: Id
+    subjectUserId?: Id
+  }): Promise<FlowPreviewVO>
   startInstance(body: InstanceStartRequest): Promise<Id>
   withdrawInstance(id: Id, body: InstanceActionRequest): Promise<void>
   terminateInstance(id: Id, body: InstanceActionRequest): Promise<void>
@@ -117,6 +136,15 @@ export function createBpmApi(client: HttpClient): BpmApi {
 
     async instanceDetail(id) {
       return client.get<InstanceDetailVO>(`/api/v1/bpm/instances/${id}`)
+    },
+    async instanceBizDetail(id) {
+      return client.get<BizDetailVO>(`/api/v1/bpm/instances/${id}/biz-detail`)
+    },
+    instanceFileUrl(id, name) {
+      return `/api/v1/bpm/instances/${id}/files/${encodeURIComponent(name)}`
+    },
+    async instancePreview(body) {
+      return client.post<FlowPreviewVO>('/api/v1/bpm/instances/preview', body)
     },
     async startInstance(body) {
       return client.post<Id>('/api/v1/bpm/instances', body)

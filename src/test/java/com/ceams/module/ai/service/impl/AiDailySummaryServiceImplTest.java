@@ -12,6 +12,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -19,7 +20,7 @@ import static org.mockito.Mockito.when;
 import com.ceams.common.exception.BusinessException;
 import com.ceams.common.exception.ErrorCode;
 import com.ceams.module.ai.client.OllamaChatResult;
-import com.ceams.module.ai.client.OllamaClient;
+import com.ceams.module.ai.client.AiChatClient;
 import com.ceams.module.ai.config.AiProperties;
 import com.ceams.module.ai.entity.AiDailySummary;
 import com.ceams.module.ai.mapper.AiDailySummaryMapper;
@@ -68,7 +69,7 @@ class AiDailySummaryServiceImplTest {
     private static final Clock FIXED_CLOCK =
             Clock.fixed(Instant.parse("2026-11-07T02:00:00Z"), ZoneId.of("Asia/Shanghai"));
 
-    @Mock private OllamaClient ollamaClient;
+    @Mock private AiChatClient aiChatClient;
     @Mock private AiDailySummaryMapper summaryMapper;
     @Mock private ReceiptService receiptService;
     @Mock private ReportService reportService;
@@ -86,10 +87,12 @@ class AiDailySummaryServiceImplTest {
         properties = new AiProperties();
         properties.setModel("qwen2.5:7b");
         properties.setEnabled(false);
+        lenient().when(aiChatClient.isEnabled()).thenReturn(false);
+        lenient().when(aiChatClient.textModel()).thenReturn("qwen2.5:7b");
         service =
                 new AiDailySummaryServiceImpl(
                         properties,
-                        ollamaClient,
+                        aiChatClient,
                         summaryMapper,
                         receiptService,
                         reportService,
@@ -152,12 +155,12 @@ class AiDailySummaryServiceImplTest {
 
     @Test
     void AI润色数字不符时回退模板() {
-        properties.setEnabled(true);
+        when(aiChatClient.isEnabled()).thenReturn(true);
         stubMetrics();
         stubInsert();
         OllamaChatResult result = new OllamaChatResult();
         result.setContent("润色后的日报：新增 2 笔，但金额已被改写。");
-        when(ollamaClient.chatStream(anyList(), ArgumentMatchers.<Consumer<String>>isNull()))
+        when(aiChatClient.chatStream(anyList(), ArgumentMatchers.<Consumer<String>>isNull()))
                 .thenReturn(result);
 
         AiDailySummaryVO vo = service.generate(DATE, TriggerType.MANUAL);
@@ -169,7 +172,7 @@ class AiDailySummaryServiceImplTest {
 
     @Test
     void AI润色数字保全时使用润色文本() {
-        properties.setEnabled(true);
+        when(aiChatClient.isEnabled()).thenReturn(true);
         stubMetrics();
         stubInsert();
         String polished =
@@ -180,7 +183,7 @@ class AiDailySummaryServiceImplTest {
                         + "未对账流水 4 笔，合计 ¥300.00；用印 5 次。";
         OllamaChatResult result = new OllamaChatResult();
         result.setContent(polished);
-        when(ollamaClient.chatStream(anyList(), ArgumentMatchers.<Consumer<String>>isNull()))
+        when(aiChatClient.chatStream(anyList(), ArgumentMatchers.<Consumer<String>>isNull()))
                 .thenReturn(result);
 
         AiDailySummaryVO vo = service.generate(DATE, TriggerType.MANUAL);
@@ -227,11 +230,11 @@ class AiDailySummaryServiceImplTest {
         stubInsert();
         String template = service.generate(DATE, TriggerType.MANUAL).getContent();
 
-        properties.setEnabled(true);
+        when(aiChatClient.isEnabled()).thenReturn(true);
         String polished = template + "\n本月环比增长 12%。";
         OllamaChatResult result = new OllamaChatResult();
         result.setContent(polished);
-        when(ollamaClient.chatStream(anyList(), ArgumentMatchers.<Consumer<String>>isNull()))
+        when(aiChatClient.chatStream(anyList(), ArgumentMatchers.<Consumer<String>>isNull()))
                 .thenReturn(result);
 
         AiDailySummaryVO vo = service.generate(DATE, TriggerType.MANUAL);

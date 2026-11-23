@@ -14,6 +14,8 @@ export * from './seal'
 export * from './notification'
 export * from './report'
 export * from './ai'
+// 系统设置 · AI 设置：总开关、文本/视觉提供商配置与内置厂商预设
+export * from './ai-settings'
 // 企业微信集成：扫码登录、组织架构同步批次、应用消息发件箱
 export * from './integration'
 // 文档知识库：doc 的 PermissionVO 与 IAM 的权限树 PermissionVO 重名，无法 `export *`，

@@ -1,5 +1,6 @@
 package com.ceams.module.hr.vo;
 
+import com.ceams.common.enums.ContractApprovalStatus;
 import com.ceams.module.hr.enums.ContractStatus;
 import com.ceams.module.hr.enums.ContractType;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -36,6 +37,13 @@ public class ContractVO {
     private String fileName;
 
     private ContractStatus status;
+
+    /** 审批状态快照。 */
+    private ContractApprovalStatus approvalStatus;
+
+    /** 关联 BPM 流程实例 ID。 */
+    @JsonSerialize(using = ToStringSerializer.class)
+    private Long bpmInstanceId;
 
     private LocalDate renewalRemindDate;
 

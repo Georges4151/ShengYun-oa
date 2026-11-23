@@ -63,6 +63,14 @@ export interface AccountVO {
   contactId?: Id | null
   materialId?: Id | null
   subcontractorId?: Id | null
+  /** 关联项目名称（后端补充的展示字段） */
+  projectName?: string | null
+  /** 付款账户名称（后端补充的展示字段） */
+  paymentAccountName?: string | null
+  /** 票据编号（后端补充的展示字段） */
+  receiptNumber?: string | null
+  /** 合同名称（后端补充的展示字段） */
+  contractName?: string | null
   createTime?: DateTime
 }
 
@@ -109,6 +117,12 @@ export interface PaymentTransactionVO {
   type: AccountType
   transactionDate: DateTime
   description?: string | null
+  /** 付款账户名称（后端补充的展示字段） */
+  accountName?: string | null
+  /** 票据编号（后端补充的展示字段） */
+  receiptNumber?: string | null
+  /** 关联项目名称（后端补充的展示字段） */
+  projectName?: string | null
   createTime?: DateTime
 }
 
@@ -151,6 +165,10 @@ export interface CostAllocationVO {
   targetId: Id
   allocationAmount: Money
   allocationRatio?: string | null
+  /** 流水记录名称（后端补充的展示字段） */
+  accountRecordName?: string | null
+  /** 分摊目标名称（后端补充的展示字段） */
+  targetName?: string | null
   createTime?: DateTime
 }
 

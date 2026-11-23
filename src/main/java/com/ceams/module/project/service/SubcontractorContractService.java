@@ -21,4 +21,12 @@ public interface SubcontractorContractService {
     void delete(Long id);
 
     void export(OutputStream out, Long subcontractorId, Long projectId);
+
+    /**
+     * 提交分包合同审批。
+     *
+     * @param id 合同 ID
+     * @return BPM 流程实例 ID（字符串，避免前端 Long 精度丢失）
+     */
+    String submitApproval(Long id);
 }

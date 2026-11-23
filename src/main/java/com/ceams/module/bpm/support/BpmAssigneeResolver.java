@@ -2,6 +2,7 @@ package com.ceams.module.bpm.support;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.ceams.module.bpm.enums.BpmAssigneeSource;
+import com.ceams.module.bpm.enums.BpmBizType;
 import com.ceams.module.iam.entity.SysDept;
 import com.ceams.module.iam.entity.SysRole;
 import com.ceams.module.iam.entity.SysUser;
@@ -27,9 +28,10 @@ import org.springframework.util.StringUtils;
  * 写 bpm_assignee_snapshot 与冗余到 bpm_task。解析为空时由上层落 PENDING_ASSIGNEE，
  * 不允许生成无人待办。
  *
- * <p>组织口径（V17 起）：部门主管优先取发起人 {@code sys_user.dept_id} 对应
- * {@code sys_dept.leader_id}，部门主管为空时回退发起人 {@code sys_user.leader_id}；
- * 直属上级直接取发起人 {@code sys_user.leader_id}。任一环节为空均记录告警。
+ * <p>组织口径（V50 起）：直属上级统一取 {@code hr_employee.leader_id}（经
+ * {@link BpmLeaderProvider} 按业务单据员工或发起人员工档案解析），{@code sys_user.leader_id}
+ * 已废弃不再读取。部门主管仍优先取发起人 {@code sys_user.dept_id} 对应
+ * {@code sys_dept.leader_id}，为空时回退直属上级。任一环节为空均记录告警。
  */
 @Slf4j
 @Component
@@ -40,15 +42,19 @@ public class BpmAssigneeResolver {
     private final RoleMapper roleMapper;
     private final UserRoleMapper userRoleMapper;
     private final DeptMapper deptMapper;
+    private final List<BpmLeaderProvider> leaderProviders;
 
     /**
      * 解析节点审批人。
      *
      * @param node 节点定义
      * @param initiatorId 发起人 ID
+     * @param bizType 业务类型（可为空）
+     * @param bizId 业务单据 ID（可为空）
      * @return 去重后的审批人列表（可能为空）
      */
-    public List<BpmResolvedAssignee> resolve(BpmSchemaNode node, Long initiatorId) {
+    public List<BpmResolvedAssignee> resolve(
+            BpmSchemaNode node, Long initiatorId, BpmBizType bizType, Long bizId) {
         List<BpmResolvedAssignee> result = new ArrayList<>();
         if (node == null || node.getAssignees() == null) {
             return result;
@@ -72,20 +78,27 @@ public class BpmAssigneeResolver {
                         initiator = loadInitiator(initiatorId);
                         initiatorLoaded = true;
                     }
-                    resolveDeptLeader(node, initiator, result, seen);
+                    resolveDeptLeader(node, initiator, initiatorId, bizType, bizId, result, seen);
                     break;
                 case SUPERIOR:
-                    if (!initiatorLoaded) {
-                        initiator = loadInitiator(initiatorId);
-                        initiatorLoaded = true;
-                    }
-                    resolveSuperior(node, initiator, result, seen);
+                    resolveSuperior(node, initiatorId, bizType, bizId, result, seen);
                     break;
                 default:
                     log.warn("审批人来源暂不支持：节点={}，来源={}", node.getNodeKey(), source.getType());
             }
         }
         return result;
+    }
+
+    /**
+     * 解析节点审批人（无业务单据上下文）。
+     *
+     * @deprecated 无法按业务员工解析直属上级，请改用
+     *     {@link #resolve(BpmSchemaNode, Long, BpmBizType, Long)}。
+     */
+    @Deprecated
+    public List<BpmResolvedAssignee> resolve(BpmSchemaNode node, Long initiatorId) {
+        return resolve(node, initiatorId, null, null);
     }
 
     /** 指定用户：直接使用配置中的用户 ID。 */
@@ -135,10 +148,13 @@ public class BpmAssigneeResolver {
         }
     }
 
-    /** 部门主管：优先取发起人部门对应的 sys_dept.leader_id，为空回退发起人直属上级。 */
+    /** 部门主管：优先取发起人部门对应的 sys_dept.leader_id，为空回退员工档案直属上级。 */
     private void resolveDeptLeader(
             BpmSchemaNode node,
             SysUser initiator,
+            Long initiatorId,
+            BpmBizType bizType,
+            Long bizId,
             List<BpmResolvedAssignee> result,
             Set<String> seen) {
         Long leaderId = null;
@@ -148,32 +164,49 @@ public class BpmAssigneeResolver {
                 leaderId = dept.getLeaderId();
             }
         }
-        if (leaderId == null && initiator != null) {
-            leaderId = initiator.getLeaderId();
+        if (leaderId == null) {
+            leaderId = resolveLeaderUserId(initiatorId, bizType, bizId);
         }
         if (leaderId == null) {
             log.warn(
-                    "审批人解析为空：节点={}，来源=DEPT_LEADER，原因=发起人无部门主管且无直属上级，任务将落 PENDING_ASSIGNEE",
+                    "审批人解析为空：节点={}，来源=DEPT_LEADER，原因=部门未配置主管且员工档案未维护直属上级，任务将落 PENDING_ASSIGNEE",
                     node.getNodeKey());
             return;
         }
         addIfAbsent(result, seen, leaderId, BpmAssigneeSource.DEPT_LEADER);
     }
 
-    /** 直属上级：取发起人 sys_user.leader_id。 */
+    /** 直属上级：由员工档案 hr_employee.leader_id 解析（业务员工优先，回退发起人）。 */
     private void resolveSuperior(
             BpmSchemaNode node,
-            SysUser initiator,
+            Long initiatorId,
+            BpmBizType bizType,
+            Long bizId,
             List<BpmResolvedAssignee> result,
             Set<String> seen) {
-        Long leaderId = initiator == null ? null : initiator.getLeaderId();
+        Long leaderId = resolveLeaderUserId(initiatorId, bizType, bizId);
         if (leaderId == null) {
             log.warn(
-                    "审批人解析为空：节点={}，来源=SUPERIOR，原因=发起人未维护直属上级，任务将落 PENDING_ASSIGNEE",
+                    "审批人解析为空：节点={}，来源=SUPERIOR，原因=发起人及业务员工均未维护直属上级，任务将落 PENDING_ASSIGNEE",
                     node.getNodeKey());
             return;
         }
         addIfAbsent(result, seen, leaderId, BpmAssigneeSource.SUPERIOR);
+    }
+
+    /** 依次询问各扩展：先按业务单据员工解析，再回退发起人员工档案。 */
+    private Long resolveLeaderUserId(Long initiatorId, BpmBizType bizType, Long bizId) {
+        for (BpmLeaderProvider p : leaderProviders) {
+            Long id = bizType == null || bizId == null ? null : p.resolveLeaderUserId(bizType, bizId);
+            if (id != null) {
+                return id;
+            }
+            id = p.resolveLeaderUserIdByUser(initiatorId);
+            if (id != null) {
+                return id;
+            }
+        }
+        return null;
     }
 
     private SysUser loadInitiator(Long initiatorId) {

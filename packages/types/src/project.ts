@@ -9,6 +9,7 @@
  */
 
 import type { DateTime, Id, Money } from './common'
+import type { ContractApprovalStatus } from './bpm'
 
 // ---------- 枚举 ----------
 export type ProjectStatus = 'PLANNING' | 'IN_PROGRESS' | 'PAUSED' | 'COMPLETED' | 'CLOSED'
@@ -228,6 +229,10 @@ export interface SubcontractorContractVO {
   startDate?: string | null
   endDate?: string | null
   status?: ContractStatus
+  /** 审批状态快照：NONE 未提交 / PENDING 审批中 / APPROVED 已通过 / REJECTED 已驳回。 */
+  approvalStatus?: ContractApprovalStatus | null
+  /** 关联 BPM 流程实例 ID。 */
+  bpmInstanceId?: Id | null
   description?: string | null
   filePath?: string | null
   fileName?: string | null

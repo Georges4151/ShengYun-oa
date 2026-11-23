@@ -42,6 +42,12 @@ public class EmployeeCreateRequest {
 
     private Long positionId;
 
+    /** 直属上级员工 ID（可空，传 0 视为空）。 */
+    private Long leaderId;
+
+    /** 职级 ID（可空，仅新建时允许设置，传 0 视为空）。 */
+    private Long levelId;
+
     private EmploymentType employmentType;
 
     private LocalDate hireDate;

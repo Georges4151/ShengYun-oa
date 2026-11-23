@@ -57,4 +57,11 @@ public class HrContractController {
         contractService.update(id, request);
         return ApiResponse.success();
     }
+
+    /** 提交劳动合同审批，返回 BPM 流程实例 ID（字符串，避免前端精度丢失）。 */
+    @PostMapping("/{id}/submit-approval")
+    @PreAuthorize("hasAnyRole('SYS_ADMIN')")
+    public ApiResponse<String> submitApproval(@PathVariable Long id) {
+        return ApiResponse.success(contractService.submitApproval(id));
+    }
 }

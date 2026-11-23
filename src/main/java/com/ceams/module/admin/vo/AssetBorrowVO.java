@@ -1,6 +1,8 @@
 package com.ceams.module.admin.vo;
 
 import com.ceams.module.admin.enums.AssetBorrowStatus;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import lombok.Data;
@@ -10,9 +12,11 @@ import lombok.Data;
 public class AssetBorrowVO {
 
     /** 记录 ID。 */
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long id;
 
     /** 资产 ID。 */
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long assetId;
 
     /** 资产编号。 */
@@ -22,6 +26,7 @@ public class AssetBorrowVO {
     private String assetName;
 
     /** 借用人 ID。 */
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long borrowerId;
 
     /** 借用人姓名。 */
@@ -37,6 +42,7 @@ public class AssetBorrowVO {
     private LocalDate actualReturnDate;
 
     /** BPM 实例 ID。 */
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long bpmInstanceId;
 
     /** 状态。 */

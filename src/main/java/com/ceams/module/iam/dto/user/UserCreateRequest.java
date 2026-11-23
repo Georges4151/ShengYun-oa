@@ -35,7 +35,4 @@ public class UserCreateRequest {
 
     /** 所属部门 ID（可空）。 */
     private Long deptId;
-
-    /** 直属上级用户 ID（可空）。 */
-    private Long leaderId;
 }

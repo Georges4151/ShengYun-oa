@@ -13,6 +13,8 @@ import static org.mockito.Mockito.when;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.ceams.common.exception.BusinessException;
 import com.ceams.common.exception.ErrorCode;
+import com.ceams.module.admin.entity.AdminRepair;
+import com.ceams.module.admin.mapper.AdminRepairMapper;
 import com.ceams.module.bpm.dto.InstanceActionRequest;
 import com.ceams.module.bpm.dto.InstanceStartRequest;
 import com.ceams.module.bpm.entity.BpmInstance;
@@ -31,12 +33,30 @@ import com.ceams.module.bpm.mapper.BpmTemplateMapper;
 import com.ceams.module.bpm.mapper.BpmTemplateVersionMapper;
 import com.ceams.module.bpm.mapper.BpmVariableMapper;
 import com.ceams.module.bpm.service.BpmAuditService;
+import com.ceams.module.bpm.support.BpmAssigneeResolver;
 import com.ceams.module.bpm.support.BpmFlowEngine;
 import com.ceams.module.bpm.support.BpmSchema;
 import com.ceams.module.bpm.support.BpmSchemaNode;
 import com.ceams.module.bpm.support.BpmSchemaParser;
 import com.ceams.module.bpm.support.BpmSecurityGuard;
 import com.ceams.module.bpm.support.BpmViewAssembler;
+import com.ceams.module.bpm.vo.BizDetailVO;
+import com.ceams.module.expense.mapper.ReceiptMapper;
+import com.ceams.module.file.service.FileService;
+import com.ceams.module.hr.mapper.HrCheckinSupplementMapper;
+import com.ceams.module.hr.mapper.HrContractMapper;
+import com.ceams.module.hr.mapper.HrEmployeeChangeMapper;
+import com.ceams.module.hr.mapper.HrEmployeeMapper;
+import com.ceams.module.hr.mapper.HrJobLevelMapper;
+import com.ceams.module.hr.mapper.HrPositionMapper;
+import com.ceams.module.hr.mapper.HrSalaryChangeApplyMapper;
+import com.ceams.module.iam.mapper.DeptMapper;
+import com.ceams.module.iam.mapper.UserMapper;
+import com.ceams.module.project.mapper.ChangeRequestMapper;
+import com.ceams.module.project.mapper.ProjectMapper;
+import com.ceams.module.project.mapper.SubcontractorContractMapper;
+import com.ceams.module.project.mapper.SubcontractorMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
@@ -61,6 +81,25 @@ class BpmInstanceServiceImplTest {
     @Mock private BpmAuditService auditService;
     @Mock private BpmSecurityGuard securityGuard;
     @Mock private BpmViewAssembler assembler;
+    @Mock private BpmAssigneeResolver assigneeResolver;
+    @Mock private UserMapper userMapper;
+    @Mock private ReceiptMapper receiptMapper;
+    @Mock private ProjectMapper projectMapper;
+    @Mock private ChangeRequestMapper changeRequestMapper;
+    @Mock private AdminRepairMapper adminRepairMapper;
+    @Mock private HrEmployeeChangeMapper employeeChangeMapper;
+    @Mock private HrEmployeeMapper employeeMapper;
+    @Mock private HrSalaryChangeApplyMapper salaryChangeApplyMapper;
+    @Mock private HrCheckinSupplementMapper checkinSupplementMapper;
+    @Mock private DeptMapper deptMapper;
+    @Mock private HrPositionMapper positionMapper;
+    @Mock private HrJobLevelMapper jobLevelMapper;
+    @Mock private HrContractMapper hrContractMapper;
+    @Mock private SubcontractorContractMapper subcontractorContractMapper;
+    @Mock private SubcontractorMapper subcontractorMapper;
+    @Mock private FileService fileService;
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     private BpmInstanceServiceImpl service;
 
@@ -79,7 +118,25 @@ class BpmInstanceServiceImplTest {
                         flowEngine,
                         auditService,
                         securityGuard,
-                        assembler);
+                        assembler,
+                        assigneeResolver,
+                        userMapper,
+                        receiptMapper,
+                        projectMapper,
+                        changeRequestMapper,
+                        adminRepairMapper,
+                        employeeChangeMapper,
+                        employeeMapper,
+                        salaryChangeApplyMapper,
+                        checkinSupplementMapper,
+                        deptMapper,
+                        positionMapper,
+                        jobLevelMapper,
+                        hrContractMapper,
+                        subcontractorContractMapper,
+                        subcontractorMapper,
+                        objectMapper,
+                        fileService);
         lenient().when(securityGuard.currentUserId()).thenReturn(10L);
     }
 
@@ -248,6 +305,43 @@ class BpmInstanceServiceImplTest {
                 .isInstanceOf(BusinessException.class)
                 .extracting(e -> ((BusinessException) e).getErrorCode())
                 .isEqualTo(ErrorCode.AUTH_ACCESS_DENIED);
+    }
+
+    @Test
+    void 报修图片非法JSON不影响业务详情并返回空附件分组() {
+        BpmInstance instance = instance(1L, 10L, BpmInstanceStatus.RUNNING, 2);
+        instance.setBizType("ADMIN_REPAIR");
+        instance.setBizId(300L);
+        when(instanceMapper.selectById(1L)).thenReturn(instance);
+        AdminRepair repair = new AdminRepair();
+        repair.setId(300L);
+        repair.setImagesJson("not-a-json");
+        when(adminRepairMapper.selectById(300L)).thenReturn(repair);
+
+        BizDetailVO detail = service.bizDetail(1L);
+
+        assertThat(detail.getAttachmentGroups()).isEmpty();
+    }
+
+    @Test
+    void 报修图片兼容存储名与文件访问路径并按扩展名分类() {
+        BpmInstance instance = instance(1L, 10L, BpmInstanceStatus.RUNNING, 2);
+        instance.setBizType("ADMIN_REPAIR");
+        instance.setBizId(300L);
+        when(instanceMapper.selectById(1L)).thenReturn(instance);
+        AdminRepair repair = new AdminRepair();
+        repair.setId(300L);
+        repair.setImagesJson("[\"/api/v1/files/100.jpg\",\"200.pdf\",\"readme\"]");
+        repair.setFinishImagesJson("[]");
+        when(adminRepairMapper.selectById(300L)).thenReturn(repair);
+
+        BizDetailVO detail = service.bizDetail(1L);
+
+        assertThat(detail.getAttachmentGroups()).hasSize(1);
+        assertThat(detail.getAttachmentGroups().get(0).getGroupName()).isEqualTo("报修图片");
+        assertThat(detail.getAttachmentGroups().get(0).getItems())
+                .extracting(item -> item.getName() + ":" + item.getKind())
+                .containsExactly("100.jpg:IMAGE", "200.pdf:PDF", "readme:OTHER");
     }
 
     // ------------------------------------------------------------------

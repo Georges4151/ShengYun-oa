@@ -269,24 +269,10 @@ public class BpmTaskServiceImpl implements BpmTaskService {
         task.setStatus(BpmTaskStatus.REJECTED);
         updateTaskOrConflict(task);
 
-        if (node.getNodeType() == BpmNodeType.OR_SIGN) {
-            // 或签：全部驳回才整体驳回
-            long pendingOthers = countPendingOthers(node.getId(), task.getId());
-            if (pendingOthers > 0) {
-                auditService.record(
-                        BpmAuditService.TARGET_TASK,
-                        task.getId(),
-                        AuditAction.REJECT,
-                        before,
-                        task,
-                        null,
-                        securityGuard.currentUserId());
-                return;
-            }
-        } else {
-            // 会签/单人：任一驳回整体驳回，关闭同节点其他待办
-            closeOtherPendingTasks(node.getId(), task.getId());
-        }
+        // 任一驳回即整体驳回：关闭同节点其他待办后按目标节点回退。
+        // 或签与“同意”保持对称（任一人处理即出结果），避免出现“一人驳回、他人同意”
+        // 时流程继续向后流转，导致已驳回的节点被忽略、查看流程时看不到驳回与回退。
+        closeOtherPendingTasks(node.getId(), task.getId());
 
         BpmSchema schema = loadSchema(instance);
         List<BpmNode> nodes = flowEngine.loadNodes(instance.getId());

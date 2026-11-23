@@ -7,7 +7,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.ceams.common.exception.BusinessException;
 import com.ceams.common.exception.ErrorCode;
-import com.ceams.module.ai.config.AiProperties;
 import com.ceams.module.ai.vo.ReceiptOcrResultVO;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
@@ -16,7 +15,7 @@ import org.junit.jupiter.api.Test;
 class ReceiptOcrServiceImplTest {
 
     private final ReceiptOcrServiceImpl service =
-            new ReceiptOcrServiceImpl(new AiProperties(), null, null, new ObjectMapper());
+            new ReceiptOcrServiceImpl(null, null, new ObjectMapper());
 
     @Test
     void 解析模型输出_兼容Markdown代码块并归一化字段() throws Exception {

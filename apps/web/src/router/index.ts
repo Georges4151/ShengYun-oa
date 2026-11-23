@@ -33,7 +33,8 @@ const MENU_ACCESS: Array<[path: string, permission: string]> = [
   ['/seal', 'seal'],
   ['/notification', 'notification'],
   ['/report', 'report'],
-  ['/account', 'iam']
+  ['/account', 'iam'],
+  ['/settings/ai', 'system:ai:config']
 ]
 
 /** 当前账号可访问的第一个未隐藏菜单；一个都没有时回退到登录页，避免死循环。 */

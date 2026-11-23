@@ -26,6 +26,18 @@ public class EmployeeChangeVO {
     @JsonSerialize(using = ToStringSerializer.class)
     private Long targetPositionId;
 
+    @JsonSerialize(using = ToStringSerializer.class)
+    private Long targetLevelId;
+
+    /** 晋升目标职级名称。 */
+    private String targetLevelName;
+
+    @JsonSerialize(using = ToStringSerializer.class)
+    private Long resignLeaderId;
+
+    /** 离职下属转交上级姓名。 */
+    private String resignLeaderName;
+
     private LocalDate effectiveDate;
 
     private String reason;

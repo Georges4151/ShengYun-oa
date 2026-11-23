@@ -7,13 +7,14 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ceams.common.exception.BusinessException;
 import com.ceams.common.exception.ErrorCode;
 import com.ceams.module.ai.client.OllamaChatResult;
-import com.ceams.module.ai.client.OllamaClient;
+import com.ceams.module.ai.client.AiChatClient;
 import com.ceams.module.ai.config.AiProperties;
 import com.ceams.module.ai.vo.AiTodoSummaryVO;
 import com.ceams.module.bpm.entity.BpmInstance;
@@ -50,7 +51,7 @@ class AiTodoSummaryServiceImplTest {
 
     private static final Long CURRENT_USER_ID = 9L;
 
-    @Mock private OllamaClient ollamaClient;
+    @Mock private AiChatClient aiChatClient;
     @Mock private BpmTaskMapper taskMapper;
     @Mock private BpmInstanceMapper instanceMapper;
     @Mock private UserMapper userMapper;
@@ -65,10 +66,12 @@ class AiTodoSummaryServiceImplTest {
         properties = new AiProperties();
         properties.setModel("qwen2.5:7b");
         properties.setEnabled(false);
+        lenient().when(aiChatClient.isEnabled()).thenReturn(false);
+        lenient().when(aiChatClient.textModel()).thenReturn("qwen2.5:7b");
         service =
                 new AiTodoSummaryServiceImpl(
                         properties,
-                        ollamaClient,
+                        aiChatClient,
                         taskMapper,
                         instanceMapper,
                         userMapper,
@@ -125,10 +128,10 @@ class AiTodoSummaryServiceImplTest {
     @Test
     void AI润色数字不符时回退模板() {
         stubTodoData();
-        properties.setEnabled(true);
+        when(aiChatClient.isEnabled()).thenReturn(true);
         OllamaChatResult result = new OllamaChatResult();
         result.setContent("今日共有 99 条待办，请尽快处理。");
-        when(ollamaClient.chatStream(anyList(), ArgumentMatchers.<Consumer<String>>isNull()))
+        when(aiChatClient.chatStream(anyList(), ArgumentMatchers.<Consumer<String>>isNull()))
                 .thenReturn(result);
 
         AiTodoSummaryVO vo = service.summary();
@@ -142,10 +145,10 @@ class AiTodoSummaryServiceImplTest {
         stubTodoData();
         String template = service.summary().getContent();
 
-        properties.setEnabled(true);
+        when(aiChatClient.isEnabled()).thenReturn(true);
         OllamaChatResult result = new OllamaChatResult();
         result.setContent(template);
-        when(ollamaClient.chatStream(anyList(), ArgumentMatchers.<Consumer<String>>isNull()))
+        when(aiChatClient.chatStream(anyList(), ArgumentMatchers.<Consumer<String>>isNull()))
                 .thenReturn(result);
 
         AiTodoSummaryVO vo = service.summary();
@@ -157,8 +160,8 @@ class AiTodoSummaryServiceImplTest {
     @Test
     void AI异常时回退模板且不抛出() {
         stubTodoData();
-        properties.setEnabled(true);
-        when(ollamaClient.chatStream(anyList(), ArgumentMatchers.<Consumer<String>>isNull()))
+        when(aiChatClient.isEnabled()).thenReturn(true);
+        when(aiChatClient.chatStream(anyList(), ArgumentMatchers.<Consumer<String>>isNull()))
                 .thenThrow(new IllegalStateException("Ollama 不可用"));
 
         AiTodoSummaryVO vo = service.summary();

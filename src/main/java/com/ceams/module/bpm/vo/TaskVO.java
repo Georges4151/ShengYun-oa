@@ -4,6 +4,8 @@ import com.ceams.module.bpm.enums.BpmAssigneeSource;
 import com.ceams.module.bpm.enums.BpmInstanceStatus;
 import com.ceams.module.bpm.enums.BpmTaskStatus;
 import com.ceams.module.bpm.enums.TaskType;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import java.time.LocalDateTime;
 import lombok.Data;
 
@@ -11,13 +13,24 @@ import lombok.Data;
 @Data
 public class TaskVO {
 
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long id;
+
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long instanceId;
+
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long nodeId;
     private String nodeKey;
+
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long assigneeId;
 
+    /** 审批人姓名。 */
+    private String assigneeName;
+
     /** 被代理人 ID：有值表示当前任务由代理人处理，本字段为原审批人。 */
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long ownerAssigneeId;
 
     /** 被代理人姓名（配合 ownerAssigneeId 展示“代理人（代 XXX）”）。 */
@@ -39,8 +52,12 @@ public class TaskVO {
 
     /** 冗余实例信息，避免前端二次查询。 */
     private String bizType;
+
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long bizId;
     private BpmInstanceStatus instanceStatus;
+
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long initiatorId;
 
     /** 发起人姓名（列表批量装配，避免前端二次查询）。 */

@@ -60,6 +60,87 @@ const rules: FormRules<typeof form> = {
   type: [{ required: true, message: '请选择收支类型', trigger: 'change' }]
 }
 
+/** 下拉选项：id 为雪花 ID 字符串，label 为展示名称。 */
+interface SelectOption {
+  id: string
+  label: string
+}
+
+const projectOptions = ref<SelectOption[]>([])
+const paymentAccountOptions = ref<SelectOption[]>([])
+const projectOptionsLoading = ref(false)
+const paymentAccountOptionsLoading = ref(false)
+/** 选项加载失败只提示一次，避免重复弹窗。 */
+const projectOptionsErrorShown = ref(false)
+const paymentAccountOptionsErrorShown = ref(false)
+
+/** 重新加载后把当前已选中的选项补回列表，避免展示退化成 ID。 */
+function keepSelected(
+  prev: SelectOption[],
+  next: SelectOption[],
+  ids: Array<string | null | undefined>
+): SelectOption[] {
+  for (const id of ids) {
+    if (!id || next.some((item) => item.id === id)) continue
+    const old = prev.find((item) => item.id === id)
+    if (old) next.push(old)
+  }
+  return next
+}
+
+/** 合并兜底选项（行数据里的名称），按 id 去重。 */
+function addFallback(options: SelectOption[], fallback?: SelectOption | null): SelectOption[] {
+  if (!fallback || !fallback.id) return options
+  if (options.some((item) => item.id === fallback.id)) return options
+  return [fallback, ...options]
+}
+
+/** 加载项目选项：一次性取 100 条，由 el-select 的 filterable 做本地过滤。 */
+async function loadProjectOptions(): Promise<void> {
+  projectOptionsLoading.value = true
+  try {
+    const res = await ceamsApi.project.projectPage({ page: 1, size: 100 })
+    projectOptions.value = keepSelected(
+      projectOptions.value,
+      res.records.map((item) => ({ id: item.id, label: item.projectName })),
+      [query.projectId, form.projectId]
+    )
+  } catch (err) {
+    if (!projectOptionsErrorShown.value) {
+      projectOptionsErrorShown.value = true
+      ElMessage.error(apiErrorMessage(err, '项目选项加载失败'))
+    }
+  } finally {
+    projectOptionsLoading.value = false
+  }
+}
+
+/** 加载付款账户选项：一次性取 100 条，由 el-select 的 filterable 做本地过滤。 */
+async function loadPaymentAccountOptions(): Promise<void> {
+  paymentAccountOptionsLoading.value = true
+  try {
+    const res = await ceamsApi.payment.paymentAccountPage({ page: 1, size: 100 })
+    paymentAccountOptions.value = keepSelected(
+      paymentAccountOptions.value,
+      res.records.map((item) => ({ id: item.id, label: item.name })),
+      [form.paymentAccountId]
+    )
+  } catch (err) {
+    if (!paymentAccountOptionsErrorShown.value) {
+      paymentAccountOptionsErrorShown.value = true
+      ElMessage.error(apiErrorMessage(err, '付款账户选项加载失败'))
+    }
+  } finally {
+    paymentAccountOptionsLoading.value = false
+  }
+}
+
+/** 首次加载选项；已有数据时不重复请求。 */
+function ensureOptions(): void {
+  if (!projectOptions.value.length) void loadProjectOptions()
+  if (!paymentAccountOptions.value.length) void loadPaymentAccountOptions()
+}
+
 /** 状态标签视觉映射：仅决定颜色，状态值与文案保持原样。 */
 function statusTagType(status: AccountStatus): 'success' | 'warning' | 'info' {
   if (status === 'CONFIRMED') return 'success'
@@ -114,10 +195,24 @@ function openCreate(): void {
     description: ''
   })
   dialogVisible.value = true
+  ensureOptions()
 }
 
 function openEdit(row: AccountVO): void {
   editingId.value = row.id
+  // 行数据带名称时作为兜底选项，保证编辑态下拉能显示名称而不是 ID
+  if (row.projectId) {
+    projectOptions.value = addFallback(projectOptions.value, {
+      id: row.projectId,
+      label: row.projectName || row.projectId
+    })
+  }
+  if (row.paymentAccountId) {
+    paymentAccountOptions.value = addFallback(paymentAccountOptions.value, {
+      id: row.paymentAccountId,
+      label: row.paymentAccountName || row.paymentAccountId
+    })
+  }
   form.projectId = row.projectId ?? ''
   form.transactionDate = row.transactionDate ?? ''
   form.amount = row.amount
@@ -125,6 +220,7 @@ function openEdit(row: AccountVO): void {
   form.paymentAccountId = row.paymentAccountId ?? ''
   form.description = row.description ?? ''
   dialogVisible.value = true
+  ensureOptions()
 }
 
 function openDetail(row: AccountVO): void {
@@ -211,13 +307,25 @@ async function onCancel(row: AccountVO): Promise<void> {
   }
 }
 
-onMounted(load)
+onMounted(() => {
+  void load()
+  ensureOptions()
+})
 </script>
 
 <template>
   <div class="list-page">
     <div class="filter-bar">
-      <el-input v-model="query.projectId" placeholder="项目 ID" clearable style="width: 180px" />
+      <el-select
+        v-model="query.projectId"
+        placeholder="项目"
+        clearable
+        filterable
+        :loading="projectOptionsLoading"
+        style="width: 200px"
+      >
+        <el-option v-for="opt in projectOptions" :key="opt.id" :label="opt.label" :value="opt.id" />
+      </el-select>
       <el-select v-model="query.type" placeholder="收支类型" clearable style="width: 140px">
         <el-option v-for="opt in typeOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
       </el-select>
@@ -232,7 +340,11 @@ onMounted(load)
 
     <div class="data-card">
       <el-table v-loading="loading" :data="list" border>
-        <el-table-column prop="projectId" label="项目 ID" width="170" show-overflow-tooltip />
+        <el-table-column label="项目" width="170" show-overflow-tooltip>
+          <template #default="{ row }">
+            {{ (row as AccountVO).projectName ?? (row as AccountVO).projectId ?? '-' }}
+          </template>
+        </el-table-column>
         <el-table-column prop="transactionDate" label="交易日期" width="120" />
         <el-table-column label="金额" width="130" align="right" class-name="amount-col">
           <template #default="{ row }">
@@ -260,7 +372,11 @@ onMounted(load)
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="paymentAccountId" label="付款账户 ID" width="170" show-overflow-tooltip />
+        <el-table-column label="付款账户" width="170" show-overflow-tooltip>
+          <template #default="{ row }">
+            {{ (row as AccountVO).paymentAccountName ?? (row as AccountVO).paymentAccountId ?? '-' }}
+          </template>
+        </el-table-column>
         <el-table-column prop="description" label="描述" min-width="140" show-overflow-tooltip />
         <el-table-column label="操作" width="300" fixed="right">
           <template #default="{ row }">
@@ -303,8 +419,17 @@ onMounted(load)
 
     <el-dialog v-model="dialogVisible" :title="editingId ? '编辑收支流水' : '新增收支流水'" width="560px">
       <el-form ref="formRef" :model="form" :rules="rules" label-width="110px">
-        <el-form-item label="项目 ID">
-          <el-input v-model="form.projectId" placeholder="项目 ID（可选）" />
+        <el-form-item label="项目">
+          <el-select
+            v-model="form.projectId"
+            clearable
+            filterable
+            :loading="projectOptionsLoading"
+            placeholder="项目（可选）"
+            style="width: 100%"
+          >
+            <el-option v-for="opt in projectOptions" :key="opt.id" :label="opt.label" :value="opt.id" />
+          </el-select>
         </el-form-item>
         <el-form-item label="交易日期" prop="transactionDate">
           <el-date-picker v-model="form.transactionDate" type="date" value-format="YYYY-MM-DD" style="width: 100%" />
@@ -317,8 +442,17 @@ onMounted(load)
             <el-option v-for="opt in typeOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
           </el-select>
         </el-form-item>
-        <el-form-item label="付款账户 ID">
-          <el-input v-model="form.paymentAccountId" placeholder="付款账户 ID（可选）" />
+        <el-form-item label="付款账户">
+          <el-select
+            v-model="form.paymentAccountId"
+            clearable
+            filterable
+            :loading="paymentAccountOptionsLoading"
+            placeholder="付款账户（可选）"
+            style="width: 100%"
+          >
+            <el-option v-for="opt in paymentAccountOptions" :key="opt.id" :label="opt.label" :value="opt.id" />
+          </el-select>
         </el-form-item>
         <el-form-item label="描述">
           <el-input v-model="form.description" type="textarea" :rows="2" placeholder="描述（可选）" />
@@ -332,15 +466,17 @@ onMounted(load)
 
     <el-dialog v-model="detailVisible" title="收支流水详情" width="620px">
       <el-descriptions v-if="detail" :column="2" border>
-        <el-descriptions-item label="项目 ID">{{ detail.projectId ?? '-' }}</el-descriptions-item>
+        <el-descriptions-item label="项目">{{ detail.projectName ?? detail.projectId ?? '-' }}</el-descriptions-item>
         <el-descriptions-item label="交易日期">{{ detail.transactionDate }}</el-descriptions-item>
         <el-descriptions-item label="金额">{{ detail.amount }}</el-descriptions-item>
         <el-descriptions-item label="收支类型">{{ accountTypeLabels[detail.type] }}</el-descriptions-item>
         <el-descriptions-item label="状态">{{ accountStatusLabels[detail.status] }}</el-descriptions-item>
         <el-descriptions-item label="分摊状态">{{ allocationStatusLabels[detail.allocationStatus] }}</el-descriptions-item>
-        <el-descriptions-item label="付款账户 ID">{{ detail.paymentAccountId ?? '-' }}</el-descriptions-item>
-        <el-descriptions-item label="票据 ID">{{ detail.receiptId ?? '-' }}</el-descriptions-item>
-        <el-descriptions-item label="合同 ID">{{ detail.contractId ?? '-' }}</el-descriptions-item>
+        <el-descriptions-item label="付款账户">
+          {{ detail.paymentAccountName ?? detail.paymentAccountId ?? '-' }}
+        </el-descriptions-item>
+        <el-descriptions-item label="票据编号">{{ detail.receiptNumber ?? detail.receiptId ?? '-' }}</el-descriptions-item>
+        <el-descriptions-item label="合同">{{ detail.contractName ?? detail.contractId ?? '-' }}</el-descriptions-item>
         <el-descriptions-item label="支付类型">{{ detail.paymentType ?? '-' }}</el-descriptions-item>
         <el-descriptions-item label="描述" :span="2">{{ detail.description ?? '-' }}</el-descriptions-item>
       </el-descriptions>

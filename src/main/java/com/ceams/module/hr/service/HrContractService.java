@@ -21,4 +21,12 @@ public interface HrContractService {
 
     /** 即将到期合同：结束日期落在 [今天, 今天+days] 且状态为 ACTIVE。 */
     List<ContractVO> expiring(int days);
+
+    /**
+     * 提交劳动合同审批。
+     *
+     * @param id 合同 ID
+     * @return BPM 流程实例 ID（字符串，避免前端 Long 精度丢失）
+     */
+    String submitApproval(Long id);
 }

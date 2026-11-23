@@ -88,6 +88,12 @@ export const routes: RouteRecordRaw[] = [
         name: 'account',
         component: () => import('@/views/iam/AccountView.vue'),
         meta: { title: '账号', permission: 'iam' }
+      },
+      {
+        path: 'settings/ai',
+        name: 'settings-ai',
+        component: () => import('@/views/settings/AiSettingsView.vue'),
+        meta: { title: 'AI 设置', icon: 'Setting', permission: 'system:ai:config' }
       }
     ]
   },

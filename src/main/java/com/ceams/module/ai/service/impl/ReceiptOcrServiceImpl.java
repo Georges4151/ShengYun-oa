@@ -2,8 +2,7 @@ package com.ceams.module.ai.service.impl;
 
 import com.ceams.common.exception.BusinessException;
 import com.ceams.common.exception.ErrorCode;
-import com.ceams.module.ai.client.OllamaClient;
-import com.ceams.module.ai.config.AiProperties;
+import com.ceams.module.ai.client.AiChatClient;
 import com.ceams.module.ai.dto.ReceiptOcrRequest;
 import com.ceams.module.ai.service.ReceiptOcrService;
 import com.ceams.module.ai.vo.ReceiptOcrResultVO;
@@ -82,14 +81,13 @@ public class ReceiptOcrServiceImpl implements ReceiptOcrService {
                     + "{\"receiptNumber\":\"12345678\",\"amount\":\"128.50\",\"receiptDate\":\"2026-11-01\","
                     + "\"type\":\"MEAL\",\"paymentMethod\":\"WECHAT\"}";
 
-    private final AiProperties aiProperties;
     private final FileService fileService;
-    private final OllamaClient ollamaClient;
+    private final AiChatClient aiChatClient;
     private final ObjectMapper objectMapper;
 
     @Override
     public ReceiptOcrResultVO recognize(ReceiptOcrRequest request) {
-        if (!aiProperties.isEnabled()) {
+        if (!aiChatClient.isEnabled()) {
             throw BusinessException.of(ErrorCode.BIZ_UNPROCESSABLE, "AI 未启用");
         }
         String name = normalizeFileName(request == null ? null : request.getFilePath());
@@ -102,8 +100,8 @@ public class ReceiptOcrServiceImpl implements ReceiptOcrService {
         String raw;
         try {
             raw =
-                    ollamaClient.chatWithImages(
-                            aiProperties.getVisionModel(), OCR_PROMPT, List.of(base64));
+                    aiChatClient.chatWithImages(
+                            aiChatClient.visionModel(), OCR_PROMPT, List.of(base64));
         } catch (Exception e) {
             log.warn("票据识别调用视觉模型失败：name={}, 原因={}", name, e.getMessage());
             throw BusinessException.of(ErrorCode.BIZ_UNPROCESSABLE, RECOGNIZE_FAILED_MESSAGE);

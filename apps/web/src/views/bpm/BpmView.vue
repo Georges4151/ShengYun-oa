@@ -2,8 +2,11 @@
 import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import {
+  ElAlert,
   ElButton,
   ElDatePicker,
+  ElDescriptions,
+  ElDescriptionsItem,
   ElDialog,
   ElEmpty,
   ElForm,
@@ -27,6 +30,7 @@ import {
 import type { FormInstance, FormRules } from 'element-plus'
 import { ceamsApi } from '@/services/http'
 import type {
+  BizDetailVO,
   CcRecordVO,
   DelegateVO,
   InstanceVO,
@@ -45,6 +49,9 @@ import {
   bpmTemplateStatusLabels,
   bpmTemplateVersionStatusLabels
 } from '@/utils/labels'
+import BpmAmountRuleDialog from './components/BpmAmountRuleDialog.vue'
+import BpmFlowPreviewDialog from './components/BpmFlowPreviewDialog.vue'
+import BpmAttachments from './components/BpmAttachments.vue'
 import BpmInstanceDrawer from './components/BpmInstanceDrawer.vue'
 import FlowDesigner from './components/FlowDesigner.vue'
 
@@ -177,12 +184,26 @@ async function loadCc(): Promise<void> {
 // ---------------- 模板 ----------------
 const templates = ref<TemplateVO[]>([])
 const templateLoading = ref(false)
+/** 报销额度分级规则维护弹窗（入口见流程模板页签，需 expense:amount-rule:manage） */
+const amountRuleVisible = ref(false)
 const publishVisible = ref(false)
 const publishTemplateId = ref('')
 const publishSchema = ref('')
 const publishEffectiveTime = ref('')
 const publishMode = ref<'visual' | 'json'>('visual')
 const designerRef = ref<InstanceType<typeof FlowDesigner> | null>(null)
+
+// ---------------- 流程预览 ----------------
+const previewVisible = ref(false)
+const previewTemplateCode = ref('')
+const previewBizType = ref('')
+
+/** 打开发起前流程预览：按模板解析各节点预计审批人 */
+function openPreview(row: TemplateVO): void {
+  previewTemplateCode.value = row.code
+  previewBizType.value = row.bizType
+  previewVisible.value = true
+}
 
 async function loadTemplates(): Promise<void> {
   templateLoading.value = true
@@ -490,6 +511,29 @@ async function terminate(row: InstanceVO): Promise<void> {
   }
 }
 
+// ---------------- 业务单据详情 ----------------
+const bizDetailVisible = ref(false)
+const bizDetailLoading = ref(false)
+const bizDetail = ref<BizDetailVO | null>(null)
+/** 当前业务详情对应的流程实例 ID：附件受控下载需要按实例校验 */
+const bizDetailInstanceId = ref('')
+
+/** 打开业务单据详情：按流程实例反查被审批的业务单据字段 */
+async function openBizDetail(row: TaskVO): Promise<void> {
+  bizDetail.value = null
+  bizDetailInstanceId.value = row.instanceId
+  bizDetailVisible.value = true
+  bizDetailLoading.value = true
+  try {
+    bizDetail.value = await ceamsApi.bpm.instanceBizDetail(row.instanceId)
+  } catch (err) {
+    bizDetailVisible.value = false
+    ElMessage.error(apiErrorMessage(err, '加载单据详情失败'))
+  } finally {
+    bizDetailLoading.value = false
+  }
+}
+
 // ---------------- 流程详情 ----------------
 const drawerVisible = ref(false)
 const drawerInstanceId = ref<string | null>(null)
@@ -592,9 +636,10 @@ watch(
                 </el-tag>
               </template>
             </el-table-column>
-            <el-table-column label="操作" width="220" fixed="right">
+            <el-table-column label="操作" width="300" fixed="right">
               <template #default="{ row }">
                 <el-button link type="primary" size="small" @click="openInstance((row as TaskVO).instanceId)">查看流程</el-button>
+                <el-button link type="primary" size="small" @click="openBizDetail(row as TaskVO)">查看详情</el-button>
                 <el-button
                   v-if="(row as TaskVO).status === 'PENDING'"
                   link
@@ -874,6 +919,12 @@ watch(
             <el-button v-if="hasPermission('bpm:template:create')" type="primary" @click="openCreateTemplate">
               新增模板
             </el-button>
+            <el-button
+              v-if="hasPermission('expense:amount-rule:manage')"
+              @click="amountRuleVisible = true"
+            >
+              额度分级规则
+            </el-button>
           </div>
         </div>
 
@@ -917,8 +968,11 @@ watch(
                 <span v-else>-</span>
               </template>
             </el-table-column>
-            <el-table-column label="操作" width="260" fixed="right">
+            <el-table-column label="操作" width="320" fixed="right">
               <template #default="{ row }">
+                <el-button link type="primary" size="small" @click="openPreview(row as TemplateVO)">
+                  预览流程
+                </el-button>
                 <el-button link type="primary" size="small" @click="openPublish(row as TemplateVO)">发布新版本</el-button>
                 <el-button link type="warning" size="small" @click="toggleTemplate(row as TemplateVO)">
                   {{ (row as TemplateVO).status === 'ENABLED' ? '停用' : '启用' }}
@@ -942,12 +996,67 @@ watch(
       </el-tab-pane>
     </el-tabs>
 
+    <el-dialog
+      v-model="bizDetailVisible"
+      :title="bizDetail?.title || '业务单据'"
+      width="560px"
+      destroy-on-close
+    >
+      <div v-loading="bizDetailLoading" class="biz-detail">
+        <template v-if="bizDetail">
+          <div class="biz-detail__status">
+            <span class="biz-detail__status-label">业务状态</span>
+            <el-tag size="small" type="info">{{ bizDetail.statusText || '-' }}</el-tag>
+          </div>
+          <el-descriptions :column="1" border size="small">
+            <el-descriptions-item
+              v-for="(item, index) in bizDetail.items"
+              :key="index"
+              :label="item.label"
+            >
+              {{ item.value }}
+            </el-descriptions-item>
+          </el-descriptions>
+          <!-- 附件按分组展示；无附件时不渲染（组件卸载时回收 objectURL） -->
+          <BpmAttachments
+            v-if="bizDetailInstanceId && bizDetail.attachmentGroups?.length"
+            :instance-id="bizDetailInstanceId"
+            :groups="bizDetail.attachmentGroups ?? []"
+          />
+        </template>
+        <el-empty v-else-if="!bizDetailLoading" description="暂无单据详情" />
+      </div>
+      <template #footer>
+        <el-button @click="bizDetailVisible = false">关闭</el-button>
+      </template>
+    </el-dialog>
+
     <BpmInstanceDrawer v-model="drawerVisible" :instance-id="drawerInstanceId" />
 
+    <BpmAmountRuleDialog v-model="amountRuleVisible" />
+
+    <BpmFlowPreviewDialog
+      v-model="previewVisible"
+      :template-code="previewTemplateCode"
+      :biz-type="previewBizType"
+    />
+
     <el-dialog v-model="createVisible" title="新增流程模板" width="480px">
+      <el-alert
+        type="info"
+        :closable="false"
+        show-icon
+        title="模板编码须与业务类型编码一致"
+        style="margin-bottom: 16px"
+      >
+        <template #default>
+          业务单据提交时按固定编码发起流程，例如报修填
+          <strong>ADMIN_REPAIR</strong>。编码不一致的新模板不会被任何业务调用；当前仅内置业务支持发起。
+        </template>
+      </el-alert>
       <el-form ref="createFormRef" :model="createForm" :rules="createRules" label-width="90px">
         <el-form-item label="模板编码" prop="code">
-          <el-input v-model="createForm.code" placeholder="唯一编码，如 PURCHASE_APPLY" maxlength="64" />
+          <el-input v-model="createForm.code" placeholder="须与业务类型编码一致，如 ADMIN_REPAIR" maxlength="64" />
         </el-form-item>
         <el-form-item label="模板名称" prop="name">
           <el-input v-model="createForm.name" placeholder="如 采购申请审批" maxlength="128" />
@@ -1162,6 +1271,23 @@ watch(
 
 .publish-designer {
   margin-bottom: var(--ceams-space-3);
+}
+
+/* 业务单据详情：状态行 + 字段描述列表 */
+.biz-detail {
+  min-height: 120px;
+}
+
+.biz-detail__status {
+  display: flex;
+  align-items: center;
+  gap: var(--ceams-space-2);
+  margin-bottom: var(--ceams-space-3);
+}
+
+.biz-detail__status-label {
+  font-size: var(--ceams-font-size-sm);
+  color: var(--ceams-text-secondary);
 }
 
 /* 弹窗：内容区 20px 24px，底部操作条靠右并带顶部细边框 */

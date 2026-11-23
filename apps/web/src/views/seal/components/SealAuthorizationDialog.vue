@@ -104,7 +104,7 @@ async function loadList(): Promise<void> {
 async function loadUsers(): Promise<void> {
   userLoading.value = true
   try {
-    const res = await ceamsApi.iam.userPage({ page: 1, size: 200, status: 'ACTIVE' })
+    const res = await ceamsApi.iam.userPage({ page: 1, size: 100, status: 'ACTIVE' })
     users.value = res.records
   } catch {
     // 用户候选加载失败不阻断已有授权展示

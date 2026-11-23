@@ -198,6 +198,8 @@ class HrBpmCallbackTest {
             case REGULAR -> 11L;
             case TRANSFER -> 13L;
             case RESIGN -> 12L;
+            case PROMOTION -> 14L;
+            case LEADER_TRANSFER -> 15L;
         };
     }
 

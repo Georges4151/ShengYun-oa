@@ -37,6 +37,7 @@ import type {
   HrEmploymentType,
   HrEmployeeStatus,
   HrChangeType,
+  HrJobLevelStatus,
   HrApprovalStatus,
   HrContractType,
   HrContractStatus,
@@ -337,7 +338,14 @@ export const hrEmployeeStatusLabels: Record<HrEmployeeStatus, string> = {
 export const hrChangeTypeLabels: Record<HrChangeType, string> = {
   REGULAR: '转正',
   TRANSFER: '调岗',
-  RESIGN: '离职'
+  PROMOTION: '晋升',
+  RESIGN: '离职',
+  LEADER_TRANSFER: '上级转交'
+}
+
+export const hrJobLevelStatusLabels: Record<HrJobLevelStatus, string> = {
+  ENABLED: '启用',
+  DISABLED: '停用'
 }
 
 export const hrApprovalStatusLabels: Record<HrApprovalStatus, string> = {
@@ -546,6 +554,7 @@ export const bpmBizTypeLabels: Record<string, string> = {
   CHANGE_REQUEST: '项目变更',
   HR_REGULAR: '转正',
   HR_TRANSFER: '调岗',
+  HR_PROMOTION: '晋升',
   HR_RESIGN: '离职',
   HR_LEAVE: '请假',
   HR_CHECKIN_SUPPLEMENT: '补卡',
@@ -556,7 +565,9 @@ export const bpmBizTypeLabels: Record<string, string> = {
   ADMIN_MATERIAL_APPLY: '易耗品申领',
   ADMIN_VEHICLE_APPLY: '用车申请',
   ADMIN_MEETING_APPLY: '会议室预定',
-  ADMIN_REPAIR: '报修'
+  ADMIN_REPAIR: '报修',
+  HR_CONTRACT: '劳动合同',
+  SUBCONTRACT_CONTRACT: '分包合同'
 }
 
 export const bpmInstanceStatusLabels: Record<string, string> = {

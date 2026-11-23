@@ -6,11 +6,12 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.isNull;
-import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import com.ceams.module.ai.client.OllamaChatResult;
-import com.ceams.module.ai.client.OllamaClient;
+import com.ceams.module.ai.client.AiChatClient;
 import com.ceams.module.ai.config.AiProperties;
 import com.ceams.module.ai.vo.ContractClausePointVO;
 import com.ceams.module.ai.vo.ContractRiskHintVO;
@@ -45,7 +46,7 @@ class ContractRiskHintServiceImplTest {
             Clock.fixed(Instant.parse("2026-11-07T02:00:00Z"), ZoneId.of("Asia/Shanghai"));
 
     @Mock private SubcontractorContractService subcontractorContractService;
-    @Mock private OllamaClient ollamaClient;
+    @Mock private AiChatClient aiChatClient;
 
     private AiProperties properties;
 
@@ -55,9 +56,10 @@ class ContractRiskHintServiceImplTest {
     void setUp() {
         properties = new AiProperties();
         properties.setEnabled(false);
+        when(aiChatClient.isEnabled()).thenReturn(false);
         service =
                 new ContractRiskHintServiceImpl(
-                        properties, subcontractorContractService, ollamaClient, FIXED_CLOCK);
+                        properties, subcontractorContractService, aiChatClient, FIXED_CLOCK);
     }
 
     @Test
@@ -183,13 +185,14 @@ class ContractRiskHintServiceImplTest {
         SubcontractorContractVO contract =
                 contract(new BigDecimal("100.00"), new BigDecimal("50.00"));
         stubContract(contract);
-        properties.setEnabled(false);
+        when(aiChatClient.isEnabled()).thenReturn(false);
 
         ContractRiskHintVO vo = service.riskHints(CONTRACT_ID);
 
         assertNull(vo.getAiNote());
         assertFalse(vo.isAiEnabled());
-        verifyNoInteractions(ollamaClient);
+        verify(aiChatClient).isEnabled();
+        verifyNoMoreInteractions(aiChatClient);
     }
 
     @Test
@@ -199,11 +202,11 @@ class ContractRiskHintServiceImplTest {
         contract.setStatus(ContractStatus.DRAFT);
         contract.setEndDate(TODAY.plusDays(365));
         stubContract(contract);
-        properties.setEnabled(true);
+        when(aiChatClient.isEnabled()).thenReturn(true);
         properties.getContractRisk().setAiNoteEnabled(true);
         OllamaChatResult result = new OllamaChatResult();
         result.setContent("合同金额 100.00 元，已付 50.00 元，另有 8888 元需关注。请核实。");
-        when(ollamaClient.chatStream(anyList(), isNull())).thenReturn(result);
+        when(aiChatClient.chatStream(anyList(), isNull())).thenReturn(result);
 
         ContractRiskHintVO vo = service.riskHints(CONTRACT_ID);
 

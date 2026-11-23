@@ -39,6 +39,9 @@ public class EmployeeUpdateRequest {
 
     private Long positionId;
 
+    /** 直属上级员工 ID（显式传 0 表示清空，不传表示不修改）。 */
+    private Long leaderId;
+
     private EmploymentType employmentType;
 
     private LocalDate hireDate;

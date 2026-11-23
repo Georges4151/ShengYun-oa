@@ -7,7 +7,7 @@ import com.ceams.common.exception.BusinessException;
 import com.ceams.common.exception.ErrorCode;
 import com.ceams.module.ai.client.ChatMessage;
 import com.ceams.module.ai.client.OllamaChatResult;
-import com.ceams.module.ai.client.OllamaClient;
+import com.ceams.module.ai.client.AiChatClient;
 import com.ceams.module.ai.config.AiProperties;
 import com.ceams.module.ai.service.AiTodoSummaryService;
 import com.ceams.module.ai.vo.AiTodoSummaryVO;
@@ -80,7 +80,7 @@ public class AiTodoSummaryServiceImpl implements AiTodoSummaryService {
                     + "不得虚构事项；使用中文，150 字以内。";
 
     private final AiProperties aiProperties;
-    private final OllamaClient ollamaClient;
+    private final AiChatClient aiChatClient;
     private final BpmTaskMapper taskMapper;
     private final BpmInstanceMapper instanceMapper;
     private final UserMapper userMapper;
@@ -91,14 +91,14 @@ public class AiTodoSummaryServiceImpl implements AiTodoSummaryService {
     @Autowired
     public AiTodoSummaryServiceImpl(
             AiProperties aiProperties,
-            OllamaClient ollamaClient,
+            AiChatClient aiChatClient,
             BpmTaskMapper taskMapper,
             BpmInstanceMapper instanceMapper,
             UserMapper userMapper,
             BpmSecurityGuard securityGuard) {
         this(
                 aiProperties,
-                ollamaClient,
+                aiChatClient,
                 taskMapper,
                 instanceMapper,
                 userMapper,
@@ -109,14 +109,14 @@ public class AiTodoSummaryServiceImpl implements AiTodoSummaryService {
     /** 可注入 Clock 的构造器，便于单测固定时间。 */
     AiTodoSummaryServiceImpl(
             AiProperties aiProperties,
-            OllamaClient ollamaClient,
+            AiChatClient aiChatClient,
             BpmTaskMapper taskMapper,
             BpmInstanceMapper instanceMapper,
             UserMapper userMapper,
             BpmSecurityGuard securityGuard,
             Clock clock) {
         this.aiProperties = aiProperties;
-        this.ollamaClient = ollamaClient;
+        this.aiChatClient = aiChatClient;
         this.taskMapper = taskMapper;
         this.instanceMapper = instanceMapper;
         this.userMapper = userMapper;
@@ -153,17 +153,17 @@ public class AiTodoSummaryServiceImpl implements AiTodoSummaryService {
         vo.setDueToday(dueToday);
         vo.setByBizType(byBizType);
         vo.setUpcoming(upcoming);
-        vo.setAiEnabled(aiProperties.isEnabled());
+        vo.setAiEnabled(aiChatClient.isEnabled());
         vo.setDisclaimer(DISCLAIMER);
 
         String template = buildTemplate(today, totalPending, overdue, dueToday, byBizType, upcoming);
         String content = template;
         String model = MODEL_TEMPLATE;
-        if (aiProperties.isEnabled() && aiProperties.getTodoSummary().isPolishEnabled()) {
+        if (aiChatClient.isEnabled() && aiProperties.getTodoSummary().isPolishEnabled()) {
             String polished = polish(template);
             if (StringUtils.hasText(polished) && preservesNumbers(template, polished, today)) {
                 content = polished.trim();
-                model = aiProperties.getModel();
+                model = aiChatClient.textModel();
             } else {
                 log.warn("AI 待办摘要润色未通过数字保全校验，回退规则模板");
             }
@@ -416,7 +416,7 @@ public class AiTodoSummaryServiceImpl implements AiTodoSummaryService {
                     List.of(
                             ChatMessage.system(POLISH_SYSTEM_PROMPT),
                             ChatMessage.user("请润色下面的 CEAMS 待办摘要：\n" + template));
-            OllamaChatResult result = ollamaClient.chatStream(messages, null);
+            OllamaChatResult result = aiChatClient.chatStream(messages, null);
             return result == null ? null : result.getContent();
         } catch (Exception e) {
             log.warn("AI 待办摘要润色失败，回退规则模板：{}", e.getMessage());

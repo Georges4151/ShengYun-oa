@@ -1,6 +1,8 @@
 package com.ceams.module.admin.vo;
 
 import com.ceams.module.admin.enums.VehicleApplyStatus;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import lombok.Data;
@@ -10,15 +12,18 @@ import lombok.Data;
 public class VehicleApplyVO {
 
     /** 申请单 ID。 */
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long id;
 
     /** 车辆 ID。 */
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long vehicleId;
 
     /** 车牌号。 */
     private String vehiclePlateNo;
 
     /** 申请人 ID。 */
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long applicantId;
 
     /** 用车事由。 */
@@ -34,6 +39,7 @@ public class VehicleApplyVO {
     private LocalDateTime endTime;
 
     /** BPM 实例 ID。 */
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long bpmInstanceId;
 
     /** 状态。 */

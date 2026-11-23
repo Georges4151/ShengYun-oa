@@ -49,6 +49,12 @@ public class HrEmployee extends BaseEntity {
     /** 岗位 ID（逻辑引用 hr_position.id）。 */
     private Long positionId;
 
+    /** 直属上级员工 ID（逻辑引用 hr_employee.id）。 */
+    private Long leaderId;
+
+    /** 职级 ID（逻辑引用 hr_job_level.id）。 */
+    private Long levelId;
+
     /** 用工类型。 */
     private EmploymentType employmentType;
 

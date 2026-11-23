@@ -73,7 +73,7 @@ async function loadRooms(): Promise<void> {
 
 async function loadEmployees(): Promise<void> {
   try {
-    const res = await ceamsApi.hr.employeePage({ page: 1, size: 200 })
+    const res = await ceamsApi.hr.employeePage({ page: 1, size: 100 })
     employees.value = res.records
   } catch {
     // 参会人下拉加载失败不阻断会议室

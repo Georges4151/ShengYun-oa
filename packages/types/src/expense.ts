@@ -112,6 +112,58 @@ export interface ReceiptVerificationVO {
   createTime?: DateTime
 }
 
+// ---------- 报销额度分级规则 ----------
+/**
+ * 规则状态：与 BPM 模板状态取值一致，但语义独立（仅表示规则是否参与匹配）。
+ */
+export type AmountRuleStatus = 'ENABLED' | 'DISABLED'
+
+/**
+ * 报销额度分级规则。
+ *
+ * 按报销金额区间 [minAmount, maxAmount) 匹配审批流程模板：
+ * - maxAmount 为空表示无上限；
+ * - deptId / projectId 为空表示不限部门 / 项目；
+ * - priority 越大越优先。
+ */
+export interface AmountRuleVO {
+  id: Id
+  name: string
+  minAmount: Money
+  /** 最高金额：null 表示无上限。 */
+  maxAmount?: Money | null
+  deptId?: Id | null
+  deptName?: string | null
+  projectId?: Id | null
+  projectName?: string | null
+  /** 关联的流程模板编码（仅报销业务且启用的模板）。 */
+  templateCode: string
+  templateName?: string | null
+  priority: number
+  status: AmountRuleStatus
+  remark?: string | null
+  createTime?: DateTime
+  updateTime?: DateTime
+}
+
+/** 报销额度分级规则保存入参（新增与修改共用）。 */
+export interface AmountRuleSaveRequest {
+  name: string
+  /** 最低金额，必须 >= 0。 */
+  minAmount: Money
+  /** 最高金额：null/不传表示无上限，填写时必须大于 minAmount。 */
+  maxAmount?: Money | null
+  /** 适用部门：null 表示不限。 */
+  deptId?: Id | null
+  /** 适用项目：null 表示不限。 */
+  projectId?: Id | null
+  /** 流程模板编码，必填且须为启用的报销模板。 */
+  templateCode: string
+  priority?: number
+  status?: AmountRuleStatus
+  remark?: string | null
+}
+
 // ---------- 分页查询入参 ----------
 export interface ReceiptPageQuery {
   page?: number
@@ -122,4 +174,11 @@ export interface ReceiptPageQuery {
   verificationStatus?: VerificationStatus
   paymentStatus?: PaymentStatus
   approvalStatus?: ReceiptApprovalStatus
+}
+
+/** 报销额度分级规则分页查询入参：keyword 匹配规则名称。 */
+export interface AmountRulePageQuery {
+  page?: number
+  size?: number
+  keyword?: string
 }

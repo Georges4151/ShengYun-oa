@@ -23,6 +23,7 @@ import {
 import type { FormInstance, FormRules, UploadFile } from 'element-plus'
 import { ceamsApi, fetchBlob } from '@/services/http'
 import type {
+  ContractApprovalStatus,
   ContractRiskHintVO,
   ContractRiskItemVO,
   ContractRiskLevel,
@@ -33,6 +34,7 @@ import { usePage } from '@/composables/usePage'
 import { apiErrorMessage } from '@/utils/error'
 import { previewBlob, saveBlob } from '@/utils/file'
 import { contractStatusLabels, toOptions } from '@/utils/labels'
+import BpmInstanceDrawer from '@/views/bpm/components/BpmInstanceDrawer.vue'
 
 defineOptions({ name: 'SubcontractorContractList' })
 
@@ -62,6 +64,19 @@ function statusTagType(status: ContractStatus): 'success' | 'warning' | 'danger'
   if (status === 'ACTIVE') return 'warning'
   if (status === 'TERMINATED') return 'danger'
   return 'info'
+}
+
+/** 合同审批状态 -> 文案与标签颜色（NONE 未提交在表格中以占位符展示）。 */
+const contractApprovalMeta: Record<ContractApprovalStatus, { label: string; type: TagType }> = {
+  NONE: { label: '-', type: 'info' },
+  PENDING: { label: '审批中', type: 'warning' },
+  APPROVED: { label: '已通过', type: 'success' },
+  REJECTED: { label: '已驳回', type: 'danger' }
+}
+
+/** 未提交或已驳回的分包合同允许再次提交审批；审批中/已通过不允许重复提交。 */
+function canSubmitApproval(row: SubcontractorContractVO): boolean {
+  return !row.approvalStatus || row.approvalStatus === 'NONE' || row.approvalStatus === 'REJECTED'
 }
 
 /** 下拉选项：id 为雪花 ID 字符串，label 为展示名称。 */
@@ -447,6 +462,36 @@ async function onRemove(row: SubcontractorContractVO): Promise<void> {
   }
 }
 
+// ---------------- 合同审批 ----------------
+const drawerVisible = ref(false)
+const drawerInstanceId = ref<string | null>(null)
+
+/** 提交分包合同审批：二次确认后调用后端发起 BPM，成功后刷新列表同步审批状态。 */
+async function submitApproval(row: SubcontractorContractVO): Promise<void> {
+  try {
+    await ElMessageBox.confirm(
+      `确定提交分包合同「${row.contractName}」审批吗？提交后可到待办中心跟踪流程。`,
+      '提交审批',
+      { type: 'warning' }
+    )
+  } catch {
+    return
+  }
+  try {
+    await ceamsApi.project.subcontractorContractSubmitApproval(row.id)
+    ElMessage.success('已提交审批')
+    await load()
+  } catch (err) {
+    ElMessage.error(apiErrorMessage(err, '提交审批失败'))
+  }
+}
+
+function openInstance(instanceId?: string | null): void {
+  if (!instanceId) return
+  drawerInstanceId.value = instanceId
+  drawerVisible.value = true
+}
+
 onMounted(() => {
   void load()
   void loadSubcontractorOptions()
@@ -535,11 +580,41 @@ onMounted(() => {
             <span v-else>-</span>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="260" fixed="right">
+        <el-table-column label="审批状态" width="100">
+          <template #default="{ row }">
+            <el-tag
+              v-if="(row as SubcontractorContractVO).approvalStatus && (row as SubcontractorContractVO).approvalStatus !== 'NONE'"
+              size="small"
+              :type="contractApprovalMeta[(row as SubcontractorContractVO).approvalStatus!].type"
+            >
+              {{ contractApprovalMeta[(row as SubcontractorContractVO).approvalStatus!].label }}
+            </el-tag>
+            <span v-else>-</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="400" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" size="small" @click="openDetail(row as SubcontractorContractVO)">详情</el-button>
             <el-button link type="primary" size="small" @click="openRiskHints(row as SubcontractorContractVO)">风险提示</el-button>
             <el-button link type="primary" size="small" @click="openEdit(row as SubcontractorContractVO)">编辑</el-button>
+            <el-button
+              v-if="canSubmitApproval(row as SubcontractorContractVO)"
+              link
+              type="success"
+              size="small"
+              @click="submitApproval(row as SubcontractorContractVO)"
+            >
+              提交审批
+            </el-button>
+            <el-button
+              v-if="(row as SubcontractorContractVO).bpmInstanceId"
+              link
+              type="primary"
+              size="small"
+              @click="openInstance((row as SubcontractorContractVO).bpmInstanceId)"
+            >
+              查看流程
+            </el-button>
             <el-button link type="danger" size="small" @click="onRemove(row as SubcontractorContractVO)">删除</el-button>
           </template>
         </el-table-column>
@@ -727,6 +802,8 @@ onMounted(() => {
         <el-button @click="riskVisible = false">关闭</el-button>
       </template>
     </el-dialog>
+
+    <BpmInstanceDrawer v-model="drawerVisible" :instance-id="drawerInstanceId" />
   </div>
 </template>
 

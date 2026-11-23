@@ -24,6 +24,8 @@ public enum BpmBizType {
     HR_SALARY_CORRECTION,
     /** HR 绩效考评。 */
     HR_PERFORMANCE,
+    /** HR 晋升。 */
+    HR_PROMOTION,
     /** 行政资产领用。 */
     ADMIN_ASSET_BORROW,
     /** 行政易耗品申领。 */
@@ -33,7 +35,11 @@ public enum BpmBizType {
     /** 行政会议室预定。 */
     ADMIN_MEETING_APPLY,
     /** 行政报修。 */
-    ADMIN_REPAIR;
+    ADMIN_REPAIR,
+    /** HR 劳动合同。 */
+    HR_CONTRACT,
+    /** 分包合同。 */
+    SUBCONTRACT_CONTRACT;
 
     /** 编码转枚举，未知返回 null（调用方按参数非法处理）。 */
     public static BpmBizType from(String code) {

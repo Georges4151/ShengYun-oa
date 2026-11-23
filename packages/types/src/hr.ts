@@ -9,12 +9,13 @@
  */
 
 import type { DateTime, Id, Money } from './common'
+import type { ContractApprovalStatus } from './bpm'
 
 // ---------- 枚举 ----------
 export type HrGender = 'MALE' | 'FEMALE' | 'UNKNOWN'
 export type HrEmploymentType = 'FULL_TIME' | 'PART_TIME' | 'INTERN' | 'CONTRACTOR'
 export type HrEmployeeStatus = 'PROBATION' | 'ACTIVE' | 'LEAVE' | 'TERMINATED'
-export type HrChangeType = 'REGULAR' | 'TRANSFER' | 'RESIGN'
+export type HrChangeType = 'REGULAR' | 'TRANSFER' | 'PROMOTION' | 'RESIGN' | 'LEADER_TRANSFER'
 export type HrApprovalStatus =
   | 'PENDING'
   | 'APPROVED'
@@ -46,6 +47,18 @@ export interface EmployeeVO {
   email?: string | null
   deptId?: Id | null
   positionId?: Id | null
+  /** 直属上级员工 ID */
+  leaderId?: Id | null
+  /** 直属上级姓名 */
+  leaderName?: string | null
+  /** 直属上级工号 */
+  leaderCode?: string | null
+  /** 职级 ID */
+  levelId?: Id | null
+  /** 职级名称 */
+  levelName?: string | null
+  /** 职级编码 */
+  levelCode?: string | null
   employmentType?: HrEmploymentType | null
   hireDate?: string | null
   probationEndDate?: string | null
@@ -74,6 +87,8 @@ export interface EmployeeCreateRequest {
   email?: string
   deptId?: Id
   positionId?: Id
+  leaderId?: Id
+  levelId?: Id
   employmentType?: HrEmploymentType
   hireDate?: string
   probationEndDate?: string
@@ -98,6 +113,8 @@ export interface EmployeeUpdateRequest {
   email?: string
   deptId?: Id
   positionId?: Id
+  /** 直属上级员工 ID；传 "0" 表示清空上级 */
+  leaderId?: Id
   employmentType?: HrEmploymentType
   hireDate?: string
   probationEndDate?: string
@@ -117,6 +134,10 @@ export interface EmployeeChangeRequest {
   targetDeptId?: Id
   /** 调岗目标岗位 ID（仅调岗使用） */
   targetPositionId?: Id
+  /** 晋升目标职级 ID（仅晋升使用） */
+  targetLevelId?: Id
+  /** 下属转交上级员工 ID（仅离职使用；名下存在在职下属时必填） */
+  resignLeaderId?: Id
   remark?: string
 }
 
@@ -126,6 +147,10 @@ export interface EmployeeChangeVO {
   changeType: HrChangeType
   targetDeptId?: Id | null
   targetPositionId?: Id | null
+  targetLevelId?: Id | null
+  targetLevelName?: string | null
+  resignLeaderId?: Id | null
+  resignLeaderName?: string | null
   effectiveDate: string
   reason?: string | null
   approvalStatus: HrApprovalStatus
@@ -140,6 +165,91 @@ export interface EmployeePageQuery {
   deptId?: Id
   status?: HrEmployeeStatus
   keyword?: string
+}
+
+// ---------- 职级字典 ----------
+export type HrJobLevelStatus = 'ENABLED' | 'DISABLED'
+
+export interface JobLevelVO {
+  id: Id
+  code: string
+  name: string
+  jobFamily?: string | null
+  rankNo?: number | null
+  sortOrder?: number | null
+  status: HrJobLevelStatus
+  remark?: string | null
+  createTime?: DateTime
+}
+
+export interface JobLevelCreateRequest {
+  code: string
+  name: string
+  jobFamily?: string
+  rankNo?: number
+  sortOrder?: number
+  status?: HrJobLevelStatus
+  remark?: string
+}
+
+export interface JobLevelUpdateRequest {
+  name?: string
+  jobFamily?: string
+  rankNo?: number
+  sortOrder?: number
+  status?: HrJobLevelStatus
+  remark?: string
+}
+
+/** 员工汇报关系树节点。 */
+export interface EmployeeTreeVO {
+  id: Id
+  employeeNo: string
+  name: string
+  deptId?: Id | null
+  positionId?: Id | null
+  levelId?: Id | null
+  leaderId?: Id | null
+  status: HrEmployeeStatus
+  children?: EmployeeTreeVO[]
+}
+
+/** 组织树节点类型：部门 / 员工 / 未分配部门虚拟节点。 */
+export type OrgTreeNodeType = 'DEPT' | 'EMPLOYEE' | 'UNASSIGNED'
+
+/**
+ * 人事组织树节点：部门 → 子部门 → 员工，部门内员工按直属上级递归嵌套。
+ * 排序、子部门优先、过滤与断链提升为根均由后端顺序决定，前端不重排。
+ */
+export interface OrgTreeNodeVO {
+  id: Id
+  nodeType: OrgTreeNodeType
+  name: string
+  parentId?: Id | null
+  /** 所属部门 ID（员工节点为所在部门） */
+  deptId?: Id | null
+  /** 直属上级员工 ID（员工节点） */
+  leaderId?: Id | null
+  employeeNo?: string | null
+  /** 员工状态（部门节点无此字段） */
+  status?: HrEmployeeStatus | null
+  levelId?: Id | null
+  levelName?: string | null
+  levelCode?: string | null
+  /** 在职人数（部门节点，含子部门） */
+  headcount?: number | null
+  /** 部门总人数（含离职；部门节点，含子部门） */
+  totalHeadcount?: number | null
+  /** 是否存在子节点（懒加载分页接口裁剪 children 后用于渲染展开箭头） */
+  hasChildren?: boolean
+  /** 员工岗位名称（员工节点） */
+  positionName?: string | null
+  /** 负责人姓名（部门节点）/ 直属上级姓名（员工节点） */
+  leaderName?: string | null
+  /** 直属上级所在部门（员工节点，跨部门汇报时有值） */
+  leaderDeptName?: string | null
+  crossDeptLeader?: boolean
+  children?: OrgTreeNodeVO[]
 }
 
 // ---------- 岗位 ----------
@@ -191,6 +301,10 @@ export interface ContractVO {
   status: HrContractStatus
   renewalRemindDate?: string | null
   remark?: string | null
+  /** 审批状态快照：NONE 未提交 / PENDING 审批中 / APPROVED 已通过 / REJECTED 已驳回。 */
+  approvalStatus?: ContractApprovalStatus | null
+  /** 关联 BPM 流程实例 ID。 */
+  bpmInstanceId?: Id | null
   createTime?: DateTime
 }
 

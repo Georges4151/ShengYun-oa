@@ -40,6 +40,10 @@ export type CcReadStatus = 'UNREAD' | 'READ'
 export type TemplateStatus = 'ENABLED' | 'DISABLED'
 export type TemplateVersionStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED'
 export type RejectTarget = 'INITIATOR' | 'PREVIOUS'
+/** 合同审批状态快照（合同表 approval_status，仅由 BPM 回调写入，NONE 表示未提交）。 */
+export type ContractApprovalStatus = 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED'
+/** 审批单据附件种类：图片 / PDF / Office 文档 / 其他。 */
+export type BizAttachmentKind = 'IMAGE' | 'PDF' | 'OFFICE' | 'OTHER'
 
 // ---------- 待办 ----------
 export interface TaskVO {
@@ -48,6 +52,8 @@ export interface TaskVO {
   nodeId: Id
   nodeKey?: string | null
   assigneeId?: Id | null
+  /** 审批人姓名。 */
+  assigneeName?: string | null
   /** 被代理人 ID：有值表示当前由代理人处理，本字段为原审批人。 */
   ownerAssigneeId?: Id | null
   /** 被代理人姓名，用于展示“代理人（代 XXX）”。 */
@@ -67,6 +73,36 @@ export interface TaskVO {
   initiatorId?: Id | null
   initiatorName?: string | null
   currentNodeName?: string | null
+}
+
+/** 业务单据详情字段（label/value 两列展示）。 */
+export interface BizDetailItemVO {
+  label: string
+  value: string
+}
+
+/** 业务详情附件项。name 为服务端存储名（受控下载时原样回传），fileName 为展示名。 */
+export interface BizAttachmentVO {
+  name: string
+  fileName?: string | null
+  kind: BizAttachmentKind
+}
+
+/** 业务详情附件分组（如「票据图片」「报修图片」「合同文件」）。 */
+export interface BizAttachmentGroupVO {
+  groupName: string
+  items: BizAttachmentVO[]
+}
+
+/** 审批单据业务详情（待办“查看详情”）。 */
+export interface BizDetailVO {
+  bizType: string
+  bizId?: string | null
+  title?: string | null
+  statusText?: string | null
+  items: BizDetailItemVO[]
+  /** 附件分组（无附件时为空数组）。 */
+  attachmentGroups?: BizAttachmentGroupVO[]
 }
 
 export interface CcRecordVO {
@@ -101,15 +137,47 @@ export interface InstanceVO {
   currentAssigneeIds?: Id[] | null
 }
 
+export interface FlowAssigneeVO {
+  id: Id
+  name?: string | null
+  sourceType?: BpmAssigneeSource | null
+}
+
 export interface NodeVO {
   id: Id
   nodeKey: string
+  /** 节点名称（模板定义）。 */
+  nodeName?: string | null
   nodeType: BpmNodeType
   seqNo: number
   status: BpmNodeStatus
   arrivedAt?: DateTime | null
   completedAt?: DateTime | null
   tasks?: TaskVO[]
+  /** 节点审批人：已到达为实际审批人，未到达为预计审批人。 */
+  assignees?: FlowAssigneeVO[]
+  /** 是否为预计审批人（节点尚未到达）。 */
+  predicted?: boolean | null
+  /** 审批人来源规则描述（解析不到个人时展示）。 */
+  assigneeRule?: string | null
+}
+
+export interface PreviewNodeVO {
+  nodeKey: string
+  nodeName?: string | null
+  nodeType: BpmNodeType
+  seqNo: number
+  assignees?: FlowAssigneeVO[]
+  /** 预览节点均为预计审批人。 */
+  predicted?: boolean | null
+  assigneeRule?: string | null
+}
+
+export interface FlowPreviewVO {
+  templateCode: string
+  templateName?: string | null
+  bizType?: BpmBizType | string | null
+  nodes: PreviewNodeVO[]
 }
 
 export interface InstanceDetailVO {

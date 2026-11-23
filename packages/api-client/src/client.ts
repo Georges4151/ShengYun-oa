@@ -30,6 +30,8 @@ import { createReportApi } from './domains/report'
 import type { ReportApi } from './domains/report'
 import { createAiApi } from './domains/ai'
 import type { AiApi } from './domains/ai'
+import { createAiSettingsApi } from './domains/ai-settings'
+import type { AiSettingsApi } from './domains/ai-settings'
 import { createBpmApi } from './domains/bpm'
 import type { BpmApi } from './domains/bpm'
 import { createDocApi } from './domains/doc'
@@ -52,6 +54,7 @@ export interface CeamsApiClient {
   notification: NotificationApi
   report: ReportApi
   ai: AiApi
+  aiSettings: AiSettingsApi
   bpm: BpmApi
   doc: DocApi
   integration: IntegrationApi
@@ -73,6 +76,7 @@ export function createCeamsApiClient(options: HttpClientOptions): CeamsApiClient
     notification: createNotificationApi(client),
     report: createReportApi(client),
     ai: createAiApi(client),
+    aiSettings: createAiSettingsApi(client),
     bpm: createBpmApi(client),
     doc: createDocApi(client),
     integration: createIntegrationApi(client),

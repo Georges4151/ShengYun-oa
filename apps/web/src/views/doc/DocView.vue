@@ -114,23 +114,28 @@ async function loadTree(): Promise<void> {
 }
 
 async function loadProjects(): Promise<void> {
-  if (projects.value.length > 0) return
-  try {
-    const res = await ceamsApi.project.projectPage({ page: 1, size: 200 })
-    projects.value = res.records
-  } catch {
-    // 项目下拉加载失败不阻断其他库
+  if (projects.value.length === 0) {
+    try {
+      const res = await ceamsApi.project.projectPage({ page: 1, size: 100 })
+      projects.value = res.records
+    } catch {
+      // 项目下拉加载失败不阻断其他库
+    }
+  }
+  // 项目库默认选中第一个项目：否则目录树为空且「新建根目录」无归属项目而不可用
+  if (libraryType.value === 'PROJECT' && !projectId.value && projects.value.length > 0) {
+    projectId.value = projects.value[0].id
   }
 }
 
-function onLibraryChange(): void {
+async function onLibraryChange(): Promise<void> {
   currentDirId.value = null
   keyword.value = ''
   files.value = []
   total.value = 0
   resetPage()
   if (libraryType.value === 'PROJECT') {
-    void loadProjects()
+    await loadProjects()
   } else {
     projectId.value = ''
   }
@@ -160,7 +165,7 @@ const userNames = ref<Record<string, string>>({})
 
 async function loadUsers(): Promise<void> {
   try {
-    const res = await ceamsApi.iam.userPage({ page: 1, size: 200 })
+    const res = await ceamsApi.iam.userPage({ page: 1, size: 100 })
     const map: Record<string, string> = {}
     res.records.forEach((item: UserVO) => {
       map[item.id] = item.name

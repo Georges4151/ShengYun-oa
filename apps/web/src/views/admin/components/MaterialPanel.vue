@@ -241,7 +241,7 @@ const applyRules: FormRules<typeof applyForm> = {
 
 async function loadApplyMaterials(): Promise<void> {
   try {
-    const res = await ceamsApi.admin.materialPage({ page: 1, size: 200, status: 'ENABLED' })
+    const res = await ceamsApi.admin.materialPage({ page: 1, size: 100, status: 'ENABLED' })
     applyMaterials.value = res.records
   } catch {
     // 申领下拉加载失败不阻断列表

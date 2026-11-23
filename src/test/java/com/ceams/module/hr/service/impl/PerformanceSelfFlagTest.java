@@ -18,7 +18,6 @@ import com.ceams.module.hr.mapper.HrPerformanceReviewMapper;
 import com.ceams.module.hr.mapper.HrPerformanceTemplateMapper;
 import com.ceams.module.hr.service.HrEmployeeService;
 import com.ceams.module.hr.vo.PerformanceReviewVO;
-import com.ceams.module.iam.mapper.UserMapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -46,7 +45,6 @@ class PerformanceSelfFlagTest {
     @Mock private HrPerformanceTemplateMapper templateMapper;
     @Mock private HrPerformanceReviewMapper reviewMapper;
     @Mock private HrEmployeeMapper employeeMapper;
-    @Mock private UserMapper userMapper;
     @Mock private HrEmployeeService employeeService;
     @Mock private BpmInstanceService bpmInstanceService;
     @Mock private BpmTaskService bpmTaskService;
@@ -61,7 +59,6 @@ class PerformanceSelfFlagTest {
                         templateMapper,
                         reviewMapper,
                         employeeMapper,
-                        userMapper,
                         employeeService,
                         bpmInstanceService,
                         bpmTaskService,

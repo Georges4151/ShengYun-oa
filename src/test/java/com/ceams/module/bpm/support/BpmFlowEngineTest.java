@@ -85,7 +85,7 @@ class BpmFlowEngineTest {
         BpmNode start = node(11L, 1L, "start", BpmNodeType.START, 1, BpmNodeStatus.PENDING);
         BpmNode approve = node(12L, 1L, "approve", BpmNodeType.SINGLE, 2, BpmNodeStatus.PENDING);
         BpmSchema schema = schema(def("start", 1, BpmNodeType.START), approvalDef("approve", 2, BpmNodeType.SINGLE));
-        when(assigneeResolver.resolve(any(BpmSchemaNode.class), any()))
+        when(assigneeResolver.resolve(any(BpmSchemaNode.class), any(), any(), any()))
                 .thenReturn(List.of(resolved(20L, BpmAssigneeSource.USER)));
 
         engine.start(instance, List.of(start, approve), schema);
@@ -105,7 +105,7 @@ class BpmFlowEngineTest {
         BpmNode start = node(11L, 1L, "start", BpmNodeType.START, 1, BpmNodeStatus.PENDING);
         BpmNode approve = node(12L, 1L, "approve", BpmNodeType.COUNTERSIGN, 2, BpmNodeStatus.PENDING);
         BpmSchema schema = schema(def("start", 1, BpmNodeType.START), approvalDef("approve", 2, BpmNodeType.COUNTERSIGN));
-        when(assigneeResolver.resolve(any(BpmSchemaNode.class), any())).thenReturn(List.of());
+        when(assigneeResolver.resolve(any(BpmSchemaNode.class), any(), any(), any())).thenReturn(List.of());
 
         engine.start(instance, List.of(start, approve), schema);
 
@@ -136,7 +136,7 @@ class BpmFlowEngineTest {
         BpmNode current = node(11L, 1L, "first", BpmNodeType.SINGLE, 1, BpmNodeStatus.ACTIVE);
         BpmNode next = node(12L, 1L, "second", BpmNodeType.SINGLE, 2, BpmNodeStatus.PENDING);
         BpmSchema schema = schema(approvalDef("first", 1, BpmNodeType.SINGLE), approvalDef("second", 2, BpmNodeType.SINGLE));
-        when(assigneeResolver.resolve(any(BpmSchemaNode.class), any()))
+        when(assigneeResolver.resolve(any(BpmSchemaNode.class), any(), any(), any()))
                 .thenReturn(List.of(resolved(21L, BpmAssigneeSource.USER)));
 
         engine.afterApprove(instance, List.of(current, next), current, schema);
@@ -247,7 +247,7 @@ class BpmFlowEngineTest {
                         def("start", 1, BpmNodeType.START),
                         approvalDef("cc", 2, BpmNodeType.CC),
                         approvalDef("approve", 3, BpmNodeType.SINGLE));
-        when(assigneeResolver.resolve(any(BpmSchemaNode.class), any()))
+        when(assigneeResolver.resolve(any(BpmSchemaNode.class), any(), any(), any()))
                 .thenReturn(List.of(resolved(40L, BpmAssigneeSource.ROLE)));
 
         engine.start(instance, List.of(start, cc, approve), schema);
@@ -283,7 +283,7 @@ class BpmFlowEngineTest {
                         def("end", 5, BpmNodeType.END));
         when(conditionContextBuilder.build(instance))
                 .thenReturn(context(Map.of("amount", "8000"), Set.of()));
-        when(assigneeResolver.resolve(any(BpmSchemaNode.class), any()))
+        when(assigneeResolver.resolve(any(BpmSchemaNode.class), any(), any(), any()))
                 .thenReturn(List.of(resolved(20L, BpmAssigneeSource.USER)));
 
         engine.start(instance, List.of(start, cond, high, low, end), schema);
@@ -313,7 +313,7 @@ class BpmFlowEngineTest {
                         def("end", 5, BpmNodeType.END));
         when(conditionContextBuilder.build(instance))
                 .thenReturn(context(Map.of("amount", "2000"), Set.of()));
-        when(assigneeResolver.resolve(any(BpmSchemaNode.class), any()))
+        when(assigneeResolver.resolve(any(BpmSchemaNode.class), any(), any(), any()))
                 .thenReturn(List.of(resolved(20L, BpmAssigneeSource.USER)));
 
         engine.start(instance, List.of(start, cond, high, low, end), schema);
@@ -342,7 +342,7 @@ class BpmFlowEngineTest {
                         def("end", 5, BpmNodeType.END));
         when(conditionContextBuilder.build(instance))
                 .thenReturn(context(Map.of(), Set.of("FINANCE")));
-        when(assigneeResolver.resolve(any(BpmSchemaNode.class), any()))
+        when(assigneeResolver.resolve(any(BpmSchemaNode.class), any(), any(), any()))
                 .thenReturn(List.of(resolved(20L, BpmAssigneeSource.USER)));
 
         engine.start(instance, List.of(start, cond, finance, normal, end), schema);
@@ -376,7 +376,7 @@ class BpmFlowEngineTest {
                         def("end", 6, BpmNodeType.END));
         when(conditionContextBuilder.build(instance))
                 .thenReturn(context(Map.of("amount", "8000"), Set.of()));
-        when(assigneeResolver.resolve(any(BpmSchemaNode.class), any()))
+        when(assigneeResolver.resolve(any(BpmSchemaNode.class), any(), any(), any()))
                 .thenReturn(List.of(resolved(20L, BpmAssigneeSource.USER)));
 
         engine.start(instance, List.of(start, cond, high, mid, low, end), schema);
@@ -425,7 +425,7 @@ class BpmFlowEngineTest {
                         approvalDef("second", 2, BpmNodeType.SINGLE),
                         approvalDef("third", 3, BpmNodeType.SINGLE),
                         def("end", 4, BpmNodeType.END));
-        when(assigneeResolver.resolve(any(BpmSchemaNode.class), any()))
+        when(assigneeResolver.resolve(any(BpmSchemaNode.class), any(), any(), any()))
                 .thenReturn(List.of(resolved(20L, BpmAssigneeSource.USER)));
 
         engine.start(instance, List.of(start, second, third, end), schema);
@@ -447,7 +447,7 @@ class BpmFlowEngineTest {
                         def("start", 1, BpmNodeType.START),
                         approveDef,
                         def("end", 3, BpmNodeType.END));
-        when(assigneeResolver.resolve(any(BpmSchemaNode.class), any()))
+        when(assigneeResolver.resolve(any(BpmSchemaNode.class), any(), any(), any()))
                 .thenReturn(List.of(resolved(10L, BpmAssigneeSource.INITIATOR)));
 
         engine.start(instance, List.of(start, approve, end), schema);
@@ -475,7 +475,7 @@ class BpmFlowEngineTest {
                         def("end", 3, BpmNodeType.END));
         when(conditionContextBuilder.build(instance))
                 .thenReturn(context(Map.of("amount", "9000"), Set.of()));
-        when(assigneeResolver.resolve(any(BpmSchemaNode.class), any()))
+        when(assigneeResolver.resolve(any(BpmSchemaNode.class), any(), any(), any()))
                 .thenReturn(List.of(resolved(20L, BpmAssigneeSource.USER)));
 
         engine.start(instance, List.of(start, approve, end), schema);
@@ -490,7 +490,7 @@ class BpmFlowEngineTest {
         BpmNode start = node(11L, 1L, "start", BpmNodeType.START, 1, BpmNodeStatus.PENDING);
         BpmNode approve = node(12L, 1L, "approve", BpmNodeType.SINGLE, 2, BpmNodeStatus.PENDING);
         BpmSchema schema = schema(def("start", 1, BpmNodeType.START), approvalDef("approve", 2, BpmNodeType.SINGLE));
-        when(assigneeResolver.resolve(any(BpmSchemaNode.class), any()))
+        when(assigneeResolver.resolve(any(BpmSchemaNode.class), any(), any(), any()))
                 .thenReturn(List.of(resolved(20L, BpmAssigneeSource.USER)));
         when(proxyResolver.resolve(any(), any(), any())).thenReturn(99L);
 

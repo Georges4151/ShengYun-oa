@@ -1,5 +1,7 @@
 package com.ceams.module.admin.vo;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import lombok.Data;
@@ -9,6 +11,7 @@ import lombok.Data;
 public class VisitorQrVO {
 
     /** 访客登记 ID。 */
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long visitorId;
 
     /** 一次性核销令牌。 */

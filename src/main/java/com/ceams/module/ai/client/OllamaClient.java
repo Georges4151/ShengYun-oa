@@ -17,14 +17,13 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
-import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestClientResponseException;
 
 /**
  * 本地 Ollama 轻量客户端（零新增依赖，基于 Spring 6.1 {@link RestClient}）。
@@ -39,8 +38,7 @@ import org.springframework.web.client.RestClientException;
  * ceams.ai.timeout-seconds}。
  */
 @Slf4j
-@Component
-public class OllamaClient {
+public class OllamaClient implements AiChatClient {
 
     /** 探活连接超时：2 秒。 */
     private static final int PROBE_CONNECT_TIMEOUT_MILLIS = 2_000;
@@ -54,19 +52,22 @@ public class OllamaClient {
     /** 仅用于 NDJSON 静态解析的 ObjectMapper（线程安全，配置完成后可共享）。 */
     private static final ObjectMapper JSON = new ObjectMapper();
 
-    private final AiProperties aiProperties;
+    private final String baseUrl;
+    private final String model;
+    private final boolean stream;
     private final ObjectMapper objectMapper;
     private final RestClient statusClient;
     private final RestClient chatClient;
 
-    /** 生产用构造器：显式标注 {@code @Autowired}，避免与测试用包级构造器二选一失败。 */
-    @Autowired
+    /** 兼容旧配置构造器：从 {@link AiProperties} 派生地址、模型与流式开关。 */
     public OllamaClient(
             RestClient.Builder restClientBuilder,
             AiProperties aiProperties,
             ObjectMapper objectMapper) {
         this(
-                aiProperties,
+                aiProperties.getBaseUrl(),
+                aiProperties.getModel(),
+                aiProperties.isStream(),
                 objectMapper,
                 buildClient(
                         restClientBuilder,
@@ -86,7 +87,35 @@ public class OllamaClient {
             ObjectMapper objectMapper,
             RestClient statusClient,
             RestClient chatClient) {
-        this.aiProperties = aiProperties;
+        this(
+                aiProperties.getBaseUrl(),
+                aiProperties.getModel(),
+                aiProperties.isStream(),
+                objectMapper,
+                statusClient,
+                chatClient);
+    }
+
+    /**
+     * 配置驱动的构造器：由 {@code AiChatClientBuilder} 按当前数据库配置创建。
+     *
+     * @param baseUrl 服务地址
+     * @param model 模型名
+     * @param stream 是否流式
+     * @param objectMapper JSON 处理器
+     * @param statusClient 探活客户端（短超时）
+     * @param chatClient 对话客户端（按配置超时）
+     */
+    public OllamaClient(
+            String baseUrl,
+            String model,
+            boolean stream,
+            ObjectMapper objectMapper,
+            RestClient statusClient,
+            RestClient chatClient) {
+        this.baseUrl = baseUrl;
+        this.model = model;
+        this.stream = stream;
         this.objectMapper = objectMapper;
         this.statusClient = statusClient;
         this.chatClient = chatClient;
@@ -97,33 +126,50 @@ public class OllamaClient {
      *
      * <p>连接拒绝、超时、非 2xx、响应解析失败、模型未下载等任何异常都返回 false， 且不向调用方抛出。
      */
+    @Override
     public boolean isReachable() {
-        String model = aiProperties.getModel();
+        return probe().success();
+    }
+
+    /**
+     * 探活并返回中文原因：连接拒绝、超时、鉴权失败、模型未下载等异常都转为失败结果，不向上抛。
+     */
+    @Override
+    public AiProbeResult probe() {
         if (!StringUtils.hasText(model)) {
-            log.warn("未配置 ceams.ai.model，Ollama 视为不可用");
-            return false;
+            return AiProbeResult.fail("未配置模型");
         }
         try {
             String body = statusClient.get().uri("/api/tags").retrieve().body(String.class);
             if (body == null || body.isBlank()) {
                 log.warn("Ollama /api/tags 返回空响应，视为不可用");
-                return false;
+                return AiProbeResult.fail("服务返回空响应");
             }
             JsonNode models = objectMapper.readTree(body).path("models");
             if (!models.isArray()) {
                 log.warn("Ollama /api/tags 响应缺少 models 数组，视为不可用");
-                return false;
+                return AiProbeResult.fail("服务响应格式不正确");
             }
             for (JsonNode modelNode : models) {
                 if (matchesModel(modelNode.path("name").asText(""), model)) {
-                    return true;
+                    return AiProbeResult.ok();
                 }
             }
             log.warn("Ollama 可达但未找到模型 {}，请先执行 ollama pull {}", model, model);
-            return false;
+            return AiProbeResult.fail("模型未下载：" + model);
+        } catch (RestClientResponseException e) {
+            int status = e.getStatusCode().value();
+            log.warn("Ollama 探活返回 HTTP {}", status);
+            if (status == 401 || status == 403) {
+                return AiProbeResult.fail("鉴权失败(" + status + ")");
+            }
+            return AiProbeResult.fail("服务返回 HTTP " + status);
         } catch (Exception e) {
-            log.warn("Ollama 探活失败（{}）：{}", aiProperties.getBaseUrl(), e.getMessage());
-            return false;
+            log.warn(
+                    "Ollama 探活失败（{}）：{}",
+                    com.ceams.module.ai.support.AiConfigSupport.sanitizeUrl(baseUrl),
+                    e.getMessage());
+            return AiProbeResult.fail("地址无法访问");
         }
     }
 
@@ -147,6 +193,7 @@ public class OllamaClient {
      * @param onDelta 增量文本回调，允许为 null（只关心最终结果时）
      * @return 汇总后的回答文本、工具调用、token 用量与耗时
      */
+    @Override
     public OllamaChatResult chatStream(
             List<ChatMessage> messages, List<Map<String, Object>> tools, Consumer<String> onDelta) {
         if (messages == null || messages.isEmpty()) {
@@ -154,7 +201,7 @@ public class OllamaClient {
         }
 
         Map<String, Object> requestBody = new LinkedHashMap<>();
-        requestBody.put("model", aiProperties.getModel());
+        requestBody.put("model", model);
         List<Map<String, Object>> payloadMessages = new ArrayList<>(messages.size());
         for (ChatMessage message : messages) {
             Map<String, Object> item = new LinkedHashMap<>(3);
@@ -169,7 +216,7 @@ public class OllamaClient {
         if (tools != null && !tools.isEmpty()) {
             requestBody.put("tools", tools);
         }
-        requestBody.put("stream", aiProperties.isStream());
+        requestBody.put("stream", stream);
 
         long startNanos = System.nanoTime();
         OllamaChatResult result =
@@ -201,6 +248,7 @@ public class OllamaClient {
      * @throws IllegalArgumentException 参数为空
      * @throws IllegalStateException 请求失败、响应为空或缺少 {@code message.content}
      */
+    @Override
     public String chatWithImages(String model, String prompt, List<String> images) {
         if (!StringUtils.hasText(model)) {
             throw new IllegalArgumentException("model 不能为空");

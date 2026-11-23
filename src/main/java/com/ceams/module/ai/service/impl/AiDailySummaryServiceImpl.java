@@ -6,7 +6,7 @@ import com.ceams.common.exception.BusinessException;
 import com.ceams.common.exception.ErrorCode;
 import com.ceams.module.ai.client.ChatMessage;
 import com.ceams.module.ai.client.OllamaChatResult;
-import com.ceams.module.ai.client.OllamaClient;
+import com.ceams.module.ai.client.AiChatClient;
 import com.ceams.module.ai.config.AiProperties;
 import com.ceams.module.ai.entity.AiDailySummary;
 import com.ceams.module.ai.mapper.AiDailySummaryMapper;
@@ -121,7 +121,7 @@ public class AiDailySummaryServiceImpl implements AiDailySummaryService {
     }
 
     private final AiProperties aiProperties;
-    private final OllamaClient ollamaClient;
+    private final AiChatClient aiChatClient;
     private final AiDailySummaryMapper summaryMapper;
     private final ReceiptService receiptService;
     private final ReportService reportService;
@@ -136,7 +136,7 @@ public class AiDailySummaryServiceImpl implements AiDailySummaryService {
     @Autowired
     public AiDailySummaryServiceImpl(
             AiProperties aiProperties,
-            OllamaClient ollamaClient,
+            AiChatClient aiChatClient,
             AiDailySummaryMapper summaryMapper,
             ReceiptService receiptService,
             ReportService reportService,
@@ -147,7 +147,7 @@ public class AiDailySummaryServiceImpl implements AiDailySummaryService {
             ObjectMapper objectMapper) {
         this(
                 aiProperties,
-                ollamaClient,
+                aiChatClient,
                 summaryMapper,
                 receiptService,
                 reportService,
@@ -162,7 +162,7 @@ public class AiDailySummaryServiceImpl implements AiDailySummaryService {
     /** 可注入 Clock 的构造器，便于单测固定「昨日」。 */
     AiDailySummaryServiceImpl(
             AiProperties aiProperties,
-            OllamaClient ollamaClient,
+            AiChatClient aiChatClient,
             AiDailySummaryMapper summaryMapper,
             ReceiptService receiptService,
             ReportService reportService,
@@ -173,7 +173,7 @@ public class AiDailySummaryServiceImpl implements AiDailySummaryService {
             ObjectMapper objectMapper,
             Clock clock) {
         this.aiProperties = aiProperties;
-        this.ollamaClient = ollamaClient;
+        this.aiChatClient = aiChatClient;
         this.summaryMapper = summaryMapper;
         this.receiptService = receiptService;
         this.reportService = reportService;
@@ -261,12 +261,12 @@ public class AiDailySummaryServiceImpl implements AiDailySummaryService {
         String content = template;
         String model = MODEL_TEMPLATE;
         if (allowPolish
-                && aiProperties.isEnabled()
+                && aiChatClient.isEnabled()
                 && aiProperties.getSummary().isPolishEnabled()) {
             String polished = polish(date, template);
             if (StringUtils.hasText(polished) && preservesNumbers(template, polished, date)) {
                 content = polished;
-                model = aiProperties.getModel();
+                model = aiChatClient.textModel();
             } else {
                 log.warn("经营日报润色结果未通过数字保全校验，回退模板：date={}", date);
             }
@@ -430,7 +430,7 @@ public class AiDailySummaryServiceImpl implements AiDailySummaryService {
                     List.of(
                             ChatMessage.system(POLISH_SYSTEM_PROMPT),
                             ChatMessage.user("请润色下面的 CEAMS 经营日报（" + date + "）：\n" + template));
-            OllamaChatResult result = ollamaClient.chatStream(messages, null);
+            OllamaChatResult result = aiChatClient.chatStream(messages, null);
             if (result == null || !StringUtils.hasText(result.getContent())) {
                 return null;
             }

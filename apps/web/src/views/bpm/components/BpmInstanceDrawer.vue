@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { ElDialog, ElDescriptions, ElDescriptionsItem, ElEmpty, ElMessage, ElTag, ElTimeline, ElTimelineItem } from 'element-plus'
+import { ElDescriptions, ElDescriptionsItem, ElDialog, ElEmpty, ElMessage, ElTag } from 'element-plus'
 import { ceamsApi } from '@/services/http'
 import type { InstanceDetailVO } from '@ceams/types'
 import { apiErrorMessage } from '@/utils/error'
-import { bpmInstanceStatusLabels, bpmNodeStatusLabels, bpmNodeTypeLabels, bpmTaskStatusLabels } from '@/utils/labels'
+import { bpmInstanceStatusLabels } from '@/utils/labels'
+import BpmFlowSteps from './BpmFlowSteps.vue'
 
 defineOptions({ name: 'BpmInstanceDrawer' })
 
@@ -28,34 +29,6 @@ function instanceStatusTagType(status: string): TagType {
       return 'danger'
     default:
       return 'info'
-  }
-}
-
-/** 节点状态 -> 标签颜色 */
-function nodeStatusTagType(status: string): TagType {
-  switch (status) {
-    case 'COMPLETED':
-      return 'success'
-    case 'ACTIVE':
-      return 'warning'
-    case 'REJECTED':
-      return 'danger'
-    default:
-      return 'info'
-  }
-}
-
-/** 任务状态 -> 标签颜色 */
-function taskStatusTagType(status: string): TagType {
-  switch (status) {
-    case 'APPROVED':
-      return 'success'
-    case 'REJECTED':
-      return 'danger'
-    case 'CLOSED':
-      return 'info'
-    default:
-      return 'warning'
   }
 }
 
@@ -108,31 +81,7 @@ async function load(id: string): Promise<void> {
           <el-descriptions-item label="结束时间">{{ detail.instance.endedAt ?? '-' }}</el-descriptions-item>
         </el-descriptions>
 
-        <el-timeline class="timeline">
-          <el-timeline-item
-            v-for="node in detail.nodes"
-            :key="node.id"
-            :timestamp="node.arrivedAt ?? ''"
-            placement="top"
-          >
-            <div class="node-title">
-              <span>#{{ node.seqNo }} {{ node.nodeKey }}</span>
-              <el-tag size="small" type="info">{{ bpmNodeTypeLabels[node.nodeType] ?? node.nodeType }}</el-tag>
-              <el-tag size="small" :type="nodeStatusTagType(node.status)">
-                {{ bpmNodeStatusLabels[node.status] ?? node.status }}
-              </el-tag>
-            </div>
-            <div v-if="node.tasks?.length" class="task-list">
-              <div v-for="task in node.tasks" :key="task.id" class="task-item">
-                <span>审批人 {{ task.assigneeId ?? '-' }}</span>
-                <el-tag size="small" :type="taskStatusTagType(task.status)">
-                  {{ bpmTaskStatusLabels[task.status] ?? task.status }}
-                </el-tag>
-                <span v-if="task.dueAt" class="due">到期 {{ task.dueAt }}</span>
-              </div>
-            </div>
-          </el-timeline-item>
-        </el-timeline>
+        <BpmFlowSteps :nodes="detail.nodes" />
       </template>
     </div>
   </el-dialog>
@@ -154,35 +103,5 @@ async function load(id: string): Promise<void> {
 
 .detail-empty {
   padding: 40px 0;
-}
-
-.timeline {
-  margin-top: var(--ceams-space-5);
-}
-
-.node-title {
-  display: flex;
-  gap: var(--ceams-space-2);
-  align-items: center;
-  font-weight: 500;
-  color: var(--ceams-text-primary);
-}
-
-.task-list {
-  margin-top: var(--ceams-space-2);
-  font-size: var(--ceams-font-size-sm);
-  color: var(--ceams-text-secondary);
-}
-
-.task-item {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--ceams-space-2);
-  align-items: center;
-  line-height: 1.9;
-}
-
-.due {
-  color: var(--ceams-color-warning);
 }
 </style>

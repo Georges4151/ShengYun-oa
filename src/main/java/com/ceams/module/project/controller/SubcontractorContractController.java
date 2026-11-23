@@ -81,4 +81,11 @@ public class SubcontractorContractController {
         subcontractorContractService.delete(id);
         return ApiResponse.success();
     }
+
+    /** 提交分包合同审批，返回 BPM 流程实例 ID（字符串，避免前端精度丢失）。 */
+    @PostMapping("/{id}/submit-approval")
+    @PreAuthorize("hasRole('SYS_ADMIN')")
+    public ApiResponse<String> submitApproval(@PathVariable Long id) {
+        return ApiResponse.success(subcontractorContractService.submitApproval(id));
+    }
 }

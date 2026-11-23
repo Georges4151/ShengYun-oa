@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { ElTabPane, ElTabs } from 'element-plus'
 import { PageContainer } from '@ceams/ui-web'
 import EmployeeList from './components/EmployeeList.vue'
+import JobLevelList from './components/JobLevelList.vue'
 import ContractList from './components/ContractList.vue'
 import AttendancePanel from './components/AttendancePanel.vue'
 import SalaryList from './components/SalaryList.vue'
@@ -19,6 +20,9 @@ const activeTab = ref('employee')
     <el-tabs v-model="activeTab" class="hr-view">
       <el-tab-pane label="员工档案" name="employee">
         <EmployeeList />
+      </el-tab-pane>
+      <el-tab-pane label="职级字典" name="jobLevel">
+        <JobLevelList />
       </el-tab-pane>
       <el-tab-pane label="合同台账" name="contract">
         <ContractList />

@@ -9,7 +9,11 @@ public enum ChangeType {
     /** 调岗。 */
     TRANSFER(BpmBizType.HR_TRANSFER),
     /** 离职。 */
-    RESIGN(BpmBizType.HR_RESIGN);
+    RESIGN(BpmBizType.HR_RESIGN),
+    /** 晋升。 */
+    PROMOTION(BpmBizType.HR_PROMOTION),
+    /** 上级离职自动转交（系统写入，不发起 BPM）。 */
+    LEADER_TRANSFER(null);
 
     private final BpmBizType bpmBizType;
 

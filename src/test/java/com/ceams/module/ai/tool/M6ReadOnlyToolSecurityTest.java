@@ -16,7 +16,7 @@ import static org.mockito.Mockito.when;
 import com.ceams.module.admin.service.AdminAssetService;
 import com.ceams.module.admin.service.AdminRepairService;
 import com.ceams.module.admin.service.AdminVehicleService;
-import com.ceams.module.ai.client.OllamaClient;
+import com.ceams.module.ai.client.AiChatClient;
 import com.ceams.module.ai.config.AiProperties;
 import com.ceams.module.ai.dto.AiChatRequest;
 import com.ceams.module.ai.mapper.AiConversationMapper;
@@ -53,7 +53,7 @@ class M6ReadOnlyToolSecurityTest {
 
     @Mock private HrPayrollService hrPayrollService;
 
-    @Mock private OllamaClient ollamaClient;
+    @Mock private AiChatClient aiChatClient;
 
     @Mock private ToolRegistry toolRegistry;
 
@@ -159,10 +159,11 @@ class M6ReadOnlyToolSecurityTest {
         when(aiAuditService.appendMessage(
                         anyLong(), anyString(), anyString(), any(), any(), any(), any(), any()))
                 .thenReturn(MESSAGE_ID);
+        when(aiChatClient.isEnabled()).thenReturn(true);
         AiChatServiceImpl service =
                 new AiChatServiceImpl(
                         properties,
-                        ollamaClient,
+                        aiChatClient,
                         toolRegistry,
                         aiAuditService,
                         conversationMapper,
@@ -177,7 +178,8 @@ class M6ReadOnlyToolSecurityTest {
         assertEquals(AiChatServiceImpl.SALARY_DETAIL_REFUSAL, result.getAnswer());
         assertEquals(CONVERSATION_ID, result.getConversationId());
         assertEquals(MESSAGE_ID, result.getMessageId());
-        verifyNoInteractions(ollamaClient);
+        verify(aiChatClient).isEnabled();
+        verify(aiChatClient, never()).chatStream(any(), any(), any());
         verify(toolRegistry, never()).definitions();
         // user + assistant 两条消息均正常落库
         verify(aiAuditService, times(2))

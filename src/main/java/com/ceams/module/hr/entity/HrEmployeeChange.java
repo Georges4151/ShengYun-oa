@@ -26,6 +26,12 @@ public class HrEmployeeChange extends BaseEntity {
     /** 调岗目标岗位 ID。 */
     private Long targetPositionId;
 
+    /** 晋升目标职级 ID（PROMOTION 使用）。 */
+    private Long targetLevelId;
+
+    /** 离职时下属转交的上级员工 ID（RESIGN 使用）。 */
+    private Long resignLeaderId;
+
     /** 生效日期。 */
     private LocalDate effectiveDate;
 

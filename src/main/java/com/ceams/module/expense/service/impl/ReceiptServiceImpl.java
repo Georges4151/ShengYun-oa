@@ -24,6 +24,7 @@ import com.ceams.module.expense.enums.VerificationStatus;
 import com.ceams.module.expense.mapper.ApprovalRecordMapper;
 import com.ceams.module.expense.mapper.ReceiptMapper;
 import com.ceams.module.expense.mapper.ReceiptVerificationMapper;
+import com.ceams.module.expense.service.ExpenseAmountRuleService;
 import com.ceams.module.expense.service.ReceiptService;
 import com.ceams.module.expense.util.PageUtil;
 import com.ceams.module.expense.vo.ApprovalRecordVO;
@@ -51,9 +52,6 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class ReceiptServiceImpl implements ReceiptService {
 
-    /** 报销默认流程模板编码。 */
-    private static final String TEMPLATE_CODE = "EXPENSE";
-
     private final ReceiptMapper receiptMapper;
     private final ApprovalRecordMapper approvalRecordMapper;
     private final ReceiptVerificationMapper receiptVerificationMapper;
@@ -61,6 +59,7 @@ public class ReceiptServiceImpl implements ReceiptService {
     private final ApprovalRecordConverter approvalRecordConverter;
     private final ReceiptVerificationConverter receiptVerificationConverter;
     private final BpmInstanceService bpmInstanceService;
+    private final ExpenseAmountRuleService amountRuleService;
 
     @Override
     public PageResult<ReceiptVO> page(
@@ -235,8 +234,12 @@ public class ReceiptServiceImpl implements ReceiptService {
         if (status != ReceiptApprovalStatus.DRAFT && status != ReceiptApprovalStatus.REJECTED) {
             throw BusinessException.of(ErrorCode.BIZ_STATE_CONFLICT, "仅草稿态或驳回态的票据可上报");
         }
+        // 按「金额 + 归属项目 + 提交人所属部门（含子部门）」匹配额度分级规则，未命中直接拒绝提交
+        String templateCode =
+                amountRuleService.resolveTemplateCode(
+                        receipt.getAmount(), receipt.getProjectId(), receipt.getUserId());
         InstanceStartRequest request = new InstanceStartRequest();
-        request.setTemplateCode(TEMPLATE_CODE);
+        request.setTemplateCode(templateCode);
         request.setBizType(BpmBizType.EXPENSE.name());
         request.setBizId(receipt.getId());
         // 条件变量：金额、票据类型、归属项目，供模板条件分支求值

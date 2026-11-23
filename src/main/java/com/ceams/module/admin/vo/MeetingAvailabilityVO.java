@@ -1,5 +1,7 @@
 package com.ceams.module.admin.vo;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -10,6 +12,7 @@ import lombok.Data;
 public class MeetingAvailabilityVO {
 
     /** 会议室 ID。 */
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long roomId;
 
     /** 查询日期。 */

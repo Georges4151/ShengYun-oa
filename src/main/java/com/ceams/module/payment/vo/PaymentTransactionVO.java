@@ -31,5 +31,14 @@ public class PaymentTransactionVO {
 
     private String description;
 
+    /** 付款账户名称（关联 biz_payment_account.name）。 */
+    private String accountName;
+
+    /** 票据编号（关联 biz_receipt.receipt_number）。 */
+    private String receiptNumber;
+
+    /** 项目名称（关联 biz_project.project_name）。 */
+    private String projectName;
+
     private LocalDateTime createTime;
 }

@@ -17,8 +17,11 @@ import com.ceams.module.hr.enums.EmployeeStatus;
 import com.ceams.module.hr.enums.Gender;
 import com.ceams.module.hr.mapper.HrEmployeeChangeMapper;
 import com.ceams.module.hr.mapper.HrEmployeeMapper;
+import com.ceams.module.hr.mapper.HrJobLevelMapper;
+import com.ceams.module.hr.mapper.HrPositionMapper;
 import com.ceams.module.hr.vo.EmployeeVO;
 import com.ceams.module.iam.mapper.DeptMapper;
+import com.ceams.module.iam.mapper.UserMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -32,8 +35,11 @@ class HrEmployeeServiceImplTest {
 
     @Mock private HrEmployeeMapper employeeMapper;
     @Mock private HrEmployeeChangeMapper changeMapper;
+    @Mock private HrJobLevelMapper jobLevelMapper;
+    @Mock private HrPositionMapper positionMapper;
     @Mock private BpmInstanceService bpmInstanceService;
     @Mock private DeptMapper deptMapper;
+    @Mock private UserMapper userMapper;
 
     private HrEmployeeConverter employeeConverter;
     private HrEmployeeServiceImpl employeeService;
@@ -46,10 +52,13 @@ class HrEmployeeServiceImplTest {
                 new HrEmployeeServiceImpl(
                         employeeMapper,
                         changeMapper,
+                        jobLevelMapper,
+                        positionMapper,
                         employeeConverter,
                         changeConverter,
                         bpmInstanceService,
-                        deptMapper);
+                        deptMapper,
+                        userMapper);
     }
 
     @Test

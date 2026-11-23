@@ -8,12 +8,19 @@ import type { HttpClient } from '../http-client'
 import type {
   Id,
   PageResult,
+  HrEmployeeStatus,
   EmployeeVO,
   EmployeeCreateRequest,
   EmployeeUpdateRequest,
   EmployeeChangeRequest,
   EmployeeChangeVO,
   EmployeePageQuery,
+  EmployeeTreeVO,
+  OrgTreeNodeVO,
+  OrgTreeNodeType,
+  JobLevelVO,
+  JobLevelCreateRequest,
+  JobLevelUpdateRequest,
   PositionVO,
   PositionCreateRequest,
   PositionUpdateRequest,
@@ -64,6 +71,21 @@ import type {
   SalarySlipPageQuery
 } from '@ceams/types'
 
+/** 组织树过滤条件：状态 / 关键字 / 部门。 */
+export interface OrgTreeQuery {
+  status?: HrEmployeeStatus
+  keyword?: string
+  deptId?: Id
+  /** 未指定 status 时是否包含已离职员工，默认 false（仅“全部员工”筛选传 true） */
+  includeResigned?: boolean
+}
+
+/** 组织树子节点查询：在根节点下按父节点类型与 ID 取直接子节点。 */
+export interface OrgTreeChildrenQuery extends OrgTreeQuery {
+  nodeType: OrgTreeNodeType
+  nodeId: Id
+}
+
 export interface HrApi {
   // 员工档案
   employeePage(query?: EmployeePageQuery): Promise<PageResult<EmployeeVO>>
@@ -72,9 +94,26 @@ export interface HrApi {
   employeeCreate(body: EmployeeCreateRequest): Promise<Id>
   employeeUpdate(id: Id, body: EmployeeUpdateRequest): Promise<void>
   employeeChanges(id: Id): Promise<EmployeeChangeVO[]>
+  /** 在职直接下属（离职前下属转交选择） */
+  employeeSubordinates(id: Id): Promise<EmployeeVO[]>
   employeeRegular(id: Id, body: EmployeeChangeRequest): Promise<Id>
   employeeTransfer(id: Id, body: EmployeeChangeRequest): Promise<Id>
+  employeePromotion(id: Id, body: EmployeeChangeRequest): Promise<Id>
   employeeResign(id: Id, body: EmployeeChangeRequest): Promise<Id>
+  employeeTree(query?: { deptId?: Id; status?: HrEmployeeStatus }): Promise<EmployeeTreeVO[]>
+  /** 组织树（部门 → 子部门 → 员工，员工按直属上级递归嵌套；排序由后端决定） */
+  orgTree(query?: OrgTreeQuery): Promise<OrgTreeNodeVO[]>
+  /** 组织树根节点（children 已裁剪，hasChildren 标识是否有下级，供懒加载使用） */
+  orgTreeRoots(query?: OrgTreeQuery): Promise<OrgTreeNodeVO[]>
+  /** 组织树直接子节点（children 已裁剪，hasChildren 标识是否有下级，供懒加载使用） */
+  orgTreeChildren(query: OrgTreeChildrenQuery): Promise<OrgTreeNodeVO[]>
+
+  // 职级字典
+  jobLevelList(): Promise<JobLevelVO[]>
+  /** 启用中的职级（仅 ENABLED），供下拉选择使用 */
+  jobLevelEnabledList(): Promise<JobLevelVO[]>
+  jobLevelCreate(body: JobLevelCreateRequest): Promise<Id>
+  jobLevelUpdate(id: Id, body: JobLevelUpdateRequest): Promise<void>
 
   // 岗位
   positionList(): Promise<PositionVO[]>
@@ -86,6 +125,8 @@ export interface HrApi {
   contractExpiring(days?: number): Promise<ContractVO[]>
   contractCreate(body: ContractCreateRequest): Promise<Id>
   contractUpdate(id: Id, body: ContractUpdateRequest): Promise<void>
+  /** 提交劳动合同审批，返回 BPM 流程实例 ID。 */
+  contractSubmitApproval(id: Id): Promise<Id>
 
   // 假期额度
   leaveQuotaList(query?: LeaveQuotaQuery): Promise<LeaveQuotaVO[]>
@@ -175,14 +216,70 @@ export function createHrApi(client: HttpClient): HrApi {
     async employeeChanges(id) {
       return client.get<EmployeeChangeVO[]>(`/api/v1/hr/employees/${id}/changes`)
     },
+    async employeeSubordinates(id) {
+      return client.get<EmployeeVO[]>(`/api/v1/hr/employees/${id}/subordinates`)
+    },
     async employeeRegular(id, body) {
       return client.post<Id>(`/api/v1/hr/employees/${id}/regular`, body)
     },
     async employeeTransfer(id, body) {
       return client.post<Id>(`/api/v1/hr/employees/${id}/transfer`, body)
     },
+    async employeePromotion(id, body) {
+      return client.post<Id>(`/api/v1/hr/employees/${id}/promotion`, body)
+    },
     async employeeResign(id, body) {
       return client.post<Id>(`/api/v1/hr/employees/${id}/resign`, body)
+    },
+    async employeeTree(query = {}) {
+      return client.get<EmployeeTreeVO[]>('/api/v1/hr/employees/tree', {
+        query: { deptId: query.deptId, status: query.status }
+      })
+    },
+    async orgTree(query = {}) {
+      return client.get<OrgTreeNodeVO[]>('/api/v1/hr/employees/org-tree', {
+        query: {
+          status: query.status,
+          keyword: query.keyword,
+          deptId: query.deptId,
+          includeResigned: query.includeResigned
+        }
+      })
+    },
+    async orgTreeRoots(query = {}) {
+      return client.get<OrgTreeNodeVO[]>('/api/v1/hr/employees/org-tree/roots', {
+        query: {
+          status: query.status,
+          keyword: query.keyword,
+          deptId: query.deptId,
+          includeResigned: query.includeResigned
+        }
+      })
+    },
+    async orgTreeChildren(query) {
+      return client.get<OrgTreeNodeVO[]>('/api/v1/hr/employees/org-tree/children', {
+        query: {
+          nodeType: query.nodeType,
+          nodeId: query.nodeId,
+          status: query.status,
+          keyword: query.keyword,
+          deptId: query.deptId,
+          includeResigned: query.includeResigned
+        }
+      })
+    },
+
+    async jobLevelList() {
+      return client.get<JobLevelVO[]>('/api/v1/hr/job-levels')
+    },
+    async jobLevelEnabledList() {
+      return client.get<JobLevelVO[]>('/api/v1/hr/job-levels/enabled')
+    },
+    async jobLevelCreate(body) {
+      return client.post<Id>('/api/v1/hr/job-levels', body)
+    },
+    async jobLevelUpdate(id, body) {
+      return client.put<void>(`/api/v1/hr/job-levels/${id}`, body)
     },
 
     async positionList() {
@@ -213,6 +310,9 @@ export function createHrApi(client: HttpClient): HrApi {
     },
     async contractUpdate(id, body) {
       return client.put<void>(`/api/v1/hr/contracts/${id}`, body)
+    },
+    async contractSubmitApproval(id) {
+      return client.post<Id>(`/api/v1/hr/contracts/${id}/submit-approval`)
     },
 
     async leaveQuotaList(query = {}) {

@@ -2,7 +2,7 @@ package com.ceams.module.ai.service.impl;
 
 import com.ceams.module.ai.client.ChatMessage;
 import com.ceams.module.ai.client.OllamaChatResult;
-import com.ceams.module.ai.client.OllamaClient;
+import com.ceams.module.ai.client.AiChatClient;
 import com.ceams.module.ai.config.AiProperties;
 import com.ceams.module.ai.service.ContractRiskHintService;
 import com.ceams.module.ai.vo.ContractClausePointVO;
@@ -133,7 +133,7 @@ public class ContractRiskHintServiceImpl implements ContractRiskHintService {
 
     private final AiProperties aiProperties;
     private final SubcontractorContractService subcontractorContractService;
-    private final OllamaClient ollamaClient;
+    private final AiChatClient aiChatClient;
     private final Clock clock;
 
     /** 生产环境构造：使用 Asia/Shanghai 的系统时钟。 */
@@ -141,19 +141,19 @@ public class ContractRiskHintServiceImpl implements ContractRiskHintService {
     public ContractRiskHintServiceImpl(
             AiProperties aiProperties,
             SubcontractorContractService subcontractorContractService,
-            OllamaClient ollamaClient) {
-        this(aiProperties, subcontractorContractService, ollamaClient, Clock.system(BUSINESS_ZONE));
+            AiChatClient aiChatClient) {
+        this(aiProperties, subcontractorContractService, aiChatClient, Clock.system(BUSINESS_ZONE));
     }
 
     /** 可注入 Clock 的构造器，便于单测固定「当天」。 */
     ContractRiskHintServiceImpl(
             AiProperties aiProperties,
             SubcontractorContractService subcontractorContractService,
-            OllamaClient ollamaClient,
+            AiChatClient aiChatClient,
             Clock clock) {
         this.aiProperties = aiProperties;
         this.subcontractorContractService = subcontractorContractService;
-        this.ollamaClient = ollamaClient;
+        this.aiChatClient = aiChatClient;
         this.clock = clock;
     }
 
@@ -174,7 +174,7 @@ public class ContractRiskHintServiceImpl implements ContractRiskHintService {
                 evaluateRisks(contract, contractAmount, paidAmount, paidRatio, today);
 
         boolean aiEnabled =
-                aiProperties.isEnabled() && aiProperties.getContractRisk().isAiNoteEnabled();
+                aiChatClient.isEnabled() && aiProperties.getContractRisk().isAiNoteEnabled();
 
         ContractRiskHintVO vo = new ContractRiskHintVO();
         vo.setContractId(contract.getId() == null ? null : String.valueOf(contract.getId()));
@@ -338,7 +338,7 @@ public class ContractRiskHintServiceImpl implements ContractRiskHintService {
                     List.of(
                             ChatMessage.system(AI_NOTE_SYSTEM_PROMPT),
                             ChatMessage.user("请仅复述以下合同事实与风险提示：\n" + facts));
-            OllamaChatResult result = ollamaClient.chatStream(messages, null);
+            OllamaChatResult result = aiChatClient.chatStream(messages, null);
             if (result == null || !StringUtils.hasText(result.getContent())) {
                 return null;
             }

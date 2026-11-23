@@ -2,6 +2,7 @@ package com.ceams.module.hr.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.ceams.common.base.BaseEntity;
+import com.ceams.common.enums.ContractApprovalStatus;
 import com.ceams.module.hr.enums.ContractStatus;
 import com.ceams.module.hr.enums.ContractType;
 import java.time.LocalDate;
@@ -43,6 +44,12 @@ public class HrContract extends BaseEntity {
 
     /** 合同状态。 */
     private ContractStatus status;
+
+    /** 审批状态快照（默认 NONE，由 BPM 回调写入）。 */
+    private ContractApprovalStatus approvalStatus = ContractApprovalStatus.NONE;
+
+    /** 关联 BPM 流程实例 ID（逻辑引用 bpm_instance.id）。 */
+    private Long bpmInstanceId;
 
     /** 续签提醒日期。 */
     private LocalDate renewalRemindDate;

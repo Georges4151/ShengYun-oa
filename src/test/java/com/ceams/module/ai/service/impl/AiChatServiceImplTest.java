@@ -10,6 +10,7 @@ import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -20,7 +21,7 @@ import com.ceams.common.exception.BusinessException;
 import com.ceams.common.exception.ErrorCode;
 import com.ceams.module.ai.client.ChatMessage;
 import com.ceams.module.ai.client.OllamaChatResult;
-import com.ceams.module.ai.client.OllamaClient;
+import com.ceams.module.ai.client.AiChatClient;
 import com.ceams.module.ai.client.OllamaToolCall;
 import com.ceams.module.ai.config.AiProperties;
 import com.ceams.module.ai.dto.AiChatRequest;
@@ -81,7 +82,7 @@ class AiChatServiceImplTest {
     private static final Clock FIXED_CLOCK =
             Clock.fixed(Instant.parse("2026-11-07T02:00:00Z"), BUSINESS_ZONE);
 
-    @Mock private OllamaClient ollamaClient;
+    @Mock private AiChatClient aiChatClient;
     @Mock private ToolRegistry toolRegistry;
     @Mock private AiAuditService aiAuditService;
     @Mock private AiConversationMapper conversationMapper;
@@ -96,10 +97,12 @@ class AiChatServiceImplTest {
         properties.setEnabled(true);
         properties.setModel("qwen2.5:7b");
         properties.setMaxContextMessages(10);
+        lenient().when(aiChatClient.isEnabled()).thenReturn(true);
+        lenient().when(aiChatClient.textModel()).thenReturn("qwen2.5:7b");
         service =
                 new AiChatServiceImpl(
                         properties,
-                        ollamaClient,
+                        aiChatClient,
                         toolRegistry,
                         aiAuditService,
                         conversationMapper,
@@ -125,7 +128,7 @@ class AiChatServiceImplTest {
         service.process(request(QUESTION), sink);
 
         ArgumentCaptor<List<ChatMessage>> captor = ArgumentCaptor.forClass(List.class);
-        verify(ollamaClient, times(1)).chatStream(captor.capture(), anyList(), any());
+        verify(aiChatClient, times(1)).chatStream(captor.capture(), anyList(), any());
         List<ChatMessage> messages = captor.getValue();
         assertEquals("system", messages.get(0).role());
         String prompt = messages.get(0).content();
@@ -150,7 +153,7 @@ class AiChatServiceImplTest {
         assertTrue(sink.toolEvents.isEmpty());
         assertNull(sink.errorCode);
         assertEquals(String.valueOf(ASSISTANT_MESSAGE_ID), sink.doneMessageId);
-        verify(ollamaClient, times(1)).chatStream(anyList(), anyList(), any());
+        verify(aiChatClient, times(1)).chatStream(anyList(), anyList(), any());
     }
 
     @Test
@@ -175,7 +178,7 @@ class AiChatServiceImplTest {
         assertEquals(String.valueOf(ASSISTANT_MESSAGE_ID), sink.doneMessageId);
 
         ArgumentCaptor<List<ChatMessage>> captor = ArgumentCaptor.forClass(List.class);
-        verify(ollamaClient, times(2)).chatStream(captor.capture(), anyList(), any());
+        verify(aiChatClient, times(2)).chatStream(captor.capture(), anyList(), any());
         List<ChatMessage> secondRound = captor.getAllValues().get(1);
         assertTrue(
                 secondRound.stream()
@@ -211,7 +214,7 @@ class AiChatServiceImplTest {
         assertEquals(0, sink.toolEvents.get(0).rows());
 
         ArgumentCaptor<List<ChatMessage>> captor = ArgumentCaptor.forClass(List.class);
-        verify(ollamaClient, times(2)).chatStream(captor.capture(), anyList(), any());
+        verify(aiChatClient, times(2)).chatStream(captor.capture(), anyList(), any());
         assertTrue(
                 captor.getAllValues().get(1).stream()
                         .anyMatch(
@@ -232,17 +235,17 @@ class AiChatServiceImplTest {
         assertTrue(sink.toolEvents.isEmpty());
         assertNull(sink.errorCode);
         assertEquals(String.valueOf(ASSISTANT_MESSAGE_ID), sink.doneMessageId);
-        verify(ollamaClient, times(2)).chatStream(anyList(), anyList(), any());
+        verify(aiChatClient, times(2)).chatStream(anyList(), anyList(), any());
     }
 
     @Test
     void 未启用时_同步抛业务异常() {
-        properties.setEnabled(false);
+        when(aiChatClient.isEnabled()).thenReturn(false);
 
         assertThrows(
                 BusinessException.class,
                 () -> service.chat(request(QUESTION), new SseEmitter(1_000L)));
-        verify(ollamaClient, never()).chatStream(anyList(), anyList(), any());
+        verify(aiChatClient, never()).chatStream(anyList(), anyList(), any());
     }
 
     @Test
@@ -260,7 +263,7 @@ class AiChatServiceImplTest {
         assertEquals(ErrorCode.BIZ_NOT_FOUND.name(), sink.errorCode);
         assertNull(sink.metaConversationId);
         assertTrue(sink.completed);
-        verify(ollamaClient, never()).chatStream(anyList(), anyList(), any());
+        verify(aiChatClient, never()).chatStream(anyList(), anyList(), any());
     }
 
     @Test
@@ -295,7 +298,7 @@ class AiChatServiceImplTest {
         assertNull(sink.errorCode);
         assertTrue(sink.completed);
         assertEquals(String.valueOf(ASSISTANT_MESSAGE_ID), sink.doneMessageId);
-        verify(ollamaClient, times(1)).chatStream(anyList(), anyList(), any());
+        verify(aiChatClient, times(1)).chatStream(anyList(), anyList(), any());
 
         ArgumentCaptor<String> contentCaptor = ArgumentCaptor.forClass(String.class);
         verify(aiAuditService, times(2))
@@ -386,13 +389,13 @@ class AiChatServiceImplTest {
 
     @Test
     void 同步对话_未启用_抛出业务异常且不调用模型() {
-        properties.setEnabled(false);
+        when(aiChatClient.isEnabled()).thenReturn(false);
 
         BusinessException exception =
                 assertThrows(BusinessException.class, () -> service.chatSync(request(QUESTION)));
 
         assertEquals(ErrorCode.BIZ_STATE_CONFLICT, exception.getErrorCode());
-        verify(ollamaClient, never()).chatStream(anyList(), anyList(), any());
+        verify(aiChatClient, never()).chatStream(anyList(), anyList(), any());
     }
 
     @Test
@@ -407,7 +410,7 @@ class AiChatServiceImplTest {
                         BusinessException.class, () -> service.chatSync(request(QUESTION, 7001L)));
 
         assertEquals(ErrorCode.BIZ_NOT_FOUND, exception.getErrorCode());
-        verify(ollamaClient, never()).chatStream(anyList(), anyList(), any());
+        verify(aiChatClient, never()).chatStream(anyList(), anyList(), any());
     }
 
     // ---------- 测试支撑 ----------
@@ -425,7 +428,7 @@ class AiChatServiceImplTest {
     @SafeVarargs
     private final void stubChatSequence(OllamaChatResult... results) {
         OngoingStubbing<OllamaChatResult> stubbing =
-                when(ollamaClient.chatStream(anyList(), anyList(), any()));
+                when(aiChatClient.chatStream(anyList(), anyList(), any()));
         for (OllamaChatResult result : results) {
             stubbing =
                     stubbing.thenAnswer(

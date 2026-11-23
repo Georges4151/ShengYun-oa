@@ -11,7 +11,9 @@ import com.ceams.module.hr.enums.EmployeeStatus;
 import com.ceams.module.hr.service.HrEmployeeService;
 import com.ceams.module.hr.service.HrPositionService;
 import com.ceams.module.hr.vo.EmployeeChangeVO;
+import com.ceams.module.hr.vo.EmployeeTreeVO;
 import com.ceams.module.hr.vo.EmployeeVO;
+import com.ceams.module.hr.vo.OrgTreeNodeVO;
 import com.ceams.module.hr.vo.PositionVO;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -56,6 +58,52 @@ public class HrEmployeeController {
         return ApiResponse.success(employeeService.currentEmployee());
     }
 
+    @GetMapping("/employees/tree")
+    @PreAuthorize("isAuthenticated()")
+    public ApiResponse<List<EmployeeTreeVO>> employeeTree(
+            @RequestParam(required = false) Long deptId,
+            @RequestParam(required = false) EmployeeStatus status) {
+        return ApiResponse.success(employeeService.tree(deptId, status));
+    }
+
+    @GetMapping("/employees/org-tree")
+    @PreAuthorize("isAuthenticated()")
+    public ApiResponse<List<OrgTreeNodeVO>> employeeOrgTree(
+            @RequestParam(required = false) EmployeeStatus status,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Long deptId,
+            @RequestParam(defaultValue = "false") boolean includeResigned) {
+        return ApiResponse.success(
+                employeeService.orgTree(status, keyword, deptId, includeResigned));
+    }
+
+    /** 组织树懒加载首屏：仅返回根节点，children 为空，展开能力见 hasChildren。 */
+    @GetMapping("/employees/org-tree/roots")
+    @PreAuthorize("isAuthenticated()")
+    public ApiResponse<List<OrgTreeNodeVO>> employeeOrgTreeRoots(
+            @RequestParam(required = false) EmployeeStatus status,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Long deptId,
+            @RequestParam(defaultValue = "false") boolean includeResigned) {
+        return ApiResponse.success(
+                employeeService.orgTreeRoots(status, keyword, deptId, includeResigned));
+    }
+
+    /** 组织树懒加载展开：按节点类型 + ID 返回直接子节点，children 为空。 */
+    @GetMapping("/employees/org-tree/children")
+    @PreAuthorize("isAuthenticated()")
+    public ApiResponse<List<OrgTreeNodeVO>> employeeOrgTreeChildren(
+            @RequestParam(required = false) String nodeType,
+            @RequestParam(required = false) Long nodeId,
+            @RequestParam(required = false) EmployeeStatus status,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Long deptId,
+            @RequestParam(defaultValue = "false") boolean includeResigned) {
+        return ApiResponse.success(
+                employeeService.orgTreeChildren(
+                        nodeType, nodeId, status, keyword, deptId, includeResigned));
+    }
+
     @GetMapping("/employees/{id}")
     @PreAuthorize("isAuthenticated()")
     public ApiResponse<EmployeeVO> employeeDetail(@PathVariable Long id) {
@@ -74,6 +122,12 @@ public class HrEmployeeController {
             @PathVariable Long id, @Valid @RequestBody EmployeeUpdateRequest request) {
         employeeService.update(id, request);
         return ApiResponse.success();
+    }
+
+    @GetMapping("/employees/{id}/subordinates")
+    @PreAuthorize("isAuthenticated()")
+    public ApiResponse<List<EmployeeVO>> employeeSubordinates(@PathVariable Long id) {
+        return ApiResponse.success(employeeService.subordinates(id));
     }
 
     @GetMapping("/employees/{id}/changes")
@@ -101,6 +155,13 @@ public class HrEmployeeController {
     public ApiResponse<String> resign(
             @PathVariable Long id, @Valid @RequestBody EmployeeChangeRequest request) {
         return ApiResponse.success(employeeService.resign(id, request));
+    }
+
+    @PostMapping("/employees/{id}/promotion")
+    @PreAuthorize("hasAnyRole('SYS_ADMIN')")
+    public ApiResponse<String> promotion(
+            @PathVariable Long id, @Valid @RequestBody EmployeeChangeRequest request) {
+        return ApiResponse.success(employeeService.promotion(id, request));
     }
 
     // ------------------------------------------------------------------

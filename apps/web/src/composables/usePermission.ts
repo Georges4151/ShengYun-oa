@@ -34,11 +34,17 @@ import { pinia } from '@/stores'
  * - 184 integration:wecom:view   → SYS_ADMIN（菜单码，路由 meta.permission）
  * - 185 integration:wecom:sync   → SYS_ADMIN（手动同步 / 消息重投）
  *
+ * 系统设置 · AI 设置：
+ * - system:ai:config              → SYS_ADMIN（菜单码，路由 meta.permission）
+ *
  * M6 报表（V42 权限种子 186～189）：
  * - 186 report                    → 菜单码（本页不登记，由路由 meta 控制）
  * - 187 report:hr-cost:view       → SYS_ADMIN
  * - 188 report:hr-performance:view → SYS_ADMIN
  * - 189 report:admin-assets:view  → SYS_ADMIN
+ *
+ * 员工上下级（V52 权限种子 196）：
+ * - hr:employee:leader            → SYS_ADMIN（控制员工档案「直属上级」的指定与调整）
  *
  * 报表页签（历史权限码，见 BPM 报表）：
  * - bpm:report:view               → SYS_ADMIN、FINANCE
@@ -46,9 +52,13 @@ import { pinia } from '@/stores'
  * 流程模板（V46 权限种子 190～191）：
  * - 190 bpm:template:create       → SYS_ADMIN
  * - 191 bpm:template:delete       → SYS_ADMIN
+ *
+ * 报销额度分级规则：
+ * - expense:amount-rule:manage    → SYS_ADMIN（流程模板页签的规则维护入口）
  */
 const PERMISSION_ROLES: Record<string, string[]> = {
   'hr:salary:view': ['SYS_ADMIN', 'FINANCE'],
+  'hr:employee:leader': ['SYS_ADMIN'],
   'hr:salary:change': ['SYS_ADMIN'],
   'hr:salary:confirm': ['SYS_ADMIN'],
   'hr:performance:template': ['SYS_ADMIN'],
@@ -69,12 +79,14 @@ const PERMISSION_ROLES: Record<string, string[]> = {
   'doc:permission:manage': ['SYS_ADMIN'],
   'integration:wecom:view': ['SYS_ADMIN'],
   'integration:wecom:sync': ['SYS_ADMIN'],
+  'system:ai:config': ['SYS_ADMIN'],
   'report:hr-cost:view': ['SYS_ADMIN'],
   'report:hr-performance:view': ['SYS_ADMIN'],
   'report:admin-assets:view': ['SYS_ADMIN'],
   'bpm:report:view': ['SYS_ADMIN', 'FINANCE'],
   'bpm:template:create': ['SYS_ADMIN'],
-  'bpm:template:delete': ['SYS_ADMIN']
+  'bpm:template:delete': ['SYS_ADMIN'],
+  'expense:amount-rule:manage': ['SYS_ADMIN']
 }
 
 /** 当前登录用户是否具备指定权限码（优先使用后端下发的权限码，未加载时回退角色映射）。 */

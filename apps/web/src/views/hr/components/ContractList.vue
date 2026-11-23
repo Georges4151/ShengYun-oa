@@ -9,6 +9,7 @@ import {
   ElFormItem,
   ElInput,
   ElMessage,
+  ElMessageBox,
   ElOption,
   ElPagination,
   ElSelect,
@@ -20,6 +21,7 @@ import {
 import type { FormInstance, FormRules, UploadFile } from 'element-plus'
 import { ceamsApi, fetchBlob } from '@/services/http'
 import type {
+  ContractApprovalStatus,
   ContractVO,
   EmployeeVO,
   HrContractStatus,
@@ -29,6 +31,7 @@ import { usePage } from '@/composables/usePage'
 import { apiErrorMessage } from '@/utils/error'
 import { previewBlob, saveBlob } from '@/utils/file'
 import { hrContractStatusLabels, hrContractTypeLabels, toOptions } from '@/utils/labels'
+import BpmInstanceDrawer from '@/views/bpm/components/BpmInstanceDrawer.vue'
 
 defineOptions({ name: 'ContractList' })
 
@@ -62,6 +65,19 @@ function statusTagType(status: HrContractStatus): 'success' | 'info' | 'danger' 
     default:
       return 'info'
   }
+}
+
+/** 合同审批状态 -> 文案与标签颜色（NONE 未提交在表格中以占位符展示）。 */
+const contractApprovalMeta: Record<ContractApprovalStatus, { label: string; type: 'success' | 'info' | 'warning' | 'danger' }> = {
+  NONE: { label: '-', type: 'info' },
+  PENDING: { label: '审批中', type: 'warning' },
+  APPROVED: { label: '已通过', type: 'success' },
+  REJECTED: { label: '已驳回', type: 'danger' }
+}
+
+/** 未提交或已驳回的合同允许再次提交审批；审批中/已通过不允许重复提交。 */
+function canSubmitApproval(row: ContractVO): boolean {
+  return !row.approvalStatus || row.approvalStatus === 'NONE' || row.approvalStatus === 'REJECTED'
 }
 
 async function loadEmployees(): Promise<void> {
@@ -101,6 +117,36 @@ async function load(): Promise<void> {
 function onSearch(): void {
   resetPage()
   void load()
+}
+
+// ---------------- 合同审批 ----------------
+const drawerVisible = ref(false)
+const drawerInstanceId = ref<string | null>(null)
+
+/** 提交合同审批：二次确认后调用后端发起 BPM，成功后刷新列表同步审批状态。 */
+async function submitApproval(row: ContractVO): Promise<void> {
+  try {
+    await ElMessageBox.confirm(
+      `确定提交合同「${row.contractNo}」审批吗？提交后可到待办中心跟踪流程。`,
+      '提交审批',
+      { type: 'warning' }
+    )
+  } catch {
+    return
+  }
+  try {
+    await ceamsApi.hr.contractSubmitApproval(row.id)
+    ElMessage.success('已提交审批')
+    await load()
+  } catch (err) {
+    ElMessage.error(apiErrorMessage(err, '提交审批失败'))
+  }
+}
+
+function openInstance(instanceId?: string | null): void {
+  if (!instanceId) return
+  drawerInstanceId.value = instanceId
+  drawerVisible.value = true
 }
 
 const dialogVisible = ref(false)
@@ -344,6 +390,18 @@ async function onDownloadFile(row: ContractVO): Promise<void> {
             </el-tag>
           </template>
         </el-table-column>
+        <el-table-column label="审批状态" width="100">
+          <template #default="{ row }">
+            <el-tag
+              v-if="(row as ContractVO).approvalStatus && (row as ContractVO).approvalStatus !== 'NONE'"
+              size="small"
+              :type="contractApprovalMeta[(row as ContractVO).approvalStatus!].type"
+            >
+              {{ contractApprovalMeta[(row as ContractVO).approvalStatus!].label }}
+            </el-tag>
+            <span v-else class="empty-file">-</span>
+          </template>
+        </el-table-column>
         <el-table-column label="合同原件" width="120">
           <template #default="{ row }">
             <template v-if="(row as ContractVO).filePath">
@@ -355,9 +413,27 @@ async function onDownloadFile(row: ContractVO): Promise<void> {
             <span v-else class="empty-file">-</span>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="100" fixed="right">
+        <el-table-column label="操作" width="220" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" size="small" @click="openEdit(row as ContractVO)">编辑</el-button>
+            <el-button
+              v-if="canSubmitApproval(row as ContractVO)"
+              link
+              type="success"
+              size="small"
+              @click="submitApproval(row as ContractVO)"
+            >
+              提交审批
+            </el-button>
+            <el-button
+              v-if="(row as ContractVO).bpmInstanceId"
+              link
+              type="primary"
+              size="small"
+              @click="openInstance((row as ContractVO).bpmInstanceId)"
+            >
+              查看流程
+            </el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -476,6 +552,8 @@ async function onDownloadFile(row: ContractVO): Promise<void> {
         <el-button type="primary" @click="submit">确定</el-button>
       </template>
     </el-dialog>
+
+    <BpmInstanceDrawer v-model="drawerVisible" :instance-id="drawerInstanceId" />
   </div>
 </template>
 

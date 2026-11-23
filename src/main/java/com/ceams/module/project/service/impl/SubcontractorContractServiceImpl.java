@@ -1,11 +1,16 @@
 package com.ceams.module.project.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.ceams.common.enums.ContractApprovalStatus;
 import com.ceams.common.exception.BusinessException;
 import com.ceams.common.exception.ErrorCode;
 import com.ceams.common.response.PageResult;
+import com.ceams.module.bpm.dto.InstanceStartRequest;
+import com.ceams.module.bpm.enums.BpmBizType;
+import com.ceams.module.bpm.service.BpmInstanceService;
 import com.ceams.module.hr.support.SimpleXlsxWriter;
 import com.ceams.module.project.converter.SubcontractorContractConverter;
 import com.ceams.module.project.dto.subcontractorcontract.SubcontractorContractCreateRequest;
@@ -29,6 +34,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -45,6 +51,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class SubcontractorContractServiceImpl implements SubcontractorContractService {
+
+    /** 分包合同审批默认流程模板编码（见 V54 迁移）。 */
+    private static final String APPROVAL_TEMPLATE_CODE = "subcontractor-contract-approval";
 
     /** 导出列顺序。 */
     private static final List<String> EXPORT_HEADERS =
@@ -67,6 +76,7 @@ public class SubcontractorContractServiceImpl implements SubcontractorContractSe
     private final BudgetMapper budgetMapper;
     private final SettlementProofMapper settlementProofMapper;
     private final SubcontractorContractConverter subcontractorContractConverter;
+    private final BpmInstanceService bpmInstanceService;
 
     @Override
     public PageResult<SubcontractorContractVO> page(
@@ -171,6 +181,76 @@ public class SubcontractorContractServiceImpl implements SubcontractorContractSe
             throw BusinessException.of(ErrorCode.BIZ_REFERENCED, "分包合同存在关联结算凭证，无法删除");
         }
         subcontractorContractMapper.deleteById(id);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public String submitApproval(Long id) {
+        SubcontractorContract contract = subcontractorContractMapper.selectById(id);
+        if (contract == null) {
+            throw BusinessException.of(ErrorCode.BIZ_NOT_FOUND, "分包合同不存在");
+        }
+        ContractApprovalStatus status =
+                contract.getApprovalStatus() == null
+                        ? ContractApprovalStatus.NONE
+                        : contract.getApprovalStatus();
+        // 仅未提交或已驳回可再次发起，审批中/已通过重复提交直接报错，不新建流程实例
+        if (status != ContractApprovalStatus.NONE && status != ContractApprovalStatus.REJECTED) {
+            throw BusinessException.of(ErrorCode.BIZ_STATE_CONFLICT, "该合同已提交审批或已通过");
+        }
+
+        Subcontractor subcontractor =
+                contract.getSubcontractorId() == null
+                        ? null
+                        : subcontractorMapper.selectById(contract.getSubcontractorId());
+        Project project =
+                contract.getProjectId() == null
+                        ? null
+                        : projectMapper.selectById(contract.getProjectId());
+        InstanceStartRequest request = new InstanceStartRequest();
+        request.setTemplateCode(APPROVAL_TEMPLATE_CODE);
+        request.setBizType(BpmBizType.SUBCONTRACT_CONTRACT.name());
+        request.setBizId(contract.getId());
+        Map<String, String> variables = new LinkedHashMap<>();
+        variables.put("contractId", String.valueOf(contract.getId()));
+        variables.put("contractNumber", nullToEmpty(contract.getContractNumber()));
+        variables.put("contractName", nullToEmpty(contract.getContractName()));
+        variables.put("subcontractorId", nullToEmpty(contract.getSubcontractorId()));
+        variables.put(
+                "subcontractorName",
+                subcontractor == null ? "" : nullToEmpty(subcontractor.getName()));
+        variables.put("projectId", nullToEmpty(contract.getProjectId()));
+        variables.put("projectName", project == null ? "" : nullToEmpty(project.getProjectName()));
+        variables.put(
+                "contractAmount",
+                contract.getContractAmount() == null
+                        ? "0"
+                        : contract.getContractAmount().toPlainString());
+        variables.put("startDate", nullToEmpty(contract.getStartDate()));
+        variables.put("endDate", nullToEmpty(contract.getEndDate()));
+        request.setVariables(variables);
+
+        String instanceId = bpmInstanceService.start(request);
+        // 条件更新兜底并发重复提交：只有仍处于未提交/已驳回时才能写回，事务回滚会同时撤销实例
+        SubcontractorContract patch = new SubcontractorContract();
+        // paidAmount 字段有默认值 ZERO，条件更新时必须显式置空，避免把已付金额覆盖为 0
+        patch.setPaidAmount(null);
+        patch.setApprovalStatus(ContractApprovalStatus.PENDING);
+        patch.setBpmInstanceId(Long.valueOf(instanceId));
+        int updated =
+                subcontractorContractMapper.update(
+                        patch,
+                        new LambdaUpdateWrapper<SubcontractorContract>()
+                                .eq(SubcontractorContract::getId, id)
+                                .in(
+                                        SubcontractorContract::getApprovalStatus,
+                                        ContractApprovalStatus.NONE,
+                                        ContractApprovalStatus.REJECTED));
+        if (updated == 0) {
+            throw BusinessException.of(ErrorCode.BIZ_STATE_CONFLICT, "该合同已提交审批或已通过");
+        }
+        log.info("分包合同 {} 已提交并发起 BPM 实例 {}", id, instanceId);
+        return instanceId;
     }
 
     @Override
@@ -326,5 +406,10 @@ public class SubcontractorContractServiceImpl implements SubcontractorContractSe
 
     private LocalDateTime toDateTime(LocalDate date) {
         return date == null ? null : date.atStartOfDay();
+    }
+
+    /** 流程变量统一字符串：空值写空串，避免 Map 中出现 null。 */
+    private String nullToEmpty(Object value) {
+        return value == null ? "" : value.toString();
     }
 }

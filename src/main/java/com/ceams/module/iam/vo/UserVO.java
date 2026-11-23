@@ -33,9 +33,5 @@ public class UserVO {
     @JsonSerialize(using = ToStringSerializer.class)
     private Long deptId;
 
-    /** 直属上级用户 ID（避免前端 JS 精度丢失，序列化为字符串）。 */
-    @JsonSerialize(using = ToStringSerializer.class)
-    private Long leaderId;
-
     private LocalDateTime createTime;
 }

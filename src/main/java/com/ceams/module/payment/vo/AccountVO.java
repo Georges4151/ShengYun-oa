@@ -54,5 +54,17 @@ public class AccountVO {
     @JsonSerialize(using = ToStringSerializer.class)
     private Long subcontractorId;
 
+    /** 项目名称（关联 biz_project.project_name）。 */
+    private String projectName;
+
+    /** 付款账户名称（关联 biz_payment_account.name）。 */
+    private String paymentAccountName;
+
+    /** 票据编号（关联 biz_receipt.receipt_number）。 */
+    private String receiptNumber;
+
+    /** 分包合同名称（关联 biz_subcontractor_contract.contract_name）。 */
+    private String contractName;
+
     private LocalDateTime createTime;
 }

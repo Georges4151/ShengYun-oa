@@ -13,6 +13,9 @@ import type {
   ReceiptPageQuery,
   ApprovalRecordVO,
   ReceiptVerificationVO,
+  AmountRuleVO,
+  AmountRuleSaveRequest,
+  AmountRulePageQuery,
   PageResult
 } from '@ceams/types'
 
@@ -26,6 +29,12 @@ export interface ExpenseApi {
   /** 历史审批记录（只读，旧审批链路已下线，仅存量追溯）。 */
   receiptApprovals(id: Id): Promise<ApprovalRecordVO[]>
   receiptVerifications(id: Id): Promise<ReceiptVerificationVO[]>
+
+  // 报销额度分级规则：按金额区间匹配审批流程模板
+  amountRuleList(query?: AmountRulePageQuery): Promise<PageResult<AmountRuleVO>>
+  amountRuleCreate(body: AmountRuleSaveRequest): Promise<Id>
+  amountRuleUpdate(id: Id, body: AmountRuleSaveRequest): Promise<void>
+  amountRuleRemove(id: Id): Promise<void>
 }
 
 export function createExpenseApi(client: HttpClient): ExpenseApi {
@@ -64,6 +73,24 @@ export function createExpenseApi(client: HttpClient): ExpenseApi {
     },
     async receiptVerifications(id) {
       return client.get<ReceiptVerificationVO[]>(`/api/v1/expenses/${id}/verifications`)
+    },
+    async amountRuleList(query = {}) {
+      return client.get<PageResult<AmountRuleVO>>('/api/v1/expense/amount-rules', {
+        query: {
+          page: query.page ?? 1,
+          size: query.size ?? 100,
+          keyword: query.keyword
+        }
+      })
+    },
+    async amountRuleCreate(body) {
+      return client.post<Id>('/api/v1/expense/amount-rules', body)
+    },
+    async amountRuleUpdate(id, body) {
+      return client.put<void>(`/api/v1/expense/amount-rules/${id}`, body)
+    },
+    async amountRuleRemove(id) {
+      return client.delete<void>(`/api/v1/expense/amount-rules/${id}`)
     }
   }
 }

@@ -84,7 +84,7 @@ function keeperName(id: Id | null): string {
 async function loadOptions(): Promise<void> {
   try {
     const [userRes, deptRes] = await Promise.all([
-      ceamsApi.iam.userPage({ page: 1, size: 200 }),
+      ceamsApi.iam.userPage({ page: 1, size: 100 }),
       ceamsApi.iam.deptTree()
     ])
     users.value = userRes.records

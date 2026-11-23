@@ -83,13 +83,17 @@ export const bpmBizTypeLabels: Record<string, string> = {
   CHANGE_REQUEST: '项目变更',
   HR_REGULAR: '转正',
   HR_TRANSFER: '调岗',
+  HR_PROMOTION: '晋升',
   HR_RESIGN: '离职',
   HR_LEAVE: '请假',
   HR_CHECKIN_SUPPLEMENT: '补卡',
   // M6 行政域流程（P5 待办页复用，提前补齐避免二次改动）
   ADMIN_ASSET_BORROW: '资产领用',
   ADMIN_VEHICLE_APPLY: '用车',
-  ADMIN_MEETING_APPLY: '会议室预定'
+  ADMIN_MEETING_APPLY: '会议室预定',
+  ADMIN_REPAIR: '报修',
+  HR_CONTRACT: '劳动合同',
+  SUBCONTRACT_CONTRACT: '分包合同'
 }
 
 export const bpmInstanceStatusLabels: Record<string, string> = {

@@ -1,6 +1,8 @@
 package com.ceams.module.admin.vo;
 
 import com.ceams.module.admin.enums.VehicleStatus;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import lombok.Data;
@@ -10,6 +12,7 @@ import lombok.Data;
 public class VehicleVO {
 
     /** 车辆 ID。 */
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long id;
 
     /** 车牌号。 */

@@ -5,11 +5,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import com.ceams.module.ai.client.OllamaClient;
-import com.ceams.module.ai.config.AiProperties;
+import com.ceams.module.ai.client.AiChatClient;
 import com.ceams.module.ai.vo.AiStatusVO;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,11 +18,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class AiStatusServiceImplTest {
 
-    @Mock private OllamaClient ollamaClient;
+    @Mock private AiChatClient aiChatClient;
 
     @Test
-    void 未启用_返回不可用且不调用客户端() {
-        AiStatusServiceImpl service = new AiStatusServiceImpl(properties(false), ollamaClient);
+    void 未启用_返回不可用且不发起网络请求() {
+        when(aiChatClient.isEnabled()).thenReturn(false);
+        when(aiChatClient.textModel()).thenReturn("qwen2.5:7b");
+        AiStatusServiceImpl service = new AiStatusServiceImpl(aiChatClient);
 
         AiStatusVO vo = service.getStatus();
 
@@ -32,13 +32,15 @@ class AiStatusServiceImplTest {
         assertEquals("qwen2.5:7b", vo.getModel());
         assertFalse(vo.isReachable());
         assertEquals(0L, vo.getLatencyMs());
-        verifyNoInteractions(ollamaClient);
+        verify(aiChatClient, times(0)).isReachable();
     }
 
     @Test
     void 已启用_客户端可达_返回可达且记录耗时() {
-        when(ollamaClient.isReachable()).thenReturn(true);
-        AiStatusServiceImpl service = new AiStatusServiceImpl(properties(true), ollamaClient);
+        when(aiChatClient.isEnabled()).thenReturn(true);
+        when(aiChatClient.textModel()).thenReturn("qwen2.5:7b");
+        when(aiChatClient.isReachable()).thenReturn(true);
+        AiStatusServiceImpl service = new AiStatusServiceImpl(aiChatClient);
 
         AiStatusVO vo = service.getStatus();
 
@@ -49,8 +51,9 @@ class AiStatusServiceImplTest {
 
     @Test
     void 已启用_客户端不可达_返回不可达且不抛异常() {
-        when(ollamaClient.isReachable()).thenReturn(false);
-        AiStatusServiceImpl service = new AiStatusServiceImpl(properties(true), ollamaClient);
+        when(aiChatClient.isEnabled()).thenReturn(true);
+        when(aiChatClient.isReachable()).thenReturn(false);
+        AiStatusServiceImpl service = new AiStatusServiceImpl(aiChatClient);
 
         AiStatusVO vo = service.getStatus();
 
@@ -60,30 +63,38 @@ class AiStatusServiceImplTest {
 
     @Test
     void 缓存命中_60秒内只探活一次() {
-        when(ollamaClient.isReachable()).thenReturn(true);
-        AiStatusServiceImpl service = new AiStatusServiceImpl(properties(true), ollamaClient);
+        when(aiChatClient.isEnabled()).thenReturn(true);
+        when(aiChatClient.isReachable()).thenReturn(true);
+        AiStatusServiceImpl service = new AiStatusServiceImpl(aiChatClient);
 
         service.getStatus();
         service.getStatus();
 
-        verify(ollamaClient, times(1)).isReachable();
+        verify(aiChatClient, times(1)).isReachable();
     }
 
     @Test
     void 缓存命中_失败结果同样缓存60秒() {
-        when(ollamaClient.isReachable()).thenReturn(false);
-        AiStatusServiceImpl service = new AiStatusServiceImpl(properties(true), ollamaClient);
+        when(aiChatClient.isEnabled()).thenReturn(true);
+        when(aiChatClient.isReachable()).thenReturn(false);
+        AiStatusServiceImpl service = new AiStatusServiceImpl(aiChatClient);
 
         assertFalse(service.getStatus().isReachable());
         assertFalse(service.getStatus().isReachable());
 
-        verify(ollamaClient, times(1)).isReachable();
+        verify(aiChatClient, times(1)).isReachable();
     }
 
-    private AiProperties properties(boolean enabled) {
-        AiProperties properties = new AiProperties();
-        properties.setEnabled(enabled);
-        properties.setModel("qwen2.5:7b");
-        return properties;
+    @Test
+    void 配置修订号变化_缓存立即失效并重新探活() {
+        when(aiChatClient.isEnabled()).thenReturn(true);
+        when(aiChatClient.isReachable()).thenReturn(true);
+        when(aiChatClient.configRevision()).thenReturn(1L, 2L);
+        AiStatusServiceImpl service = new AiStatusServiceImpl(aiChatClient);
+
+        service.getStatus();
+        service.getStatus();
+
+        verify(aiChatClient, times(2)).isReachable();
     }
 }

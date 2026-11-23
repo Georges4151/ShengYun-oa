@@ -24,6 +24,8 @@ public interface SubcontractorContractConverter {
                 contract.getStartDate() == null ? null : contract.getStartDate().toLocalDate());
         vo.setEndDate(contract.getEndDate() == null ? null : contract.getEndDate().toLocalDate());
         vo.setStatus(contract.getStatus());
+        vo.setApprovalStatus(contract.getApprovalStatus());
+        vo.setBpmInstanceId(contract.getBpmInstanceId());
         vo.setDescription(contract.getDescription());
         vo.setFilePath(contract.getFilePath());
         vo.setFileName(contract.getFileName());

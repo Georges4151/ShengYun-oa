@@ -137,31 +137,20 @@ class BpmTaskServiceImplTest {
     }
 
     @Test
-    void 或签部分驳回不整体驳回() {
-        BpmTask task = task(1L, 1L, BpmTaskStatus.PENDING, 1);
-        BpmInstance instance = instance(2L, 2);
-        BpmNode node = node(BpmNodeType.OR_SIGN);
-        stubTask(task, instance, node);
-        lenient().when(taskMapper.selectCount(any(Wrapper.class))).thenReturn(1L);
-
-        service.reject(1L, rejectRequest(RejectTarget.INITIATOR));
-
-        assertThat(task.getStatus()).isEqualTo(BpmTaskStatus.REJECTED);
-        verify(flowEngine, never()).afterReject(any(), any(), any(), any(), any());
-    }
-
-    @Test
-    void 或签全部驳回才整体驳回() {
+    void 或签任一驳回即整体驳回并关闭其他待办() {
         BpmTask task = task(1L, 1L, BpmTaskStatus.PENDING, 1);
         BpmInstance instance = instance(2L, 2);
         BpmNode node = node(BpmNodeType.OR_SIGN);
         stubTask(task, instance, node);
         stubFlow(instance, node);
-        lenient().when(taskMapper.selectCount(any(Wrapper.class))).thenReturn(0L);
+        // 同节点仍有其他待办：或签任一人驳回即出结果，不再要求全员驳回
+        lenient().when(taskMapper.selectCount(any(Wrapper.class))).thenReturn(1L);
 
-        service.reject(1L, rejectRequest(RejectTarget.PREVIOUS));
+        service.reject(1L, rejectRequest(RejectTarget.INITIATOR));
 
-        verify(flowEngine).afterReject(any(), any(), any(), any(), org.mockito.ArgumentMatchers.eq(RejectTarget.PREVIOUS));
+        assertThat(task.getStatus()).isEqualTo(BpmTaskStatus.REJECTED);
+        verify(taskMapper).update(any(BpmTask.class), any(Wrapper.class));
+        verify(flowEngine).afterReject(any(), any(), any(), any(), any());
     }
 
     @Test

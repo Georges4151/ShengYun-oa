@@ -1,6 +1,8 @@
 package com.ceams.module.admin.vo;
 
 import com.ceams.module.admin.enums.VisitorStatus;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import lombok.Data;
@@ -10,6 +12,7 @@ import lombok.Data;
 public class VisitorVO {
 
     /** 访客登记 ID。 */
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long id;
 
     /** 访客姓名。 */
@@ -22,6 +25,7 @@ public class VisitorVO {
     private String company;
 
     /** 被访人 ID。 */
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long hostUserId;
 
     /** 来访日期。 */

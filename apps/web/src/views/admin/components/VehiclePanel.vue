@@ -228,7 +228,7 @@ const applyRules: FormRules<typeof applyForm> = {
 
 async function loadApplyVehicles(): Promise<void> {
   try {
-    const res = await ceamsApi.admin.vehiclePage({ page: 1, size: 200, status: 'IDLE' })
+    const res = await ceamsApi.admin.vehiclePage({ page: 1, size: 100, status: 'IDLE' })
     applyVehicles.value = res.records
   } catch {
     // 车辆下拉加载失败不阻断列表
