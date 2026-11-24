@@ -472,7 +472,7 @@ public class AuthServiceImpl implements AuthService {
         log.setTargetId(targetId);
         log.setTargetType(targetType);
         log.setIpAddress(resolveIp(request));
-        log.setUserAgent(request == null ? null : request.getHeader("User-Agent"));
+        log.setUserAgent(truncateUserAgent(request == null ? null : request.getHeader("User-Agent")));
         log.setRequestMethod(request == null ? null : request.getMethod());
         log.setRequestUri(request == null ? null : request.getRequestURI());
         log.setStatus("SUCCESS");
@@ -488,6 +488,13 @@ public class AuthServiceImpl implements AuthService {
             return forwarded.split(",")[0].trim();
         }
         return request.getRemoteAddr();
+    }
+
+    private String truncateUserAgent(String userAgent) {
+        if (userAgent == null || userAgent.length() <= 255) {
+            return userAgent;
+        }
+        return userAgent.substring(0, 255);
     }
 
     private String sha256Hex(String input) {
